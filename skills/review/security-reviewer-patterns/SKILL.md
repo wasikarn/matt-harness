@@ -13,7 +13,7 @@ Extracted from `agents/security-reviewer.md` (2026-08-18, harness-audit check 51
 keep the agent body under 20,000 chars. Loaded via that agent's `skills:` frontmatter field
 (preloaded at spawn, independent of the Skill tool — `security-reviewer` carries no `Skill` tool
 grant) — this file is the code-example reference, not a separately-triggered pass. Read it
-alongside `agents/security-reviewer.md`: the CWE pattern table in that file's §3 is what these
+alongside `agents/security-reviewer.md`: the CWE pattern table in that file's Code Pattern Review section is what these
 examples illustrate.
 
 **Distinct from `mh:security-auditor`:** that skill is a separate, dedicated deep-audit workflow
@@ -126,6 +126,6 @@ construction) is the fallback for a pattern too complex to verify by inspection.
 regex engine has no default execution timeout — a catastrophic-backtracking pattern blocks the
 entire event loop, not just the one request.
 
-Done when every CWE pattern in `agents/security-reviewer.md`'s §3 Code Pattern Review table that
+Done when every CWE pattern in `agents/security-reviewer.md`'s Code Pattern Review table that
 has a matching example above has been checked against the diff for the BAD shape, and any finding
 cites the GOOD fix shown here.

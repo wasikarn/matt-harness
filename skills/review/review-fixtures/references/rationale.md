@@ -1,7 +1,8 @@
 # review-fixtures — incident record behind the rules
 
-Moved verbatim from COMMAND.md (2026-08-23, 200-LOC cap refactor). Each section is the
-evidence behind a rule that stays stated at its point of use in COMMAND.md.
+Moved verbatim out of the skill's main file (2026-08-23, 200-LOC cap refactor; that file was
+COMMAND.md until review-fixtures converted to a skill, 2026-08-24). Each section is the
+evidence behind a rule that stays stated at its point of use in SKILL.md.
 
 ## Why the Step 3.5 reconciliation check exists
 

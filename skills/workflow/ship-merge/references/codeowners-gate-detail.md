@@ -22,9 +22,9 @@ in a pattern matches the basename at any depth; a `/` anywhere except a lone tra
 one anchors to the repo root; a trailing `/` matches that directory and everything
 under it; `*` matches within one path segment, `**` crosses segments, `?` matches one
 character; last-matching-line wins. This logic lives in the shared script, not
-embedded in COMMAND.md. An empty or comment-only CODEOWNERS file naturally parses to
+embedded in SKILL.md. An empty or comment-only CODEOWNERS file naturally parses to
 zero rules — the shared script's own `no-owned-files-changed` branch already handles
-that correctly, so COMMAND.md doesn't special-case it above the script.
+that correctly, so SKILL.md doesn't special-case it above the script.
 
 **Review-approval SHA pinning.** An approval only counts if it's pinned to the PR's
 *current* head commit. `gh pr view --json reviews` generally includes each review's

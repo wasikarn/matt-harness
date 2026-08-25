@@ -1,4 +1,4 @@
-Conditional agent routing (COMMAND.md Phase 4, action 2), **launched in parallel**, for inline-edit clusters only (bug-shaped clusters already carry `mattpocock-skills:diagnosing-bugs`'s own regression-test + cleanup discipline — don't double-route):
+Conditional agent routing (SKILL.md Phase 4, action 2), **launched in parallel**, for inline-edit clusters only (bug-shaped clusters already carry `mattpocock-skills:diagnosing-bugs`'s own regression-test + cleanup discipline — don't double-route):
    - Reviewer flagged error handling → `silent-failure-hunter` agent on the fix
    - Reviewer flagged auth/secrets/external input → `security-reviewer` agent on the fix
    - Reviewer flagged performance/algorithm (a complexity suggestion, not observable wrong

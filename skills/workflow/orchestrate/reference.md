@@ -2,7 +2,7 @@
 
 ## Dispatch gate — Ungated/Gated agent list
 
-Supplementary detail for `SKILL.md § Procedure` step 4.
+Supplementary detail for `SKILL.md`'s Procedure section, step 4.
 
 **Ungated** (read-only `tools:` grant — no `Edit`/`Write`/`Bash`): currently `ideate-critic`
 (Read), `requirement-analyst` (Read/Glob/Grep — never
@@ -86,7 +86,7 @@ These agents are invoked directly by a skill body, not by the user via `mh:orche
 
 ### Full triage example
 
-Supplementary detail for `SKILL.md § Example`.
+Supplementary detail for `SKILL.md`'s Example section.
 
 Input: "prod /orders is 500ing; refactor auth for readability; a reviewer wants a signups CSV; should we move to pnpm; a contractor asked about a dark-mode toggle, no rush"
 
@@ -124,7 +124,7 @@ an external tracker. Name it as the next step and stop there — `wayfinder` car
 
 ## Bounded fan-out — cap history & rationale
 
-Supplementary detail for `SKILL.md § Bounded fan-out — hard cap (F8.5)`.
+Supplementary detail for `SKILL.md`'s Bounded fan-out — hard cap (F8.5) section.
 
 A prior auto-split mechanism (`resolve_waves`/`f8_5_overflow_warnings` in
 `scripts/orchestrate/planner.py`) was removed as dead code — DAG-resolved waves, explicit
@@ -190,7 +190,7 @@ For urgent, not-important, bounded compound work — decompose then execute via 
 
 **Not the host Workflow tool.** "Batch" and "Pipeline" below are a manual bash-scripted loop over the `Agent` tool (see the pseudocode) — a dispatch *style*, not the CC `Workflow` tool's JS `parallel()`/`pipeline()` runtime described later in this doc ("Dynamic-workflow pattern vocabulary"). The L-number is a dispatch tier, unrelated to the retired L2–L5 autonomy-flag ladder (ADR 0006) — every tier here stays human-gated.
 
-The chain pattern (builder → validator → fix → re-validator) lives in `SKILL.md § Validation chain (TaskCreate + addBlockedBy)`; the worked example is below. Use this section for the merge after parallel fan-in; use SKILL.md for the chain itself.
+The chain pattern (builder → validator → fix → re-validator) lives in `SKILL.md`'s Validation chain (TaskCreate + addBlockedBy) section; the worked example is below. Use this section for the merge after parallel fan-in; use SKILL.md for the chain itself.
 
 ### Decompose
 
@@ -217,7 +217,7 @@ Stage N receives Stage N-1 outputs prepended as context. Deterministic. No conve
 
 ## Spawn-prompt template (F9) — full text
 
-Supplementary detail for `SKILL.md § Spawn-prompt template (F9)`.
+Supplementary detail for `SKILL.md`'s Spawn-prompt template (F9) section.
 
 **The single most common sub-agent failure is the under-specified spawn prompt.** Four articles (`agent-teams-best-practices`, `agent-teams-setup-usage-2026`, `agent-teams-workflow-plan-to-production`, `team-orchestration-builder-validator`) converge on the same template. When you dispatch an inline subagent (the Agent tool) for a non-trivial task, every spawn prompt MUST use this shape — without it, subagents guess, hallucinate ownership, and conflict on shared files.
 
@@ -257,7 +257,7 @@ Write "none" if the task needs no skill — don't leave the slot blank.>
 Can't make ownership disjoint — two agents genuinely need the same file this wave?
 Give one of them `isolation: "worktree"` on the Agent/Workflow call instead of racing
 the tree. This is the native `WorktreeCreate` mechanism, not a Bash `git worktree add`
-— unaffected by this repo's own no-manual-worktree gate, see CLAUDE.md § Branching model.)
+— unaffected by this repo's own no-manual-worktree gate, see CLAUDE.md's Branching model section.)
 
 ## UPSTREAM CONTRACTS
 - From task <id>: <file:line or schema field> — <what you may rely on>
@@ -293,7 +293,7 @@ the tree. This is the native `WorktreeCreate` mechanism, not a Bash `git worktre
 
 ## Spawn-prompt template — why each slot matters, and its anti-pattern
 
-Supplementary detail for `SKILL.md § Spawn-prompt template (F9)`.
+Supplementary detail for `SKILL.md`'s Spawn-prompt template (F9) section.
 
 **Why this shape works:**
 
@@ -313,7 +313,7 @@ Supplementary detail for `SKILL.md § Spawn-prompt template (F9)`.
 
 ## Validation chain (builder → validator → fix → re-validator) — full text
 
-Supplementary detail for `SKILL.md § Validation chain (builder → validator → fix → re-validator)`.
+Supplementary detail for `SKILL.md`'s Validation chain (builder → validator → fix → re-validator) section.
 
 The 4-step validation pipeline from article `team-orchestration`, adapted to the task board polyfill. Every non-trivial write should be a chain, not a single dispatch — **non-trivial** = ≥2 files changed OR ≥1 test file touched. Below that, run a single dispatch; the chain's coordination overhead isn't worth it (Rule 2). The board makes the ordering observable and resumable across sessions.
 
@@ -326,7 +326,7 @@ This is the file-based counterpart to the `TaskCreate + addBlockedBy` protocol e
 3. **Step C — Fixer repairs (conditional).** If the validator rejects, the builder (clarity-only scope) addresses the findings.
 4. **Step D — Re-validator confirms.** The same or a different validator verifies the fix.
 
-**Fix retries are capped — 3, then escalate.** The chain above is a DAG (`A → B → F → D`), not a loop: D is terminal. If a Task 4 failure sends work back to the Fixer, that re-entry MUST carry a numeric cap — 3 fix attempts on the same finding set; the 4th is an escalation, not a round. Stop, hand the last verdict to the user, don't re-dispatch. `loop-design-check`'s failure-mode #3 is the standing requirement (retry cap N + escalate to a human when exceeded — `skills/meta/loop-design-check/SKILL.md:63`); 3 is the only retry-cap number written anywhere in this repo's loop doctrine (`:137`). This chain is attended, which is why it escalates at all: the L5 "retry cap at 1" below (§ Autonomous / Recurring Execution) is lower because there the human is unreachable by definition and exhaustion degrades to log-and-continue instead.
+**Fix retries are capped — 3, then escalate.** The chain above is a DAG (`A → B → F → D`), not a loop: D is terminal. If a Task 4 failure sends work back to the Fixer, that re-entry MUST carry a numeric cap — 3 fix attempts on the same finding set; the 4th is an escalation, not a round. Stop, hand the last verdict to the user, don't re-dispatch. `loop-design-check`'s failure-mode #3 is the standing requirement (retry cap N + escalate to a human when exceeded — `skills/meta/loop-design-check/SKILL.md:63`); 3 is the only retry-cap number written anywhere in this repo's loop doctrine (`:137`). This chain is attended, which is why it escalates at all: the L5 "retry cap at 1" below (the Autonomous / Recurring Execution section) is lower because there the human is unreachable by definition and exhaustion degrades to log-and-continue instead.
 
 The chain is a DAG: `A → B → F → D`. The lead tracks ordering with the native `TaskCreate` + `addBlockedBy` protocol (or an inline checklist for a short chain) — the lead is the **sole writer** of the plan state, since sub-agent Write/Edit may be silently discarded (GitHub #9458). Spawn B blocked on A; if B rejects, spawn a fix task F blocked on B; D confirms the fix. Advance each edge only when the upstream task is verified `completed` against its done-when.
 
@@ -341,7 +341,7 @@ The chain is a DAG: `A → B → F → D`. The lead tracks ordering with the nat
 | Fixer (C) | **Yes** — AskUserQuestion | Holds Edit/Write/Bash |
 | Re-validator (D) | **No** | Read-only; no AskUserQuestion |
 
-**Validator safety:** Validators are ungated and hold `Bash`, so read-only is enforced by allowlist (no Edit/Write) plus prompt doctrine, not a runtime backstop. This carve-out applies only inside the 4-step chain, reviewing a Builder's already-produced artifact. A standalone/first-pass review with nothing yet produced — e.g. auditing existing, untouched-in-a-year code with no preceding Builder step — is **Gated** under the general Step 4 rule regardless of agent; the same agent (`security-reviewer`) can be either, depending on whether it's reviewing new output or auditing standing code. (A prior runtime Bash-stripping backstop was removed in the v0.6.0 reset and not rebuilt — `docs/agent-tool-patterns.md` §4.)
+**Validator safety:** Validators are ungated and hold `Bash`, so read-only is enforced by allowlist (no Edit/Write) plus prompt doctrine, not a runtime backstop. This carve-out applies only inside the 4-step chain, reviewing a Builder's already-produced artifact. A standalone/first-pass review with nothing yet produced — e.g. auditing existing, untouched-in-a-year code with no preceding Builder step — is **Gated** under the general Step 4 rule regardless of agent; the same agent (`security-reviewer`) can be either, depending on whether it's reviewing new output or auditing standing code. (A prior runtime Bash-stripping backstop was removed in the v0.6.0 reset and not rebuilt — `docs/agent-tool-patterns.md`'s Examples from this harness section.)
 
 ### Structured verdict — Validator/Re-validator output contract
 
@@ -364,7 +364,7 @@ populates each one.
 
 ## Validation chain — worked example
 
-Concrete 4-task chain for implementing `GET /health` — SKILL.md § Validation chain, "Worked
+Concrete 4-task chain for implementing `GET /health` — SKILL.md's Validation chain section, "Worked
 example" summarizes the roles and gating and points here for the full spawn prompts below.
 
 **Task 1 — Builder: implement endpoint**
@@ -423,13 +423,13 @@ Spawn **ungated** — re-validators are read-only. Same fail-closed rule as Task
 
 **Lead check between waves**
 
-After spawning Task 1, the lead verifies its done-when (`GET /health` returns 200) before proceeding to Task 2. After Task 2 completes, the lead parses `.scratch/health-review/verdict.md`: `pass: false` (or missing/unparseable — fail-closed) spawns Task 3 (Fixer); `pass: true` skips straight to Task 4. A Task 4 failure that sends work back to Task 3 counts against the § Concept fix-retry cap — the lead keeps the count; the number lives in one place.
+After spawning Task 1, the lead verifies its done-when (`GET /health` returns 200) before proceeding to Task 2. After Task 2 completes, the lead parses `.scratch/health-review/verdict.md`: `pass: false` (or missing/unparseable — fail-closed) spawns Task 3 (Fixer); `pass: true` skips straight to Task 4. A Task 4 failure that sends work back to Task 3 counts against the Concept section's fix-retry cap — the lead keeps the count; the number lives in one place.
 
 ## Autonomous / Recurring Execution (L5)
 
 The top rung: work that runs **unattended and recurring** — handed to `/schedule` (remote cron routine), `/loop` (in-session interval), or `CronCreate` — instead of you re-running it each cycle. L4 is unattended but one-shot; L5 is unattended **and** repeating.
 
-L5 applies to user-external tasks routed through vendor primitives (`/schedule`, `/loop`, `CronCreate`). The autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture — self-contained excerpt, read in Bash: `cat "${MH_PLUGIN_ROOT}/docs/reference/operating-model.md"`) governs the harness's *own* self-repair — that loop never enters L5; the `recursive-improve` skill is the only harness-internal loop primitive and stays at L2/L3 with a human gate per iteration.
+L5 applies to user-external tasks routed through vendor primitives (`/schedule`, `/loop`, `CronCreate`). The autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under the Architecture section — self-contained excerpt, read in Bash: `cat "${MH_PLUGIN_ROOT}/docs/reference/operating-model.md"`) governs the harness's *own* self-repair — that loop never enters L5; the `recursive-improve` skill is the only harness-internal loop primitive and stays at L2/L3 with a human gate per iteration.
 
 **Route here only when ALL hold:**
 

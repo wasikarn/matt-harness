@@ -2,7 +2,7 @@
 name: recursive-improve
 description: "Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces."
 disable-model-invocation: true
-disable-model-invocation-reason: LOAD-BEARING safety invariant (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture), NOT taste — guarded by audit #36 CRIT; do not weaken via the CLAUDE.md selection criterion
+disable-model-invocation-reason: LOAD-BEARING safety invariant (the no-model-self-start rule, CLAUDE.md's Operating model under the Architecture section), NOT taste — guarded by audit #36 CRIT; do not weaken via the CLAUDE.md selection criterion
 model: inherit
 effort: xhigh
 ---
@@ -22,7 +22,7 @@ multi-iteration, unattended mode — every iteration stops at an `AskUserQuestio
 mutation. The skill stays `disable-model-invocation: true` so the model cannot **self-start** it,
 and the human is the loop's real stop condition at the per-mutation gate; the iteration cap is a
 context-exhaustion backstop. See the Operating model doctrine (self-contained excerpt of
-CLAUDE.md's §Architecture): `cat "${MH_PLUGIN_ROOT}/docs/reference/operating-model.md"`.
+CLAUDE.md's Architecture section): `cat "${MH_PLUGIN_ROOT}/docs/reference/operating-model.md"`.
 
 **When to use / not:** the user asks to improve/fix/audit the harness, or a session's
 `verification_summary` posture (or a `harness-audit` finding) reveals a concrete gap — not for a

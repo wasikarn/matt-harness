@@ -33,7 +33,7 @@ effort: high
 
 > A thermostat can feed back "how far from 26°C," but when you have a fever and want 28°C it can't judge whether 26 is the *right* target — it just grinds toward 26. **"What to set today" is always the human's call.**
 
-This is the same crux as this repo's `CLAUDE.md` § Architecture ("the gate is a verifier, the model is the maker, the maker can never grade its own work") — that paragraph is why ADR 0006 retired the L2–L5 autonomy ladder. Treat the two as one principle stated twice: once as a verifier/maker split, once as a judgment/execution split.
+This is the same crux as this repo's `CLAUDE.md`, in its Architecture section ("the gate is a verifier, the model is the maker, the maker can never grade its own work") — that paragraph is why ADR 0006 retired the L2–L5 autonomy ladder. Treat the two as one principle stated twice: once as a verifier/maker split, once as a judgment/execution split.
 
 ---
 
@@ -125,7 +125,7 @@ way to lose control than oscillation, and just as real.
 Rows 2–3 are the same discipline as `CLAUDE.md`'s verifier-separation crux — a loop's judge role should never be filled by the agent under review, in this repo or anywhere else.
 
 **Plus three red lines (violate any = not allowed to go automatic):**
-- **Keep judgment with the human.** Acceptance / the "done" cell is flipped by a human; the loop is not the acceptance officer. In this repo, this is ADR 0006 — see `docs/harness-decay-cadence.md` and `docs/reference/env-vars.md` § Autonomy flags for what got retired and why.
+- **Keep judgment with the human.** Acceptance / the "done" cell is flipped by a human; the loop is not the acceptance officer. In this repo, this is ADR 0006 — see `docs/harness-decay-cadence.md` and `docs/reference/env-vars.md`'s Autonomy flags section for what got retired and why.
 - **Responsibility doesn't transfer.** Anything whose failure you can't afford (merge the wrong PR, publish the wrong thing) → **don't hand over the authority automatically.**
 - **Counter-intuitive warning.** The more "self-improving/rewrites-its-own-rules" a loop is, the **stricter the human review it needs** — not looser. The human's judgment must sit **before the action** (a hard gate), not as a post-hoc patch.
 

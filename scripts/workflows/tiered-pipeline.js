@@ -1,10 +1,10 @@
 // Tiered multi-model pipeline: fable plans → sonnet executes → opus reviews
-// (fix-retry cap 3, counted here in code per skills/workflow/orchestrate/reference.md
-// § Concept) → opus bug-hunts fresh-eyes → fable final review, triage-gated on
+// (fix-retry cap 3, counted here in code per skills/workflow/orchestrate/reference.md's
+// Concept section) → opus bug-hunts fresh-eyes → fable final review, triage-gated on
 // contest signals (TAO arXiv:2506.12482: unconditional extra tiers degrade
 // agreement — pass args.finalReview = 'always' to force the unconditional form).
 // Verdicts are schema-forced; every branch decision is computed in this script,
-// never taken from model prose (CLAUDE.md § Architecture, maker≠checker).
+// never taken from model prose (CLAUDE.md's Architecture section, maker≠checker).
 // Nothing here commits, pushes, or ships — the result returns to a human.
 // KNOWN LIMIT (root-caused 2026-08-21, 6-form probe + official docs): when the
 // CLAUDE_CODE_SUBAGENT_MODEL env var is set (this operator's dotfiles set it to

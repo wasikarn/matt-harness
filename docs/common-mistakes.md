@@ -29,7 +29,7 @@ Read-only inspection of diffs and source files. Verdicts are pass/minor/reject w
 - Defer to devops-engineer for deployment pipeline changes
 ```
 
-The orchestrate skill's routing table (`skills/workflow/orchestrate/SKILL.md` § Procedure step 4) reads this boundary list before dispatch. A task that touches auth/secrets is routed to `security-reviewer`, not a general reviewer, because the boundary says so.
+The orchestrate skill's routing table (`skills/workflow/orchestrate/SKILL.md`'s Procedure step 4) reads this boundary list before dispatch. A task that touches auth/secrets is routed to `security-reviewer`, not a general reviewer, because the boundary says so.
 
 **Self-check:**
 
@@ -45,7 +45,7 @@ Any file that appears in the output is missing the boundary guard.
 
 **Root cause:** The builder did not read the vendor's baseline capability list or the harness's existing agent fleet before adding a new surface. Custom agents should encode *team-specific* expertise, not reimplement vendor primitives.
 
-**Harness fix:** The `orchestrate` skill (`skills/workflow/orchestrate/SKILL.md` § Routing table) routes fast file lookup to the built-in `Explore` subagent, research synthesis to `research`, and PR review to `mattpocock-skills:code-review`. Before creating a new command, check the routing table — if the task fits an existing bucket, use that bucket. The harness's agent fleet already covers the common specializations; a new agent is justified only when the task is (a) recurring, (b) domain-specific, and (c) not handled by the current fleet.
+**Harness fix:** The `orchestrate` skill (`skills/workflow/orchestrate/SKILL.md`'s Routing table) routes fast file lookup to the built-in `Explore` subagent, research synthesis to `research`, and PR review to `mattpocock-skills:code-review`. Before creating a new command, check the routing table — if the task fits an existing bucket, use that bucket. The harness's agent fleet already covers the common specializations; a new agent is justified only when the task is (a) recurring, (b) domain-specific, and (c) not handled by the current fleet.
 
 The `orchestrate` skill also gates new-agent proposals: step 4 requires the lead to "analyze each task's blast radius and dependency chain" before dispatch. A task that is "look up where function X is defined" has zero blast radius and no dependencies — it routes to the built-in `Explore` subagent inline, not to a new agent.
 
@@ -65,11 +65,11 @@ If the grep finds a command or agent whose description overlaps with an existing
 
 **Harness fix:** Two layers:
 
-1. **Allowlist frontmatter.** Every validator-class agent uses `tools:` (allowlist), not `disallowedTools:` (denylist). The read-only validator agents in the current fleet — `code-architect`, `python-reviewer`, `typescript-reviewer`, `silent-failure-hunter`, `ideate-critic` — list `Read, Grep, Glob, Bash` at most (or just `Read`), never `Edit` or `Write`. See `docs/agent-tool-patterns.md` §1 for the convention.
+1. **Allowlist frontmatter.** Every validator-class agent uses `tools:` (allowlist), not `disallowedTools:` (denylist). The read-only validator agents in the current fleet — `code-architect`, `python-reviewer`, `typescript-reviewer`, `silent-failure-hunter`, `ideate-critic` — list `Read, Grep, Glob, Bash` at most (or just `Read`), never `Edit` or `Write`. See `docs/agent-tool-patterns.md`'s item 1 for the convention.
 
 2. **No runtime Bash guard today.** There is currently no `PreToolUse` hook that intercepts a validator's Bash commands and blocks mutation patterns at runtime — the allowlist frontmatter above is the only gate, and it is doctrine, not runtime-enforced. A validator that reformats code, runs `git commit`, or otherwise mutates state during review is a bug to file (fix the frontmatter or the prompt), not something a live hook currently catches.
 
-3. **Orchestrate dispatch gate.** The `orchestrate` skill (`skills/workflow/orchestrate/SKILL.md` § Procedure step 4) gates any agent holding `Edit`, `Write`, or `Bash` behind an `AskUserQuestion`. Read-only agents (no mutation tools) dispatch without a gate; write-capable agents require explicit approval. This means even if a validator accidentally had `Edit` added to its frontmatter, the orchestrator would not dispatch it without user consent.
+3. **Orchestrate dispatch gate.** The `orchestrate` skill (`skills/workflow/orchestrate/SKILL.md`'s Procedure step 4) gates any agent holding `Edit`, `Write`, or `Bash` behind an `AskUserQuestion`. Read-only agents (no mutation tools) dispatch without a gate; write-capable agents require explicit approval. This means even if a validator accidentally had `Edit` added to its frontmatter, the orchestrator would not dispatch it without user consent.
 
 **Self-check:**
 
@@ -86,7 +86,7 @@ The grep should return no files — if it does, a validator-class agent picked u
 
 **Root cause:** The spawn prompt describes a topic, not a deliverable. Without an explicit "done-when" checklist, the subagent substitutes prose for evidence and the lead has no gate to reject it.
 
-**Harness fix:** The F9 spawn-prompt template (`skills/workflow/orchestrate/SKILL.md` § Spawn-prompt template, full text in `reference.md` § Spawn-prompt template (gates F3) — full text) mandates a `## Done-when` section with three observable checks. Every `orchestrate` dispatch injects this template verbatim. The done-when items are concrete, not conceptual:
+**Harness fix:** The F9 spawn-prompt template (`skills/workflow/orchestrate/SKILL.md`'s Spawn-prompt template section, full text in `reference.md`'s Spawn-prompt template (gates F3) section — full text) mandates a `## Done-when` section with three observable checks. Every `orchestrate` dispatch injects this template verbatim. The done-when items are concrete, not conceptual:
 
 ```markdown
 ## Done-when
@@ -115,7 +115,7 @@ Output Format table's "Done-when" column header is an unrelated coincidental mat
 
 **Root cause:** The planning phase optimistically assumed correctness; the execution phase had no post-work gate. Quality was eyes-only, not command-verified.
 
-**Harness fix:** the real, currently-shipped gate is the per-task validation chain — after each wave completes, the lead runs the `B → V1 → F → V2` chain (builder → validator → fix → re-validator) from `skills/workflow/orchestrate/SKILL.md` § Validation chain (full text in `reference.md` § Validation chain (builder → validator → fix → re-validator) — full text) inline on each completed task before starting the next wave. The dispatch-side companion is the orchestrator's Step 4 blast-radius + dependency analysis (`skills/workflow/orchestrate/SKILL.md` § Procedure step 4), which catches overlapping file ownership and missing dependencies before a wave even starts.
+**Harness fix:** the real, currently-shipped gate is the per-task validation chain — after each wave completes, the lead runs the `B → V1 → F → V2` chain (builder → validator → fix → re-validator) from `skills/workflow/orchestrate/SKILL.md`'s Validation chain section (full text in `reference.md`'s Validation chain (builder → validator → fix → re-validator) section — full text) inline on each completed task before starting the next wave. The dispatch-side companion is the orchestrator's Step 4 blast-radius + dependency analysis (`skills/workflow/orchestrate/SKILL.md`'s Procedure step 4), which catches overlapping file ownership and missing dependencies before a wave even starts.
 
 A dedicated pre-flight plan linter and a standalone test-claim hook were previously drafted here as a fuller pipeline, but neither was ever built — no `scripts/plan-linter.py` or `hooks/lifecycle/task-lifecycle.sh` exists in this repo (a 2026-07-01 audit caught this section describing them as live). If a genuine gap shows up (bad plans repeatedly reaching dispatch, or tests claimed but not run), build the narrowest gate that actually fixes the observed failure — don't reintroduce these as documentation without shipping them.
 
@@ -134,5 +134,5 @@ against `SKILL.md` matches unrelated lowercase prose mentions instead of the act
 ## Cross-references
 
 - [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — allowlist vs denylist convention, agent tool matrix
-- `CLAUDE.md`'s Operating model (under §Architecture) — why maker≠checker separation is load-bearing
+- `CLAUDE.md`'s Operating model (under its Architecture section) — why maker≠checker separation is load-bearing
 - [`skills/workflow/orchestrate/SKILL.md`](../skills/workflow/orchestrate/SKILL.md) — F9 spawn-prompt template, bounded fan-out, validation chain, routing table

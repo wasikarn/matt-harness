@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # 40. ship-merge's SKILL.md must carry disable-model-invocation: true (CRIT).
 # `skills/workflow/ship-merge/SKILL.md` executes a server-side `gh pr merge` — an
-# irreversible external action (CLAUDE.md's Operating model, under
-# §Architecture: deny the irrecoverable set computationally). The flag is
+# irreversible external action (CLAUDE.md's Operating model, under the
+# Architecture section: deny the irrecoverable set computationally). The flag is
 # the ONLY mechanism enforcing that only a human-typed `mh:ship-merge` can
 # trigger it (there is no PreToolUse hook matching `gh pr merge` — confirmed
 # by the 2026-07-20 ship-merge deep-research pass; the entire irreversibility

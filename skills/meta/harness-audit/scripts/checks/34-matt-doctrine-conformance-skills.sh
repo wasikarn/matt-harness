@@ -2,7 +2,7 @@
 # 34. matt-pocock doctrine conformance — emit INFO findings when a skill's
 # description + body fails one or more of the checks below. Doctrine source:
 # matt's `writing-for-agents` skill (renamed from `writing-great-skills` in
-# matt v1.2.0) via CLAUDE.md § "Skill authoring doctrine (matt-pocock)" and
+# matt v1.2.0) via CLAUDE.md's "Skill authoring doctrine (matt-pocock)" section and
 # the docs/skill-template/SKILL.md "## Design checks" block. Checks 1, 4, 5
 # proxy matt elements (leading words, completion criterion, no-op test);
 # check 2 (≤25 words) is the KBG-NATIVE token-budget cap, not matt's; check 3

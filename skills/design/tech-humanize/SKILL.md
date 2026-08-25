@@ -55,8 +55,8 @@ Pick genre **and** language (orthogonal — choose each independently; match wha
 
 **A single unverifiable claim inside an otherwise real draft differs from a hollow source** — don't drop it (deletes what the user told you) or invent a replacement (fabricates evidence). Use Tier-2 hedge (§32.1): keep the claim, strip unbacked certainty-intensifiers (`เรียบร้อยแล้ว`, "completely," "fully"), and ask what was checked where the genre allows. (§32.1's 3-tier logic — drop/hedge/cite — applies in any language; `patterns-thai.md` has the worked table with Thai examples, but the English equivalent is the same shape: unverifiable → drop, heard-but-unconfirmed → hedge once, sourced → cite.)
 
-Worked "soulless vs alive" example (same facts, neutral report → real voice): `examples.md` §
-Grit Gate: Soulless vs Alive.
+Worked "soulless vs alive" example (same facts, neutral report → real voice): `examples.md`'s
+Grit Gate: Soulless vs Alive section.
 
 ## Voice
 
@@ -103,18 +103,18 @@ Scan for these 30 universal tells (all languages). **Load `patterns-universal.md
 
 ## Don't over-edit
 
-Look for **clusters**, not isolated tells — one em dash means nothing; em dashes + rule-of-three + *vibrant tapestry* + a "Conclusion" section is a confession. False-positive + "human writing" signs (incl. Thai notes): `patterns-universal.md` § Detection Guidance — read before gutting prose that might be human.
+Look for **clusters**, not isolated tells — one em dash means nothing; em dashes + rule-of-three + *vibrant tapestry* + a "Conclusion" section is a confession. False-positive + "human writing" signs (incl. Thai notes): `patterns-universal.md`'s Detection Guidance section — read before gutting prose that might be human.
 
 ## Process and Output
 
 1. **Identify every tell** — run the draft against the cue-sheet (§1–30) plus `patterns-thai.md` (§31–42) if Thai is present.
-   Done when: every tell present is named, not just the first few obvious ones. (Failure modes in full: `examples.md` § Process Step Rationale.)
+   Done when: every tell present is named, not just the first few obvious ones. (Failure modes in full: `examples.md`'s Process Step Rationale section.)
 2. **Draft rewrite** — natural aloud, varied length, simple constructions (is/are/has · คือ/เป็น), correct register, grit gate applied.
-   Done when: every tell named in step 1 is addressed, and everything step 1 cleared is left as written — a cleared term that now looks wrong mid-draft is new information, name it, don't quietly change it. (Failure modes in full: `examples.md` § Process Step Rationale.)
+   Done when: every tell named in step 1 is addressed, and everything step 1 cleared is left as written — a cleared term that now looks wrong mid-draft is new information, name it, don't quietly change it. (Failure modes in full: `examples.md`'s Process Step Rationale section.)
 3. Ask **"what still makes this read AI?"** and answer in a few bullets — "nothing, looks good" grades your own work instead of scrutinizing it.
    Done when: at least one honest gap is named, even a minor one.
 4. **Final rewrite** addressing them, zero em dashes (#14) — scan the text for `—`; a fixture once claimed dashes were cut while two remained. For each step-3 bullet, name the fix or write "kept as tradeoff: <reason>" (e.g., formal vocabulary the genre requires).
-   Done when: every bullet from step 3 has a named resolution — fixed-where, or tradeoff-why. (Failure modes in full: `examples.md` § Process Step Rationale.)
+   Done when: every bullet from step 3 has a named resolution — fixed-where, or tradeoff-why. (Failure modes in full: `examples.md`'s Process Step Rationale section.)
 
 Deliver: the draft, the brief "still-AI" bullets, the final rewrite, and (optionally) a short change summary.
 

@@ -1,6 +1,6 @@
 # recursive-improve — iteration report template
 
-Moved verbatim from SKILL.md § Output Format (2026-08-23, 200-LOC cap refactor). Field
+Moved verbatim from SKILL.md's Output Format section (2026-08-23, 200-LOC cap refactor). Field
 disambiguation (`not-done`/`routed_to_implement`/`dropped`/`drift_guard: n/a`) stays in
 `output-format-disambiguation.md` — read both when emitting the Step 6 report.
 

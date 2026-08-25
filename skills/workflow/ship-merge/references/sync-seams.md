@@ -9,7 +9,7 @@ subroutine, since hotfix strips ship-merge's Phase 1 validation for speed. Hotfi
 `--admin` is a deliberate difference (an emergency merge always needs the bypass), not drift
 from Phase 2 step 4's conditional `--admin` logic.
 
-If you change the merge flags or the confirm-prompt shape in `COMMAND.md` Phase 2, check
+If you change the merge flags or the confirm-prompt shape in `SKILL.md` Phase 2, check
 whether hotfix's Phase 4 needs the matching edit.
 
 **Checked 2026-08-10:** hotfix's Phase 4 already carries the equivalent

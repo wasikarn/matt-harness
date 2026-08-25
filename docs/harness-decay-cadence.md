@@ -93,7 +93,7 @@ can verify its own work now." The maker≠checker separation exists for
 **vouchability and independence** — a fresh-context checker catches what the
 maker cannot see — not because the model is too weak to check. That is exactly
 the boundary the no-model-self-start rule (`CLAUDE.md`'s Operating model, under
-§Architecture) protects. Collapsing the checker into the maker is the
+its Architecture section) protects. Collapsing the checker into the maker is the
 rejected autonomous self-rewriter, not a decay win.
 
 Both the **measure** and the **delete** decision stay human-gated. There is no
@@ -101,7 +101,7 @@ auto-prune: a decay finding is a candidate the human reviews, exactly like a
 `recursive-improve` candidate. Automate past the point where you can still vouch
 for the output and you ship agent slop.
 
-**See `CLAUDE.md`'s Operating model** (under §Architecture) — the L2–L5
+**See `CLAUDE.md`'s Operating model** (under its Architecture section) — the L2–L5
 bounded-autonomy ratchet was retired in the v0.6.0 "reset: rebuild from
 scratch" cut, but the no-model-self-start rule survives as the judgment-preservation
 principle (operator judgment is load-bearing; never auto-prune a verifier). The
@@ -113,7 +113,7 @@ is a context-exhaustion backstop (not the primary gate).
 
 ## LLM-judge circularity (decay-perspective mirror)
 
-`CLAUDE.md`'s "Why — the unifying crux" (under §Architecture) has a
+`CLAUDE.md`'s "Why — the unifying crux" (under its Architecture section) has a
 load-bearing consequence for decay reasoning: **an inferential sensor shares
 a model class with the generator**, so it cannot be trusted to emit
 `permissionDecision`s — an LLM judging its own output is circular ("two
@@ -251,7 +251,7 @@ runtime classifier for reasoning in general.
 ## Gate discipline review (judgment vs ceremony)
 
 *Pairs with the quarterly sweep above; see `CLAUDE.md`'s Operating model (under
-§Architecture) for the rationale on gate discipline.*
+its Architecture section) for the rationale on gate discipline.*
 
 The gates mapped above (irrecoverable Bash patterns, hardcoded paths,
 verifier tamper-protection — plus the `recursive-improve` Step 3 gate) earn
@@ -305,7 +305,7 @@ same human-gated cadence applies. Two surfaces carry tool grants:
   sibling `dotfiles` repo, not this one (a second, broader allowlist applied
   to every session in this harness).
 
-**Convention:** when adding a new agent, follow [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — prefer allowlist (`tools:`) over denylist (`disallowedTools:`) unless documenting the exception. The allowlist convention is the substrate for keeping tool-grant expansion operator-visible (the no-model-self-start rule's judgment-preservation principle, `CLAUDE.md`'s Operating model under §Architecture).
+**Convention:** when adding a new agent, follow [`docs/agent-tool-patterns.md`](./agent-tool-patterns.md) — prefer allowlist (`tools:`) over denylist (`disallowedTools:`) unless documenting the exception. The allowlist convention is the substrate for keeping tool-grant expansion operator-visible (the no-model-self-start rule's judgment-preservation principle, `CLAUDE.md`'s Operating model under its Architecture section).
 
 A tool grant is a *permission expansion surface* — it widens what the model
 can do without a human gate. When the model improves or a feature gets

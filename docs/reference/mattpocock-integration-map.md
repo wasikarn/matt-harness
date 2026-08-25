@@ -10,7 +10,7 @@ the third-party same-version stale trap in root `CLAUDE.md`).
 **Format contract:** column 1 = skill name exactly as installed; column 2 = `model` or `user`
 (nothing else); column 3 = free prose — the kbg surface(s) that route/name it, or an explicit
 deferral with a reason. Gated (`user`) skills are cited in kbg surfaces as the literal slash form
-`/mattpocock-skills:<name>` per root `CLAUDE.md` § Disable-Model-Invocation Surfaces.
+`/mattpocock-skills:<name>` per root `CLAUDE.md`'s Disable-Model-Invocation Surfaces section.
 
 "Deferred" rows follow the standing v0.46.0 separate-fleet design: matt's internal chaining map is
 owned by `/mattpocock-skills:ask-matt`, and kbg doesn't duplicate it — a row goes from deferred to
@@ -42,4 +42,4 @@ routed only when a kbg surface has a concrete reason to name the skill.
 | teach | user | deferred — ask-matt's map owns it |
 | to-questionnaire | user | deferred — ask-matt's map owns it (decision → stakeholder questionnaire) |
 | wait-what | user | deferred — ask-matt's map owns it (re-pitch last reply) |
-| writing-for-agents | model | root `CLAUDE.md` § Skill authoring doctrine, `docs/skill-authoring-conventions.md` (canonical authoring doctrine; renamed from writing-great-skills in matt v1.2.0) |
+| writing-for-agents | model | root `CLAUDE.md`'s Skill authoring doctrine section, `docs/skill-authoring-conventions.md` (canonical authoring doctrine; renamed from writing-great-skills in matt v1.2.0) |

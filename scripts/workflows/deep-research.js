@@ -314,7 +314,7 @@ const malformedClaims = allClaims.length - wellFormedClaims.length
 
 // ponytail: exact-normalized-match only, not fuzzy/embedding similarity — a
 // false merge here silently drops a claim from verification entirely, the
-// worst place for the false-merge risk the source article itself flags (§7)
+// worst place for the false-merge risk the source article itself flags (its section 7)
 // to land. Upgrade only if a real run shows literal near-dupes slipping
 // through unmerged.
 const normClaim = c => c.claim.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim()

@@ -17,8 +17,8 @@ load); skill-only mechanics (invocation choice, router skills) live in its `SKIL
 The old "two-cuts" and "failure-mode guard" labels no longer exist as named terms — two-cuts'
 content lives in its When-to-split section (+ SKILL-MECHANICS.md for the invocation cut), and the
 failure-modes section was distributed across the sections that now own each mode.
-The ≤25-word description cap is kbg's own token-budget rule (root `CLAUDE.md` § skill/agent
-mechanics), not matt's — misattributed to matt here until 2026-08-10.
+The ≤25-word description cap is kbg's own token-budget rule (root `CLAUDE.md`'s skill/agent
+mechanics section), not matt's — misattributed to matt here until 2026-08-10.
 
 The `docs/skill-template/SKILL.md` template carries this checklist as a `## Design checks`
 section — but `harness-audit` check 34 does **not** check for that heading's presence. It checks
@@ -67,11 +67,11 @@ footer there is the retired canonical-sections ceremony, 2026-06-16) and termina
 (post-mortem, ship-release terminus).
 
 **`model_limitation:` frontmatter field:** optional, kbg-native (non-standard-but-harmless
-per root `CLAUDE.md` § skill/agent mechanics). Declare it when a skill's correctness rests on
+per root `CLAUDE.md`'s skill/agent mechanics section). Declare it when a skill's correctness rests on
 a model capability or behavior that could shift on a model upgrade — a moving-target
 assumption, not a stable fact. Canonical spec + worked example: `docs/skill-template/SKILL.md`
 (frontmatter comment + "Model Limitation Assumption" body section). The quarterly cadence
-(`docs/harness-decay-cadence.md` § Cadence) walks every skill carrying this field and prompts
+(`docs/harness-decay-cadence.md`'s Cadence section) walks every skill carrying this field and prompts
 a re-verify. First real adopter: `tech-humanize/SKILL.md` (`f940729`) — its lexical-tell catalog
 assumes current-gen LLM output still carries the enumerated tells (em dash, delve,
 rule-of-three), which decays across model generations. No shell check enforces re-verification

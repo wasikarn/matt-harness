@@ -1,7 +1,7 @@
 # cost-report — row-schema history and verified incidents
 
 Moved verbatim from the command body (2026-08-23, 200-LOC cap refactor). This is the
-design/incident record behind COMMAND.md's aggregation rules — read it before changing the
+design/incident record behind SKILL.md's aggregation rules — read it before changing the
 dedup key, the schema, or the tracker's write format.
 
 ## Per-model (`model_scoped`) design

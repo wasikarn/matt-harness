@@ -565,7 +565,7 @@ def pattern_clusters(state, min_cluster, max_cluster=0):
     (it filters the small clusters first) — only an upper bound can. 0 = no
     cap. This function's own default stays 0 (uncapped); the CLI's
     --max-cluster flag defaults to 10 instead (see its argparse help and
-    SKILL.md § "Pattern clusters" for why).
+    SKILL.md's "Pattern clusters" section for why).
 
     NEVER writes a synthesis — only groups. An LLM writing the summary is a
     separate, by-hand paste step (--prompt emits the prompt; this script never

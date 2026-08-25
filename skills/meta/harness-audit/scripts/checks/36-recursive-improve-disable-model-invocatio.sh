@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # 36. recursive-improve must carry disable-model-invocation: true (CRIT).
 # This is the one safety-load-bearing instance of the flag in the fleet — the
-# no-model-self-start invariant (CLAUDE.md's Operating model, under
-# §Architecture: no covert unattended self-repair loop) is enforced for
+# no-model-self-start invariant (CLAUDE.md's Operating model, under the
+# Architecture section: no covert unattended self-repair loop) is enforced for
 # recursive-improve ONLY via this flag forcing user-only invocation. Docs
 # citing this flag (recursive-improve/SKILL.md's own frontmatter reason,
 # docs/agent-tool-patterns.md, and this check's own header) had claimed it

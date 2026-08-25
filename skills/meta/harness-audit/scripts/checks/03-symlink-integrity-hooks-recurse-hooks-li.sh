@@ -57,7 +57,7 @@ done
 # 3c. Symlink integrity — output-styles.
 # Output styles ship as .md files in claude/output-styles/ and must symlink
 # to ~/.claude/output-styles/<name>.md so Claude Code can apply them via
-# /output-style. Same regression class as §3b (committed but not loadable).
+# /output-style. Same regression class as harness-audit's 3b (committed but not loadable).
 for f in "$CLAUDE_DIR/output-styles"/*.md; do
   [ -f "$f" ] || continue
   name=$(basename "$f")

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 41. Agent tool-grant must not include Agent (Rule 13 one-level-deep dispatch). No agent in
-# this fleet spawns further subagents — Rule 13 (CLAUDE.md §Staff-Engineer Thinking Loop) is
+# this fleet spawns further subagents — Rule 13 (CLAUDE.md's Staff-Engineer Thinking Loop section) is
 # "a dispatched sub-agent must not re-orchestrate." Check 09 already CRITs an agent missing
 # tools: entirely (door 1: silent full-tool inheritance, including Agent). This check closes
 # door 2: an explicit tools: grant that names Agent. WARN, not CRIT — a bad explicit grant is

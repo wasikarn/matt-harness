@@ -3,7 +3,7 @@ name: ideate
 description: "Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Use when the question is open-ended. Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks."
 argument-hint: Problem statement to ideate on
 disable-model-invocation: false
-disable-model-invocation-reason: Auto-fire on vague prompts is load-bearing (catches prompts the model would otherwise default on). Cost is bounded by the F8.5 cap (orchestrate SKILL §F8.5) and the 2-wave fan-out callout below — NOT by this flag.
+disable-model-invocation-reason: Auto-fire on vague prompts is load-bearing (catches prompts the model would otherwise default on). Cost is bounded by the F8.5 cap (orchestrate SKILL's F8.5 section) and the 2-wave fan-out callout below — NOT by this flag.
 model: inherit
 effort: high
 ---
@@ -26,7 +26,7 @@ An `<ideate-budget status="warning">` block means the daily threshold is crossed
 converging. Either one: **don't auto-fire from Step 2** — let the self-judge gate abort and
 answer directly. If Step 1 matches (explicit `mh:ideate`), still proceed to Phase 1 but surface
 the warning in the brief. (kbg ships no producer for either block currently — check for one
-before relying on Step 0 seeing it; capture-side status: § Session frame rotation.)
+before relying on Step 0 seeing it; capture-side status: the "Session frame rotation" section.)
 
 **Step 1. Explicit invocation check.**
 
@@ -57,7 +57,7 @@ to [Picking frames](#picking-frames). Step 0's convergence capture side (Session
 hook + `convergence.sh`) is **not currently wired** (removed in the reset) — treat
 convergence as advisory-only until rebuilt. Past runs are searchable via
 `mh:ideate-search <query>` (Thai OK; `ideate-memory` qmd collection) — its capture hook is also
-not wired. Mechanics: `references/provenance.md` §"Advisory hooks — full mechanics".
+not wired. Mechanics: `references/provenance.md`'s "Advisory hooks — full mechanics" section.
 
 ## 2-wave fan-out (load-bearing)
 
@@ -67,12 +67,12 @@ not wired. Mechanics: `references/provenance.md` §"Advisory hooks — full mech
 > - **Phase 2 (Focus)**: sequential score + cluster on the host, no fan-out.
 > - **Phase 3 (Deepen)**: 3 parallel Agent calls, peak 3.
 >
-> **Peak concurrent = 5** (the F8.5 hard cap, `skills/workflow/orchestrate/SKILL.md`
-> §"Bounded fan-out — hard cap (F8.5)"). Sequential: Phase 1 → Phase 2 →
+> **Peak concurrent = 5** (the F8.5 hard cap, `skills/workflow/orchestrate/SKILL.md`'s
+> "Bounded fan-out — hard cap (F8.5)" section). Sequential: Phase 1 → Phase 2 →
 > Phase 3. ≈8-10 Agent calls/run. **Do not collapse into 1 wave.**
 >
 > Audit history (the 44→105-agent failure mode) and enforcement mechanism:
-> `references/provenance.md` §"2-wave fan-out — audit history".
+> `references/provenance.md`'s "2-wave fan-out — audit history" section.
 
 ## Phase 1 — Diverge
 
@@ -80,13 +80,13 @@ For the problem P:
 
 1. **Pick 5 cognitive frames** — see [Picking frames](#picking-frames).
 2. **Spawn 5 parallel Agent calls**, one per frame — each Agent gets ONLY the payload and
-   system prompt in `references/algorithm-detail.md` §"Phase 1" (read them there verbatim
+   system prompt in `references/algorithm-detail.md`'s "Phase 1" section (read them there verbatim
    before dispatching), no peer branch data (see
    [Isolation invariant](#isolation-invariant)).
 3. **Wait for all 5 to return** before reading outputs — don't start reading one branch
    before the others finish.
 
-Algorithm-shape source + port decisions: `references/provenance.md` §"Phase 1 algorithm-shape source".
+Algorithm-shape source + port decisions: `references/provenance.md`'s "Phase 1 algorithm-shape source" section.
 
 ## Phase 2 — Focus
 
@@ -100,7 +100,7 @@ After all 5 Diverge branches return:
    Attach a one-line `trap` reason to any idea that looks attractive but is a trap (hidden
    cost, false economy, will-not-scale, premature abstraction) — `trap` is a free-text reason
    field, NOT a score threshold; full mechanics + score-chip format:
-   `references/algorithm-detail.md` §"3-axis scoring rubric".
+   `references/algorithm-detail.md`'s "3-axis scoring rubric" section.
 
    **Named bias guard (anchoring + confirmation):** score every idea on the same axes before
    ranking — don't let the first idea set the scale. `trap` is the confirmation guard: look
@@ -113,8 +113,8 @@ After all 5 Diverge branches return:
 
 3. **Deepen the top 3.** Rank by weighted score (`novelty × 0.35 + viability × 0.40 +
    fit × 0.25`), exclude traps, take top 3. Spawn one **parallel** Agent call per idea
-   (Phase 3) with the FOCUS-mode system prompt from `references/algorithm-detail.md`
-   §"Phase 3" — sibling ideas ride along as a recombination pool, never another deepen
+   (Phase 3) with the FOCUS-mode system prompt from `references/algorithm-detail.md`'s
+   "Phase 3" section — sibling ideas ride along as a recombination pool, never another deepen
    branch's output.
 
 **Fresh-context critic — default on the auto-fire path.** Host-Claude scoring carries an
@@ -126,8 +126,8 @@ auto-fire, so:
 - **Explicit invocation (via Step 1, self-judge skipped):** keep host-Claude as default —
   stakes aren't classified here; the user can request the critic explicitly.
 
-Invocation + returned-field rendering: `references/algorithm-detail.md` §"Critic invocation".
-Full rationale: `references/provenance.md` §"Phase 2 critic-routing source".
+Invocation + returned-field rendering: `references/algorithm-detail.md`'s "Critic invocation" section.
+Full rationale: `references/provenance.md`'s "Phase 2 critic-routing source" section.
 
 ## Frames table
 
@@ -148,8 +148,8 @@ total = novelty * 0.35 + viability * 0.40 + fit * 0.25
 ```
 
 Viability is heaviest (unshippable-but-brilliant is the dominant failure mode). Full
-mechanics — trap field, chip rendering, source: `references/algorithm-detail.md`
-§"3-axis scoring rubric".
+mechanics — trap field, chip rendering, source: `references/algorithm-detail.md`'s
+"3-axis scoring rubric" section.
 
 ## Isolation invariant
 
@@ -158,13 +158,13 @@ Phase 1 payload does NOT list other branches or carry peer `Idea` objects, and i
 prompt forbids cross-talk. Sibling recombination is passed ONLY at Phase 3 (deepen), never
 during Diverge. This is load-bearing: a branch seeing another's output anchors the two
 together, collapsing the method to one wider thought (no shared mutable state across parallel
-branches — `skills/workflow/orchestrate/SKILL.md` §F8.5).
+branches — `skills/workflow/orchestrate/SKILL.md`'s F8.5 section).
 
 **Practical rules:** don't call one Diverge Agent from another; don't include a "here's what
 the other branches generated" line in any Diverge userPrompt; don't carry `Idea` objects
 forward into a Phase 1 sibling. DO pass siblings as a read-only recombination pool to the
 Phase 3 deepen Agent — never the focus idea.
-Source: `references/provenance.md` §"Isolation invariant source".
+Source: `references/provenance.md`'s "Isolation invariant source" section.
 
 ## Phase 4 — Interactive deepen (optional)
 
@@ -181,7 +181,7 @@ Render in this order after Phase 2 — the structure is the point, never a wall 
 **3. Converge** (2-4 shortlist with reasons, ★ non-obvious pick, traps listed separately) →
 **4. Focus** (3 deepened branches) → **5. Provocation** (one wildcard).
 Full per-item rendering contract — read before rendering:
-`references/algorithm-detail.md` §"Output shape — full rendering contract".
+`references/algorithm-detail.md`'s "Output shape — full rendering contract" section.
 
 ## When NOT to use
 
@@ -194,5 +194,5 @@ Concrete Step 2 abort triggers: syntax fixes, name/file lookups, known-root-caus
 How this skill goes wrong (convergence disguised as divergence, collapsing the 2-wave
 structure, silent parse failures, same-model-judge-as-ground-truth):
 `references/anti-patterns.md`. Per-run cost estimate + provenance: `references/cost.md`.
-Why this exists, the F8.5 cap, maker≠checker methodology: `references/provenance.md`
-§"Cross-references".
+Why this exists, the F8.5 cap, maker≠checker methodology: `references/provenance.md`'s
+"Cross-references" section.

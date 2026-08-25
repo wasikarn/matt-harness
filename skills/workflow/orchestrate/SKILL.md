@@ -15,7 +15,7 @@ effort: high
 
 Turn a pile of work into a prioritized plan, then route each item to the cheapest correct executor. The main agent allocates; sub-agents do the heavy lifting. Prioritizing produces a **plan** — executing it, especially via write-capable agents, needs the user's go-ahead.
 
-The lead does the **judgment** — what to dispatch, in what order, with what F9 prompt — and dispatches each agent inline per the F9 spawn-prompt template. The lead never hands LLM dispatch to a background loop: that would be a covert L4 loop, which the autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture) forbids.
+The lead does the **judgment** — what to dispatch, in what order, with what F9 prompt — and dispatches each agent inline per the F9 spawn-prompt template. The lead never hands LLM dispatch to a background loop: that would be a covert L4 loop, which the autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under the Architecture section) forbids.
 
 ## Procedure
 
@@ -23,7 +23,7 @@ The lead does the **judgment** — what to dispatch, in what order, with what F9
 2. **Prioritize** with the right matrix (below). Classify each item.
 3. **Route** each item to an execution path (routing table below).
 4. **Propose, then dispatch.** Present the allocation first.
-   - **Ungated** — only agents whose `tools:` grant is read-only (no `Edit`/`Write`/`Bash`). These dispatch without a gate. Current agent-by-agent list + edge cases (denial fallback, the `tools:`-allowlist convention, Skill-routing's separate authorization boundary): `reference.md` § Dispatch gate — Ungated/Gated agent list.
+   - **Ungated** — only agents whose `tools:` grant is read-only (no `Edit`/`Write`/`Bash`). These dispatch without a gate. Current agent-by-agent list + edge cases (denial fallback, the `tools:`-allowlist convention, Skill-routing's separate authorization boundary): `reference.md`'s Dispatch gate — Ungated/Gated agent list section.
    - **Gated — AskUserQuestion required** — any agent whose `tools:` includes `Edit`, `Write`, **or `Bash`** (Bash mutates via shell: `git push`, `sed -i`, `rm`). Gate on each agent's **actual `tools:` grant**, not a hardcoded name list — the fleet drifts. A planning question ("what should I work on") is not authorization to execute. **This gate operates at the conversation level and is mandatory regardless of auto-approve settings.** Present the allocation, **analyze** each task's blast radius and dependency chain, **recommend** the safest dispatch order — anchoring each blast-radius label to what the task actually touches (files/systems, not a felt size), naming the strongest rejected order with why it lost, and the one fact that would flip the recommendation — then **AskUserQuestion** single-select: "[N] tasks allocated: [list]. Blast radius: [low/medium/high — anchored to what each touches]. Dependencies: [none / chain]. My recommendation: [dispatch order] (rejected: [order] — [reason]; flips if [fact]). Approve?"
      - `Approve dispatch — all write-capable agents (best when tasks are independent and blast radius is low)`
      - `Revise — remove or add items (best when dependencies are misordered or scope is off)`
@@ -40,22 +40,22 @@ The lead does the **judgment** — what to dispatch, in what order, with what F9
 
 ## Spawn-prompt template (F9)
 
-**The most common sub-agent failure is an under-specified spawn prompt — read `reference.md` § Spawn-prompt template (F9) — full text before dispatching a non-trivial subagent, and use it verbatim, not from memory.** Miss a required slot and the subagent guesses wrong. ("F9" names this fix's entry in `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`'s gap taxonomy — not a step number.)
+**The most common sub-agent failure is an under-specified spawn prompt — read `reference.md`'s Spawn-prompt template (F9) section — full text before dispatching a non-trivial subagent, and use it verbatim, not from memory.** Miss a required slot and the subagent guesses wrong. ("F9" names this fix's entry in `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`'s gap taxonomy — not a step number.)
 
 **Cross-references:** this template is the per-task contract; the validation chain (`addBlockedBy`) gates ordering. Enforce both at your dispatch boundary — the spawn prompt IS the contract.
 
 ## Validation chain (builder → validator → fix → re-validator)
 
-**4-step pipeline (Builder → Validator → conditional Fixer → Re-validator) — read `reference.md` § Validation chain (builder → validator → fix → re-validator) — full text before running one.** Every non-trivial write should be a chain, not a single dispatch — **non-trivial** = ≥2 files changed OR ≥1 test file touched. The reference covers the DAG ordering, why `gate:task:complete-separation` makes completion the main session's call, the Gating rules table, the fail-closed structured verdict contract, upstream-contract propagation, and a full worked 4-task example.
+**4-step pipeline (Builder → Validator → conditional Fixer → Re-validator) — read `reference.md`'s Validation chain (builder → validator → fix → re-validator) section — full text before running one.** Every non-trivial write should be a chain, not a single dispatch — **non-trivial** = ≥2 files changed OR ≥1 test file touched. The reference covers the DAG ordering, why `gate:task:complete-separation` makes completion the main session's call, the Gating rules table, the fail-closed structured verdict contract, upstream-contract propagation, and a full worked 4-task example.
 
 **Cross-references:** this pattern uses the F9 spawn-prompt template above; enforce the ordering with the native `TaskCreate` + `addBlockedBy` protocol.
 
 ## Bounded fan-out — hard cap (F8.5)
 
-**The fan-out cap has no automatic enforcement anywhere in this repo — the lead is the clamp, every time, regardless of dispatch shape** (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture: the dispatcher does not silently mutate the spec). A workflow prompt asking for "20-35 items" is not a cap — the LLM will overshoot (audit 2026-06-12: a "20-35 items" prompt spawned 44 items, then audit+verify doubled to 105 agents total). Clamp the work-list in code BEFORE fan-out, not in the prompt ([[bounded-agent-spawning]]; cap history + removed auto-split mechanism: `reference.md`).
+**The fan-out cap has no automatic enforcement anywhere in this repo — the lead is the clamp, every time, regardless of dispatch shape** (the no-model-self-start rule, CLAUDE.md's Operating model under the Architecture section: the dispatcher does not silently mutate the spec). A workflow prompt asking for "20-35 items" is not a cap — the LLM will overshoot (audit 2026-06-12: a "20-35 items" prompt spawned 44 items, then audit+verify doubled to 105 agents total). Clamp the work-list in code BEFORE fan-out, not in the prompt ([[bounded-agent-spawning]]; cap history + removed auto-split mechanism: `reference.md`).
 
-**Hard rules** (full reasoning, cap history, and platform-cap details: `reference.md` §
-Bounded fan-out — cap history & rationale):
+**Hard rules** (full reasoning, cap history, and platform-cap details: `reference.md`'s
+Bounded fan-out — cap history & rationale section):
 
 1. **Hard cap = 5 agents per wave. No floor.** Fast Path Gate items executed inline don't count against this cap. The lead MUST clamp any work-list >5 to 5 before spawning, queuing the rest in a `deferred-<date>.md`. A wave of 1 or 2 is not a defect.
 2. **Prefer 2-4 agents per wave** — a softer, advisory layer above the hard cap, not a replacement: the hard cap stops order-of-magnitude runaway (44→105 agents, one real incident), the 2-4 preference stops under-grouped-but-still-small fragmentation. Treat a wave that hits 5 without running Step 0's grouping pass as a signal to consolidate, not a green light.
@@ -105,8 +105,8 @@ Full routing tables, agent fleet mapping, scripted execution details, and delega
 
 A worked 5-task triage (prod outage, auth refactor, a CSV pull, pnpm-migration research, and a
 low-priority toggle) showing quadrant, route, agent, and gating end to end, plus this skill's
-routing boundary with the decision doctrine (METHODOLOGY Rule 1) and `/mattpocock-skills:wayfinder`: `reference.md` §
-Full triage example.
+routing boundary with the decision doctrine (METHODOLOGY Rule 1) and `/mattpocock-skills:wayfinder`: `reference.md`'s
+Full triage example section.
 
 ## Output Format
 
@@ -125,4 +125,4 @@ A `deferred` or `dropped` Status carries its re-open condition in the row's note
 ## METHODOLOGY alignment
 
 Rule 2/4/13 mapping, the deterministic-over-vibe/checkpoint/fail-loud tie-ins, and the named
-reasoning-models catalog: `reference.md` § METHODOLOGY alignment.
+reasoning-models catalog: `reference.md`'s METHODOLOGY alignment section.

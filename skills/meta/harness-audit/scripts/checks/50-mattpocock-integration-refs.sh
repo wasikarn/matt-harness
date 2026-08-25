@@ -22,7 +22,7 @@
 #   D (INFO) a gated (user-invoke-only) matt skill cited in any live surface
 #     except BOUNDARY.md (generated — regen inherits the source fixes) must
 #     carry the literal slash form `/mattpocock-skills:<name>` on the same
-#     line — CLAUDE.md § Disable-Model-Invocation Surfaces: tell the user
+#     line — CLAUDE.md's Disable-Model-Invocation Surfaces section: tell the user
 #     the string to type; a bare ref reads as a model-invocable route and
 #     the Skill call would be blocked mid-flow. Slash form only, no
 #     free-text markers. INFO-only: the reader judges each finding.
@@ -172,7 +172,7 @@ else
         case "$_line" in
           *"/mattpocock-skills:$_base"*) continue ;;
         esac
-        info "gated matt skill '$_base' cited without its slash form in ${_f#"$CLAUDE_DIR"/}:$_ln — disable-model-invocation:true upstream; cite the literal /mattpocock-skills:$_base on the same line (CLAUDE.md § Disable-Model-Invocation Surfaces)"
+        info "gated matt skill '$_base' cited without its slash form in ${_f#"$CLAUDE_DIR"/}:$_ln — disable-model-invocation:true upstream; cite the literal /mattpocock-skills:$_base on the same line (CLAUDE.md's Disable-Model-Invocation Surfaces section)"
       done < <(printf '%s' "$_line" | grep -oE 'mattpocock-skills:[a-zA-Z0-9/_-]+' | sort -u)
     done < <(grep -n 'mattpocock-skills:' "$_f" 2>/dev/null)
   done

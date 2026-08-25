@@ -69,7 +69,7 @@ and [Format](#format) below.
   through"), open with one tight clause naming the approach: "working backward from the
   failure", "mapping the dependencies first", "pre-mortem: assume it already broke". Name
   the frame, not a process preamble. This is content the user asked for, not signposting
-  (contrast `skills/tech-humanize` §28: don't announce what you're about to do instead of
+  (contrast `skills/tech-humanize`'s pattern 28: don't announce what you're about to do instead of
   doing it). Don't cite cc-thinking-skills catalog model numbers or open
   `docs/reference/reasoning-models.md` unprompted; plain-language frame-naming only.
 - **Use active voice and name the actor.** Say who does what and who decides. "You own

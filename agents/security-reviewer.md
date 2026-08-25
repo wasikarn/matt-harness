@@ -123,7 +123,7 @@ Two failure modes let an otherwise-correct writeup still mis-score in the summar
   folded into one section (e.g. a string-concatenated-SQL injection bundled into a broader
   "data leak" writeup with a missing-tenant-scoping issue) — still needs the actual severity
   tag/summary-table row to reflect that escalation. Don't let a finding that independently earns
-  CRITICAL per the pattern table in §3 get diluted to HIGH because it shares a paragraph with a
+  CRITICAL per the pattern table in the Code Pattern Review section get diluted to HIGH because it shares a paragraph with a
   lesser issue, and don't leave a correctly-narrated attack-chain compounding un-escalated in the
   label just because the prose already explains it.
 - **Score conditional findings at the confirmed floor, not the hedged ceiling.** A finding whose
@@ -139,12 +139,12 @@ Two failure modes let an otherwise-correct writeup still mis-score in the summar
 ```text
 [SEVERITY] Issue title
 File: path/to/file:42
-CWE: CWE-XXX (when the pattern tables in §2/§3 name one)
+CWE: CWE-XXX (when the pattern tables in the Security Checklist or Code Pattern Review sections name one)
 Issue: Description
 Fix: What to change
 ```
 
-Plus the summary table §3d's Severity-Label Discipline governs: counts by severity, with each row's
+Plus the summary table the Severity-Label Discipline section above governs: counts by severity, with each row's
 tag reflecting any attack-chain escalation or confirmed-floor scoring from that section — not a
 separate format, the table this agent's own severity discipline assumes elsewhere in this file.
 

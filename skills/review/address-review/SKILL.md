@@ -122,7 +122,7 @@ This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha +
 1. **Ask once, up front**: `AskUserQuestion` single-select — *"After replying, auto-resolve the actionable threads you fixed?"*:
    - `Leave open (Recommended)` — reviewer verifies and resolves. Default. The reply (sha + summary) is correct maker output; closing the reviewer's thread on their behalf is the maker asserting the verifier's job — the exact circularity kbg's verifier-separation model exists to prevent.
    - `Auto-resolve fixed threads` — after replying, resolve every `actionable + fixed` thread. Never `wontfix` / `clarify` / `out-of-scope` — those stay open by design regardless of this choice.
-2. For EVERY line-level thread from Phase 2, post a reply via `gh api "repos/{owner}/{repo}/pulls/<n>/comments" --method POST --field body="<text>" --field in_reply_to=<databaseId>` (root comment's `databaseId` from Phase 1). Use the reply shapes in `references/reply-templates.md` §"Reply Comment Templates" (Fixed / Wontfix / Clarify / Out-of-scope, plus §"Blending a sha into Wontfix / Clarify" for a stalled-but-partially-fixed cluster) — the single source. For non-empty **review-body** items from Phase 1 step 3 (no thread to reply into), post `gh pr comment <n> --body "<text>"` instead. Per category:
+2. For EVERY line-level thread from Phase 2, post a reply via `gh api "repos/{owner}/{repo}/pulls/<n>/comments" --method POST --field body="<text>" --field in_reply_to=<databaseId>` (root comment's `databaseId` from Phase 1). Use the reply shapes in `references/reply-templates.md`'s "Reply Comment Templates" section (Fixed / Wontfix / Clarify / Out-of-scope, plus its "Blending a sha into Wontfix / Clarify" section for a stalled-but-partially-fixed cluster) — the single source. For non-empty **review-body** items from Phase 1 step 3 (no thread to reply into), post `gh pr comment <n> --body "<text>"` instead. Per category:
    - **actionable + fixed** → post the `Fixed in <sha>: …` reply; if auto-resolve was chosen in step 1, resolve the thread's node `id` (not `databaseId`) via `resolveReviewThread` — see `references/phase5-reply-mechanics.md` for the exact call, write-access requirement, and `unresolveReviewThread` reversal. If "leave open" was chosen, skip resolution — the reply alone is this thread's output.
    - **wontfix** → post the rationale reply. Leave thread open.
    - **clarify** → post the question reply. Leave thread open.
@@ -130,9 +130,9 @@ This phase encodes memory `feedback_reply_after_pr_fix.md`: replies citing sha +
 3. **Verify gate**: count line-level threads from Phase 1 == thread-replies posted, AND count non-empty review-body items == acknowledgment comments posted — two separate tallies, since a review body was never going to get a thread-reply and folding it in either false-alarms or false-passes. If either tally is short, STOP and reply to the missed ones before continuing.
 4. Surface a summary: `N threads addressed (X fixed / Y wontfix / Z clarify / S out-of-scope)` + `M review-body items acknowledged` + (if auto-resolve chosen) `R threads resolved`. `N` is line-level only (`X+Y+Z+S == N`); `M` is a separate tally, never folded in (per step 3's dual-tally gate). See `references/phase5-reply-mechanics.md` for a worked example.
 
-**Anti-patterns**: see `references/reply-templates.md` §"Anti-patterns (author)" — silent push, performative agreement, defensive tone. The sha citation + one-line summary IS the acknowledgment; skip the social ceremony.
+**Anti-patterns**: see `references/reply-templates.md`'s "Anti-patterns (author)" section — silent push, performative agreement, defensive tone. The sha citation + one-line summary IS the acknowledgment; skip the social ceremony.
 
-> **Templates**: `references/reply-templates.md` is the single source for §"Review Comment Templates" and §"Reply Comment Templates".
+> **Templates**: `references/reply-templates.md` is the single source for the "Review Comment Templates" and "Reply Comment Templates" sections.
 
 ---
 

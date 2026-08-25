@@ -1,4 +1,4 @@
-Full per-cluster procedure for Phase 4 (pointed to from `COMMAND.md`'s Phase 4 section).
+Full per-cluster procedure for Phase 4 (pointed to from `SKILL.md`'s Phase 4 section).
 
 **1. Pre-implement verification** (per cluster, before editing — external reviewers including LLM-based ones often lack codebase context):
 
@@ -15,4 +15,4 @@ Full per-cluster procedure for Phase 4 (pointed to from `COMMAND.md`'s Phase 4 s
 **3. Per-cluster test step.** After each cluster commits, run any tests relevant to the changed code. If they fail, fix and retry **once (same failure twice is guessing, not fixing — escalate, don't retry again)**; if they still fail, **stop that cluster** — don't keep patching, even if the retry surfaced a *different* failure that looks like an unrelated flake. Re-classify its thread as `clarify` or `wontfix`. (An uncapped per-cluster fix loop is exactly the 80-no-op-"fix CI"-commits failure mode.)
 
 - **Don't assert an unverified cause.** If the note attributes the residual failure to something ("unrelated flake," "pre-existing issue") without having actually checked, say so as an open question in the reply, not as fact — a reviewer-facing claim about why something broke needs the same evidence bar as any other claim in this command.
-- **A stalled cluster isn't always "nothing fixed."** If a commit landed before the cluster stalled — this Phase 4 pass, or the bug-shaped branch above — the `clarify`/`wontfix` reclassification doesn't erase it: cite the sha and summarize what it changed (per Core Principles' "cite the sha," which isn't scoped to `actionable + fixed` only) *alongside* the clarify question or wontfix rationale in Phase 5 — see `reply-templates.md` §"Blending a sha into Wontfix / Clarify" for the shape.
+- **A stalled cluster isn't always "nothing fixed."** If a commit landed before the cluster stalled — this Phase 4 pass, or the bug-shaped branch above — the `clarify`/`wontfix` reclassification doesn't erase it: cite the sha and summarize what it changed (per Core Principles' "cite the sha," which isn't scoped to `actionable + fixed` only) *alongside* the clarify question or wontfix rationale in Phase 5 — see `reply-templates.md`'s "Blending a sha into Wontfix / Clarify" section for the shape.

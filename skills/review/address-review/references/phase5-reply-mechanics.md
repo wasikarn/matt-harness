@@ -1,4 +1,4 @@
-Resolve-mutation call and worked example for Phase 5 (pointed to from `COMMAND.md`'s Phase 5 section).
+Resolve-mutation call and worked example for Phase 5 (pointed to from `SKILL.md`'s Phase 5 section).
 
 ## Resolve mutation (for `actionable + fixed` threads, when auto-resolve was chosen)
 

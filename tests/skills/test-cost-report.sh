@@ -36,7 +36,7 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 REPORT_JS="$ROOT/scripts/workflows/cost-report-dedup.js"
-COMMAND_MD="$ROOT/skills/meta/cost-report/SKILL.md"
+SKILL_MD="$ROOT/skills/meta/cost-report/SKILL.md"
 
 pass=0
 fail=0
@@ -53,7 +53,7 @@ assert() {
 }
 
 [[ -f "$REPORT_JS" ]] || { echo "FATAL: $REPORT_JS not found — the cost-report skill's script moved without updating this test" >&2; exit 1; }
-[[ -f "$COMMAND_MD" ]] || { echo "FATAL: $COMMAND_MD not found — the command moved without updating this test" >&2; exit 1; }
+[[ -f "$SKILL_MD" ]] || { echo "FATAL: $SKILL_MD not found — the skill moved without updating this test" >&2; exit 1; }
 
 echo "=== cost-report dedup (stream-aware) ==="
 
@@ -63,10 +63,10 @@ echo "=== cost-report dedup (stream-aware) ==="
 # header says command bodies must not name it), which would ENOENT for every
 # installed-plugin user while this suite still passes green against the repo
 # path. No other gate sees that mismatch, so pin it here.
-cpr_refs=$(/usr/bin/grep -c 'CLAUDE_PLUGIN_ROOT' "$COMMAND_MD") || true
-kpr_refs=$(/usr/bin/grep -c 'MH_PLUGIN_ROOT.*cost-report-dedup\.js' "$COMMAND_MD") || true
+cpr_refs=$(/usr/bin/grep -c 'CLAUDE_PLUGIN_ROOT' "$SKILL_MD") || true
+kpr_refs=$(/usr/bin/grep -c 'MH_PLUGIN_ROOT.*cost-report-dedup\.js' "$SKILL_MD") || true
 [[ "$cpr_refs" == "0" && "$kpr_refs" -ge 1 ]] && ok=1 || ok=0
-assert "COMMAND.md invokes cost-report-dedup.js via \${MH_PLUGIN_ROOT} and never names the hook-only \${CLAUDE_PLUGIN_ROOT} (got $kpr_refs KBG refs, $cpr_refs CLAUDE refs)" "$ok"
+assert "SKILL.md invokes cost-report-dedup.js via \${MH_PLUGIN_ROOT} and never names the hook-only \${CLAUDE_PLUGIN_ROOT} (got $kpr_refs KBG refs, $cpr_refs CLAUDE refs)" "$ok"
 
 # Adversarial case: a session_id with a pre-stream legacy row (model_scoped:true,
 # no `stream` field — always meant the orchestrator total) and a post-fix

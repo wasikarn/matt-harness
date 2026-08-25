@@ -14,7 +14,7 @@ description: "Action + scenario + quoted triggers. Use when the user says 'X', '
 
 ## Design checks (matt-pocock authoring doctrine)
 
-Run before publishing. Each item must be checkable. See CLAUDE.md § "Skill authoring doctrine" for the full rule.
+Run before publishing. Each item must be checkable. See CLAUDE.md's "Skill authoring doctrine" section for the full rule.
 
 - [ ] **Leading word** — frontmatter description opens with a coined term that recruits a pretrained prior.
 - [ ] **≤25 words** in description (trim, do not remove triggers).
@@ -41,7 +41,7 @@ One-line summary of what this skill does and why it exists.
 Input Contract / Output Format / Failure Modes" rule was retired 2026-06-16
 (audit #31.1) — it manufactured byte-identical filler across 29/37 skills.
 Include a section ONLY where the skill has a real I/O contract worth stating
-(CLAUDE.md § "Adding or removing a surface"). Default copy = frontmatter + title +
+(CLAUDE.md's "Adding or removing a surface" section). Default copy = frontmatter + title +
 When-to-use. Delete what you don't fill in. -->
 
 ## Input Contract

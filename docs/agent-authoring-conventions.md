@@ -63,7 +63,7 @@ genuinely analysis-heavy and benefits from independent judgment quality —
 `requirement-analyst` does this. Pinning a fresh-context verifier while the main session
 often runs a different model is deliberate: it makes the verifier
 independent by *model*, not just by context, which is a stronger form of the maker≠checker
-separation in §4.
+separation described in item 4, Verifier/maker separation.
 
 **Why:** don't pin `opus` reflexively — it's a cost/latency trade-off. Reserve it for agents
 whose entire value is judgment quality (verifiers, requirement analysis), not for mechanical
@@ -159,13 +159,15 @@ mining production data to discover it after.
 ## Cross-references
 
 - [`agent-tool-patterns.md`](./agent-tool-patterns.md) — the allowlist-vs-denylist rationale
-  in full (§1 here summarizes it).
+  in full (this doc's item 1, Tool scoping, summarizes it).
 - [`agent-voice-extension.md`](./agent-voice-extension.md) — when a personality merits its own
   slash command (rare; default is no).
-- `skills/workflow/orchestrate/reference.md` — the routing table §6 requires new agents to join.
+- `skills/workflow/orchestrate/reference.md` — per item 6 above (Central routing), new agents
+  must join its routing table.
 - `skills/meta/harness-audit/scripts/checks/` — 04 (frontmatter completeness), 09 (explicit
   `tools:`, CRIT), 12 (routing coverage), 24 (tool-token validity), 25 (skills-ref
-  resolution), 45 (no `Agent` grant, WARN) are the mechanical checks over this doc's §1–§6.
+  resolution), 45 (no `Agent` grant, WARN) are the mechanical checks over this doc's items 1
+  through 6.
   There is deliberately no structural body-regex check (heading presence, etc.) — that class
   was tried for skills and retired after a 5/5 false-positive rate (CLAUDE.md, skill
   authoring doctrine section); this doc is prose guidance, not a gate.

@@ -210,7 +210,7 @@ skill/command/agent's content.
 
 Single branch: `develop` only. No feature branches. Commit and push direct — "direct" means
 no PR/feature-branch flow; *when* to push still follows the global confirm-before-push
-policy (`~/.claude/CLAUDE.md` § Background Session Git Discipline).
+policy (`~/.claude/CLAUDE.md`'s Background Session Git Discipline section).
 
 **Computationally enforced for the Bash entry point only** by the `git worktree add -b`
 block in `gate:bash:irrecoverable` (`PreToolUse:Bash`). Opt-in per repo via a

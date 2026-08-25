@@ -1,6 +1,6 @@
 # Phase 4 — Interactive deepen, supported follow-ups
 
-Full follow-up patterns for `COMMAND.md`'s "Phase 4 — Interactive deepen"
+Full follow-up patterns for `SKILL.md`'s "Phase 4 — Interactive deepen"
 section, kept out of the main file since Phase 4 only fires on a user
 follow-up after the initial run, not on every invocation.
 

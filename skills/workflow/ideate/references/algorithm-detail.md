@@ -1,8 +1,9 @@
 # ideate — exact prompts, rubric mechanics, output-shape detail
 
-Moved verbatim from COMMAND.md (2026-08-23, 200-LOC cap refactor). COMMAND.md keeps the
-control flow and every invariant; this file carries the literal templates read at execution
-time. Provenance for all of it: `provenance.md`.
+Moved verbatim out of the skill's main file (2026-08-23, 200-LOC cap refactor; that file was
+COMMAND.md until the commands-to-skills conversion folded it into SKILL.md, 2026-08-25).
+SKILL.md keeps the control flow and every invariant; this file carries the literal templates
+read at execution time. Provenance for all of it: `provenance.md`.
 
 ## Phase 1 — Diverge payload (per Agent call)
 
@@ -38,7 +39,7 @@ Output JSON array only. No prose before or after.
 > unlocks). Output JSON only.
 
 Its user prompt includes **sibling ideas** from Phase 1 as a recombination pool, but not any
-other deepen branch's output (COMMAND.md § Isolation invariant).
+other deepen branch's output (SKILL.md's Isolation invariant section).
 
 ## 3-axis scoring rubric — full mechanics
 
@@ -59,7 +60,7 @@ premature abstraction, 1 false economy") plus the one-line reasons, not a silent
 
 **Score chip rendering:** show as `[N7 V8 F9]` next to each idea in the Wide set.
 
-Source: `provenance.md` §"3-axis scoring rubric source".
+Source: `provenance.md`'s "3-axis scoring rubric source" section.
 
 ## Critic invocation (auto-fire path)
 
@@ -93,4 +94,4 @@ the point.
 5. **Provocation.** One wildcard question/idea for if nothing landed:
    *"What if we took this seriously: {highest-novelty survivor}"*
 
-Source: `provenance.md` §"Output-shape source".
+Source: `provenance.md`'s "Output-shape source" section.

@@ -132,4 +132,4 @@ The command's value is the **output shape** (ADR-shaped critique), not a new cap
 - **[F5 ship commit `4d2ad91`](../CHANGELOG.md)** — the Phase 3 commit that added voice blocks; the D6 decision was made in the context of what that commit shipped.
 - **[orchestrate router](../skills/workflow/orchestrate/SKILL.md)** — the domain-routing layer. A personality command should not duplicate this routing; it should layer on top (pre-load context, enforce output shape) or below (trigger a procedure).
 - **[diagnose skill](https://docs.claude.com)** (plugin-shipped, not in this harness) — the disciplined-diagnosis procedure referenced in the `/debug` worked example.
-- **2026-06-12 audit spec, D6** (local scratch file, not in repo) — the originating finding. Closed by this doc; SPEC.md § D6 marked RESOLVED → FOLDED INTO F5 EXTENSION.
+- **2026-06-12 audit spec, D6** (local scratch file, not in repo) — the originating finding. Closed by this doc; SPEC.md's item D6 marked RESOLVED → FOLDED INTO F5 EXTENSION.

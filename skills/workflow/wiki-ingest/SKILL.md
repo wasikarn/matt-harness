@@ -95,7 +95,7 @@ silently resolve against whatever was already exported, not this value.)
 
 Report back:
 
-1. The four target paths (§ What it writes), each marked written / skipped.
+1. The four target paths (the "What it writes" section), each marked written / skipped.
 2. `ingest.sh`'s own stdout verbatim.
 3. The `hotcache.md` diff-stat check from gotcha 3 — explicit skip notice if
    it didn't change.

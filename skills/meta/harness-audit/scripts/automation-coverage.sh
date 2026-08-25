@@ -11,7 +11,7 @@
 # missing or invented site shows up; the G/H/X/J label per site is a curated
 # table below that changes only when the code changes.
 #
-# Doctrine (CLAUDE.md §Architecture "unifying crux"): the auto-act decision must
+# Doctrine (CLAUDE.md's Architecture section, "unifying crux"): the auto-act decision must
 # come from a deterministic gate reading objective state, never the model's
 # self-reported confidence. G-branches are exactly the places a deterministic
 # condition lets the model proceed (or a PreToolUse gate auto-allows) without a

@@ -41,7 +41,7 @@ This is exactly why kbg references rather than adopts. A named model is a **fram
 scaffold and a shared word**, not a correctness mechanism. The harness's correctness comes
 from its *computational* feedback — the critical-hooks suite, the audit checks, the eval
 gate — not from invoking a mental model. Same posture as the LLM-judge-circularity rule
-(`CLAUDE.md`'s "Why — the unifying crux", under §Architecture): **use a model to structure
+(`CLAUDE.md`'s "Why — the unifying crux", under its Architecture section): **use a model to structure
 thinking; never cite "I applied model X" as evidence the work is right.**
 
 > **Do not open this catalog unprompted.** Reasoning models are framing scaffolds, not a
@@ -132,7 +132,7 @@ model's upstream dir is `thinking-systems`, so its file is
 | five-whys-plus | `thinking-five-whys-plus` | considered | — | Root-Why probing as a reference frame to pull in manually; its former kbg home was deleted 2026-08-24, no live anchor |
 | thought-experiment | `thinking-thought-experiment` | applied | mh:ideate | extreme-zero / extreme-infinite counterfactual frames — genuinely operationalized as a named ideate frame |
 | inversion | `thinking-inversion` | applied | mh:ideate | named ideate frame: ask the OPPOSITE question |
-| reversibility | `thinking-reversibility` | applied | domain-modeling, the no-model-self-start rule (CLAUDE.md's Operating model under §Architecture) | "hard to reverse?" and "reversible in hours/days/never" — genuinely operationalized in domain-modeling/the no-self-start rule |
+| reversibility | `thinking-reversibility` | applied | domain-modeling, the no-model-self-start rule (CLAUDE.md's Operating model under its Architecture section) | "hard to reverse?" and "reversible in hours/days/never" — genuinely operationalized in domain-modeling/the no-self-start rule |
 | debiasing | `thinking-debiasing` | considered | — | Check yourself — anti-self-deception frame; its former kbg home was deleted 2026-08-24, no live anchor |
 | socratic | `thinking-socratic` | considered | — | named-method questioning + "Socratic Trap" failure mode; its former kbg home was deleted 2026-08-24, no live anchor |
 | scientific-method | `thinking-scientific-method` | applied | diagnosing-bugs, skills/post-mortem (Discovery + Validation) | repro → hypothesize → instrument → falsify |
@@ -185,13 +185,13 @@ cat "${MH_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"
 
 The cc-thinking-skills collection is a vocabulary of structured-reasoning scaffolds.
 kbg does **not** auto-route tasks through these models (that would be an
-unattended model-router — excluded by the autonomy invariant per the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture — self-contained excerpt, read in Bash: `cat "${MH_PLUGIN_ROOT}/docs/reference/operating-model.md"`).
+unattended model-router — excluded by the autonomy invariant per the no-model-self-start rule, CLAUDE.md's Operating model under its Architecture section — self-contained excerpt, read in Bash: `cat "${MH_PLUGIN_ROOT}/docs/reference/operating-model.md"`).
 Instead, each existing kbg skill already applies one or more models as a framing
 lens. Use this table when you know the workflow pattern you are in and want the
 named handle for the lens the relevant kbg surface already uses.
 
 The six patterns below mirror the CC Workflow vocabulary documented in
-`skills/workflow/orchestrate/reference.md §Dynamic-workflow pattern vocabulary`.
+`skills/workflow/orchestrate/reference.md`'s Dynamic-workflow pattern vocabulary section.
 They are read-only framing labels, not dispatch instructions.
 
 | Workflow pattern | When it applies | Mental models the kbg surface already uses | kbg surface to reach for |
@@ -212,4 +212,4 @@ lenses explicitly, or teach the harness's reasoning to someone new.
 
 - **applied** — the model name appears explicitly in a kbg surface (skill, command, agent, or doctrine rule) as the lens being used.
 - **considered** — the underlying practice appears in a kbg surface but the model name is not used, or the model is a valid lens with no concrete anchor.
-- **rejected** — the model is explicitly excluded as a license for an unattended, model-judges-model loop per the autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under §Architecture — self-contained excerpt, read in Bash: `cat "${MH_PLUGIN_ROOT}/docs/reference/operating-model.md"`). It may still appear as *framing* inside an applied surface.
+- **rejected** — the model is explicitly excluded as a license for an unattended, model-judges-model loop per the autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under its Architecture section — self-contained excerpt, read in Bash: `cat "${MH_PLUGIN_ROOT}/docs/reference/operating-model.md"`). It may still appear as *framing* inside an applied surface.

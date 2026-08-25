@@ -83,7 +83,7 @@ A verification-status claim ("harness-audit 0C/0W," "gauntlet green," "tests pas
 
 Decompose → route → verify → combine.
 
-- **Combine ≠ blend.** When N sub-agent outputs feed one synthesis call, surface agreement and conflict explicitly and drop malformed entries by a stated rule — never by the synthesizing model's own unaided judgment (prose-only — see CLAUDE.md §Architecture, "Same crux, N-worker fan-in," for the enforcing detail and the code-vs-instruction distinction).
+- **Combine ≠ blend.** When N sub-agent outputs feed one synthesis call, surface agreement and conflict explicitly and drop malformed entries by a stated rule — never by the synthesizing model's own unaided judgment (prose-only — see CLAUDE.md's Architecture section, "Same crux, N-worker fan-in," for the enforcing detail and the code-vs-instruction distinction).
 - Orchestrators delegate; they never implement (prose-only — no gate stops an orchestrator from self-implementing; the phase-gates bullet below covers the one piece of this that IS enforced).
 - A dispatched sub-agent must not re-orchestrate — return scoped output to the parent. Enforced by harness-audit check 41 (`41-agent-tool-grant-must-not-include-agent.sh`).
 - Phase gates: a sub-agent can never self-mark a task complete (enforced by `gate:task:complete-separation`); Quality never ships without passing Orchestration's review (prose-only — no check blocks a skipped review).
@@ -113,7 +113,7 @@ own measurements in `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`.
 
 ## Rule 14 — Decision scoring (explainable decisions)
 
-Every important decision — approve / reject / rank / recommend / optimize / validate — must carry a **Decision Score**: stated criteria + weights + a numeric result + a pass/fail reason + confidence (prose-only — no check enforces this). **Score, not feel** — the same discipline CLAUDE.md's "unifying crux" note (under §Architecture) applies to loop exits, extended here to *every* decision, not just loop stop-conditions.
+Every important decision — approve / reject / rank / recommend / optimize / validate — must carry a **Decision Score**: stated criteria + weights + a numeric result + a pass/fail reason + confidence (prose-only — no check enforces this). **Score, not feel** — the same discipline CLAUDE.md's "unifying crux" note (under its Architecture section) applies to loop exits, extended here to *every* decision, not just loop stop-conditions.
 
 - State the criteria and each one's weight **before** scoring.
 - Score each criterion 0–100 with a one-line reason; weighted sum = the decision's number.
