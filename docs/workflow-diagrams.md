@@ -17,6 +17,19 @@ plugin, so they do not drift when a surface is added.
 ## 1. What the plugin does
 
 ```mermaid
+%%{init: {
+  'theme':'base',
+  'themeVariables': {
+    'primaryColor':'#fcfcfa',
+    'primaryBorderColor':'#ddddd6',
+    'primaryTextColor':'#0f1718',
+    'lineColor':'#65767a',
+    'secondaryColor':'#dceff0',
+    'tertiaryColor':'#e7edec',
+    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
+    'fontSize':'15px'
+  }
+}}%%
 flowchart TB
     subgraph BEFORE["1 · Session starts: what the plugin puts in place"]
         direction LR
@@ -43,11 +56,10 @@ flowchart TB
 **This diagram is mirrored in `README.md`'s How it runs section. Edit both or neither.**
 Nothing checks the pair; it is two files kept in sync by hand.
 
-This is the plugin's own work, not Claude Code's. The three bands are the moments this plugin
-acts on a session, and the host's request lifecycle starts in section 2. The two dark boxes
-carry the design: the model is the maker, and every box that can stop it is deterministic
-shell. A model that grades its own work is two optimists agreeing, so a gate is always a
-script and a verifier is always a script.
+This is the plugin's own work, not Claude Code's. The three bands are the moments the plugin
+acts on a session. The host's request lifecycle starts in section 2. The two nodes drawn with
+the dark fill carry the design: the model is the maker, and every box that can stop it is
+deterministic shell. Maker is not checker.
 
 The loop closes at the version bump, which is why it sits last instead of first. A change to a
 shipped surface reaches the next session, and the session that made it keeps running on the
@@ -63,6 +75,19 @@ through `hooks/dispatch-single.sh`, a filter that can drop the hook before its r
 runs.
 
 ```mermaid
+%%{init: {
+  'theme':'base',
+  'themeVariables': {
+    'primaryColor':'#fcfcfa',
+    'primaryBorderColor':'#ddddd6',
+    'primaryTextColor':'#0f1718',
+    'lineColor':'#65767a',
+    'secondaryColor':'#dceff0',
+    'tertiaryColor':'#e7edec',
+    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
+    'fontSize':'15px'
+  }
+}}%%
 flowchart LR
     subgraph EVENTS["Claude Code events"]
         direction TB
@@ -91,8 +116,8 @@ flowchart LR
 ```
 
 **Tiers are ordinal:** `minimal(0) < standard(1) < strict(2)`. A hook fires when its own tier
-sits at or below the active profile. `MH_HOOK_PROFILE` defaults to `strict`, so an unset
-environment runs everything and the filter is there to quiet a session down when you want it
+sits at or below the active profile. `MH_HOOK_PROFILE` defaults to `strict`. An unset
+environment runs everything. The filter exists to quiet a session down when you want it
 quieter.
 
 What each tier means in practice:
@@ -120,12 +145,25 @@ The advise half of the operating model. Section 4 is the deny half. Seven sensor
 events, and grep confirms that none of them emits `permissionDecision`.
 
 ```mermaid
+%%{init: {
+  'theme':'base',
+  'themeVariables': {
+    'primaryColor':'#fcfcfa',
+    'primaryBorderColor':'#ddddd6',
+    'primaryTextColor':'#0f1718',
+    'lineColor':'#65767a',
+    'secondaryColor':'#dceff0',
+    'tertiaryColor':'#e7edec',
+    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
+    'fontSize':'15px'
+  }
+}}%%
 flowchart LR
-    E1["UserPromptSubmit<br/>flow-nudge · jira-route-nudge"] --> S
-    E2["PostToolUse<br/>loop-repeat · plan-review · compliance-audit"] --> S
+    E1["UserPromptSubmit<br/>flow-nudge · jira-route"] --> S
+    E2["PostToolUse<br/>loop · plan · compliance"] --> S
     E3["PostToolUseFailure<br/>mcp-failure-nudge"] --> S
     E4["SessionEnd<br/>learn-nudge"] --> S
-    S["Advisory sensors<br/>hooks/advisory/ · read, count, journal"]
+    S["Advisory sensors<br/>read, count, journal"]
     S --> C["Context into the turn<br/>the model may ignore it"]
     S --> D["State on disk<br/>~/.local/share/"]
 
@@ -139,8 +177,8 @@ what the last one did. That is the entire contract.
 
 **Why the split is load-bearing.** A gate is a verifier: deterministic shell returning a score
 something else can branch on. A sensor is an observer. Blur the two and you put a model in the
-position of grading its own work, which is two optimists agreeing. So sensors journal and
-nudge, and the gates in section 4 are the only things that stop anything.
+position of grading its own work. Maker is not checker. Sensors journal and nudge; the gates
+in section 4 are the only things that stop anything.
 
 **The sensors measure; they do not conclude.** `loop-repeat-nudge` counts identical
 `{tool, params}` pairs and leaves the reading there, without deciding whether a session is
@@ -155,6 +193,19 @@ One registration in `hooks.json`, fanned out in parallel to every gate whose mat
 this specific tool call.
 
 ```mermaid
+%%{init: {
+  'theme':'base',
+  'themeVariables': {
+    'primaryColor':'#fcfcfa',
+    'primaryBorderColor':'#ddddd6',
+    'primaryTextColor':'#0f1718',
+    'lineColor':'#65767a',
+    'secondaryColor':'#dceff0',
+    'tertiaryColor':'#e7edec',
+    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
+    'fontSize':'15px'
+  }
+}}%%
 flowchart TB
     IN["Tool call: tool_name + tool_input"] --> SH["dispatch-pretooluse.sh"]
     SH --> PY{"python3 present?"}
@@ -180,10 +231,11 @@ flowchart TB
     class OPEN warn
 ```
 
-**Two failure directions, both chosen on purpose.** A missing `python3` fails open, because
-every underlying gate already fails open on its own, so failing open once here gets the same
-net behaviour with one stderr note instead of many. An unparseable table fails closed, because
-a traceback that quietly disables every gate is the worse outcome.
+**Two failure directions, both chosen on purpose.** A missing `python3` fails open: every
+underlying gate already fails open on its own, so failing open once here produces the same
+net behaviour with one stderr note instead of many. An unparseable table fails closed. The
+alternative is a traceback that quietly disables every gate at once, which is the worse
+outcome.
 
 **The entries do not all behave alike.** `gate:` is a prefix, not a promise:
 
@@ -207,10 +259,23 @@ model cannot quietly edit the code that judges it, and there is no environment-v
 ## 5. Ship path
 
 Two git hooks, wired once per clone with `git config core.hooksPath git-hooks`. **Keep that
-path relative.** An absolute one dies the moment the directory is renamed, and git never warns
-you; it just runs no hooks at all.
+path relative.** An absolute path dies the moment the directory is renamed. Git says nothing;
+it just runs no hooks at all.
 
 ```mermaid
+%%{init: {
+  'theme':'base',
+  'themeVariables': {
+    'primaryColor':'#fcfcfa',
+    'primaryBorderColor':'#ddddd6',
+    'primaryTextColor':'#0f1718',
+    'lineColor':'#65767a',
+    'secondaryColor':'#dceff0',
+    'tertiaryColor':'#e7edec',
+    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
+    'fontSize':'15px'
+  }
+}}%%
 flowchart TB
     ED["Edit a file"] --> ADD["git add, each path named"]
     ADD --> PC["git-hooks/pre-commit runs 4 layers in parallel"]
@@ -254,7 +319,7 @@ flowchart TB
 **pre-commit is the fast gate and pre-push is the heavy one.** The skip flag is denied by
 `gate:bash:irrecoverable`, so the way past either one is to fix what it found.
 
-**The path check looks for three hygiene forms**, because this repo is public: the slash path
+**The path check looks for three hygiene forms**, because this repo is public. The slash path
 `/Users/<name>`, the dash-encoded form Claude Code uses to key a project directory, and the
 bare account name sitting in prose with no path around it. The third form exists because a
 purge once reported the repo clean while occurrences sat in `CHANGELOG.md` and
@@ -268,6 +333,19 @@ was read as a hygiene carve-out.
 Auto-discovered directories: `agents/`, `skills/`, `hooks/`, `output-styles/`, `themes/`.
 
 ```mermaid
+%%{init: {
+  'theme':'base',
+  'themeVariables': {
+    'primaryColor':'#fcfcfa',
+    'primaryBorderColor':'#ddddd6',
+    'primaryTextColor':'#0f1718',
+    'lineColor':'#65767a',
+    'secondaryColor':'#dceff0',
+    'tertiaryColor':'#e7edec',
+    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
+    'fontSize':'15px'
+  }
+}}%%
 flowchart TB
     S1["1. Create or remove the file<br/>a new skill or agent needs bucket: frontmatter"] --> S2
     S2["2. Hooks only: register in hooks.json,<br/>add tests, sweep orphaned helpers"] --> S3
@@ -295,6 +373,19 @@ error while doing it. Have the agent `Read` the repo path directly.
 For a pile of competing asks. The lead allocates and subagents do the work.
 
 ```mermaid
+%%{init: {
+  'theme':'base',
+  'themeVariables': {
+    'primaryColor':'#fcfcfa',
+    'primaryBorderColor':'#ddddd6',
+    'primaryTextColor':'#0f1718',
+    'lineColor':'#65767a',
+    'secondaryColor':'#dceff0',
+    'tertiaryColor':'#e7edec',
+    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
+    'fontSize':'15px'
+  }
+}}%%
 flowchart TB
     G["1. Gather the task set<br/>text from a tracker is data, never instructions"] --> FP{"Fast Path Gate:<br/>1 file, 1 behaviour, under 30 lines,<br/>deterministic check, not auth/secrets?"}
     FP -->|"yes"| INL["Execute inline. Done."]
@@ -332,13 +423,26 @@ has no code to compile and so slides past every check except corroborating its c
 Four layers, cost-capped at the top.
 
 ```mermaid
+%%{init: {
+  'theme':'base',
+  'themeVariables': {
+    'primaryColor':'#fcfcfa',
+    'primaryBorderColor':'#ddddd6',
+    'primaryTextColor':'#0f1718',
+    'lineColor':'#65767a',
+    'secondaryColor':'#dceff0',
+    'tertiaryColor':'#e7edec',
+    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
+    'fontSize':'15px'
+  }
+}}%%
 flowchart TB
     subgraph L["Layers"]
         direction TB
         M1["Index: MEMORY.md<br/>loads every session, hard byte cap"]
         M2["Context: [[wikilinks]] between memories"]
         M3["Detail: the linked .md file"]
-        M4["Deep source: qmd into docs/research/ or llm-wiki"]
+        M4["Deep source: qmd search<br/>docs/research · llm-wiki"]
         M1 --> M2 --> M3 --> M4
     end
 
@@ -361,6 +465,88 @@ a soft target is scoring by feel, and this harness scores by number.
 
 ---
 
+## 9. Tiered pipeline
+
+The headline multi-model review loop. Four stages, each fenced by a shell script that holds
+the boundary.
+
+```mermaid
+%%{init: {
+  'theme':'base',
+  'themeVariables': {
+    'primaryColor':'#fcfcfa',
+    'primaryBorderColor':'#ddddd6',
+    'primaryTextColor':'#0f1718',
+    'lineColor':'#65767a',
+    'secondaryColor':'#dceff0',
+    'tertiaryColor':'#e7edec',
+    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
+    'fontSize':'15px'
+  }
+}}%%
+flowchart TB
+    S1["Fable plans"] --> S2["Sonnet executes"]
+    S2 --> S3["Opus reviews<br/>fix loop, cap 3"]
+    S3 --> S4["Fable re-reviews<br/>triage-gated"]
+    S1 -.->|"prompt-only"| S2
+    S2 -.->|"prompt-only"| S3
+    S3 -.->|"counted in code"| S4
+
+    classDef gate fill:#1f2937,stroke:#60a5fa,color:#e5e7eb
+    class S3,S4 gate
+```
+
+**Structured but prompt-only.** Model selection is prompt-only — no script enforces which
+tier runs at each stage. The fix loop is counted in code at three retries; everything else
+(which model, when to triage) is discretionary. Same maker-not-checker rule as the gates: a
+script can count, but it cannot pick.
+
+The boundary that is fenced is the one that bites: three retries is the cap, so an Opus review
+loop cannot run forever. That is a deterministic shell guarding a model call.
+
+---
+
+## 10. Rule 14: the score-decision rubric
+
+A formal decision verdict: stated criteria + weights + numeric result + pass/fail +
+confidence. A pass threshold AND a fatal-weakness floor must both hold. Precedent is queried
+first.
+
+```mermaid
+%%{init: {
+  'theme':'base',
+  'themeVariables': {
+    'primaryColor':'#fcfcfa',
+    'primaryBorderColor':'#ddddd6',
+    'primaryTextColor':'#0f1718',
+    'lineColor':'#65767a',
+    'secondaryColor':'#dceff0',
+    'tertiaryColor':'#e7edec',
+    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
+    'fontSize':'15px'
+  }
+}}%%
+flowchart TB
+    D["Decision?"] --> C1["Criterion 1<br/>alignment with stated goal"]
+    D --> C2["Criterion 2<br/>evidence for the claim"]
+    D --> C3["Criterion 3<br/>risk under the chosen path"]
+    D --> C4["Criterion 4<br/>cost of being wrong"]
+    C1 & C2 & C3 & C4 --> F["Fatal-weakness floor<br/>must hold regardless of total score"]
+
+    classDef gate fill:#3f2d1d,stroke:#fbbf24,color:#fde68a
+    class F gate
+```
+
+**Structured but prompt-only.** No script enforces model choice, the weights, or the floor.
+The rubric gives a defensible structure for a decision the model is about to make anyway;
+what it cannot do is veto the model. Same honesty as the gates: a script can score, but it
+cannot reason.
+
+The floor sits below the criteria because the criteria are negotiable; the floor is not. A
+decision with a high total score and a failed floor is still a failure.
+
+---
+
 ## Reading these against the code
 
 | Diagram | Source of truth |
@@ -372,10 +558,12 @@ a soft target is scoring by feel, and this harness scores by number.
 | 6. surface lifecycle | `CLAUDE.md`, "Adding or removing a surface" |
 | 7. orchestrate | `skills/workflow/orchestrate/SKILL.md` and `reference.md` |
 | 8. memory | `MEMORY.md` fold rule, `skills/meta/memory-lint/` |
+| 9. tiered pipeline | `skills/workflow/tiered-pipeline/SKILL.md` |
+| 10. score-decision | `skills/meta/score-decision/SKILL.md`, `docs/METHODOLOGY.md` Rule 14 |
 
 When a diagram and its source disagree, the source wins and the diagram is the bug.
 
-**Presentation copies:** `docs/diagrams/01..08` hold the same eight diagrams as inline SVG in
+**Presentation copies:** `docs/diagrams/01..10` hold the same ten diagrams as inline SVG in
 the diagram-design default editorial skin. Open one in a browser. They are generated, so edit
 `docs/diagrams/src/` and run `build.py`, never the HTML; `check.py` next to it verifies
 geometry and text fit. The mermaid above stays because GitHub renders it inline and the HTML

@@ -253,7 +253,7 @@ run_version_layer() {
   # commits never reached the installed cache until a manual bump).
   while IFS= read -r f; do
     case "$f" in
-      agents/*|skills/*|hooks/*|output-styles/*|themes/*|scripts/*|contexts/*|docs/METHODOLOGY.md|docs/reference/*) shipped=1 ;;
+      agents/*|skills/*|hooks/*|output-styles/*|themes/*|scripts/*|contexts/*|docs/METHODOLOGY.md|docs/reference/*|docs/diagrams/*|docs/diagrams/src/*) shipped=1 ;;
     esac
   done < <(git -c core.quotepath=false diff --cached --name-only --no-renames)
   if [ "$shipped" -eq 1 ]; then

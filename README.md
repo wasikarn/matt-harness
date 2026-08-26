@@ -49,16 +49,15 @@ action and what may only advise on it.
 - Advisory sensors (`hooks/advisory/`) are LLM-backed. They write to a journal. They never
   deny.
 
-Why so strict? An LLM grading work that the same model class just produced is circular:
-two optimists agreeing. So no model here ever gates its own output. Veto power belongs to
-scripts alone, because a script can't talk itself into anything. Every loop in the harness
-ends at a score a deterministic check can branch on, not a feeling.
+Why so strict? An LLM grading work the same model class just produced is circular. No model
+here ever gates its own output. Veto power belongs to scripts alone, because a script can't
+talk itself into anything. Every loop in the harness ends at a score a deterministic check can
+branch on, not a feeling.
 
-The design borrows from three named disciplines for coding-agent systems: harness
-engineering, loop engineering, and graph engineering. Each was researched from primary
-sources and adopted to a different degree. [Engineering doctrine](#engineering-doctrine)
-spells out which parts are structural, which are only vocabulary, and which gaps stay
-open.
+Three named disciplines shaped the design — harness engineering, loop engineering, and graph
+engineering — and each was researched from primary sources before anything was adopted.
+[Engineering doctrine](#engineering-doctrine) spells out which parts are structural, which are
+only vocabulary, and which gaps stay open.
 
 ---
 
@@ -66,9 +65,23 @@ open.
 
 What the plugin does to a session, in the three moments it acts. Each part gets its own diagram
 in [`docs/workflow-diagrams.md`](docs/workflow-diagrams.md): hook dispatch, advisory sensors,
-gate fan-out, the ship path, the surface lifecycle, the orchestrate loop, and the memory loop.
+gate fan-out, the ship path, the surface lifecycle, the orchestrate loop, the memory loop, the
+tiered pipeline, and the score-decision rubric.
 
 ```mermaid
+%%{init: {
+  'theme':'base',
+  'themeVariables': {
+    'primaryColor':'#fcfcfa',
+    'primaryBorderColor':'#ddddd6',
+    'primaryTextColor':'#0f1718',
+    'lineColor':'#65767a',
+    'secondaryColor':'#dceff0',
+    'tertiaryColor':'#e7edec',
+    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
+    'fontSize':'15px'
+  }
+}}%%
 flowchart TB
     subgraph BEFORE["1 · Session starts: what the plugin puts in place"]
         direction LR
@@ -92,12 +105,12 @@ flowchart TB
     class G,V det
 ```
 
-The two dark boxes carry the design: the model is the maker, and every box that can stop it is
-deterministic shell. A model grading its own output is two optimists agreeing. The loop closes
-at the version bump, where a change to a shipped surface reaches the next session while the
-session that made it keeps running on the old cached copy. Same-version edits to a cached
-plugin are silent no-ops, and that is the most common way work here looks done without being
-done.
+The two nodes drawn with the dark fill carry the design: the model is the maker, and every
+box that can stop it is deterministic shell. A model grading its own output is a verdict the
+model shouldn't get to make. The loop closes at the version bump, where a change to a shipped
+surface reaches the next session while the session that made it keeps running on the old cached
+copy. Same-version edits to a cached plugin are silent no-ops, and that is the most common way
+work here looks done without being done.
 
 ---
 

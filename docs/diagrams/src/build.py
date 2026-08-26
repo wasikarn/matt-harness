@@ -40,7 +40,8 @@ p.append(line(320,400,320,440,accent=True)); p.append(vlabel(320,420,"FIRES",acc
 p.append(oval(40,84,152,56,"Lifecycle event","9 events wired",kind="input"))
 p.append(diamond(320,112,80,44,["PreToolUse?"]))
 p.append(node(488,84,216,56,"Gate fan-out","its own dispatcher",kind="ext"))
-p.append(node(232,204,176,56,"dispatch-single.sh","id · tier · script"))
+p.append(node(232,204,176,28,"dispatch-single.sh","id, tier, script"))
+p.append(node(232,232,176,28,"filter, then exec"))
 p.append(diamond(320,352,96,48,["Disabled, or tier","above the profile?"]))
 p.append(node(536,324,216,56,"Never runs","exits 0, prints nothing",kind="ext"))
 p.append(node(232,440,176,56,"Hook script runs","",kind="focal"))
@@ -57,10 +58,10 @@ for cy in (126,202,278,354):
     p.append(line(288,cy,376,cy))                     # straight in: the lane spans every row
 p.append(line(600,172,680,172)); p.append(line(600,340,680,340))
 p.append(hlabel(640,172,"NO DECISION",w=72))
-p.append(node(40,100,248,52,"UserPromptSubmit","flow · jira-route",kind="input"))
-p.append(node(40,176,248,52,"PostToolUse","loop · plan-review · compliance",kind="input"))
-p.append(node(40,252,248,52,"PostToolUseFailure","mcp-failure",kind="input"))
-p.append(node(40,328,248,52,"SessionEnd","learn",kind="input"))
+p.append(node(40,100,248,52,"UserPromptSubmit","flow-nudge\njira-route-nudge",kind="input"))
+p.append(node(40,176,248,52,"PostToolUse","loop-repeat · plan-review\ncompliance-audit",kind="input"))
+p.append(node(40,252,248,52,"PostToolUseFailure","mcp-failure-nudge",kind="input"))
+p.append(node(40,328,248,52,"SessionEnd","learn-nudge",kind="input"))
 p.append(node(376,100,224,308,"Advisory sensors","read, count, journal"))
 p.append(node(680,140,240,64,"Context into the turn","the model may ignore it",kind="focal"))
 p.append(node(680,308,240,64,"State on disk","~/.local/share/",kind="ext"))
@@ -153,11 +154,11 @@ p.append(oval(32,56,144,56,"Task set","",kind="input"))
 p.append(diamond(296,84,80,40,["Fast path gate?"]))
 p.append(node(496,56,200,56,"Execute inline","no orchestration",kind="ext"))
 p.append(node(200,168,192,56,"Group first","shared mental model"))
-p.append(node(200,256,192,56,"Score, then route"))
+p.append(node(200,256,192,56,"Score, then route","Eisenhower · IxE · VxR"))
 p.append(node(200,344,192,56,"Clamp to 5","the lead is the clamp",kind="focal"))
 p.append(diamond(560,372,88,40,["Write tools?"]))
 p.append(node(712,344,208,56,"AskUserQuestion","always mandatory"))
-p.append(node(456,456,256,56,"The validation chain","builder · validator · fixer · re-validator"))
+p.append(node(456,456,256,56,"The validation chain","builder → validator\n→ fixer → re-validator"))
 p.append(legend(540,"LEGEND · FIVE AGENTS PER WAVE, HARD CAP",[
   (40,"input","Work in"),(150,"step","Lead's step"),(280,"ext","Not orchestrated"),
   (430,"focal","The hard cap"),(620,"arrow-accent","Needs approval")]))
@@ -182,5 +183,54 @@ p.append(legend(540,"LEGEND · WHEN MEMORY-LINT REPORTS CLEAN, STOP",[
   (490,"ext","Last resort"),(610,"focal","The checker")]))
 made.append(page(OUT+"08-memory-loop.html","memory",EY,"The memory loop",
   "Layer stack from the session-loaded index down through wikilinks and per-fact detail files to deep sources, with memory-lint as the checker that decides when it is clean.",p,note='When memory-lint reports clean, stop. Hand-shaving index lines to hit a soft target is scoring by feel, and this harness scores by number.'))
+
+# --------------------------------------------------- 9. tiered pipeline
+p=[]
+# Three model tiers in a vertical stack, each fenced by a gate.
+p.append(line(480,108,480,168)); p.append(line(480,228,480,288)); p.append(line(480,348,480,408))
+p.append(vlabel(480,140,"next",w=72))
+p.append(vlabel(480,260,"next",w=72))
+p.append(vlabel(480,380,"gates",w=72))
+p.append(node(40,80,200,56,"Fable plans","the prompt"))
+p.append(node(40,200,200,56,"Sonnet executes","the work"))
+p.append(node(40,320,200,56,"Opus reviews","fix loop, cap 3",kind="focal"))
+p.append(node(40,440,200,56,"Fable re-reviews","triage-gated",kind="focal"))
+p.append(node(720,80,200,56,"shell-enforced","stage boundaries",kind="ext"))
+p.append(node(720,200,200,56,"prompt-only","model selection"))
+p.append(node(720,320,200,56,"counted in code","three retries then stop",kind="ext"))
+p.append(node(720,440,200,56,"prompt-only","discretionary",kind="ext"))
+p.append(line(240,108,720,108,accent=True))
+p.append(line(240,228,720,228,accent=True))
+p.append(line(240,348,720,348,accent=True))
+p.append(line(240,468,720,468,accent=True))
+p.append(legend(40,"LEGEND · STAGE ENVELOPES ARE PROMPT-ONLY",[
+  (40,"focal","Stage"),(220,"step","What it does"),(440,"ext","What enforces it")]))
+made.append(page(OUT+"09-tiered-pipeline.html","tiered-pipeline",EY,"The tiered pipeline: Fable to Sonnet to Opus",
+  "Four stages of the tiered pipeline, each fenced by a shell gate that holds the boundary. Model selection is prompt-only — no script enforces which tier runs at each stage.",p,note='The fix loop is counted in code at three retries; everything else (which model, when to triage) is prompt-only. Same maker-not-checker rule as the gates: a script can count, but it cannot pick.'))
+
+# --------------------------------------------------- 10. score-decision rubric
+p=[]
+# Decision diamond on the left, four weighted criteria as parallel nodes,
+# fatal-weakness floor as a horizontal accent rail below them.
+p.append(diamond(64,72,144,56,["Decision?",""],kind="focal"))
+p.append(line(208,100,304,100))
+p.append(line(304,148,432,148))
+p.append(line(304,228,432,228))
+p.append(line(304,308,432,308))
+p.append(line(304,388,432,388))
+p.append(line(304,100,304,388))
+p.append(line(304,148,304,228,accent=True))
+p.append(line(304,228,304,308,accent=True))
+p.append(line(304,308,304,388,accent=True))
+p.append(node(432,120,328,64,"Criterion 1","alignment with stated goal"))
+p.append(node(432,200,328,64,"Criterion 2","evidence for the claim"))
+p.append(node(432,280,328,64,"Criterion 3","risk under the chosen path"))
+p.append(node(432,360,328,64,"Criterion 4","cost of being wrong"))
+p.append(line(64,464,896,464,accent=True))
+p.append(node(64,488,832,56,"Fatal-weakness floor","must hold regardless of total score",kind="focal"))
+p.append(legend(40,"LEGEND · PASS THRESHOLD AND FLOOR BOTH REQUIRED",[
+  (40,"focal","Decision gate"),(220,"step","Weighted criterion"),(440,"ext","The floor")]))
+made.append(page(OUT+"10-score-decision.html","score-decision",EY,"Rule 14: the score-decision rubric",
+  "Four weighted criteria feed a numeric verdict; a fatal-weakness floor sits below them and must hold regardless of the total. Precedent is queried first.",p,note='The rubric is structured but prompt-only — no script enforces model choice, weights, or the floor. Same honesty as the gates: a script can score, but it cannot reason.'))
 
 for m in made: print("wrote", m)

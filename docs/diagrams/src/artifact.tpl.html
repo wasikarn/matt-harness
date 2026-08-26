@@ -182,7 +182,7 @@ footer{
   <p class="standfirst">Eight maps of what this plugin does to a Claude Code session, and how
   each of its parts works. Every one was drawn by reading the code it describes.</p>
   <div class="masthead-meta">
-    <span class="chip"><strong>8</strong> diagrams</span>
+    <span class="chip"><strong>10</strong> diagrams</span>
     <span class="chip">source · <strong>docs/diagrams/</strong></span>
     <span class="chip">shape only · <strong>no counts</strong></span>
   </div>
@@ -200,6 +200,8 @@ footer{
     <li><a href="#s6"><span class="n">06</span><span>Surface lifecycle</span></a></li>
     <li><a href="#s7"><span class="n">07</span><span>Orchestrate loop</span></a></li>
     <li><a href="#s8"><span class="n">08</span><span>Memory loop</span></a></li>
+    <li><a href="#s9"><span class="n">09</span><span>Tiered pipeline</span></a></li>
+    <li><a href="#s10"><span class="n">10</span><span>Rule 14 score-decision</span></a></li>
   </ol>
 </nav>
 
@@ -223,7 +225,7 @@ and this page cannot drift apart.</p>
   plugin injects its doctrine and loads the skills and agents. While the model works, it denies
   the actions nobody can undo and quietly journals everything else. Afterwards it grades the
   result.</p>
-  <p>Look at the two coral boxes. They are the only things in the picture that are not a model.
+  <p>Look at the two nodes drawn with the dark fill. They are the only things in the picture that are not a model.
   A model grading its own output is two optimists agreeing, so the gate is shell and so is the
   verifier.</p>
   <div class="note note--ask">
@@ -407,13 +409,49 @@ and this page cannot drift apart.</p>
   </div>
 </section>
 
+<section id="s9">
+  <div class="num">09</div>
+  <h2>Tiered pipeline</h2>
+  <p class="standfirst">The headline multi-model review loop: Fable plans, Sonnet executes,
+  Opus reviews with a counted fix loop, Fable re-reviews behind a triage gate.</p>
+
+  <div class="plate">{{D9}}</div>
+
+  <div class="note note--ask">
+    <span class="lbl">Structured but prompt-only</span>
+    <p>Model selection is prompt-only. No script enforces which tier runs at each stage. The
+    fix loop is counted in code at three retries; everything else is discretionary. Same
+    maker-not-checker rule as the gates: a script can count, but it cannot pick.</p>
+  </div>
+</section>
+
+<section id="s10">
+  <div class="num">10</div>
+  <h2>Rule 14: score-decision rubric</h2>
+  <p class="standfirst">A formal decision verdict: stated criteria + weights + numeric result +
+  pass/fail + confidence. A pass threshold AND a fatal-weakness floor must both hold.
+  Precedent is queried first.</p>
+
+  <div class="plate">{{D10}}</div>
+
+  <div class="note note--ask">
+    <span class="lbl">Structured but prompt-only</span>
+    <p>No script enforces model choice, the weights, or the floor. The rubric gives a
+    defensible structure for a decision the model is about to make anyway; what it cannot
+    do is veto the model. Same honesty as the gates: a script can score, but it cannot
+    reason.</p>
+  </div>
+</section>
+
 <footer>
   <p>If a diagram and its source disagree, the source wins and the diagram is the bug. Section
   02 maps to <code>hooks/hooks.json</code> and <code>hooks/dispatch-single.sh</code>, 03 to
   <code>hooks/advisory/</code>, 04 to <code>dispatch-pretooluse.py</code>, 05 to
   <code>git-hooks/</code> and <code>scripts/run-gauntlet.sh</code>, 06 to <code>CLAUDE.md</code>,
-  07 to <code>skills/workflow/orchestrate/</code>, and 08 to <code>MEMORY.md</code> plus
-  <code>skills/meta/memory-lint/</code>.</p>
+  07 to <code>skills/workflow/orchestrate/</code>, 08 to <code>MEMORY.md</code> plus
+  <code>skills/meta/memory-lint/</code>, 09 to <code>skills/workflow/tiered-pipeline/</code>,
+  and 10 to <code>skills/meta/score-decision/</code> plus <code>docs/METHODOLOGY.md</code> Rule
+  14.</p>
 </footer>
 
 </main>

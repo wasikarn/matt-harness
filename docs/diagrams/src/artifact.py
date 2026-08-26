@@ -1,9 +1,9 @@
-"""Inject the eight shipped diagram SVGs into the artifact page. One source, two homes."""
+"""Inject the ten shipped diagram SVGs into the artifact page. One source, two homes."""
 import re, pathlib
 
 SRC = pathlib.Path(__file__).resolve().parent.parent          # docs/diagrams/, next to src/
-files = sorted(SRC.glob('0*.html'))
-assert len(files) == 8, files
+files = sorted(SRC.glob('*.html'))
+assert len(files) == 10, files
 
 HERE = pathlib.Path(__file__).resolve().parent
 tpl = (HERE / 'artifact.tpl.html').read_text()
@@ -11,7 +11,7 @@ for i, f in enumerate(files, 1):
     html = f.read_text()
     svg = html[html.index('<svg'):html.index('</svg>') + 6]
     assert 'viewBox' in svg and '<title' in svg, f.name
-    # Eight SVGs share one document here, so the marker ids have to be namespaced —
+    # All SVGs share one document here, so the marker ids have to be namespaced —
     # otherwise every url(#arrow) in the page resolves to diagram 1's marker.
     for mid in ('arrow-accent', 'arrow-link', 'arrow'):
         svg = svg.replace('id="%s"' % mid, 'id="d%d-%s"' % (i, mid))
