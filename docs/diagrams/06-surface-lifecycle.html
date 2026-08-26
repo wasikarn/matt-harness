@@ -46,6 +46,15 @@
       margin-bottom: 1.5rem;
     }
     svg { width: 100%; min-width: 900px; display: block; }
+    .note {
+      font-size: 0.875rem;
+      line-height: 1.55;
+      color: var(--color-muted);
+      max-width: 62ch;
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(45,49,66,0.12);
+    }
   </style>
 </head>
 <body>
@@ -55,7 +64,7 @@
 
     <svg viewBox="0 0 960 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="surface-title surface-desc">
       <title id="surface-title">Adding or removing a surface</title>
-      <desc id="surface-desc">Seven ordered steps for adding a plugin surface, where the cache refresh has to happen before the commit rather than after it.</desc>
+      <desc id="surface-desc">Seven ordered steps for adding a plugin surface, with the cache refresh landing at step six, before the commit.</desc>
       <defs>
         <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
         <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
@@ -126,14 +135,16 @@
       <text x="364" y="400" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">BOUNDARY.md last</text>
 
       <line x1="40" y1="540" x2="920" y2="540" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-      <text x="40" y="556" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND · A BRAND-NEW FILE READS AS CRIT F1 UNTIL STEP 06 REFRESHES THE CACHE</text>
+      <text x="40" y="556" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND · STEP 06 REFRESHES THE CACHE FIRST</text>
       <rect x="40" y="576" width="24" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
       <text x="72" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Ordered step</text>
       <rect x="200" y="576" width="24" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
-      <text x="232" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Focal: the out-of-order one</text>
+      <text x="232" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Runs before the commit</text>
       <line x1="440" y1="582" x2="468" y2="582" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
       <text x="476" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Sequence</text>
     </svg>
+
+    <p class="note">A brand-new file reads as CRIT F1, not loadable, until step 06 refreshes the cache. That is why the plugin update runs before the commit.</p>
   </div>
 </body>
 </html>

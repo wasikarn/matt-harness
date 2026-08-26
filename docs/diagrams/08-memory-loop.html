@@ -46,6 +46,15 @@
       margin-bottom: 1.5rem;
     }
     svg { width: 100%; min-width: 900px; display: block; }
+    .note {
+      font-size: 0.875rem;
+      line-height: 1.55;
+      color: var(--color-muted);
+      max-width: 62ch;
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(45,49,66,0.12);
+    }
   </style>
 </head>
 <body>
@@ -70,8 +79,8 @@
 
       <path d="M 816,208 V 344 Q 816,352 808,352 H 672" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
 
-      <rect x="768" y="320" width="40" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="788" y="329" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">READS</text>
+      <rect x="764" y="320" width="44" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="786" y="329" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">READS</text>
 
       <line x1="480" y1="208" x2="480" y2="232" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
 
@@ -110,7 +119,7 @@
       <text x="816" y="188" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">the checker</text>
 
       <line x1="40" y1="540" x2="920" y2="540" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-      <text x="40" y="556" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND · TOOL-CLEAN GOVERNS; WHEN MEMORY-LINT REPORTS CLEAN, STOP</text>
+      <text x="40" y="556" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND · WHEN MEMORY-LINT REPORTS CLEAN, STOP</text>
       <rect x="40" y="576" width="24" height="12" rx="2" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
       <text x="72" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Surfacing hook</text>
       <rect x="192" y="576" width="24" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
@@ -120,8 +129,10 @@
       <rect x="488" y="576" width="24" height="12" rx="2" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
       <text x="520" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Last resort</text>
       <rect x="608" y="576" width="24" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
-      <text x="640" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Focal: the checker</text>
+      <text x="640" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">The checker</text>
     </svg>
+
+    <p class="note">When memory-lint reports clean, stop. Hand-shaving index lines to hit a soft target is scoring by feel, and this harness scores by number.</p>
   </div>
 </body>
 </html>

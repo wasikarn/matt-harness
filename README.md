@@ -64,27 +64,26 @@ open.
 
 ## How it runs
 
-What the plugin actually does to a session, in the three moments it acts. Each part gets its
-own diagram in [`docs/workflow-diagrams.md`](docs/workflow-diagrams.md) — hook dispatch,
-advisory sensors, gate fan-out, the ship path, the surface lifecycle, the orchestrate loop,
-and the memory loop.
+What the plugin does to a session, in the three moments it acts. Each part gets its own diagram
+in [`docs/workflow-diagrams.md`](docs/workflow-diagrams.md): hook dispatch, advisory sensors,
+gate fan-out, the ship path, the surface lifecycle, the orchestrate loop, and the memory loop.
 
 ```mermaid
 flowchart TB
-    subgraph BEFORE["1 · Session starts — what the plugin puts in place"]
+    subgraph BEFORE["1 · Session starts: what the plugin puts in place"]
         direction LR
         D["Doctrine injection<br/>METHODOLOGY, every start"]
         SU["Skills and agents<br/>from the versioned cache"]
     end
-    subgraph DURING["2 · The model acts — what the plugin does about it"]
+    subgraph DURING["2 · The model acts: what the plugin does about it"]
         direction LR
         G["Deny gates<br/>the irrecoverable set"]
         SE["Advisory sensors<br/>journal, never block"]
     end
-    subgraph AFTER["3 · Work ships — what grades it, deterministically"]
+    subgraph AFTER["3 · Work ships: what grades it"]
         direction LR
-        V["Deterministic verifiers<br/>harness-audit · gauntlet"]
-        B["Version bump<br/>reaches the NEXT session, never this one"]
+        V["Deterministic verifiers<br/>harness-audit, gauntlet"]
+        B["Version bump<br/>a change lands next session"]
     end
 
     BEFORE --> DURING --> AFTER
@@ -93,11 +92,12 @@ flowchart TB
     class G,V det
 ```
 
-The two dark boxes are the thesis: **the model is the maker, and every box that can stop it is
-deterministic shell.** A model grading its own output is two optimists agreeing. The loop
-closes at the version bump — a change to a shipped surface reaches the *next* session, never
-the running one. Same-version edits to a cached plugin are silent no-ops —
-the single most common way work here looks done and isn't.
+The two dark boxes carry the design: the model is the maker, and every box that can stop it is
+deterministic shell. A model grading its own output is two optimists agreeing. The loop closes
+at the version bump, where a change to a shipped surface reaches the next session while the
+session that made it keeps running on the old cached copy. Same-version edits to a cached
+plugin are silent no-ops, and that is the most common way work here looks done without being
+done.
 
 ---
 

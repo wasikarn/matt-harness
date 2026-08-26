@@ -46,6 +46,15 @@
       margin-bottom: 1.5rem;
     }
     svg { width: 100%; min-width: 900px; display: block; }
+    .note {
+      font-size: 0.875rem;
+      line-height: 1.55;
+      color: var(--color-muted);
+      max-width: 62ch;
+      margin-top: 1.25rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(45,49,66,0.12);
+    }
   </style>
 </head>
 <body>
@@ -115,7 +124,7 @@
       <text x="800" y="352" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">~/.local/share/</text>
 
       <line x1="40" y1="540" x2="920" y2="540" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-      <text x="40" y="556" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND · AN ADVISORY SENSOR NEVER EMITS PERMISSIONDECISION; DENYING IS THE GATES' JOB</text>
+      <text x="40" y="556" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND · SENSORS OBSERVE, GATES DECIDE</text>
       <rect x="40" y="576" width="24" height="12" rx="2" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
       <text x="72" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Event observed</text>
       <rect x="200" y="576" width="24" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
@@ -125,6 +134,8 @@
       <rect x="620" y="576" width="24" height="12" rx="2" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
       <text x="652" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">What survives the session</text>
     </svg>
+
+    <p class="note">Not one sensor under hooks/advisory/ emits permissionDecision, and grep is what confirms it. Deciding belongs to the gates, drawn in section 4 of docs/workflow-diagrams.md.</p>
   </div>
 </body>
 </html>
