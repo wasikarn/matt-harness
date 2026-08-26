@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Selling points · matt-harness</title>
+<style>
+  :root {
+    --paper: #f5f5f5;
+    --ink: #2d3142;
+    --muted: #4f5d75;
+    --soft: #8a91a4;
+    --rule: rgba(45,49,66,0.18);
+    --rule-strong: rgba(45,49,66,0.35);
+    --accent: #eb6c36;
+    --accent-tint: rgba(235,108,54,0.10);
+    --accent-wash: rgba(235,108,54,0.05);
+    --surface: #ffffff;
+    --surface-2: #fbfbf9;
+    --plate: #fcfcfa;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #161821;
+      --ink: #e6e8ec;
+      --muted: #a3aabc;
+      --soft: #6b7286;
+      --rule: rgba(230,232,236,0.16);
+      --rule-strong: rgba(230,232,236,0.32);
+      --accent: #f08a5d;
+      --accent-tint: rgba(240,138,93,0.16);
+      --accent-wash: rgba(240,138,93,0.08);
+      --surface: #1f2230;
+      --surface-2: #1a1d28;
+      --plate: #20232f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #161821;
+    --ink: #e6e8ec;
+    --muted: #a3aabc;
+    --soft: #6b7286;
+    --rule: rgba(230,232,236,0.16);
+    --rule-strong: rgba(230,232,236,0.32);
+    --accent: #f08a5d;
+    --accent-tint: rgba(240,138,93,0.16);
+    --accent-wash: rgba(240,138,93,0.08);
+    --surface: #1f2230;
+    --surface-2: #1a1d28;
+    --plate: #20232f;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-feature-settings: 'ss01', 'cv11';
+    line-height: 1.55;
+    min-height: 100vh;
+  }
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 48px 28px 96px;
+  }
+  .masthead { margin-bottom: 48px; }
+  .eyebrow {
+    font-family: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--soft);
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-family: 'Instrument Serif', 'Source Serif 4', Georgia, serif;
+    font-weight: 400;
+    font-size: 38px;
+    line-height: 1.12;
+    letter-spacing: -0.012em;
+    margin: 0 0 16px;
+    color: var(--ink);
+  }
+  .deck {
+    font-family: 'Instrument Serif', 'Source Serif 4', Georgia, serif;
+    font-style: italic;
+    font-size: 18px;
+    line-height: 1.55;
+    color: var(--muted);
+    max-width: 60ch;
+    margin: 0 0 24px;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .chip {
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    padding: 4px 9px;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    background: var(--surface);
+  }
+  .chip-accent {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-tint);
+  }
+  .hero-figure {
+    margin: 0 0 56px;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .hero-figure img, .hero-figure svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  ol.sell {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: sell;
+  }
+  ol.sell > li {
+    counter-increment: sell;
+    position: relative;
+    padding: 32px 0 28px;
+    border-top: 1px solid var(--rule);
+  }
+  ol.sell > li:first-child { border-top: none; padding-top: 8px; }
+  ol.sell > li::before {
+    content: counter(sell, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 32px;
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--soft);
+  }
+  ol.sell > li:first-child::before { top: 8px; }
+  .sell-title {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-weight: 400;
+    font-size: 22px;
+    line-height: 1.25;
+    margin: 0 0 6px;
+    padding-left: 32px;
+    color: var(--ink);
+  }
+  .sell-body {
+    padding-left: 32px;
+    color: var(--ink);
+    font-size: 15px;
+    max-width: 62ch;
+  }
+  .sell-body p { margin: 0 0 12px; }
+  .sell-body p:last-child { margin-bottom: 0; }
+  .sell-body strong { font-weight: 600; }
+  .cite {
+    font-family: 'Geist Mono', ui-monospace, monospace;
+    font-size: 10px;
+    color: var(--muted);
+    padding: 1px 6px;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: var(--surface-2);
+    white-space: nowrap;
+  }
+  .closing {
+    margin-top: 56px;
+    padding: 24px 28px;
+    border-left: 3px solid var(--accent);
+    background: var(--accent-wash);
+    border-radius: 0 8px 8px 0;
+  }
+  .closing p {
+    margin: 0;
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--ink);
+    line-height: 1.55;
+  }
+  .closing strong { font-style: normal; font-weight: 600; }
+  footer.foot {
+    margin-top: 32px;
+    color: var(--soft);
+    font-size: 12px;
+  }
+  @media (max-width: 640px) {
+    h1 { font-size: 28px; }
+    .deck { font-size: 16px; }
+    .sell-title { font-size: 19px; padding-left: 28px; }
+    .sell-body { padding-left: 28px; font-size: 14px; }
+    ol.sell > li::before { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">mh@wasikarn · v0.68.515 · wasikarn/matt-harness</div>
+    <h1>A Claude Code harness that won't let the model grade its own work.</h1>
+    <p class="deck">
+      Ten selling points, each grounded in a file you can open. The unifying claim:
+      gates that block bad actions are deterministic shell. Sensors that nudge
+      are journal-only. The model is the maker, never the checker.
+    </p>
+    <div class="chips">
+      <span class="chip">17 agents</span>
+      <span class="chip">59 skills</span>
+      <span class="chip">9 deny-gates</span>
+      <span class="chip">7 advisory sensors</span>
+      <span class="chip">SessionStart doctrine injection</span>
+      <span class="chip">pre-push gauntlet · 6 layers</span>
+      <span class="chip-accent">verifier separation</span>
+    </div>
+  </header>
+
+  <figure class="hero-figure">
+    <object type="image/svg+xml" data="hero-diagram.svg" aria-label="Three-moment operating model diagram">
+      Your browser does not support SVG objects. See <a href="hero-diagram.svg">hero-diagram.svg</a>.
+    </object>
+  </figure>
+
+  <ol class="sell">
+
+    <li>
+      <h2 class="sell-title">The maker is not the checker</h2>
+      <div class="sell-body">
+        <p>
+          The whole harness rests on one rule: a model grading its own output is
+          a verdict the model shouldn't get to make. Gates that block bad
+          actions are deterministic shell scripts that return a branchable
+          score. Sensors that nudge are journal-only and never emit a deny
+          decision. The only way to ship is through a gauntlet that branches
+          on a number, not on what the model rationalizes.
+        </p>
+        <p>
+          Why this matters: an LLM cannot verify itself. The verifier
+          separation principle is built into the runtime itself — advice and
+          denial are different layers, kept separate on purpose.
+          <span class="cite">CLAUDE.md · Architecture · Why — the unifying crux</span>
+        </p>
+      </div>
+    </li>
+
+    <li>
+      <h2 class="sell-title">Doctrine is injected at session start</h2>
+      <div class="sell-body">
+        <p>
+          Every Claude Code session begins with
+          <span class="cite">docs/METHODOLOGY.md</span> pushed into context by a
+          SessionStart hook. No <code>@import</code>, no manual load. The
+          decision-sizing triad (one-way door · blast radius · riskiest
+          assumption) is in scope before the first tool call.
+        </p>
+        <p>
+          Two more doctrine files stay close at hand but are read on demand:
+          <span class="cite">CLAUDE.md</span>'s Architecture section for the
+          operating model, and <span class="cite">BOUNDARY.md</span> for the
+          live surface inventory.
+          <span class="cite">hooks/session/doctrine-bootstrap.sh</span>
+          <span class="cite">docs/onboarding.md</span>
+        </p>
+      </div>
+    </li>
+
+    <li>
+      <h2 class="sell-title">9 deny-gates block the irrecoverable set</h2>
+      <div class="sell-body">
+        <p>
+          Nine PreToolUse hooks run as deterministic shell. The irrecoverable
+          set — <code>rm -rf</code>, <code>--no-verify</code>, worktree
+          creation on protected paths, edits to the gates themselves, db
+          writes, credential edits, config rewrites, Atlassian MCP writes,
+          task-complete self-verification — is denied before the model can
+          grade it. No env-var bypass.
+        </p>
+        <p>
+          The single most load-bearing of these is
+          <span class="cite">hooks/gates/verifier-protect.sh</span>. It asks
+          for explicit human approval before any edit to
+          <code>hooks/gates/**</code>, <code>hooks/hooks.json</code>, or the
+          harness-audit verifier. The invariant: the gate that authorizes a
+          mutation or ship stays computational, never a model.
+          <span class="cite">hooks/gates/irrecoverable.sh</span>
+          <span class="cite">hooks/gates/worktree-guard.py</span>
+          <span class="cite">hooks/gates/db-write-gate.sh</span>
+          <span class="cite">hooks/gates/credential-guard.sh</span>
+        </p>
+      </div>
+    </li>
+
+    <li>
+      <h2 class="sell-title">7 advisory sensors journal, never deny</h2>
+      <div class="sell-body">
+        <p>
+          Seven PostToolUse / SessionEnd hooks surface nudges — flow state,
+          loop repetition, plan-review timing, compliance-audit timing, learn
+          moments, jira routing, MCP failure patterns. They write to a
+          journal and exit. They never emit <code>permissionDecision: deny</code>.
+        </p>
+        <p>
+          The boundary is intentional: a sensor that could also deny is a
+          sensor the model could prompt-inject itself past. Keeping them
+          advisory-only is the same verifier-separation rule, applied to the
+          observation layer.
+          <span class="cite">hooks/advisory/</span>
+          <span class="cite">CLAUDE.md · Architecture · Operating model</span>
+        </p>
+      </div>
+    </li>
+
+    <li>
+      <h2 class="sell-title">The ship gauntlet runs 6 layers in parallel</h2>
+      <div class="sell-body">
+        <p>
+          Every push runs the full gauntlet before anything leaves the
+          machine: plugin-validate, full shell-lint, JSON lint,
+          harness-audit, the behavioral test suite, plus the file-list
+          checks. Pre-commit is the fast gate (4 parallel layers including
+          the new-file LOC cap). Harness-audit's CRIT findings block ship
+          outright.
+        </p>
+        <p>
+          The gauntlet is deterministic: every layer returns a branchable
+          score. If any layer fails, the push does not land. There is no
+          "the tests passed, ship anyway."
+          <span class="cite">scripts/run-gauntlet.sh</span>
+          <span class="cite">git-hooks/pre-push</span>
+          <span class="cite">git-hooks/pre-commit</span>
+        </p>
+      </div>
+    </li>
+
+    <li>
+      <h2 class="sell-title">Version-bump gate stops cache drift</h2>
+      <div class="sell-body">
+        <p>
+          Same-version edits to a cached plugin are silent no-ops — Claude
+          Code keys updates on the manifest version. The pre-commit hook
+          blocks any commit that touches a shipped surface
+          (<span class="cite">agents/</span>, <span class="cite">skills/</span>,
+          <span class="cite">hooks/</span>, <span class="cite">output-styles/</span>,
+          <span class="cite">themes/</span>, <span class="cite">scripts/</span>,
+          <span class="cite">contexts/</span>, <span class="cite">docs/METHODOLOGY.md</span>,
+          <span class="cite">docs/reference/**</span>) without bumping
+          <span class="cite">plugin.json</span> + <span class="cite">marketplace.json</span>
+          in the same commit.
+        </p>
+        <p>
+          Both manifests must agree, and deletions count too. The gate was
+          extended after three scripts-only commits silently never reached
+          the installed cache. CLAUDE.md-only edits skip the bump because
+          no shipped surface reads CLAUDE.md from the cache.
+          <span class="cite">git-hooks/pre-commit</span>
+        </p>
+      </div>
+    </li>
+
+    <li>
+      <h2 class="sell-title">Tiered pipeline: Fable plans, Sonnet executes, Opus reviews</h2>
+      <div class="sell-body">
+        <p>
+          For non-trivial work, the
+          <span class="cite">skills/workflow/tiered-pipeline</span> skill
+          routes by phase. A frontier model produces the plan. Sonnet-class
+          execution writes the code. Opus-class review re-reads the diff
+          against the plan and applies code-counted fix caps. Then a
+          bug-hunt pass and a gated final review.
+        </p>
+        <p>
+          The pipeline is structured but prompt-only — no gate enforces
+          model selection. Same honesty as Rule 14 below.
+        </p>
+      </div>
+    </li>
+
+    <li>
+      <h2 class="sell-title">Rule 14 score-decision rubric</h2>
+      <div class="sell-body">
+        <p>
+          For decisions that have to land in one shot, the
+          <span class="cite">skills/meta/score-decision</span> skill scores a
+          shortlist against an explicit rubric, with named weight reasoning.
+          The output is a single number plus the rubric breakdown — a
+          deterministic-shape answer that survives the model's tendency to
+          hedge.
+        </p>
+        <p>
+          The rubric is prompt-only: no hook enforces that the operator
+          used the skill, and no gate grades the score. Use it because it
+          forces the criteria into the open, not because the framework
+          guarantees a particular result.
+        </p>
+      </div>
+    </li>
+
+    <li>
+      <h2 class="sell-title">A self-auditing fleet</h2>
+      <div class="sell-body">
+        <p>
+          <span class="cite">harness-audit</span> runs the in-repo
+          <span class="cite">skills/meta/harness-audit/scripts/audit.sh</span>
+          over the fleet — agents, skills, hooks, output-styles, themes,
+          commands. CRIT findings block ship; WARN findings are tracked.
+          Decay-sweep cadence runs quarterly to prune dead weight before it
+          accumulates. <span class="cite">BOUNDARY.md</span> is the
+          always-current inventory of every surface, regenerated by
+          <span class="cite">inventory-witness.sh</span>.
+        </p>
+        <p>
+          17 agents, 59 skills, 1 output style. Each ships with a
+          <code>bucket:</code> frontmatter that groups the
+          <span class="cite">BOUNDARY.md</span> tables by purpose
+          (meta · review · patterns · agent-support · design · workflow).
+          Skill descriptions stay under 25 words because they load on every
+          Task spawn.
+        </p>
+      </div>
+    </li>
+
+    <li>
+      <h2 class="sell-title">Backend-stack support built in</h2>
+      <div class="sell-body">
+        <p>
+          Beyond the harness core, the plugin ships opinions and patterns
+          for Drizzle ORM, MySQL/MariaDB, and gRPC service design. These
+          are skills and agents the operator can pull into any session —
+          not a framework lock-in, but tested defaults that have already
+          survived the gauntlet.
+        </p>
+        <p>
+          <span class="cite">.claude-plugin/marketplace.json</span> keywords
+          capture the surface at a glance: harness · agents · skills ·
+          workflow · governance · doctrine · hooks · ship · research.
+        </p>
+      </div>
+    </li>
+
+  </ol>
+
+  <aside class="closing">
+    <p>
+      <strong>The hardest part of an agent loop is not making the model smarter.</strong>
+      It is keeping the model out of the loop that grades the model. This
+      harness is one answer — opinionated, sharp-edged, and built around
+      the rule that gates stay shell and the maker never gets the last word.
+    </p>
+  </aside>
+
+  <footer class="foot">
+    Source of truth: <span class="cite">github.com/wasikarn/matt-harness</span> ·
+    manifest <span class="cite">plugin.json</span> +
+    <span class="cite">marketplace.json</span> · single branch
+    <code>develop</code>, MIT license.
+  </footer>
+
+</div>
+</body>
+</html>

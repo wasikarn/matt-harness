@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 580" role="img" aria-label="Three-layer operating model: Doctrine injects, Runtime gates and advises, Ship verifies before land">
+  <style>
+    :root {
+      --paper: #f5f5f5;
+      --ink: #2d3142;
+      --muted: #4f5d75;
+      --soft: #8a91a4;
+      --rule: rgba(45,49,66,0.18);
+      --rule-strong: rgba(45,49,66,0.35);
+      --accent: #eb6c36;
+      --accent-tint: rgba(235,108,54,0.10);
+      --accent-wash: rgba(235,108,54,0.06);
+      --surface-2: #ffffff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper: #161821;
+        --ink: #e6e8ec;
+        --muted: #a3aabc;
+        --soft: #6b7286;
+        --rule: rgba(230,232,236,0.16);
+        --rule-strong: rgba(230,232,236,0.32);
+        --accent: #f08a5d;
+        --accent-tint: rgba(240,138,93,0.16);
+        --accent-wash: rgba(240,138,93,0.10);
+        --surface-2: #1f2230;
+      }
+    }
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; }
+  </style>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
+    </marker>
+    <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/>
+    </marker>
+    <marker id="arrow-muted" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#8a91a4"/>
+    </marker>
+  </defs>
+
+  <rect width="920" height="580" fill="var(--paper)"/>
+
+  <!-- LAYER 1: Doctrine (top band) -->
+  <rect x="40" y="40" width="840" height="120" rx="8"
+        fill="var(--surface-2)" stroke="var(--rule-strong)" stroke-width="1"/>
+  <text x="60" y="68" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="10" letter-spacing="1.4" fill="var(--soft)">Moment 1 · Doctrine</text>
+  <text x="60" y="92" font-weight="600" font-size="15" fill="var(--ink)">SessionStart injects the rules</text>
+
+  <!-- Doctrine content: METHODOLOGY + CLAUDE.md + BOUNDARY -->
+  <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="11" fill="var(--ink)">
+    <rect x="60" y="108" width="180" height="38" rx="4" fill="var(--paper)" stroke="var(--rule)"/>
+    <text x="72" y="124">docs/METHODOLOGY.md</text>
+    <text x="72" y="140" font-size="9" fill="var(--soft)">decision triad · reasoning scaffold</text>
+
+    <rect x="260" y="108" width="180" height="38" rx="4" fill="var(--paper)" stroke="var(--rule)"/>
+    <text x="272" y="124">CLAUDE.md · Architecture</text>
+    <text x="272" y="140" font-size="9" fill="var(--soft)">operating model · verifier crux</text>
+
+    <rect x="460" y="108" width="180" height="38" rx="4" fill="var(--paper)" stroke="var(--rule)"/>
+    <text x="472" y="124">BOUNDARY.md</text>
+    <text x="472" y="140" font-size="9" fill="var(--soft)">live surface inventory</text>
+  </g>
+
+  <!-- injection arrow -->
+  <line x1="350" y1="148" x2="350" y2="200" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="358" y="178" font-size="10" fill="var(--muted)">injected on SessionStart</text>
+
+  <!-- LAYER 2: Runtime (middle band — focal) -->
+  <rect x="40" y="210" width="840" height="220" rx="8"
+        fill="var(--accent-wash)" stroke="var(--accent)" stroke-width="1.5"/>
+
+  <text x="60" y="238" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="10" letter-spacing="1.4" fill="var(--accent)">Moment 2 · Runtime</text>
+  <text x="60" y="262" font-weight="600" font-size="15" fill="var(--ink)">Gates deny, sensors advise. The model acts in the middle.</text>
+
+  <!-- Left: 9 deny-gates (compressed list) -->
+  <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="11">
+    <rect x="60" y="284" width="220" height="124" rx="4"
+          fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1.2"/>
+    <text x="72" y="304" font-weight="600" font-size="12" fill="var(--ink)">9 deny-gates</text>
+    <text x="72" y="320" fill="var(--muted)">hooks/gates/</text>
+    <text x="72" y="338" fill="var(--ink)">irrecoverable · verifier-protect</text>
+    <text x="72" y="354" fill="var(--ink)">db-write · credential · config</text>
+    <text x="72" y="370" fill="var(--ink)">worktree-guard (×2)</text>
+    <text x="72" y="386" fill="var(--ink)">atlassian-mcp · task-complete</text>
+    <text x="72" y="402" font-size="9" fill="var(--accent)" font-weight="600">deny on hit · no model override</text>
+  </g>
+
+  <!-- Center: focal node "Model acts" -->
+  <g>
+    <rect x="400" y="300" width="120" height="92" rx="6"
+          fill="var(--accent-tint)" stroke="var(--accent)" stroke-width="2"/>
+    <text x="460" y="332" text-anchor="middle"
+          font-weight="600" font-size="15" fill="var(--accent)">Model</text>
+    <text x="460" y="352" text-anchor="middle"
+          font-weight="600" font-size="15" fill="var(--accent)">acts</text>
+    <text x="460" y="376" text-anchor="middle"
+          font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="9" fill="var(--ink)">Bash · Edit · Write · Agent</text>
+  </g>
+
+  <!-- Right: 7 advisory sensors -->
+  <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="11">
+    <rect x="640" y="284" width="220" height="124" rx="4"
+          fill="var(--surface-2)" stroke="var(--rule-strong)" stroke-width="1" stroke-dasharray="4 3"/>
+    <text x="652" y="304" font-weight="600" font-size="12" fill="var(--ink)">7 advisory sensors</text>
+    <text x="652" y="320" fill="var(--muted)">hooks/advisory/</text>
+    <text x="652" y="338" fill="var(--ink)">flow · loop-repeat · plan-review</text>
+    <text x="652" y="354" fill="var(--ink)">compliance-audit · learn</text>
+    <text x="652" y="370" fill="var(--ink)">jira-route · mcp-failure</text>
+    <text x="652" y="386" font-size="9" fill="var(--muted)">journal · never deny</text>
+  </g>
+
+  <!-- arrows into Model -->
+  <path d="M 280 346 L 396 346" stroke="var(--accent)" stroke-width="1.5" marker-end="url(#arrow-accent)"/>
+  <path d="M 640 346 L 524 346" stroke="var(--rule-strong)" stroke-width="1" stroke-dasharray="4 3" marker-end="url(#arrow-muted)"/>
+
+  <!-- cross-currents under Model (gate → ship) -->
+  <path d="M 460 392 L 460 460" stroke="var(--muted)" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+  <!-- LAYER 3: Ship (bottom band) -->
+  <rect x="40" y="460" width="840" height="100" rx="8"
+        fill="var(--surface-2)" stroke="var(--rule-strong)" stroke-width="1"/>
+  <text x="60" y="488" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="10" letter-spacing="1.4" fill="var(--soft)">Moment 3 · Ship</text>
+  <text x="60" y="512" font-weight="600" font-size="15" fill="var(--ink)">Every commit runs the gauntlet before it lands</text>
+
+  <g font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="10" fill="var(--ink)">
+    <!-- pre-commit: 4 parallel -->
+    <rect x="60" y="524" width="180" height="22" rx="3" fill="var(--paper)" stroke="var(--rule)"/>
+    <text x="68" y="540">pre-commit · 4 parallel</text>
+
+    <!-- gauntlet: 6 layers -->
+    <rect x="260" y="524" width="220" height="22" rx="3" fill="var(--paper)" stroke="var(--rule)"/>
+    <text x="268" y="540">pre-push gauntlet · 6 layers</text>
+
+    <!-- harness-audit -->
+    <rect x="500" y="524" width="180" height="22" rx="3" fill="var(--paper)" stroke="var(--rule)"/>
+    <text x="508" y="540">harness-audit · CRIT blocks</text>
+
+    <!-- version bump -->
+    <rect x="700" y="524" width="160" height="22" rx="3" fill="var(--accent-tint)" stroke="var(--accent)"/>
+    <text x="708" y="540" fill="var(--accent)" font-weight="600">manifest version bump</text>
+  </g>
+
+  <!-- subtle column header tags on the right margin -->
+  <text x="900" y="68" text-anchor="end" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="10" letter-spacing="1.4" fill="var(--soft)">3 doctrine files</text>
+  <text x="900" y="240" text-anchor="end" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="10" letter-spacing="1.4" fill="var(--soft)">make · verify · advise</text>
+  <text x="900" y="488" text-anchor="end" font-family="ui-monospace, 'SF Mono', Menlo, monospace" font-size="10" letter-spacing="1.4" fill="var(--soft)">deterministic · not vibes</text>
+</svg>
