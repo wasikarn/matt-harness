@@ -17,10 +17,6 @@ see `BOUNDARY.md` below for the live count.
 2. `CLAUDE.md`'s Operating model (under its Architecture section) — the current operating model: computational deny-gates for the irrecoverable set (`hooks/gates/`), advisory sensors for the rest (`hooks/advisory/`), no autonomy flag, no maker-checker ship-gate, no model self-start. The L2–L5 autonomy ladder that previously lived here was retired in the v0.6.0 "reset: rebuild from scratch" cut — see CLAUDE.md's "Why — the unifying crux" for what replaced it (verifier-separation: an LLM judging its own output is circular, so gates stay deterministic shell, never a model). Read manually, not injected.
 3. [`BOUNDARY.md`](../BOUNDARY.md) — auto-regenerated capability map (skills / agents / commands / hooks). Read manually, not injected.
 
-Visual companion: [`workflow-diagrams.md`](workflow-diagrams.md) — mermaid maps of the
-session lifecycle, gate fan-out, ship path, and orchestrate loop. Shape only, no counts.
-The same eight, hand-laid as SVG for presentation: [`diagrams/`](diagrams/).
-
 ## The 3 commands you'll use most
 
 | Command | When | What it does |

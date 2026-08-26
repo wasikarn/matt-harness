@@ -63,21 +63,23 @@ only vocabulary, and which gaps stay open.
 
 ## How it runs
 
-What the plugin does to a session, in the three moments it acts. Each part gets its own diagram
-in [`docs/workflow-diagrams.md`](docs/workflow-diagrams.md): hook dispatch, advisory sensors,
-gate fan-out, the ship path, the surface lifecycle, the orchestrate loop, the memory loop, the
-tiered pipeline, and the score-decision rubric.
+What the plugin does to a session, in the three moments it acts.
 
-<object data="docs/diagrams/01-overall.html" type="text/html" width="960" height="600" aria-label="What the plugin does to a session">
-  <p>Diagram inline is sanitized on github.com — <a href="docs/diagrams/01-overall.html">open the HTML file</a> to view it. The mermaid source it was redrawn from lives at <a href="docs/diagrams/src/workflow-diagrams-source.md">docs/diagrams/src/workflow-diagrams-source.md</a>.</p>
-</object>
+**1. Session starts.** `hooks/session/doctrine-bootstrap.sh` injects `docs/METHODOLOGY.md` —
+the decision-sizing triad, the reasoning scaffold — into every fresh session. Skills and
+agents load from the versioned cache at `~/.claude/plugins/cache/wasikarn/mh/<version>/`,
+not the working tree.
 
-The two nodes drawn with the dark fill carry the design: the model is the maker, and every
-box that can stop it is deterministic shell. A model grading its own output is a verdict the
-model shouldn't get to make. The loop closes at the version bump, where a change to a shipped
-surface reaches the next session while the session that made it keeps running on the old cached
-copy. Same-version edits to a cached plugin are silent no-ops, and that is the most common way
-work here looks done without being done.
+**2. The model acts.** Computational deny-gates in `hooks/gates/` stop the irrecoverable set
+(`rm -rf`, `git add -A`, `--no-verify`, hardcoded home paths, edits to the verifier code).
+Advisory sensors in `hooks/advisory/` journal and nudge but never block. A model grading its
+own output is a verdict the model shouldn't get to make — every box that can stop it is
+deterministic shell.
+
+**3. Work ships.** `harness-audit` and the gauntlet run as deterministic verifiers. A
+change to a shipped surface reaches the next session while the session that made it keeps
+running on the old cached copy. Same-version edits to a cached plugin are silent no-ops,
+and that is the most common way work here looks done without being done.
 
 ---
 
