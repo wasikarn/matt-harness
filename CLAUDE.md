@@ -181,6 +181,23 @@ The plugin ships as `mh@wasikarn` from the `wasikarn/matt-harness` GitHub repo. 
 loads all surfaces from `~/.claude/plugins/cache/wasikarn/mh/<version>/` at startup. Nothing is
 symlinked.
 
+**On a dev machine the marketplace is usually registered as a local directory, not that GitHub
+repo.** Check `~/.claude/plugins/known_marketplaces.json`: a `"source": "directory"` entry
+pointing at the clone means `claude plugin update` copies the **working tree**, not a git
+checkout, so gitignored files travel into the cache along with the shipped surfaces. Two
+consequences worth knowing before reading a cache directory as if it were the repo:
+
+- `installed_plugins.json` still records a `gitCommitSha`, which makes the cache look
+  git-derived when it is not. Untracked and gitignored content sits there anyway.
+- Eval fixture workspaces (`*-workspace/`, gitignored) get copied on every version bump. One
+  `node_modules` tree under `deep-audit-workspace/` put 116 MB into each cached version
+  before anyone noticed, because nothing reports cache size. Prune `node_modules` out of
+  fixture workspaces rather than deleting the workspaces themselves; the eval artifacts are
+  small and worth keeping, the deps regenerate from their own `package.json`.
+
+None of this reaches anyone installing from GitHub. Their copy is the git tree, where those
+paths do not exist.
+
 The doctrine paragraphs below ("Doctrine injection" through "When hooks are wired") are also copied verbatim into `docs/reference/operating-model.md` — a self-contained, operator-path-free excerpt that runtime surfaces (`recursive-improve`, `orchestrate/reference.md`, `reasoning-models.md`) `cat` instead of this whole file (ticket 94, spec 75). No machine check enforces the two staying identical — keep them in sync by hand if either changes.
 
 **Doctrine injection:** `hooks/session/doctrine-bootstrap.sh` fires on SessionStart and injects `docs/METHODOLOGY.md` (decision-sizing triad + reasoning scaffold) into session context via `$CLAUDE_PLUGIN_ROOT` (the plugin install dir; the older `$CLAUDE_PLUGIN_DIR` name is not a real CC variable and expands empty).
