@@ -5,6 +5,9 @@
 __pycache__/
 *.pyc
 
+# Generated artifact page (rebuild: docs/diagrams/src/artifact.py)
+docs/diagrams/src/harness-workflow-maps.html
+
 # Session / skill workspaces
 *-workspace/
 skills/*/workspace/

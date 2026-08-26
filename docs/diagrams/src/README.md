@@ -6,6 +6,7 @@ regenerate, or the next regeneration silently reverts your change.
 ```bash
 python3 docs/diagrams/src/build.py      # writes ../01-overall.html .. ../08-memory-loop.html
 python3 docs/diagrams/src/check.py      # geometry + text fit, all eight
+python3 docs/diagrams/src/artifact.py   # one page carrying all eight, for publishing
 ```
 
 | File | What it holds |
@@ -13,6 +14,12 @@ python3 docs/diagrams/src/check.py      # geometry + text fit, all eight
 | `dd.py` | Drawing primitives: nodes, ovals, diamonds, rounded elbow connectors, masked labels, the legend strip, and the page template. Colours and type follow the diagram-design default editorial skin. |
 | `build.py` | The eight diagrams themselves. One block per diagram: coordinates, labels, legend, caption, and the accessible `<title>`/`<desc>` pair. |
 | `check.py` | Two verification passes. See below. |
+| `artifact.py` | Builds `harness-workflow-maps.html`, one page holding all eight diagrams, by injecting the generated SVGs into `artifact.tpl.html`. Output is gitignored; rebuild it rather than committing it. |
+| `artifact.tpl.html` | That page's prose and styling, with `{{D1}}`..`{{D8}}` where the SVGs land. |
+
+`artifact.py` namespaces the SVG marker ids per diagram (`arrow` becomes `d3-arrow` and so
+on). Eight SVGs sharing one document would otherwise all resolve `url(#arrow)` to diagram 1's
+marker, and every arrowhead on the page would come from the wrong diagram.
 
 ## What `check.py` catches
 
