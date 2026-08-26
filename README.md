@@ -27,6 +27,7 @@ and only write new surfaces where the backend stack really needs them.
 ## Table of contents
 
 - [Why it's built this way](#why-its-built-this-way)
+- [How it runs](#how-it-runs)
 - [Quick start](#quick-start)
 - [What you get](#what-you-get)
 - [Engineering doctrine](#engineering-doctrine)
@@ -58,6 +59,41 @@ engineering, loop engineering, and graph engineering. Each was researched from p
 sources and adopted to a different degree. [Engineering doctrine](#engineering-doctrine)
 spells out which parts are structural, which are only vocabulary, and which gaps stay
 open.
+
+---
+
+## How it runs
+
+The overall map. Every box names a section in
+[`docs/workflow-diagrams.md`](docs/workflow-diagrams.md), which holds seven more diagrams —
+session lifecycle, gate fan-out, request routing, ship path, surface lifecycle, the
+orchestrate loop, and the memory loop.
+
+```mermaid
+flowchart TB
+    subgraph INSTALL["Install & cache"]
+        A1["GitHub: wasikarn/matt-harness"] --> A2["claude plugin update"]
+        A2 --> A3["~/.claude/plugins/cache/.../mh/&lt;version&gt;/"]
+        A3 --> A4["Claude Code loads every surface at startup"]
+    end
+
+    A4 --> B["2. Session lifecycle and hook dispatch"]
+    B --> C["3. Request to executor routing"]
+    C --> D["4. PreToolUse gate fan-out"]
+    D --> E["Tool runs (Bash / Edit / Skill / Agent / MCP)"]
+    E --> F["7. Orchestrate dispatch loop"]
+    E --> G["8. Memory loop"]
+    E --> H["5. Ship path"]
+    H --> I["6. Adding or removing a surface"]
+    I -.->|"version bump forces a new cache dir"| A2
+
+    classDef sec fill:#1f2937,stroke:#60a5fa,color:#e5e7eb
+    class B,C,D,F,G,H,I sec
+```
+
+The loop closes at the bottom: a change to a shipped surface only reaches a session through a
+version bump and a cache refresh. Same-version edits to a cached plugin are silent no-ops —
+the single most common way work here looks done and isn't.
 
 ---
 

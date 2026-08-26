@@ -22,8 +22,8 @@ flowchart TB
     end
 
     A4 --> B["2. Session lifecycle and hook dispatch"]
-    B --> C["4. Request to executor routing"]
-    C --> D["3. PreToolUse gate fan-out"]
+    B --> C["3. Request to executor routing"]
+    C --> D["4. PreToolUse gate fan-out"]
     D --> E["Tool runs (Bash / Edit / Skill / Agent / MCP)"]
     E --> F["7. Orchestrate dispatch loop"]
     E --> G["8. Memory loop"]
@@ -34,6 +34,9 @@ flowchart TB
     classDef sec fill:#1f2937,stroke:#60a5fa,color:#e5e7eb
     class B,C,D,F,G,H,I sec
 ```
+
+**This diagram is mirrored in `README.md`'s How it runs section — edit both or neither.**
+Nothing checks the pair; it is two files kept in sync by hand.
 
 The loop closes: a change to a shipped surface only reaches a session through a version bump
 and a cache refresh. Same-version edits are silent no-ops — that is the single most common
@@ -63,7 +66,7 @@ flowchart LR
     end
 
     E1 & E2 & E3 & E5 & E6 & E7 & E8 & E9 --> DS["dispatch-single.sh<br/>(id, tier, script)"]
-    E4 --> DP["dispatch-pretooluse.sh<br/>(see section 3)"]
+    E4 --> DP["dispatch-pretooluse.sh<br/>(see section 4)"]
 
     DS --> K{"id in MH_DISABLED_HOOKS?"}
     K -->|"yes"| X["exit 0 — hook never runs"]
@@ -99,7 +102,36 @@ with context; it cannot argue with a gate.
 
 ---
 
-## 3. PreToolUse gate fan-out
+## 3. Request to executor routing
+
+Where a prompt actually goes. This is the routing question — distinct from the inventory of
+what exists (`BOUNDARY.md`) and from orchestrate's internal procedure (section 7).
+
+```mermaid
+flowchart TB
+    U["User prompt"] --> N["UserPromptSubmit advisory nudges<br/>(flow-nudge, jira-route-nudge)"]
+    N --> Q{"How many asks, how bounded?"}
+
+    Q -->|"one bounded task<br/>1 file, 1 behaviour, deterministic check"| INL["Execute inline<br/>(orchestrate Fast Path Gate)"]
+    Q -->|"matches a named skill"| SK["Skill — procedure to follow in this context"]
+    Q -->|"bounded, independently verifiable,<br/>output would flood context"| AG["Agent — subagent with its own context"]
+    Q -->|"a pile of competing asks"| OR["7. Orchestrate dispatch loop"]
+    Q -->|"user explicitly opted in<br/>(ultracode / 'use a workflow')"| WF["Workflow tool — scripted fan-out"]
+
+    OR --> AG
+    SK -.->|"disable-model-invocation: true"| USER["Model cannot call it.<br/>Tell the user the literal /mh:&lt;name&gt; to type."]
+
+    classDef gate fill:#3f2d1d,stroke:#fbbf24,color:#fde68a
+    class USER,WF gate
+```
+
+**Two hard boundaries on this diagram.** A skill carrying `disable-model-invocation: true`
+cannot be Skill-called at all — a "yes" typed in chat is confirmation, not invocation. And the
+`Workflow` tool needs explicit user opt-in; no skill or agent here routes to it on its own.
+
+---
+
+## 4. PreToolUse gate fan-out
 
 One registration in `hooks.json`, fanned out in parallel to every gate whose matcher matches
 this specific tool call.
@@ -151,35 +183,6 @@ Table entries outnumber gate scripts: `verifier-protect`, `atlassian-mcp-gate`, 
 **`verifier-protect` is the tamper resistance.** It asks a human before any edit to
 `hooks/gates/**`, `hooks/advisory/**`, `hooks/hooks.json`, or the harness-audit grader. The
 model cannot quietly edit the code that judges it. There is no environment-variable bypass.
-
----
-
-## 4. Request to executor routing
-
-Where a prompt actually goes. This is the routing question — distinct from the inventory of
-what exists (`BOUNDARY.md`) and from orchestrate's internal procedure (section 7).
-
-```mermaid
-flowchart TB
-    U["User prompt"] --> N["UserPromptSubmit advisory nudges<br/>(flow-nudge, jira-route-nudge)"]
-    N --> Q{"How many asks, how bounded?"}
-
-    Q -->|"one bounded task<br/>1 file, 1 behaviour, deterministic check"| INL["Execute inline<br/>(orchestrate Fast Path Gate)"]
-    Q -->|"matches a named skill"| SK["Skill — procedure to follow in this context"]
-    Q -->|"bounded, independently verifiable,<br/>output would flood context"| AG["Agent — subagent with its own context"]
-    Q -->|"a pile of competing asks"| OR["7. Orchestrate dispatch loop"]
-    Q -->|"user explicitly opted in<br/>(ultracode / 'use a workflow')"| WF["Workflow tool — scripted fan-out"]
-
-    OR --> AG
-    SK -.->|"disable-model-invocation: true"| USER["Model cannot call it.<br/>Tell the user the literal /mh:&lt;name&gt; to type."]
-
-    classDef gate fill:#3f2d1d,stroke:#fbbf24,color:#fde68a
-    class USER,WF gate
-```
-
-**Two hard boundaries on this diagram.** A skill carrying `disable-model-invocation: true`
-cannot be Skill-called at all — a "yes" typed in chat is confirmation, not invocation. And the
-`Workflow` tool needs explicit user opt-in; no skill or agent here routes to it on its own.
 
 ---
 
@@ -345,8 +348,8 @@ hit a soft target is scoring by feel, and this harness scores by number.
 | Diagram | Source of truth |
 |---|---|
 | 2 — session lifecycle | `hooks/hooks.json`, `hooks/dispatch-single.sh` |
-| 3 — PreToolUse fan-out | `hooks/pretooluse-table.json`, `hooks/dispatch-pretooluse.py` |
-| 4 — routing | `skills/*/*/SKILL.md` frontmatter, `BOUNDARY.md` |
+| 3 — routing | `skills/*/*/SKILL.md` frontmatter, `BOUNDARY.md` |
+| 4 — PreToolUse fan-out | `hooks/pretooluse-table.json`, `hooks/dispatch-pretooluse.py` |
 | 5 — ship path | `git-hooks/pre-commit`, `git-hooks/pre-push`, `scripts/run-gauntlet.sh` |
 | 6 — surface lifecycle | `CLAUDE.md`, "Adding or removing a surface" |
 | 7 — orchestrate | `skills/workflow/orchestrate/SKILL.md` + `reference.md` |
