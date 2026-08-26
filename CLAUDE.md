@@ -354,15 +354,19 @@ Grouped by behavior area (not a flat bucket — find the group first, then the l
   `scripts/workflows/` are invoked by cache path from other projects, and `frame.md` cats
   `contexts/*.md` via `${MH_PLUGIN_ROOT}`. The gate covers all of them (scripts/+contexts/
   added 2026-08-21 after three scripts/-only commits silently never reached the installed
-  cache). CLAUDE.md-only edits skip the bump — dev-facing repo guidance, **deliberately
-  outside the gate even though** two shipped skills do cat it from the cache
-  (`recursive-improve/SKILL.md`, `orchestrate/reference.md`), so their cached copy can lag
-  the repo; that staleness window is the accepted trade for not bumping on every guidance
-  edit (documented 2026-08-21, compliance-audit finding). Other cached content sits outside
-  the gate with the same accepted staleness window: `BOUNDARY.md` (its former cache-readers,
-  `kbg-help` and `inventory`'s wrapper docs, were removed 2026-08-24 #80) and
-  `docs/research/kbg-vs-adhd.md` (cache-read by `ideate`'s provenance references). Known
-  gap — widen the gate only as a deliberate policy change, not silently.
+  cache). CLAUDE.md-only edits skip the bump, and that costs nothing at
+  runtime: **no shipped surface reads CLAUDE.md from the cache.** Verified 2026-08-26 by
+  grepping every surface dir for a `${MH_PLUGIN_ROOT}`/cache path ending in `CLAUDE.md`;
+  zero hits. `recursive-improve/SKILL.md` and `orchestrate/reference.md` cat
+  `docs/reference/operating-model.md`, which the excerpt exists for (see the Architecture
+  note above) and which `docs/reference/**` already puts inside the gate. This line
+  previously claimed those two skills cat CLAUDE.md itself and carried an accepted staleness
+  window for it; that was wrong, and it contradicted the Architecture note one section up.
+  `BOUNDARY.md` also has no cache-readers left (`kbg-help` and `inventory`'s wrapper docs
+  were removed 2026-08-24 #80). The one real staleness window is
+  `docs/research/kbg-vs-adhd.md`, which `ideate/references/provenance.md` cats from the cache
+  in three places while `docs/research/**` sits outside the gate. Known gap — widen the gate
+  only as a deliberate policy change, not silently.
 
 <!-- Gate enforced since 2026-08-09. -->
 
