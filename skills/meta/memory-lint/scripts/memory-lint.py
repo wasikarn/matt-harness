@@ -107,8 +107,12 @@ SUPERSEDED_RE = re.compile(r"\*\*SUPERSEDED[^*]*\*\*\s*by\s*\[\[([^\]]+)\]\]")
 POINTER_LINE_RE = re.compile(r"^- \[[^\]]+\]\(([^)]+\.md)\)(.*)$", re.MULTILINE)
 TYPE_RE = re.compile(r"(?m)^\s*type:\s*(\w+)")
 DESCRIPTION_RE = re.compile(r'(?m)^description:\s*"?(.*?)"?\s*$')
-WHY_RE = re.compile(r"\*\*Why:\*\*")
-HOW_RE = re.compile(r"\*\*How to apply:\*\*")
+# Accept qualified headings ("**Why this happens:**", "**How to apply next time:**") —
+# a strict literal match reported 10 well-formed memories as missing both fields
+# (2026-08-26), which is the exact pressure that trains authors to paste filler
+# rather than write the section. Match the field, not the wording.
+WHY_RE = re.compile(r"\*\*Why\b[^*]*\*\*")
+HOW_RE = re.compile(r"\*\*How to apply\b[^*]*\*\*")
 TEMPLATE_SCOPED_TYPES = ("feedback", "project")
 STOPWORDS = {
     "the", "a", "an", "and", "or", "to", "of", "in", "on", "for", "is", "was",
