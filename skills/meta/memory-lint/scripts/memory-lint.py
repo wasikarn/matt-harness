@@ -111,8 +111,8 @@ DESCRIPTION_RE = re.compile(r'(?m)^description:\s*"?(.*?)"?\s*$')
 # a strict literal match reported 10 well-formed memories as missing both fields
 # (2026-08-26), which is the exact pressure that trains authors to paste filler
 # rather than write the section. Match the field, not the wording.
-WHY_RE = re.compile(r"\*\*Why\b[^*]*\*\*")
-HOW_RE = re.compile(r"\*\*How to apply\b[^*]*\*\*")
+WHY_RE = re.compile(r"(?m)^#{2,4} +Why\b|\*\*Why\b[^*]*\*\*")
+HOW_RE = re.compile(r"(?m)^#{2,4} +How to apply\b|\*\*How to apply\b[^*]*\*\*")
 TEMPLATE_SCOPED_TYPES = ("feedback", "project")
 STOPWORDS = {
     "the", "a", "an", "and", "or", "to", "of", "in", "on", "for", "is", "was",
