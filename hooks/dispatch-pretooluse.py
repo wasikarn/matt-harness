@@ -7,7 +7,7 @@
 # entry whose matcher regex matches tool_name -- parallel because Claude
 # Code's own native multi-hook PreToolUse dispatch already runs candidates
 # concurrently (verified against code.claude.com/docs/en/hooks-guide,
-# "Combine results from multiple hooks", 2026-08-25); running the 9 gates
+# "Combine results from multiple hooks", 2026-08-25); running the matched gates
 # here sequentially would multiply every python3 cold-start onto the
 # critical path of every Bash/Write/Edit call instead of paying it once.
 #
