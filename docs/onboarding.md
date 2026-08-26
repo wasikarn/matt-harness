@@ -19,6 +19,7 @@ see `BOUNDARY.md` below for the live count.
 
 Visual companion: [`workflow-diagrams.md`](workflow-diagrams.md) — mermaid maps of the
 session lifecycle, gate fan-out, ship path, and orchestrate loop. Shape only, no counts.
+The same eight, hand-laid as SVG for presentation: [`diagrams/`](diagrams/).
 
 ## The 3 commands you'll use most
 

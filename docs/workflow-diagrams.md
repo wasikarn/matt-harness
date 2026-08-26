@@ -351,3 +351,8 @@ hit a soft target is scoring by feel, and this harness scores by number.
 | 8 — memory | `MEMORY.md` fold rule, `skills/meta/memory-lint/` |
 
 If a diagram and its source disagree, the source wins and the diagram is the bug.
+
+**Presentation copies:** `docs/diagrams/01..08` hold the same eight diagrams hand-laid as
+inline SVG (diagram-design, default editorial skin) — open one in a browser. The mermaid
+above stays because GitHub renders it inline and the HTML files do not. Two representations,
+kept in sync by hand; nothing checks the pair.
