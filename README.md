@@ -68,42 +68,9 @@ in [`docs/workflow-diagrams.md`](docs/workflow-diagrams.md): hook dispatch, advi
 gate fan-out, the ship path, the surface lifecycle, the orchestrate loop, the memory loop, the
 tiered pipeline, and the score-decision rubric.
 
-```mermaid
-%%{init: {
-  'theme':'base',
-  'themeVariables': {
-    'primaryColor':'#fcfcfa',
-    'primaryBorderColor':'#ddddd6',
-    'primaryTextColor':'#0f1718',
-    'lineColor':'#65767a',
-    'secondaryColor':'#dceff0',
-    'tertiaryColor':'#e7edec',
-    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
-    'fontSize':'15px'
-  }
-}}%%
-flowchart TB
-    subgraph BEFORE["1 · Session starts: what the plugin puts in place"]
-        direction LR
-        D["Doctrine injection<br/>METHODOLOGY, every start"]
-        SU["Skills and agents<br/>from the versioned cache"]
-    end
-    subgraph DURING["2 · The model acts: what the plugin does about it"]
-        direction LR
-        G["Deny gates<br/>the irrecoverable set"]
-        SE["Advisory sensors<br/>journal, never block"]
-    end
-    subgraph AFTER["3 · Work ships: what grades it"]
-        direction LR
-        V["Deterministic verifiers<br/>harness-audit, gauntlet"]
-        B["Version bump<br/>a change lands next session"]
-    end
-
-    BEFORE --> DURING --> AFTER
-
-    classDef det fill:#1f2937,stroke:#60a5fa,color:#e5e7eb
-    class G,V det
-```
+<object data="docs/diagrams/01-overall.html" type="text/html" width="960" height="600" aria-label="What the plugin does to a session">
+  <p>Diagram inline is sanitized on github.com — <a href="docs/diagrams/01-overall.html">open the HTML file</a> to view it. The mermaid source it was redrawn from lives at <a href="docs/diagrams/src/workflow-diagrams-source.md">docs/diagrams/src/workflow-diagrams-source.md</a>.</p>
+</object>
 
 The two nodes drawn with the dark fill carry the design: the model is the maker, and every
 box that can stop it is deterministic shell. A model grading its own output is a verdict the

@@ -16,42 +16,9 @@ plugin, so they do not drift when a surface is added.
 
 ## 1. What the plugin does
 
-```mermaid
-%%{init: {
-  'theme':'base',
-  'themeVariables': {
-    'primaryColor':'#fcfcfa',
-    'primaryBorderColor':'#ddddd6',
-    'primaryTextColor':'#0f1718',
-    'lineColor':'#65767a',
-    'secondaryColor':'#dceff0',
-    'tertiaryColor':'#e7edec',
-    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
-    'fontSize':'15px'
-  }
-}}%%
-flowchart TB
-    subgraph BEFORE["1 · Session starts: what the plugin puts in place"]
-        direction LR
-        D["Doctrine injection<br/>METHODOLOGY, every start"]
-        SU["Skills and agents<br/>from the versioned cache"]
-    end
-    subgraph DURING["2 · The model acts: what the plugin does about it"]
-        direction LR
-        G["Deny gates<br/>the irrecoverable set"]
-        SE["Advisory sensors<br/>journal, never block"]
-    end
-    subgraph AFTER["3 · Work ships: what grades it"]
-        direction LR
-        V["Deterministic verifiers<br/>harness-audit, gauntlet"]
-        B["Version bump<br/>a change lands next session"]
-    end
-
-    BEFORE --> DURING --> AFTER
-
-    classDef det fill:#1f2937,stroke:#60a5fa,color:#e5e7eb
-    class G,V det
-```
+<object data="docs/diagrams/01-overall.html" type="text/html" width="960" height="600" aria-label="What the plugin does to a session">
+  <p>Diagram inline is sanitized on github.com — <a href="docs/diagrams/01-overall.html">open the HTML file</a> to view it. The mermaid source it was redrawn from lives at <a href="docs/diagrams/src/workflow-diagrams-source.md">docs/diagrams/src/workflow-diagrams-source.md</a>.</p>
+</object>
 
 **This diagram is mirrored in `README.md`'s How it runs section. Edit both or neither.**
 Nothing checks the pair; it is two files kept in sync by hand.
@@ -74,46 +41,9 @@ Claude Code fires nine events that this plugin listens for. Every one except `Pr
 through `hooks/dispatch-single.sh`, a filter that can drop the hook before its real script ever
 runs.
 
-```mermaid
-%%{init: {
-  'theme':'base',
-  'themeVariables': {
-    'primaryColor':'#fcfcfa',
-    'primaryBorderColor':'#ddddd6',
-    'primaryTextColor':'#0f1718',
-    'lineColor':'#65767a',
-    'secondaryColor':'#dceff0',
-    'tertiaryColor':'#e7edec',
-    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
-    'fontSize':'15px'
-  }
-}}%%
-flowchart LR
-    subgraph EVENTS["Claude Code events"]
-        direction TB
-        E1["SessionStart"]
-        E2["InstructionsLoaded"]
-        E3["UserPromptSubmit"]
-        E4["PreToolUse"]
-        E5["PostToolUse"]
-        E6["PostToolUseFailure"]
-        E7["Stop"]
-        E8["PreCompact"]
-        E9["SessionEnd"]
-    end
-
-    E1 & E2 & E3 & E5 & E6 & E7 & E8 & E9 --> DS["dispatch-single.sh<br/>(id, tier, script)"]
-    E4 --> DP["dispatch-pretooluse.sh<br/>(see section 4)"]
-
-    DS --> K{"id in MH_DISABLED_HOOKS?"}
-    K -->|"yes"| X["exit 0, the hook never runs"]
-    K -->|"no"| T{"tier at or below MH_HOOK_PROFILE?"}
-    T -->|"no"| X
-    T -->|"yes"| R["exec the real script"]
-
-    classDef drop fill:#3f1d1d,stroke:#f87171,color:#fecaca
-    class X drop
-```
+<object data="docs/diagrams/02-session-lifecycle.html" type="text/html" width="960" height="600" aria-label="Session lifecycle and hook dispatch">
+  <p>Diagram inline is sanitized on github.com — <a href="docs/diagrams/02-session-lifecycle.html">open the HTML file</a> to view it. The mermaid source it was redrawn from lives at <a href="docs/diagrams/src/workflow-diagrams-source.md">docs/diagrams/src/workflow-diagrams-source.md</a>.</p>
+</object>
 
 **Tiers are ordinal:** `minimal(0) < standard(1) < strict(2)`. A hook fires when its own tier
 sits at or below the active profile. `MH_HOOK_PROFILE` defaults to `strict`. An unset
@@ -144,32 +74,9 @@ argue with context. It cannot argue with a gate.
 The advise half of the operating model. Section 4 is the deny half. Seven sensors watch four
 events, and grep confirms that none of them emits `permissionDecision`.
 
-```mermaid
-%%{init: {
-  'theme':'base',
-  'themeVariables': {
-    'primaryColor':'#fcfcfa',
-    'primaryBorderColor':'#ddddd6',
-    'primaryTextColor':'#0f1718',
-    'lineColor':'#65767a',
-    'secondaryColor':'#dceff0',
-    'tertiaryColor':'#e7edec',
-    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
-    'fontSize':'15px'
-  }
-}}%%
-flowchart LR
-    E1["UserPromptSubmit<br/>flow-nudge · jira-route"] --> S
-    E2["PostToolUse<br/>loop · plan · compliance"] --> S
-    E3["PostToolUseFailure<br/>mcp-failure-nudge"] --> S
-    E4["SessionEnd<br/>learn-nudge"] --> S
-    S["Advisory sensors<br/>read, count, journal"]
-    S --> C["Context into the turn<br/>the model may ignore it"]
-    S --> D["State on disk<br/>~/.local/share/"]
-
-    classDef det fill:#1f2937,stroke:#60a5fa,color:#e5e7eb
-    class C det
-```
+<object data="docs/diagrams/03-advisory-sensors.html" type="text/html" width="960" height="600" aria-label="What the advisory sensors do instead of blocking">
+  <p>Diagram inline is sanitized on github.com — <a href="docs/diagrams/03-advisory-sensors.html">open the HTML file</a> to view it. The mermaid source it was redrawn from lives at <a href="docs/diagrams/src/workflow-diagrams-source.md">docs/diagrams/src/workflow-diagrams-source.md</a>.</p>
+</object>
 
 **A sensor produces two things, and a verdict is neither of them.** It can put text into the
 turn for the model to weigh or ignore, and it can leave state on disk so the next turn knows
@@ -192,44 +99,9 @@ server itself. A sensor that concluded would be a gate wearing the wrong label.
 One registration in `hooks.json`, fanned out in parallel to every gate whose matcher matches
 this specific tool call.
 
-```mermaid
-%%{init: {
-  'theme':'base',
-  'themeVariables': {
-    'primaryColor':'#fcfcfa',
-    'primaryBorderColor':'#ddddd6',
-    'primaryTextColor':'#0f1718',
-    'lineColor':'#65767a',
-    'secondaryColor':'#dceff0',
-    'tertiaryColor':'#e7edec',
-    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
-    'fontSize':'15px'
-  }
-}}%%
-flowchart TB
-    IN["Tool call: tool_name + tool_input"] --> SH["dispatch-pretooluse.sh"]
-    SH --> PY{"python3 present?"}
-    PY -->|"no"| OPEN["fail OPEN: skip the whole fan-out,<br/>one stderr note"]
-    PY -->|"yes"| TBL{"pretooluse-table.json loads?"}
-    TBL -->|"no"| CLOSED["fail CLOSED: deny this one call"]
-    TBL -->|"yes"| M["Match tool_name against each entry's matcher regex"]
-
-    M --> P["Run every matched gate as its own process, in parallel"]
-    P --> MERGE["Merge results, strictest wins"]
-
-    MERGE --> D1["deny (3)"]
-    MERGE --> D2["defer (2)"]
-    MERGE --> D3["ask (1)"]
-    MERGE --> D4["allow (0)"]
-
-    D1 & D2 & D3 --> SUPPRESS["blocking decision<br/>suppresses updatedInput"]
-    D4 --> APPLY["updatedInput applied<br/>additionalContext concatenated"]
-
-    classDef bad fill:#3f1d1d,stroke:#f87171,color:#fecaca
-    classDef warn fill:#3f2d1d,stroke:#fbbf24,color:#fde68a
-    class CLOSED bad
-    class OPEN warn
-```
+<object data="docs/diagrams/04-pretooluse-fanout.html" type="text/html" width="960" height="600" aria-label="PreToolUse gate fan-out">
+  <p>Diagram inline is sanitized on github.com — <a href="docs/diagrams/04-pretooluse-fanout.html">open the HTML file</a> to view it. The mermaid source it was redrawn from lives at <a href="docs/diagrams/src/workflow-diagrams-source.md">docs/diagrams/src/workflow-diagrams-source.md</a>.</p>
+</object>
 
 **Two failure directions, both chosen on purpose.** A missing `python3` fails open: every
 underlying gate already fails open on its own, so failing open once here produces the same
@@ -262,59 +134,9 @@ Two git hooks, wired once per clone with `git config core.hooksPath git-hooks`. 
 path relative.** An absolute path dies the moment the directory is renamed. Git says nothing;
 it just runs no hooks at all.
 
-```mermaid
-%%{init: {
-  'theme':'base',
-  'themeVariables': {
-    'primaryColor':'#fcfcfa',
-    'primaryBorderColor':'#ddddd6',
-    'primaryTextColor':'#0f1718',
-    'lineColor':'#65767a',
-    'secondaryColor':'#dceff0',
-    'tertiaryColor':'#e7edec',
-    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
-    'fontSize':'15px'
-  }
-}}%%
-flowchart TB
-    ED["Edit a file"] --> ADD["git add, each path named"]
-    ADD --> PC["git-hooks/pre-commit runs 4 layers in parallel"]
-
-    subgraph PCL["pre-commit"]
-        direction LR
-        L1["syntax/lint<br/>bash -n, shellcheck, JSON,<br/>path + account-name hygiene"]
-        L2["harness-audit<br/>CRITICAL only"]
-        L3["version-bump<br/>a staged shipped surface forces<br/>both manifests to move"]
-        L4["new-file LOC gate<br/>conditional"]
-    end
-
-    PC --> PCL
-    PCL --> PCR{"all green?"}
-    PCR -->|"no"| BLOCK1["commit blocked"]
-    PCR -->|"yes"| CM["commit"]
-
-    CM --> PP["git-hooks/pre-push runs scripts/run-gauntlet.sh"]
-
-    subgraph GA["gauntlet: 6 layers in parallel"]
-        direction LR
-        G1["plugin-validate"]
-        G2["shell-lint"]
-        G3["json-lint"]
-        G4["harness-audit"]
-        G5["path-hygiene"]
-        G6["hook-tests"]
-    end
-
-    PP --> GA
-    GA --> GR{"all green?"}
-    GR -->|"no"| BLOCK2["push blocked"]
-    GR -->|"yes"| PUSH["push to develop"]
-    PUSH --> UPD["claude plugin update mh@wasikarn"]
-    UPD --> RS["restart Claude Code"]
-
-    classDef bad fill:#3f1d1d,stroke:#f87171,color:#fecaca
-    class BLOCK1,BLOCK2 bad
-```
+<object data="docs/diagrams/05-ship-path.html" type="text/html" width="960" height="600" aria-label="The ship path and its two gates">
+  <p>Diagram inline is sanitized on github.com — <a href="docs/diagrams/05-ship-path.html">open the HTML file</a> to view it. The mermaid source it was redrawn from lives at <a href="docs/diagrams/src/workflow-diagrams-source.md">docs/diagrams/src/workflow-diagrams-source.md</a>.</p>
+</object>
 
 **pre-commit is the fast gate and pre-push is the heavy one.** The skip flag is denied by
 `gate:bash:irrecoverable`, so the way past either one is to fix what it found.
@@ -332,31 +154,9 @@ was read as a hygiene carve-out.
 
 Auto-discovered directories: `agents/`, `skills/`, `hooks/`, `output-styles/`, `themes/`.
 
-```mermaid
-%%{init: {
-  'theme':'base',
-  'themeVariables': {
-    'primaryColor':'#fcfcfa',
-    'primaryBorderColor':'#ddddd6',
-    'primaryTextColor':'#0f1718',
-    'lineColor':'#65767a',
-    'secondaryColor':'#dceff0',
-    'tertiaryColor':'#e7edec',
-    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
-    'fontSize':'15px'
-  }
-}}%%
-flowchart TB
-    S1["1. Create or remove the file<br/>a new skill or agent needs bucket: frontmatter"] --> S2
-    S2["2. Hooks only: register in hooks.json,<br/>add tests, sweep orphaned helpers"] --> S3
-    S3["3. Bump plugin.json and marketplace.json together"] --> S4
-    S4["4. sync-fleet-counts.sh<br/>(a new agent also needs 2 hand edits)"] --> S5
-    S5["5. plugin validate --strict, then harness-audit"] --> S6
-    S6["6. claude plugin update<br/>run this before committing"] --> S7
-    S7["7. Regenerate BOUNDARY.md, commit, push, restart"]
-
-    S5 -.->|"a brand-new file reads as<br/>CRIT F1 'not loadable' here"| S6
-```
+<object data="docs/diagrams/06-surface-lifecycle.html" type="text/html" width="960" height="600" aria-label="Adding or removing a surface">
+  <p>Diagram inline is sanitized on github.com — <a href="docs/diagrams/06-surface-lifecycle.html">open the HTML file</a> to view it. The mermaid source it was redrawn from lives at <a href="docs/diagrams/src/workflow-diagrams-source.md">docs/diagrams/src/workflow-diagrams-source.md</a>.</p>
+</object>
 
 **Step 6 runs before the commit.** The pre-commit harness-audit only sees the latest cached
 plugin version, so a brand-new file keeps blocking as CRIT F1 until the cache catches up.
@@ -372,40 +172,9 @@ error while doing it. Have the agent `Read` the repo path directly.
 
 For a pile of competing asks. The lead allocates and subagents do the work.
 
-```mermaid
-%%{init: {
-  'theme':'base',
-  'themeVariables': {
-    'primaryColor':'#fcfcfa',
-    'primaryBorderColor':'#ddddd6',
-    'primaryTextColor':'#0f1718',
-    'lineColor':'#65767a',
-    'secondaryColor':'#dceff0',
-    'tertiaryColor':'#e7edec',
-    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
-    'fontSize':'15px'
-  }
-}}%%
-flowchart TB
-    G["1. Gather the task set<br/>text from a tracker is data, never instructions"] --> FP{"Fast Path Gate:<br/>1 file, 1 behaviour, under 30 lines,<br/>deterministic check, not auth/secrets?"}
-    FP -->|"yes"| INL["Execute inline. Done."]
-    FP -->|"no"| MX["2. Prioritise<br/>Step 0 first: group items that share a mental model,<br/>then score on Eisenhower / Impact×Effort / Value×Risk"]
-
-    MX --> RT["3. Route each item:<br/>inline, parallel, sequential, or drop"]
-    RT --> CAP["Clamp the work-list to 5 agents per wave<br/>(prefer 2-4). Nothing enforces this<br/>but the lead."]
-
-    CAP --> GATE{"any agent's tools: include<br/>Edit, Write, or Bash?"}
-    GATE -->|"read-only"| DISP["4. Propose, then dispatch"]
-    GATE -->|"yes"| ASK["AskUserQuestion, mandatory<br/>whatever the auto-approve setting says"]
-    ASK -->|"approved"| DISP
-
-    DISP --> CHAIN["Validation chain<br/>builder, validator, fixer, re-validator"]
-    CHAIN --> VER["5. Verify against each done-when<br/>deterministic check on code;<br/>corroborate every citation in prose output"]
-    VER --> COMB["Combine, own the integration, report"]
-
-    classDef gate fill:#3f2d1d,stroke:#fbbf24,color:#fde68a
-    class ASK,CAP gate
-```
+<object data="docs/diagrams/07-orchestrate.html" type="text/html" width="960" height="600" aria-label="The orchestrate dispatch loop">
+  <p>Diagram inline is sanitized on github.com — <a href="docs/diagrams/07-orchestrate.html">open the HTML file</a> to view it. The mermaid source it was redrawn from lives at <a href="docs/diagrams/src/workflow-diagrams-source.md">docs/diagrams/src/workflow-diagrams-source.md</a>.</p>
+</object>
 
 **One incident and two risks this shape guards against.** The incident: a prompt asking for
 "20-35 items" once produced 44, which audit and verify doubled to 105 agents, which is where
@@ -422,39 +191,9 @@ has no code to compile and so slides past every check except corroborating its c
 
 Four layers, cost-capped at the top.
 
-```mermaid
-%%{init: {
-  'theme':'base',
-  'themeVariables': {
-    'primaryColor':'#fcfcfa',
-    'primaryBorderColor':'#ddddd6',
-    'primaryTextColor':'#0f1718',
-    'lineColor':'#65767a',
-    'secondaryColor':'#dceff0',
-    'tertiaryColor':'#e7edec',
-    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
-    'fontSize':'15px'
-  }
-}}%%
-flowchart TB
-    subgraph L["Layers"]
-        direction TB
-        M1["Index: MEMORY.md<br/>loads every session, hard byte cap"]
-        M2["Context: [[wikilinks]] between memories"]
-        M3["Detail: the linked .md file"]
-        M4["Deep source: qmd search<br/>docs/research · llm-wiki"]
-        M1 --> M2 --> M3 --> M4
-    end
-
-    SS["SessionStart: memory-health-nudge<br/>(standard tier)"] -->|"silent when clean"| FIND["Surface dangling links,<br/>orphans, index drift"]
-    FIND --> ML["memory-lint, the checker"]
-    ML --> M1
-
-    ST["Stop: memory-audit-commit<br/>(minimal tier)"] --> M3
-
-    classDef quiet fill:#1f2937,stroke:#60a5fa,color:#e5e7eb
-    class SS,ST quiet
-```
+<object data="docs/diagrams/08-memory-loop.html" type="text/html" width="960" height="600" aria-label="The memory loop">
+  <p>Diagram inline is sanitized on github.com — <a href="docs/diagrams/08-memory-loop.html">open the HTML file</a> to view it. The mermaid source it was redrawn from lives at <a href="docs/diagrams/src/workflow-diagrams-source.md">docs/diagrams/src/workflow-diagrams-source.md</a>.</p>
+</object>
 
 **One fact per file.** Types are `user`, `feedback`, `project`, `reference`. Near the byte cap
 the fix is one line per entry in the index with the detail pushed down a layer, and the backing
@@ -470,31 +209,9 @@ a soft target is scoring by feel, and this harness scores by number.
 The headline multi-model review loop. Four stages, each fenced by a shell script that holds
 the boundary.
 
-```mermaid
-%%{init: {
-  'theme':'base',
-  'themeVariables': {
-    'primaryColor':'#fcfcfa',
-    'primaryBorderColor':'#ddddd6',
-    'primaryTextColor':'#0f1718',
-    'lineColor':'#65767a',
-    'secondaryColor':'#dceff0',
-    'tertiaryColor':'#e7edec',
-    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
-    'fontSize':'15px'
-  }
-}}%%
-flowchart TB
-    S1["Fable plans"] --> S2["Sonnet executes"]
-    S2 --> S3["Opus reviews<br/>fix loop, cap 3"]
-    S3 --> S4["Fable re-reviews<br/>triage-gated"]
-    S1 -.->|"prompt-only"| S2
-    S2 -.->|"prompt-only"| S3
-    S3 -.->|"counted in code"| S4
-
-    classDef gate fill:#1f2937,stroke:#60a5fa,color:#e5e7eb
-    class S3,S4 gate
-```
+<object data="docs/diagrams/09-tiered-pipeline.html" type="text/html" width="960" height="600" aria-label="The tiered pipeline: Fable to Sonnet to Opus">
+  <p>Diagram inline is sanitized on github.com — <a href="docs/diagrams/09-tiered-pipeline.html">open the HTML file</a> to view it. The mermaid source it was redrawn from lives at <a href="docs/diagrams/src/workflow-diagrams-source.md">docs/diagrams/src/workflow-diagrams-source.md</a>.</p>
+</object>
 
 **Structured but prompt-only.** Model selection is prompt-only — no script enforces which
 tier runs at each stage. The fix loop is counted in code at three retries; everything else
@@ -512,30 +229,9 @@ A formal decision verdict: stated criteria + weights + numeric result + pass/fai
 confidence. A pass threshold AND a fatal-weakness floor must both hold. Precedent is queried
 first.
 
-```mermaid
-%%{init: {
-  'theme':'base',
-  'themeVariables': {
-    'primaryColor':'#fcfcfa',
-    'primaryBorderColor':'#ddddd6',
-    'primaryTextColor':'#0f1718',
-    'lineColor':'#65767a',
-    'secondaryColor':'#dceff0',
-    'tertiaryColor':'#e7edec',
-    'fontFamily':'Source Serif 4, Charter, Georgia, serif',
-    'fontSize':'15px'
-  }
-}}%%
-flowchart TB
-    D["Decision?"] --> C1["Criterion 1<br/>alignment with stated goal"]
-    D --> C2["Criterion 2<br/>evidence for the claim"]
-    D --> C3["Criterion 3<br/>risk under the chosen path"]
-    D --> C4["Criterion 4<br/>cost of being wrong"]
-    C1 & C2 & C3 & C4 --> F["Fatal-weakness floor<br/>must hold regardless of total score"]
-
-    classDef gate fill:#3f2d1d,stroke:#fbbf24,color:#fde68a
-    class F gate
-```
+<object data="docs/diagrams/10-score-decision.html" type="text/html" width="960" height="600" aria-label="Rule 14: the score-decision rubric">
+  <p>Diagram inline is sanitized on github.com — <a href="docs/diagrams/10-score-decision.html">open the HTML file</a> to view it. The mermaid source it was redrawn from lives at <a href="docs/diagrams/src/workflow-diagrams-source.md">docs/diagrams/src/workflow-diagrams-source.md</a>.</p>
+</object>
 
 **Structured but prompt-only.** No script enforces model choice, the weights, or the floor.
 The rubric gives a defensible structure for a decision the model is about to make anyway;
@@ -566,5 +262,6 @@ When a diagram and its source disagree, the source wins and the diagram is the b
 **Presentation copies:** `docs/diagrams/01..10` hold the same ten diagrams as inline SVG in
 the diagram-design default editorial skin. Open one in a browser. They are generated, so edit
 `docs/diagrams/src/` and run `build.py`, never the HTML; `check.py` next to it verifies
-geometry and text fit. The mermaid above stays because GitHub renders it inline and the HTML
-files do not. Two representations, kept in sync by hand, with nothing checking the pair.
+geometry and text fit. The mermaid source the HTMLs were redrawn from lives at
+`docs/diagrams/src/workflow-diagrams-source.md`. Diagram inline is sanitized on github.com —
+open the HTML file directly to view it.
