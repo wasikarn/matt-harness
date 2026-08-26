@@ -375,7 +375,8 @@ a soft target is scoring by feel, and this harness scores by number.
 
 When a diagram and its source disagree, the source wins and the diagram is the bug.
 
-**Presentation copies:** `docs/diagrams/01..08` hold the same eight diagrams hand-laid as
-inline SVG in the diagram-design default editorial skin. Open one in a browser. The mermaid
-above stays because GitHub renders it inline and the HTML files do not. Two representations,
-kept in sync by hand, with nothing checking the pair.
+**Presentation copies:** `docs/diagrams/01..08` hold the same eight diagrams as inline SVG in
+the diagram-design default editorial skin. Open one in a browser. They are generated, so edit
+`docs/diagrams/src/` and run `build.py`, never the HTML; `check.py` next to it verifies
+geometry and text fit. The mermaid above stays because GitHub renders it inline and the HTML
+files do not. Two representations, kept in sync by hand, with nothing checking the pair.
