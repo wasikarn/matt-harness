@@ -15,26 +15,39 @@ harness-audit check 16). For the wiring, read `hooks/hooks.json` and
 
 ```mermaid
 flowchart TB
-    A["Session start<br/>every surface loads from the plugin cache"]
-    A --> B["2. Session lifecycle and hook dispatch"]
-    B --> C["3. Request to executor routing"]
-    C --> D["4. PreToolUse gate fan-out"]
-    D --> E["Tool runs (Bash / Edit / Skill / Agent / MCP)"]
-    E --> F["7. Orchestrate dispatch loop"]
-    E --> G["8. Memory loop"]
-    E --> H["5. Ship path"]
-    H --> I["6. Adding or removing a surface"]
-    I -.->|"version bump reaches the next session"| A
+    subgraph BEFORE["1 · Session starts — what the plugin puts in place"]
+        direction LR
+        D["Doctrine injection<br/>METHODOLOGY, every start"]
+        SU["Skills and agents<br/>from the versioned cache"]
+    end
+    subgraph DURING["2 · The model acts — what the plugin does about it"]
+        direction LR
+        G["Deny gates<br/>the irrecoverable set"]
+        SE["Advisory sensors<br/>journal, never block"]
+    end
+    subgraph AFTER["3 · Work ships — what grades it, deterministically"]
+        direction LR
+        V["Deterministic verifiers<br/>harness-audit · gauntlet"]
+        B["Version bump<br/>reaches the NEXT session, never this one"]
+    end
 
-    classDef sec fill:#1f2937,stroke:#60a5fa,color:#e5e7eb
-    class B,C,D,F,G,H,I sec
+    BEFORE --> DURING --> AFTER
+
+    classDef det fill:#1f2937,stroke:#60a5fa,color:#e5e7eb
+    class G,V det
 ```
 
 **This diagram is mirrored in `README.md`'s How it runs section — edit both or neither.**
 Nothing checks the pair; it is two files kept in sync by hand.
 
-The loop closes at the version bump: a change to a shipped surface reaches the *next*
-session, never the running one. Same-version edits are silent no-ops — that is the single most common
+**This is what the plugin does, not what Claude Code does.** The three bands are the moments
+this plugin acts on a session; the host's own request lifecycle is section 2 onward. The two
+dark boxes are the whole thesis: **the model is the maker, and every box that can stop it is
+deterministic shell.** A model that grades its own work is two optimists agreeing — so the
+gate is never a model, and the verifier is never a model.
+
+The loop closes at the version bump, which is why it is drawn as the last thing and not the
+first: a change to a shipped surface reaches the *next* session, never the running one. Same-version edits are silent no-ops — that is the single most common
 way work here appears done and is not.
 
 ---

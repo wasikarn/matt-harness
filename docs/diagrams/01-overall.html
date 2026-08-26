@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>How the harness runs</title>
+  <title>What the plugin does to a session</title>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -51,11 +51,11 @@
 <body>
   <div class="frame">
     <p class="eyebrow">mh@wasikarn · Diagram Design</p>
-    <h1>How the harness runs</h1>
+    <h1>What the plugin does to a session</h1>
 
     <svg viewBox="0 0 960 600" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="overall-title overall-desc">
-      <title id="overall-title">How the harness runs</title>
-      <desc id="overall-desc">System map showing a session flowing through hook dispatch, request routing and the PreToolUse gates into tool calls, and a ship path whose version bump only reaches the next session.</desc>
+      <title id="overall-title">What the plugin does to a session</title>
+      <desc id="overall-desc">Map of the three moments this plugin acts on a Claude Code session: putting doctrine and surfaces in place before, denying the irrecoverable and journalling the rest while the model works, and grading the result with deterministic verifiers whose changes only reach the next session.</desc>
       <defs>
         <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
         <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
@@ -64,84 +64,79 @@
 
       <rect width="100%" height="100%" fill="#f5f5f5"/>
 
-      <line x1="216" y1="116" x2="264" y2="116" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="240" y1="140" x2="304" y2="140" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
 
-      <line x1="424" y1="116" x2="472" y2="116" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="584" y1="140" x2="616" y2="140" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
 
-      <line x1="632" y1="116" x2="680" y2="116" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="240" y1="300" x2="304" y2="300" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
 
-      <line x1="768" y1="144" x2="768" y2="200" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="584" y1="300" x2="616" y2="300" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
 
-      <line x1="768" y1="256" x2="768" y2="312" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="240" y1="460" x2="304" y2="460" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
 
-      <path d="M 736,256 V 264 Q 736,272 728,272 H 368 Q 360,272 360,280 V 312" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="584" y1="460" x2="616" y2="460" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
 
-      <path d="M 704,256 V 276 Q 704,284 696,284 H 576 Q 568,284 568,292 V 312" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="140" y1="168" x2="140" y2="272" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
 
-      <line x1="768" y1="368" x2="768" y2="424" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <line x1="140" y1="328" x2="140" y2="432" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
 
-      <path d="M 680,452 H 136 Q 128,452 128,444 V 144" fill="none" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+      <path d="M 896,460 H 912 Q 920,460 920,452 V 148 Q 920,140 912,140 H 896" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
 
-      <rect x="360" y="432" width="80" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="400" y="441" fill="#eb6c36" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">VERSION BUMP</text>
+      <rect x="832" y="376" width="80" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="872" y="385" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">NEXT SESSION</text>
 
-      <rect x="40" y="88" width="176" height="56" rx="6" fill="#f5f5f5"/>
-      <rect x="40" y="88" width="176" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
-      <text x="128" y="112" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Session start</text>
-      <text x="128" y="128" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">surfaces load from cache</text>
+      <rect x="40" y="112" width="200" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="40" y="112" width="200" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+      <text x="140" y="142" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Session starts</text>
 
-      <rect x="264" y="88" width="160" height="56" rx="6" fill="#f5f5f5"/>
-      <rect x="264" y="88" width="160" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <text x="344" y="112" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Hook dispatch</text>
-      <text x="344" y="128" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">tier filter</text>
+      <rect x="40" y="272" width="200" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="40" y="272" width="200" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+      <text x="140" y="302" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">The model acts</text>
 
-      <rect x="472" y="88" width="160" height="56" rx="6" fill="#f5f5f5"/>
-      <rect x="472" y="88" width="160" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <text x="552" y="112" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Request routing</text>
-      <text x="552" y="128" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">inline · skill · agent</text>
+      <rect x="40" y="432" width="200" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="40" y="432" width="200" height="56" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+      <text x="140" y="462" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Work ships</text>
 
-      <rect x="680" y="88" width="176" height="56" rx="6" fill="#f5f5f5"/>
-      <rect x="680" y="88" width="176" height="56" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
-      <text x="768" y="112" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">PreToolUse gates</text>
-      <text x="768" y="128" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">deny · ask · allow</text>
+      <rect x="304" y="112" width="280" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="304" y="112" width="280" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="444" y="136" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Doctrine injection</text>
+      <text x="444" y="152" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">METHODOLOGY, every start</text>
 
-      <rect x="680" y="200" width="176" height="56" rx="6" fill="#f5f5f5"/>
-      <rect x="680" y="200" width="176" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <text x="768" y="224" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Tool runs</text>
-      <text x="768" y="240" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Bash · Edit · Skill · MCP</text>
+      <rect x="616" y="112" width="280" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="616" y="112" width="280" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="756" y="136" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Skills and agents</text>
+      <text x="756" y="152" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">from the versioned cache</text>
 
-      <rect x="264" y="312" width="192" height="56" rx="6" fill="#f5f5f5"/>
-      <rect x="264" y="312" width="192" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <text x="360" y="336" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Orchestrate loop</text>
-      <text x="360" y="352" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">cap 5 per wave</text>
+      <rect x="304" y="272" width="280" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="304" y="272" width="280" height="56" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="444" y="296" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Deny gates</text>
+      <text x="444" y="312" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">the irrecoverable set</text>
 
-      <rect x="472" y="312" width="176" height="56" rx="6" fill="#f5f5f5"/>
-      <rect x="472" y="312" width="176" height="56" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
-      <text x="560" y="336" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Memory loop</text>
-      <text x="560" y="352" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">index → deep source</text>
+      <rect x="616" y="272" width="280" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="616" y="272" width="280" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="756" y="296" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Advisory sensors</text>
+      <text x="756" y="312" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">journal, never block</text>
 
-      <rect x="680" y="312" width="176" height="56" rx="6" fill="#f5f5f5"/>
-      <rect x="680" y="312" width="176" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <text x="768" y="336" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Ship path</text>
-      <text x="768" y="352" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">pre-commit · gauntlet</text>
+      <rect x="304" y="432" width="280" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="304" y="432" width="280" height="56" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="444" y="456" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Deterministic verifiers</text>
+      <text x="444" y="472" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">harness-audit · gauntlet</text>
 
-      <rect x="680" y="424" width="176" height="56" rx="6" fill="#f5f5f5"/>
-      <rect x="680" y="424" width="176" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <text x="768" y="448" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Version bump</text>
-      <text x="768" y="464" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">both manifests</text>
+      <rect x="616" y="432" width="280" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="616" y="432" width="280" height="56" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="756" y="456" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Version bump</text>
+      <text x="756" y="472" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">the only way a change lands</text>
 
       <line x1="40" y1="540" x2="920" y2="540" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-      <text x="40" y="556" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND · THE LOOP CLOSES AT THE VERSION BUMP</text>
+      <text x="40" y="556" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND · THE MODEL IS THE MAKER — EVERY CORAL BOX IS SHELL, NEVER A MODEL</text>
       <rect x="40" y="576" width="24" height="12" rx="2" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
-      <text x="72" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Session entry</text>
-      <rect x="200" y="576" width="24" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
-      <text x="232" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Stage</text>
-      <rect x="340" y="576" width="24" height="12" rx="2" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
-      <text x="372" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">State</text>
-      <rect x="476" y="576" width="24" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
-      <text x="508" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Focal — the gate</text>
-      <line x1="660" y1="582" x2="688" y2="582" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
-      <text x="696" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Reaches the NEXT session</text>
+      <text x="72" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">The session's own moment</text>
+      <rect x="240" y="576" width="24" height="12" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="272" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">What the plugin adds</text>
+      <rect x="440" y="576" width="24" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="472" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Deterministic — cannot be argued with</text>
+      <line x1="740" y1="582" x2="768" y2="582" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+      <text x="776" y="586" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Lands next session</text>
     </svg>
   </div>
 </body>

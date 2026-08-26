@@ -64,30 +64,39 @@ open.
 
 ## How it runs
 
-The overall map. Every box names a section in
-[`docs/workflow-diagrams.md`](docs/workflow-diagrams.md), which holds seven more diagrams —
-session lifecycle, gate fan-out, request routing, ship path, surface lifecycle, the
-orchestrate loop, and the memory loop.
+What the plugin actually does to a session, in the three moments it acts. The host's own
+request lifecycle — hook dispatch, gate fan-out, routing — is detailed in
+[`docs/workflow-diagrams.md`](docs/workflow-diagrams.md), along with the ship path, the
+surface lifecycle, the orchestrate loop, and the memory loop.
 
 ```mermaid
 flowchart TB
-    A["Session start<br/>every surface loads from the plugin cache"]
-    A --> B["2. Session lifecycle and hook dispatch"]
-    B --> C["3. Request to executor routing"]
-    C --> D["4. PreToolUse gate fan-out"]
-    D --> E["Tool runs (Bash / Edit / Skill / Agent / MCP)"]
-    E --> F["7. Orchestrate dispatch loop"]
-    E --> G["8. Memory loop"]
-    E --> H["5. Ship path"]
-    H --> I["6. Adding or removing a surface"]
-    I -.->|"version bump reaches the next session"| A
+    subgraph BEFORE["1 · Session starts — what the plugin puts in place"]
+        direction LR
+        D["Doctrine injection<br/>METHODOLOGY, every start"]
+        SU["Skills and agents<br/>from the versioned cache"]
+    end
+    subgraph DURING["2 · The model acts — what the plugin does about it"]
+        direction LR
+        G["Deny gates<br/>the irrecoverable set"]
+        SE["Advisory sensors<br/>journal, never block"]
+    end
+    subgraph AFTER["3 · Work ships — what grades it, deterministically"]
+        direction LR
+        V["Deterministic verifiers<br/>harness-audit · gauntlet"]
+        B["Version bump<br/>reaches the NEXT session, never this one"]
+    end
 
-    classDef sec fill:#1f2937,stroke:#60a5fa,color:#e5e7eb
-    class B,C,D,F,G,H,I sec
+    BEFORE --> DURING --> AFTER
+
+    classDef det fill:#1f2937,stroke:#60a5fa,color:#e5e7eb
+    class G,V det
 ```
 
-The loop closes at the version bump: a change to a shipped surface reaches the *next* session,
-never the running one. Same-version edits to a cached plugin are silent no-ops —
+The two dark boxes are the thesis: **the model is the maker, and every box that can stop it is
+deterministic shell.** A model grading its own output is two optimists agreeing. The loop
+closes at the version bump — a change to a shipped surface reaches the *next* session, never
+the running one. Same-version edits to a cached plugin are silent no-ops —
 the single most common way work here looks done and isn't.
 
 ---
