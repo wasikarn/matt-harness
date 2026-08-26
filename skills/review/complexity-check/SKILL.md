@@ -20,8 +20,19 @@ actually holds here.
 command -v lizard >/dev/null 2>&1 || echo "not installed"
 ```
 
-If missing: tell the user, don't fabricate a result. Offer `pip install lizard` or
-`pipx install lizard` and stop — do not silently report "0 hotspots" as if the scan ran.
+If missing: tell the user, don't fabricate a result — never silently report "0 hotspots"
+as if the scan ran. Offer, in this order:
+
+1. `uvx lizard <args>` — runs it without installing anything, if `uv` is on the box
+   (`command -v uvx`). Substitute `uvx lizard` for `lizard` in every command below.
+2. `pipx install lizard` or `pip install lizard` — a persistent install, when the user
+   wants one.
+
+Prefer (1) and stop there unless the user asks to install: a review skill should not
+mutate the machine it is reviewing. Verified 2026-08-26 — this repo's own box has no
+`lizard` on `PATH` and no `lizard` module, so the earlier verification runs here went
+through the ephemeral path, and a `pip install`-only prerequisite would have read as
+"unavailable" on the very machine the skill was written on.
 
 ## Usage
 
