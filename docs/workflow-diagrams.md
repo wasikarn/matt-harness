@@ -1,7 +1,8 @@
 # Workflow diagrams
 
-Mermaid maps of how this harness actually runs. The first diagram is the index: every box
-names a section below it.
+Mermaid maps of what this plugin does and how each of its parts works. Section 1 is the
+plugin's own main work — **not** Claude Code's request lifecycle, which is the host's
+machinery this plugin merely attaches to. Sections 2 onward take one part each.
 
 **These diagrams describe shape, not census.** No count of skills, agents, or hooks is
 written here on purpose — there is no drift check on this file, and a hand-typed number goes
@@ -11,7 +12,7 @@ harness-audit check 16). For the wiring, read `hooks/hooks.json` and
 
 ---
 
-## 1. Overall
+## 1. What the plugin does
 
 ```mermaid
 flowchart TB
@@ -110,33 +111,38 @@ with context; it cannot argue with a gate.
 
 ---
 
-## 3. Request to executor routing
+## 3. Advisory sensors — what happens instead of blocking
 
-Where a prompt actually goes. This is the routing question — distinct from the inventory of
-what exists (`BOUNDARY.md`) and from orchestrate's internal procedure (section 7).
+The advise half of the operating model. Section 4 is the deny half. Seven sensors observe four
+events; **not one of them emits `permissionDecision`** — verified by grep, not by intent.
 
 ```mermaid
-flowchart TB
-    U["User prompt"] --> N["UserPromptSubmit advisory nudges<br/>(flow-nudge, jira-route-nudge)"]
-    N --> Q{"How many asks, how bounded?"}
+flowchart LR
+    E1["UserPromptSubmit<br/>flow-nudge · jira-route-nudge"] --> S
+    E2["PostToolUse<br/>loop-repeat · plan-review · compliance-audit"] --> S
+    E3["PostToolUseFailure<br/>mcp-failure-nudge"] --> S
+    E4["SessionEnd<br/>learn-nudge"] --> S
+    S["Advisory sensors<br/>hooks/advisory/ — read, count, journal"]
+    S --> C["Context into the turn<br/>the model may ignore it"]
+    S --> D["State on disk<br/>~/.local/share/"]
 
-    Q -->|"one bounded task<br/>1 file, 1 behaviour, deterministic check"| INL["Execute inline<br/>(orchestrate Fast Path Gate)"]
-    Q -->|"matches a named skill"| SK["Skill — procedure to follow in this context"]
-    Q -->|"bounded, independently verifiable,<br/>output would flood context"| AG["Agent — subagent with its own context"]
-    Q -->|"a pile of competing asks"| OR["7. Orchestrate dispatch loop"]
-    Q -->|"user explicitly opted in<br/>(ultracode / 'use a workflow')"| WF["Workflow tool — scripted fan-out"]
-
-    OR --> AG
-    SK -.->|"disable-model-invocation: true"| USER["Model cannot call it.<br/>Tell the user the literal /mh:&lt;name&gt; to type."]
-
-    classDef gate fill:#3f2d1d,stroke:#fbbf24,color:#fde68a
-    class USER,WF gate
+    classDef det fill:#1f2937,stroke:#60a5fa,color:#e5e7eb
+    class C det
 ```
 
-**Two hard boundaries on this diagram.** A skill carrying `disable-model-invocation: true`
-cannot be Skill-called at all — a "yes" typed in chat is confirmation, not invocation. And the
-`Workflow` tool needs explicit user opt-in; no skill or agent here routes to it on its own.
+**A sensor produces two things and neither one is a verdict.** It can put text into the turn,
+which the model is free to weigh or ignore, and it can leave state on disk so the next turn
+knows what the last one did. That is the whole contract.
 
+**Why the split is load-bearing.** A gate is a *verifier*: deterministic shell returning a
+score something can branch on. A sensor is an *observer*. Blurring them would put a model in
+the position of grading its own work, which is two optimists agreeing. So the sensors journal
+and nudge; the gates in section 4 are the only things that stop anything.
+
+**Mechanical, not judgmental.** `loop-repeat-nudge` counts identical `{tool, params}` pairs —
+it never decides whether a session "is spinning". `mcp-failure-nudge` observes failures Claude
+Code already surfaced; it never probes a server. Sensors that judge would be gates wearing the
+wrong label.
 ---
 
 ## 4. PreToolUse gate fan-out
@@ -356,7 +362,7 @@ hit a soft target is scoring by feel, and this harness scores by number.
 | Diagram | Source of truth |
 |---|---|
 | 2 — session lifecycle | `hooks/hooks.json`, `hooks/dispatch-single.sh` |
-| 3 — routing | `skills/*/*/SKILL.md` frontmatter, `BOUNDARY.md` |
+| 3 — advisory sensors | `hooks/advisory/*.sh`, `hooks/hooks.json` |
 | 4 — PreToolUse fan-out | `hooks/pretooluse-table.json`, `hooks/dispatch-pretooluse.py` |
 | 5 — ship path | `git-hooks/pre-commit`, `git-hooks/pre-push`, `scripts/run-gauntlet.sh` |
 | 6 — surface lifecycle | `CLAUDE.md`, "Adding or removing a surface" |

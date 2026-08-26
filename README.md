@@ -64,10 +64,10 @@ open.
 
 ## How it runs
 
-What the plugin actually does to a session, in the three moments it acts. The host's own
-request lifecycle — hook dispatch, gate fan-out, routing — is detailed in
-[`docs/workflow-diagrams.md`](docs/workflow-diagrams.md), along with the ship path, the
-surface lifecycle, the orchestrate loop, and the memory loop.
+What the plugin actually does to a session, in the three moments it acts. Each part gets its
+own diagram in [`docs/workflow-diagrams.md`](docs/workflow-diagrams.md) — hook dispatch,
+advisory sensors, gate fan-out, the ship path, the surface lifecycle, the orchestrate loop,
+and the memory loop.
 
 ```mermaid
 flowchart TB
