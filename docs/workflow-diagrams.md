@@ -15,13 +15,8 @@ harness-audit check 16). For the wiring, read `hooks/hooks.json` and
 
 ```mermaid
 flowchart TB
-    subgraph INSTALL["Install & cache"]
-        A1["GitHub: wasikarn/matt-harness"] --> A2["claude plugin update"]
-        A2 --> A3["~/.claude/plugins/cache/.../mh/&lt;version&gt;/"]
-        A3 --> A4["Claude Code loads every surface at startup"]
-    end
-
-    A4 --> B["2. Session lifecycle and hook dispatch"]
+    A["Session start<br/>every surface loads from the plugin cache"]
+    A --> B["2. Session lifecycle and hook dispatch"]
     B --> C["3. Request to executor routing"]
     C --> D["4. PreToolUse gate fan-out"]
     D --> E["Tool runs (Bash / Edit / Skill / Agent / MCP)"]
@@ -29,7 +24,7 @@ flowchart TB
     E --> G["8. Memory loop"]
     E --> H["5. Ship path"]
     H --> I["6. Adding or removing a surface"]
-    I -.->|"version bump forces a new cache dir"| A2
+    I -.->|"version bump reaches the next session"| A
 
     classDef sec fill:#1f2937,stroke:#60a5fa,color:#e5e7eb
     class B,C,D,F,G,H,I sec
@@ -38,8 +33,8 @@ flowchart TB
 **This diagram is mirrored in `README.md`'s How it runs section — edit both or neither.**
 Nothing checks the pair; it is two files kept in sync by hand.
 
-The loop closes: a change to a shipped surface only reaches a session through a version bump
-and a cache refresh. Same-version edits are silent no-ops — that is the single most common
+The loop closes at the version bump: a change to a shipped surface reaches the *next*
+session, never the running one. Same-version edits are silent no-ops — that is the single most common
 way work here appears done and is not.
 
 ---
