@@ -962,7 +962,7 @@ walkthrough, review-pr/agent-cross-reference re-verification).
 - **6 bare-slash README command references, deliberately left unfixed last round on an unverified
   guess, confirmed real via 3 official-docs citations** (not inference): `/ship`, `/fix-bug`,
   `/security-scan`, `/ship-merge`, `/ship-release`, `/ideate`, plus the Commands table's own
-  invoke-format row and the Uninstall line — all needed the `/kbg:` prefix / `kbg@kobig` form, same
+  invoke-format row and the Uninstall line — all needed the `/kbg:` prefix / `kbg@wasikarn` form, same
   as the already-fixed `/kbg:kbg-help` smoke test. Fixed all 6, confirmed zero bare-slash references
   to these 6 commands remain.
 - **2 real, pre-existing installation gaps surfaced by an adversarial new-user walkthrough,**
@@ -1001,7 +1001,7 @@ speculative features. `harness-audit`: 0 Critical / 1 Warning / 5 Info (exit 1) 
   against this repo's own `cc-plugin-skill-slash-and-allowed-tools-2026-07-07` memory; a first
   pass at this fix wrongly shipped the bare `/kbg-help` form before a second look caught it). Step
   3's Enable instruction showed incomplete JSON (missing the `enabledPlugins` wrapper) for a manual
-  `settings.json` edit that a real CLI command (`claude plugin enable kbg@kobig`) already avoids
+  `settings.json` edit that a real CLI command (`claude plugin enable kbg@wasikarn`) already avoids
   entirely — replaced. Added a documented Step 8 (`claude plugin list` / `claude plugin details`)
   since no install-time verification step existed before, and a scope-disclosure note: default
   `/plugin install` is user-wide, silently applying kbg's deny-gates to every other open project.
@@ -2054,7 +2054,7 @@ OVERRIDE default behavior" framing CLAUDE.md-tracked doctrine carries. Added a "
 failing test first" paragraph to `docs/METHODOLOGY.md` Rule 4 — write/run a test that reproduces
 the bug and confirm it fails for the right reason before writing the fix, then confirm the same
 test passes after. `docs/METHODOLOGY.md` is injected verbatim into every session by
-`hooks/session/doctrine-bootstrap.sh` (a SessionStart hook, fires wherever `kbg@kobig` is
+`hooks/session/doctrine-bootstrap.sh` (a SessionStart hook, fires wherever `kbg@wasikarn` is
 enabled — not scoped to this repo's cwd like CLAUDE.md is), so this reaches every project once
 reinstalled, without needing a mirror in the operator's global `~/.claude/CLAUDE.md`. Requires
 `claude plugin update` (or the uninstall-trash-reinstall dance if that reports a stale no-op)
@@ -5480,7 +5480,7 @@ clause and trimmed the description to 25 words; added `typescript` to the coined
 vocabulary list alongside sibling frameworks `hono`/`drizzle`/`effect-ts`; added a lowercase
 `verify`/`done when` completion-criterion sentence) rather than shipping with avoidable WARN/INFO
 noise. Skill count 35 → 36 across `plugin.json`, `marketplace.json`, `README.md`. `BOUNDARY.md`
-regenerated, `claude plugin update kbg@kobig` run to clear the transient F1 cache-lag CRIT.
+regenerated, `claude plugin update kbg@wasikarn` run to clear the transient F1 cache-lag CRIT.
 
 ## [0.68.49] — 2026-07-26
 
@@ -6831,7 +6831,7 @@ deviations (reword scope expanded from 6 to 9 locations; the repo-identity gate
 re-verified after a mid-session revert) came back independently confirmed by
 verifiers who had no visibility into that pre-declaration — a genuine falsification
 pass, not a rubber stamp. One pre-declared gap was real and unremediated: `claude
-plugin update kbg@kobig` was never run after v0.68.0 shipped, confirmed live by
+plugin update kbg@wasikarn` was never run after v0.68.0 shipped, confirmed live by
 listing the plugin cache directory (topped out at v0.67.0) — fixed by running it
 now. One new, independently-discovered gap survived to this version: the verifier
 auditing check 48 itself found that `_check_triple`/`_check_agent_count` silently
@@ -7043,7 +7043,7 @@ own remediation — the compliance audit's fixes landed on disk and in the commi
 but `claude plugin update` had already synced the plugin cache to `v0.66.0` once
 *before* the audit caught and fixed the deviation, and a same-version re-run is a
 documented no-op (`plugin-cache-same-version-stale-trap`) — confirmed live:
-`~/.claude/plugins/cache/kobig/kbg/v0.66.0/hooks/advisory/flow-nudge.sh` still had
+`~/.claude/plugins/cache/<marketplace>/kbg/v0.66.0/hooks/advisory/flow-nudge.sh` still had
 the deviated 5th-route bullet after the fix was committed. This version exists
 purely to actually ship what that commit already wrote — same pattern, same fix,
 as v0.62.1. No content change beyond the version bump.
@@ -7884,14 +7884,14 @@ told the model to run `bash skills/orchestrate/scripts/ollama-delegate.sh` —
 a repo-relative path that only resolves when the CWD happens to be
 kbg-harness itself. The user asked to use external-model delegation in other
 projects, which surfaced it: this skill runs from the plugin cache in
-whatever project has `kbg@kobig` enabled, so a relative path silently fails
+whatever project has `kbg@wasikarn` enabled, so a relative path silently fails
 ("file not found") anywhere else. Fixed to `${CLAUDE_SKILL_DIR}` — the
 Claude-Code-native env var every skill gets at invocation regardless of CWD
 — matching the existing convention in `harness-audit`/`inventory`/
 `memory-lint`'s SKILL.md files (`bash "${CLAUDE_SKILL_DIR}/scripts/...")`.
 The global `~/.claude/settings.json` permission rules from v0.58.1's symlink
 fix already applied project-agnostically; only this one line was repo-locked.
-Confirmed `kbg@kobig` itself is enabled at user scope (`enabledPlugins` in
+Confirmed `kbg@wasikarn` itself is enabled at user scope (`enabledPlugins` in
 `~/.claude/settings.json`), so the skill genuinely does load in every
 project, not just this one.
 
@@ -12427,7 +12427,7 @@ category (Added / Changed / Fixed) within each phase.
 #### Changed
 
 - **Delivery model: symlink farm → persistent plugin-enable.** The owner now installs `kbg` via
-  `claude plugin install` + `enabledPlugins["kbg@kobig"]: true` and dogfoods exactly what an
+  `claude plugin install` + `enabledPlugins["kbg@wasikarn"]: true` and dogfoods exactly what an
   external installer gets — **superseding** the 0.1.0 "bare-name symlink farm, plugin disabled
   locally" model below. `install.sh`'s component-symlink steps are neutered and the in-`~/.claude`
   symlink farm removed, so the plugin is the single delivery path. (`dotfiles` `962bfce`)
@@ -12916,7 +12916,7 @@ the spec's "compactness rule"). Acceptance contract at
   deferred (INT-N pre-task lock — answered with "validate after all builders
   complete" per the article).
 - Plugin cache sync: 2 new commands copied to
-  `~/.claude/plugins/cache/kobig/kbg/0.1.2/commands/`. Audit re-run on cache:
+  `~/.claude/plugins/cache/<marketplace>/kbg/0.1.2/commands/`. Audit re-run on cache:
   `0C/0W/49I exit 0` (49 vs 26 because the cache lacks `docs/`, surfacing
   the by-design PERM_BOOKMARK info).
 
@@ -13587,7 +13587,7 @@ Three commits landed after `0.1.2` was tagged. They are non-functional (no runti
 manifest drift, no version bump) — included here for archaeology and so a future reader of
 `orchestrate` / `critical-eval` / `article-mine` / `acli` can trace why the descriptions differ
 from the pattern in earlier versions. The auto-trigger re-measure (window 2026-05-25→now,
-scope `kobig`) confirmed **no regression**: custom auto-rate flat at 38% (76/199), all-skills
+scope `home`) confirmed **no regression**: custom auto-rate flat at 38% (76/199), all-skills
 auto-rate flat at 46% (131/286).
 
 - **Description trim cycle (4 skills).** All 26/26 kbg-harness skills now under the 700-char
@@ -13604,7 +13604,7 @@ auto-rate flat at 46% (131/286).
   `kbg-harness/skills` and `kbg-harness/commands` no longer live under a `claude/` subdir,
   so the `--repo-root` lookup misses. Added `--use-plugin-cache-fallback` flag (default off,
   explicit opt-in to avoid silent data drift for unrelated repos) that walks
-  `~/.claude/plugins/cache/kobig/kbg/<latest>/` and loads the latest semver directory.
+  `~/.claude/plugins/cache/<marketplace>/kbg/<latest>/` and loads the latest semver directory.
   Closes the 5-line-patch TODO from `project_skill_autotrigger_remeasure_2026_06_11`. (`9080f0a`)
 
 ## [0.1.1] — 2026-06-11
@@ -13641,7 +13641,7 @@ standalone, self-contained Claude Code plugin (`.claude-plugin/{plugin,marketpla
 - **Personal-harness-as-plugin (the deliberate model).** `kbg` is the owner's single source of
   truth, shipped as a plugin artifact. The owner installs it via a bare-name symlink farm
   (`install.sh`), **not** via plugin-install; the plugin is disabled locally
-  (`settings.json: "kbg@kobig": false`) so its hooks never double-fire against the symlinked copy.
+  (`settings.json: "kbg@wasikarn": false`) so its hooks never double-fire against the symlinked copy.
   See `CLAUDE.md §Plugin delivery model`.
 - **Doctrine is mandatory, not opt-in.** A stranger who installs and enables `kbg` inherits the
   owner's METHODOLOGY/RTK/ACLI/DBGATE conventions as-is. This is intentional for a personal harness;

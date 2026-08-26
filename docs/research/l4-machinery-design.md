@@ -135,7 +135,7 @@ flag. Must land first — it unblocks all three relaxations.
   `git rev-parse --show-toplevel` of CWD and **STOP** if it fails; (b) affirmatively assert that tree is the
   genuine kbg-harness checkout (sentinel `.claude-plugin/plugin.json` `name=="kbg"` **and** a work-tree whose
   remote matches the harness) else STOP with *"L3/L4/L5 self-improves the kbg-harness itself, not your
-  project — REPO_ROOT (`<path>`) is not a kbg-harness checkout."* Not an `is-this-KOBIG` env test (spoofable).
+  project — REPO_ROOT (`<path>`) is not a kbg-harness checkout."* Not an `is-this-OWNER` env test (spoofable).
   This is what makes the repo-identity precondition **real** rather than incidental — today a flag-armed
   installer is stopped only because the cache has no `.git` (`_git_dirty()` fails closed), which is silent and
   evaporates once this bug is fixed. Machine-enforce via a #48-class audit leg; the §3 substrate plan
@@ -378,7 +378,7 @@ built. Slice 0's audit #48 + R3 per-cycle assertion are the gating proof for eve
 
 ## 12. External installers (scope + guard index)
 
-The plugin is publicly installable (`claude plugin install kbg@kobig`, the **single delivery path** the
+The plugin is publicly installable (`claude plugin install kbg@wasikarn`, the **single delivery path** the
 owner dogfoods, the plugin-delivery model section in CLAUDE.md). A third party who installs it and sets the arming flag in **their own** repo on
 **their own** machine is a real operator class the autonomy design must fail safe for. A 32-agent
 fresh-context adversarial sweep (4 lenses → refute-by-default verify → synthesis, 2026-06-22) confirmed
@@ -397,7 +397,7 @@ author working *in* the harness repo, with a single-author, git-recoverable, dis
 **What already protects a fresh install (verified):** default-OFF covers it entirely — flag unset ⇒ every
 guard subcommand STOPs, push-gate `exit 0`, immunity off (all 9 findings `covered_by_default_off`). A
 *flag-armed* installer is **also** stopped today, but **only incidentally**: the plugin cache has no `.git`
-(`~/.claude/plugins/cache/kobig/kbg/<ver>/`), so `_git_dirty()` fails closed → STOP. That protection is
+(`~/.claude/plugins/cache/<marketplace>/kbg/<ver>/`), so `_git_dirty()` fails closed → STOP. That protection is
 **silent and brittle** (no message; evaporates if a delivery path ever makes the cache a git repo, or once
 the REPO_ROOT bug (§5 F4) is fixed). It must be replaced by an affirmative guard.
 
@@ -406,7 +406,7 @@ the REPO_ROOT bug (§5 F4) is fixed). It must be replaced by an affirmative guar
 | # | Guard | Slice home | Fails closed un-configured |
 |---|---|---|---|
 | 1 | Anchor `REPO_ROOT` to the *mutated* tree (`git rev-parse --show-toplevel` of CWD), STOP on failure | §5 **F4** | yes — STOP |
-| 2 | Affirmative, message-bearing repo-identity precondition (is-this-kbg, not is-this-KOBIG) | §5 **F4** | yes — STOP |
+| 2 | Affirmative, message-bearing repo-identity precondition (is-this-kbg, not is-this-OWNER) | §5 **F4** | yes — STOP |
 | 3 | `autonomy_on()` reads *user-global* arming as fail-safe-OFF (per-repo `.claude/settings.local.json` only) | §5 **F1** | yes — arms nothing |
 | 4 | Cage the arming home (`.claude/settings.local.json`), cage + `CAGE_ANCHORS` lockstep | §5 **F3** | n/a — cage entry |
 | 5 | In-plugin cross-remote pre-push CRIT (origin-vs-destination divergence, empty default allowlist) | §8.5 **Slice 4** | yes — pushes nowhere |
@@ -416,7 +416,7 @@ Guards 1+2 also gate Slice 3 self-launch (§8) — an unattended loop amplifies 
 **Reject Option-C** (porting the owner's named-org deny-list / autoMode `hard_deny` into the plugin) as
 public-distributable drift (a stated non-goal). The portable substitute for each owner guard is its
 **mechanism, default-empty**: origin-vs-destination divergence (not the named orgs); repo-is-kbg (not
-is-this-KOBIG); per-repo-only arming (not the owner's `defaultMode`). Each fails closed when the installer
+is-this-OWNER); per-repo-only arming (not the owner's `defaultMode`). Each fails closed when the installer
 has configured nothing.
 
 **Present-tense (ships before any machinery):** the only live installer footgun is documentation — bare

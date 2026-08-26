@@ -17,8 +17,8 @@ date: 2026-06-15
 | Circle (L309, L318) | kbg-harness counterpart |
 |---|---|
 | **Model** | Claude (Opus/Sonnet) — out of scope |
-| **Builder harness** | Claude Code CLI + plugin runtime; `~/.claude/plugins/cache/kobig/kbg/0.1.18/` (CLAUDE.md:13-24) + 14-event hook lifecycle (`hooks/hooks.json:3-449`) |
-| **User harness** | The `kbg@kobig` plugin — 28 agents, 34 skills, 16 commands, 38 hooks + doctrine on SessionStart (`hooks/session/doctrine-bootstrap.sh`, CLAUDE.md:26-30) |
+| **Builder harness** | Claude Code CLI + plugin runtime; `~/.claude/plugins/cache/<marketplace>/kbg/0.1.18/` (CLAUDE.md:13-24) + 14-event hook lifecycle (`hooks/hooks.json:3-449`) |
+| **User harness** | The `kbg@wasikarn` plugin — 28 agents, 34 skills, 16 commands, 38 hooks + doctrine on SessionStart (`hooks/session/doctrine-bootstrap.sh`, CLAUDE.md:26-30) |
 
 ## 2. Maintainability axis (L354-446)
 

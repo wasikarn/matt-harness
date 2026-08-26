@@ -52,6 +52,18 @@ trap 'rm -rf "$WORK_TMP"' EXIT
 # ---- Layer 1: syntax / lint checks ----
 run_syntax_layer() {
   local rc=0
+  # Account token for the bare-name check below. Resolved once, with an
+  # ANNOUNCED skip when it is too short or too common to word-match safely — a
+  # silent skip reads exactly like a clean repo.
+  local _acct_token
+  _acct_token="$(basename "$HOME")"
+  if [ "${#_acct_token}" -lt 5 ]; then
+    echo "  [hygiene] bare account-name check SKIPPED: token under 5 chars." >&2
+    _acct_token=""
+  elif printf '%s' "$_acct_token" | grep -qixE 'admin|build|ubuntu|runner|deploy|jenkins|docker|vagrant|developer|default'; then
+    echo "  [hygiene] bare account-name check SKIPPED: token is a common word." >&2
+    _acct_token=""
+  fi
   if [ "${#STAGED[@]}" -gt 0 ]; then
     for f in "${STAGED[@]}"; do
       [ -f "$f" ] || continue
@@ -109,6 +121,26 @@ run_syntax_layer() {
         grep -nF "$_home_dash" "$f" | head -5 | sed 's/^/    /' >&2
         rc=1
       fi
+
+      # ALL committed files: the BARE account name, no path around it. `<ACCOUNT>`
+      # in an author field, `@<account>` as a doc owner, `cache/<account>/`
+      # written inside prose — none of the three checks above sees any of them.
+      # Found 2026-08-26: 29 occurrences across CHANGELOG.md, docs/research/,
+      # docs/post-mortems/ and docs/plans/ survived a purge that reported the
+      # repo clean, because those dirs are carved out of *style* sweeps and that
+      # got silently read as a carve-out from *hygiene* too.
+      #
+      # Word-boundary, and gated on the token being distinctive ($_acct_token is
+      # resolved once above, empty when it is too short or too common to match
+      # safely). Mirrors run_path_hygiene() in scripts/run-gauntlet.sh — keep
+      # the two guards in step.
+      if [ -n "${_acct_token:-}" ]; then
+        if grep -niE "(^|[^A-Za-z0-9])${_acct_token}([^A-Za-z0-9]|$)" "$f" >/dev/null 2>&1; then
+          echo "  bare account name in $f — public repo, use a <placeholder>:" >&2
+          grep -niE "(^|[^A-Za-z0-9])${_acct_token}([^A-Za-z0-9]|$)" "$f" | head -5 | sed 's/^/    /' >&2
+          rc=1
+        fi
+      fi
     done
   fi
   return "$rc"
@@ -132,7 +164,7 @@ done < <(git -c core.quotepath=false diff --cached --name-only --no-renames)
 run_audit_layer() {
   local rc=0
   if [ "$ecosystem_staged" -eq 1 ]; then
-    local AUDIT="$ROOT/skills/harness-audit/scripts/audit.sh"
+    local AUDIT="$ROOT/skills/meta/harness-audit/scripts/audit.sh"
     [ -f "$AUDIT" ] || AUDIT="$(find "$ROOT/skills" -maxdepth 4 -type f -path '*/harness-audit/scripts/audit.sh' 2>/dev/null | head -1)"
     [ -n "$AUDIT" ] && [ -f "$AUDIT" ] || AUDIT="$HOME/.claude/skills/harness-audit/scripts/audit.sh"
     [ -f "$AUDIT" ] || AUDIT="$(find "$HOME/.claude/skills" -maxdepth 4 -type f -path '*/harness-audit/scripts/audit.sh' 2>/dev/null | head -1)"

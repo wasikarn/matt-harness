@@ -114,29 +114,59 @@ run_path_hygiene() {
   # Found 2026-08-26 by a case-insensitive whole-repo sweep, after the path
   # forms were already clean.
   #
-  # Deliberately scoped to the manifests + LICENSE, NOT a repo-wide bare-token
-  # grep: $HOME's basename is whatever this machine's account is called, and on
-  # a machine where that is a common word (dev, test, admin, build) a bare
-  # case-insensitive sweep would fire on ordinary prose everywhere. These four
-  # files are where identity is actually PUBLISHED, which is the leak that
-  # matters for a public repo.
-  local user_token id_hits
+  # Checked at two widths. The narrow pass (manifests + LICENSE, substring) always
+  # runs: those three files are where identity is PUBLISHED, and a match there is
+  # a leak whatever the token looks like. The wide pass is a repo-wide,
+  # word-boundary sweep of every tracked text file, and it only runs when the
+  # token is distinctive enough to be safe: $HOME's basename is whatever this
+  # machine's account is called, and on a box where that is `dev`, `admin`, or
+  # `ubuntu` a bare sweep would fire on ordinary prose in every doc. So the wide
+  # pass is gated on length + a common-word denylist and ANNOUNCES its own skip
+  # rather than passing silently — a silent skip reads identical to a clean repo.
+  #
+  # The wide pass exists because the narrow one provably could not see the real
+  # leak: on 2026-08-26 the three published files were clean while 29 occurrences
+  # sat in CHANGELOG.md, docs/research/, docs/post-mortems/ and docs/plans/ — the
+  # dirs carved out of *style* sweeps, which was silently (and wrongly) read as a
+  # carve-out from *hygiene* too.
+  local user_token id_hits bare_hits
   user_token="$(basename "$HOME")"
   id_hits=""
+  bare_hits=""
   if [ -n "$user_token" ]; then
+    # narrow pass — always runs, published identity only. Word-boundary, not a
+    # bare substring: an early draft used `grep -iqF` and fired on
+    # `"category": "development"` for any machine whose account is `dev`, i.e.
+    # the same false-positive disease the wide pass below is guarded against.
+    # The real leak forms (`"name": "<ACCOUNT>"`, `Copyright (c) <year>
+    # <ACCOUNT>`) are all word-bounded, so nothing real is lost.
     for _idf in ".claude-plugin/plugin.json" ".claude-plugin/marketplace.json" "LICENSE"; do
       [ -f "$ROOT/$_idf" ] || continue
-      if grep -iqF "$user_token" "$ROOT/$_idf" 2>/dev/null; then
+      if grep -iqE "(^|[^A-Za-z0-9])${user_token}([^A-Za-z0-9]|\$)" "$ROOT/$_idf" 2>/dev/null; then
         id_hits="$id_hits$_idf"$'\n'
       fi
     done
+
+    # wide pass — repo-wide, word-boundary, gated on token distinctiveness
+    if [ "${#user_token}" -lt 5 ]; then
+      echo "  [path-hygiene] repo-wide account-name sweep SKIPPED: account token is" >&2
+      echo "                 under 5 chars, too short to word-match without false hits." >&2
+      echo "                 Published-identity files were still checked." >&2
+    elif printf '%s' "$user_token" | grep -qixE 'admin|build|ubuntu|runner|deploy|jenkins|docker|vagrant|developer|default'; then
+      echo "  [path-hygiene] repo-wide account-name sweep SKIPPED: account token is a" >&2
+      echo "                 common word, a bare sweep would fire on ordinary prose." >&2
+      echo "                 Published-identity files were still checked." >&2
+    else
+      bare_hits="$(git -C "$ROOT" grep -I -l -iE "(^|[^A-Za-z0-9])${user_token}([^A-Za-z0-9]|\$)" -- . 2>/dev/null)"
+    fi
   fi
 
-  if [ -n "$hits" ] || [ -n "$dash_hits" ] || [ -n "$id_hits" ]; then
+  if [ -n "$hits" ] || [ -n "$dash_hits" ] || [ -n "$id_hits" ] || [ -n "$bare_hits" ]; then
     echo "  machine identity leaked into tracked files (public repo):" >&2
     [ -n "$hits" ] && printf '%s\n' "$hits" | sed 's/^/    [slash path] /' >&2
     [ -n "$dash_hits" ] && printf '%s\n' "$dash_hits" | sed 's/^/    [dash path]  /' >&2
     [ -n "$id_hits" ] && printf '%s' "$id_hits" | sed "s|^|    [identity: '$user_token'] |" >&2
+    [ -n "$bare_hits" ] && printf '%s\n' "$bare_hits" | sed "s|^|    [bare name: '$user_token'] |" >&2
     return 1
   fi
   return 0

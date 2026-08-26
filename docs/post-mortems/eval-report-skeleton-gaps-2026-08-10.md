@@ -71,7 +71,7 @@ addresses rule 9 and names the harness-audit substitution.
 ## 9. Follow-Ups
 - [x] Turn `scored-eval-method.md`'s 9 rules + report-skeleton checklist into an explicit, literal
       checklist that a Standards-axis code-review prompt can be handed directly, instead of a
-      general "compare against this doc" brief. Owner: @kobig. Done when: a
+      general "compare against this doc" brief. Owner: @wasikarn. Done when: a
       future code-review pass on a `docs/research/` eval report is given the literal 9-rule +
       skeleton list as part of its prompt, not just the doc path. *Status 2026-08-10: the method
       doc now carries a "Literal checklist" section (10 rules + 7 skeleton items — the count
@@ -81,7 +81,7 @@ addresses rule 9 and names the harness-audit substitution.
       half-then-proven pattern as `eval-report-inventory-claims-2026-08-10.md`'s follow-up 1.*
 - [x] Decide whether every measured-eval-round report should get a compliance-audit pass by default
       before commit, rather than only on explicit user request — i.e., fold the checklist-audit step
-      into `scored-eval-method.md`'s own workflow. Owner: @kobig. Done when: the
+      into `scored-eval-method.md`'s own workflow. Owner: @wasikarn. Done when: the
       method doc either recommends this explicitly, or a considered decision is recorded for why
       not. *Decision 2026-08-10: **yes, scaled.** The method doc's new "Pre-commit verification"
       section mandates ≥1 fresh-context verifier with the literal checklist embedded, before any
@@ -91,7 +91,7 @@ addresses rule 9 and names the harness-audit substitution.
 - [x] No automated structural check exists for `docs/research/` reports against the skeleton —
       evaluate whether a lightweight script check is worth adding given this repo's existing
       harness-audit-style tooling, or whether that's over-engineering for a low-frequency artifact
-      type. Owner: @kobig. Done when: a decision is recorded either way. *Decision 2026-08-10:
+      type. Owner: @wasikarn. Done when: a decision is recorded either way. *Decision 2026-08-10:
       **skip.** Both escaped defects were content-level (a rule silently unaddressed, a check
       silently substituted) — a heading/structure linter would have passed both while adding
       false confidence. Containment is follow-up 2's mandatory checklist-verifier step; revisit

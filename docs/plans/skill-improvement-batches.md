@@ -106,7 +106,7 @@ happened to each finding:
 
 Point skill-creator explicitly at `skills/<name>/SKILL.md` in **this git checkout**
 (`~/Codes/Personals/kbg-harness`) for every batch — never the installed
-plugin-cache copy (`~/.claude/plugins/cache/kobig/kbg/vX.Y.Z/...`). skill-creator's own doctrine
+plugin-cache copy (`~/.claude/plugins/cache/<marketplace>/kbg/vX.Y.Z/...`). skill-creator's own doctrine
 branches to a `/tmp` copy when it detects an "installed, possibly read-only" skill; that heuristic
 was written for the Claude.ai/marketplace deployment model, not this repo's git-source-of-truth
 model. **Before running each batch's closeout ritual, confirm with `git diff --stat` that the repo

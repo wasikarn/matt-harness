@@ -298,9 +298,23 @@ Grouped by behavior area (not a flat bucket — find the group first, then the l
   (`.md`/`.json`/`.yaml`/`.txt`) must not carry this machine's literal home path either
   (use `~`; `/Users/<name>` placeholder text is fine). Enforced twice: staged files by the
   pre-commit gate (`git-hooks/pre-commit` Layer 1), all tracked files by the gauntlet's
-  path-hygiene layer (pre-push). Operator-layout-specific paths (like the composer-source
+  path-hygiene layer (pre-push). Both layers check three forms: the slash path, the
+  dash-encoded path (`-Users-<name>-...`, how Claude Code keys a project dir), and the
+  **bare account name** with no path around it — an author field, an `@<account>` doc
+  owner, a `cache/<account>/` fragment written inside prose. The bare-name sweep is
+  word-boundary and runs only when the account token is distinctive (at least 5 chars and
+  not a common word like `dev` or `ubuntu`); when it cannot run safely it says so out loud
+  rather than passing quietly, because a silent skip reads exactly like a clean repo.
+  Operator-layout-specific paths (like the composer-source
   clones) are fine in operator-facing files, but don't present them as universal in
   reader-facing docs.
+- **The frozen dirs are exempt from style sweeps, never from hygiene.** `docs/research/`,
+  `docs/post-mortems/`, `docs/plans/` and `CHANGELOG.md` are left alone by wording passes
+  because they are historical records. That carve-out does not extend to path or identity
+  hygiene. On 2026-08-26 an account-name purge reported the repo clean while 29 occurrences
+  sat in exactly those four places — the style carve-out had been read, silently and
+  wrongly, as a hygiene carve-out too. A privacy constraint on a public repo has no frozen
+  dirs.
 - **Never `rm -rf`:** use `trash` (or `trash-put` on Linux; neither installed → ask the
   user) for deletions. Enforced by `hooks/gates/irrecoverable.sh`, whose deny message names
   whichever CLI the machine actually has.

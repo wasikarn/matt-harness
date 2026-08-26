@@ -139,7 +139,7 @@ this gap.
   Tracked: [#69](https://github.com/wasikarn/kbg-harness/issues/69).
 - [ ] Decide whether `19cb8876`'s uncorrected claim needs a retroactive annotation (e.g., a
   CHANGELOG note under its version, mirroring the `135c1fc` treatment of `a6f29c6`) or whether this
-  post-mortem serves as the permanent record instead. Owner: repo owner (kobig) — this is a judgment
+  post-mortem serves as the permanent record instead. Owner: repo owner (wasikarn) — this is a judgment
   call about how much git-history correction is worth doing after the fact, not something the
   assistant should decide unilaterally. Done when: owner states a preference and, if a correction is
   wanted, it's committed. Tracked: [#70](https://github.com/wasikarn/kbg-harness/issues/70) (assigned

@@ -41,7 +41,7 @@ accumulated signal." All four were checked directly against source, not summariz
 
 - **`skills/recursive-improve/SKILL.md:20-21, 116`** — "every iteration stops at an
   `AskUserQuestion` gate before any mutation... Only an Approve authorizes Step 4."
-- **`iterate-skill` command** (`~/.claude/plugins/cache/kobig/kbg/v0.68.393/commands/iterate-skill.md`)
+- **`iterate-skill` command** (`~/.claude/plugins/cache/<marketplace>/kbg/v0.68.393/commands/iterate-skill.md`)
   — mandatory ASK gate between free-form Propose (Step 3) and Act (Step 5); Act only fires on
   Apply. Manually invoked, capped at 3 iterations — no decision-count trigger of any kind.
 - **`skills/learn/SKILL.md:47-49, 126-128`** — `AskUserQuestion` (multiSelect) gate before any
