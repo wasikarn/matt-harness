@@ -89,7 +89,7 @@ and that is the most common way work here looks done without being done.
 The plugin earns its keep across three layers, with one loop that closes back on itself.
 Click the diagram to open the interactive HTML version.
 
-[![mh@wasikarn core workflow: install activates a cache, runtime fires 9 deterministic gates in parallel, and a fresh-context verifier scores the result.](docs/diagrams/mh-core-workflow.svg)](docs/diagrams/mh-core-workflow.html)
+[![mh@wasikarn core workflow: install activates a cache, runtime fires 9 deterministic gates in parallel, and a fresh-context verifier scores the result.](docs/diagrams/mh-core-workflow.png)](docs/diagrams/mh-core-workflow.html)
 
 - **Install** — marketplace registers, manifest declares `defaultEnabled: false`, cache receives a working-tree copy, settings opt in.
 - **Runtime** — SessionStart injects doctrine, PreToolUse dispatcher fans out to 9 gates in parallel, strictest-wins merge decides one verdict per call.
