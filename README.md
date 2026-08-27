@@ -28,6 +28,7 @@ and only write new surfaces where the backend stack really needs them.
 
 - [Why it's built this way](#why-its-built-this-way)
 - [How it runs](#how-it-runs)
+- [Architecture](#architecture)
 - [Quick start](#quick-start)
 - [What you get](#what-you-get)
 - [Engineering doctrine](#engineering-doctrine)
@@ -80,6 +81,21 @@ deterministic shell.
 change to a shipped surface reaches the next session while the session that made it keeps
 running on the old cached copy. Same-version edits to a cached plugin are silent no-ops,
 and that is the most common way work here looks done without being done.
+
+---
+
+## Architecture
+
+The plugin earns its keep across three layers, with one loop that closes back on itself.
+Click the diagram to open the interactive HTML version.
+
+[![mh@wasikarn core workflow: install activates a cache, runtime fires 9 deterministic gates in parallel, and a fresh-context verifier scores the result.](docs/diagrams/mh-core-workflow.svg)](docs/diagrams/mh-core-workflow.html)
+
+- **Install** — marketplace registers, manifest declares `defaultEnabled: false`, cache receives a working-tree copy, settings opt in.
+- **Runtime** — SessionStart injects doctrine, PreToolUse dispatcher fans out to 9 gates in parallel, strictest-wins merge decides one verdict per call.
+- **Verify** — fresh-context audit (`mh:compliance-audit`, `mh:deep-audit`) cannot grade its own work; a numeric stop condition re-gates on every fix.
+
+The orange loop on the right (Score → Dispatcher) is the whole plugin: any change that crosses the gate without re-scoring is a regression waiting to ship. The rest is plumbing.
 
 ---
 

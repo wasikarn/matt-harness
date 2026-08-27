@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg class="diagram" viewBox="0 0 1080 640" role="img" aria-labelledby="mh-core-title mh-core-desc" xmlns="http://www.w3.org/2000/svg">
+    <title id="mh-core-title">mh@wasikarn core workflow: install, activate, gate, verify</title>
+    <desc id="mh-core-desc">A left-to-right flow with three zones — install, runtime hooks, and verify. A plugin manifest activates through a working-tree cache into a session. PreToolUse gates fan out in parallel and merge deny-over-allow into a single decision. Compliance audits run on fresh context and feed a maker-verifier loop.</desc>
+
+    <defs>
+      <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap');</style>
+      <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
+      </marker>
+      <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/>
+      </marker>
+      <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/>
+      </marker>
+      <marker id="arrow-mute" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#7a8399"/>
+      </marker>
+    </defs>
+
+    <!-- background -->
+    <rect width="1080" height="640" fill="#f5f5f5"/>
+
+    <!-- ZONES (drawn before arrows + nodes) -->
+    <!-- Zone 1: Install -->
+    <rect x="32" y="80" width="280" height="520" rx="8"
+          fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+    <rect x="48" y="84" width="76" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="86" y="93" fill="rgba(45,49,66,0.40)" font-size="7"
+          font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">INSTALL</text>
+
+    <!-- Zone 2: Runtime -->
+    <rect x="352" y="80" width="320" height="520" rx="8"
+          fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+    <rect x="368" y="84" width="84" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="410" y="93" fill="rgba(45,49,66,0.40)" font-size="7"
+          font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">RUNTIME</text>
+
+    <!-- Zone 3: Verify (accent-tint, focal zone) -->
+    <rect x="712" y="80" width="336" height="520" rx="8"
+          fill="rgba(235,108,54,0.04)" stroke="rgba(235,108,54,0.30)" stroke-width="0.8" stroke-dasharray="4,4"/>
+    <rect x="728" y="84" width="72" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="764" y="93" fill="rgba(235,108,54,0.85)" font-size="7"
+          font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">VERIFY</text>
+
+    <!-- ===== ZONE 1 NODES ===== -->
+    <!-- Node: Marketplace (source) -->
+    <g>
+      <rect x="60" y="156" width="224" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="60" y="156" width="224" height="72" rx="6" fill="white" stroke="#2d3142" stroke-width="1"/>
+      <rect x="68" y="162" width="36" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="86" y="171" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SOURCE</text>
+      <text x="172" y="186" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Marketplace</text>
+      <text x="172" y="204" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">wasikarn/mh · local dir</text>
+      <text x="172" y="218" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">NOT git checkout</text>
+    </g>
+
+    <!-- Node: Plugin manifest -->
+    <g>
+      <rect x="60" y="268" width="224" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="60" y="268" width="224" height="72" rx="6" fill="white" stroke="#2d3142" stroke-width="1"/>
+      <rect x="68" y="274" width="36" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="86" y="283" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">CONFIG</text>
+      <text x="172" y="298" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Plugin Manifest</text>
+      <text x="172" y="316" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">defaultEnabled: false</text>
+      <text x="172" y="330" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">v0.68.515 · opt-in</text>
+    </g>
+
+    <!-- Node: Cache -->
+    <g>
+      <rect x="60" y="380" width="224" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="60" y="380" width="224" height="72" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <rect x="68" y="386" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="84" y="395" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">STORE</text>
+      <text x="172" y="410" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Plugin Cache</text>
+      <text x="172" y="428" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">~31 MB working-tree copy</text>
+      <text x="172" y="442" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">~/.claude/plugins/cache/...</text>
+    </g>
+
+    <!-- Node: User opt-in -->
+    <g>
+      <rect x="60" y="492" width="224" height="72" rx="6" fill="#f5f5f5"/>
+      <rect x="60" y="492" width="224" height="72" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+      <rect x="68" y="498" width="28" height="12" rx="2" fill="transparent" stroke="rgba(122,131,153,0.40)" stroke-width="0.8"/>
+      <text x="82" y="507" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">USER</text>
+      <text x="172" y="522" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Settings Opt-in</text>
+      <text x="172" y="540" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">enabledPlugins: true</text>
+      <text x="172" y="554" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">+ restart Claude Code</text>
+    </g>
+
+    <!-- ===== ZONE 2 NODES ===== -->
+    <!-- Node: SessionStart (doctrine bootstrap) -->
+    <g>
+      <rect x="376" y="156" width="272" height="80" rx="6" fill="#f5f5f5"/>
+      <rect x="376" y="156" width="272" height="80" rx="6" fill="white" stroke="#2d3142" stroke-width="1"/>
+      <rect x="384" y="162" width="60" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="414" y="171" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SESSIONSTART</text>
+      <text x="512" y="186" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Doctrine Bootstrap</text>
+      <text x="512" y="204" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">doctrine-bootstrap.sh</text>
+      <text x="512" y="218" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">injects METHODOLOGY.md (15.8 KB)</text>
+      <text x="512" y="232" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">+ preflight, MH_PLUGIN_ROOT</text>
+    </g>
+
+    <!-- Node: PreToolUse dispatcher (focal — the gate layer) -->
+    <g>
+      <rect x="376" y="276" width="272" height="88" rx="6" fill="#f5f5f5"/>
+      <rect x="376" y="276" width="272" height="88" rx="6" fill="#f5f5f5"/>
+      <rect x="376" y="276" width="272" height="88" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.2"/>
+      <rect x="384" y="282" width="56" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.40)" stroke-width="0.8"/>
+      <text x="412" y="291" fill="rgba(235,108,54,0.85)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">FOCAL · GATE</text>
+      <text x="512" y="308" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">PreToolUse Dispatcher</text>
+      <text x="512" y="326" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">dispatch-pretooluse.py</text>
+      <text x="512" y="340" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">9 gates · parallel fan-out</text>
+      <text x="512" y="354" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">merge: deny &gt; defer &gt; ask &gt; allow</text>
+    </g>
+
+    <!-- Node: Gate roster -->
+    <g>
+      <rect x="376" y="404" width="272" height="160" rx="6" fill="#f5f5f5"/>
+      <rect x="376" y="404" width="272" height="160" rx="6" fill="white" stroke="#2d3142" stroke-width="1"/>
+      <rect x="384" y="410" width="48" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="408" y="419" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">9 GATES</text>
+      <text x="512" y="432" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Gate Roster</text>
+
+      <!-- two columns of mini rows -->
+      <text x="392" y="452" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace">irrecoverable.sh</text>
+      <text x="392" y="466" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace">  17 deny patterns</text>
+      <text x="392" y="484" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace">verifier-protect</text>
+      <text x="392" y="498" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace">  write + bash legs</text>
+      <text x="392" y="516" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace">db-write-gate</text>
+      <text x="392" y="530" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace">credential-guard</text>
+      <text x="392" y="544" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace">worktree-guard</text>
+      <text x="392" y="558" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace">config-write-guard</text>
+
+      <text x="528" y="452" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace">task-complete-sep</text>
+      <text x="528" y="466" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace">  blocks premature stop</text>
+      <text x="528" y="484" fill="#2d3142" font-size="9" font-family="'Geist Mono', monospace">atlassian-mcp-gate</text>
+      <text x="528" y="498" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace">  Skill/mcp scope</text>
+      <text x="528" y="516" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace">+ 2 more (ask-mode)</text>
+    </g>
+
+    <!-- ===== ZONE 3 NODES (focal) ===== -->
+    <!-- Node: Decision -->
+    <g>
+      <rect x="736" y="156" width="288" height="80" rx="6" fill="#f5f5f5"/>
+      <rect x="736" y="156" width="288" height="80" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.2"/>
+      <rect x="744" y="162" width="48" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.40)" stroke-width="0.8"/>
+      <text x="768" y="171" fill="rgba(235,108,54,0.85)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">DECISION</text>
+      <text x="880" y="186" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Strictest-Wins</text>
+      <text x="880" y="204" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">one branchable verdict per call</text>
+      <text x="880" y="218" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">deny  → block, exit 2</text>
+      <text x="880" y="232" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ask   → permission prompt</text>
+    </g>
+
+    <!-- Node: Maker-Verifier loop -->
+    <g>
+      <rect x="736" y="276" width="288" height="88" rx="6" fill="#f5f5f5"/>
+      <rect x="736" y="276" width="288" height="88" rx="6" fill="white" stroke="#2d3142" stroke-width="1"/>
+      <rect x="744" y="282" width="56" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="772" y="291" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">VERIFIER</text>
+      <text x="880" y="308" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Fresh-Context Audit</text>
+      <text x="880" y="326" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">mh:compliance-audit, mh:deep-audit</text>
+      <text x="880" y="340" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">disable-model-invocation: true</text>
+      <text x="880" y="354" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">user-invoked only · exit = finding count</text>
+    </g>
+
+    <!-- Node: Score (the loop's stop condition) -->
+    <g>
+      <rect x="736" y="404" width="288" height="80" rx="6" fill="#f5f5f5"/>
+      <rect x="736" y="404" width="288" height="80" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <rect x="744" y="410" width="48" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
+      <text x="768" y="419" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SCORE</text>
+      <text x="880" y="434" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Numeric Stop Condition</text>
+      <text x="880" y="452" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">a number the gate can branch on</text>
+      <text x="880" y="466" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">never a vibe the model rationalizes</text>
+      <text x="880" y="480" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">"score, not feel" · METHODOLOGY Rule 14</text>
+    </g>
+
+    <!-- Node: Editorial callout -->
+    <g>
+      <rect x="736" y="524" width="288" height="56" rx="6" fill="#f5f5f5"/>
+      <rect x="736" y="524" width="288" height="56" rx="6" fill="transparent" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="4,3"/>
+      <text x="752" y="544" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">DOCTRINE</text>
+      <text x="752" y="560" fill="#2d3142" font-size="11" font-style="italic" font-family="'Instrument Serif', serif">"Maker cannot grade its own work."</text>
+      <text x="752" y="574" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace">a verifier must be a fresh context</text>
+    </g>
+
+    <!-- ===== ARROWS ===== -->
+    <!-- 1: Marketplace → Manifest (vertical) -->
+    <path d="M 172,228 V 260 Q 172,268 180,268 H 284" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <rect x="184" y="240" width="48" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="208" y="249" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">REGISTER</text>
+
+    <!-- 2: Manifest → Cache (vertical) -->
+    <path d="M 172,340 V 372 Q 172,380 180,380 H 284" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <rect x="184" y="352" width="60" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="214" y="361" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">UPDATE</text>
+
+    <!-- 3: Cache → Opt-in (vertical) -->
+    <path d="M 172,452 V 484 Q 172,492 180,492 H 284" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <rect x="184" y="464" width="56" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="212" y="473" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ENABLE</text>
+
+    <!-- 4: Opt-in → SessionStart (across zones, accent) -->
+    <path d="M 284,528 H 332 Q 340,528 340,520 V 196 Q 340,188 348,188 H 376" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+    <rect x="296" y="284" width="76" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="334" y="293" fill="rgba(235,108,54,0.85)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">ACTIVATE</text>
+
+    <!-- 5: SessionStart → PreToolUse Dispatcher (vertical, in zone) -->
+    <path d="M 512,236 V 268 Q 512,276 520,276 H 624" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+    <!-- 6: PreToolUse Dispatcher → Gate Roster (vertical) -->
+    <path d="M 512,364 V 396 Q 512,404 520,404 H 624" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+    <!-- 7: PreToolUse Dispatcher → Decision (across zones, accent) -->
+    <path d="M 648,320 H 692 Q 700,320 700,312 V 196 Q 700,188 708,188 H 736" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+    <rect x="660" y="240" width="80" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="700" y="249" fill="rgba(235,108,54,0.85)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">MERGE</text>
+
+    <!-- 8: Gate Roster → Decision (small label "fan-in") -->
+    <path d="M 624,420 Q 700,420 700,212 V 196" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+    <!-- 9: Decision → Fresh-Context Audit (vertical, accent) -->
+    <path d="M 880,236 V 268 Q 880,276 888,276 H 992" fill="none" stroke="#eb6c36" stroke-width="1.2" marker-end="url(#arrow-accent)"/>
+
+    <!-- 10: Fresh-Context Audit → Score (vertical) -->
+    <path d="M 880,364 V 396 Q 880,404 888,404 H 992" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+    <!-- 11: Score → Dispatcher (return loop, dashed accent) -->
+    <path d="M 736,444 H 712 Q 700,444 700,452 V 568 Q 700,576 692,576 H 348 Q 340,576 340,568 V 356 Q 340,348 348,348 H 624" fill="none" stroke="#eb6c36" stroke-width="1" stroke-dasharray="6,4" marker-end="url(#arrow-accent)"/>
+    <rect x="364" y="608" width="120" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="424" y="617" fill="rgba(235,108,54,0.85)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">RE-GATE ON FIX</text>
+
+    <!-- LEGEND (horizontal bottom strip) -->
+    <line x1="32" y1="612" x2="1048" y2="612" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+    <text x="32" y="632" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+
+    <rect x="100" y="624" width="14" height="10" rx="2" fill="white" stroke="#2d3142" stroke-width="1"/>
+    <text x="120" y="633" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">standard node</text>
+
+    <rect x="244" y="624" width="14" height="10" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.2"/>
+    <text x="264" y="633" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">focal · gate / verify</text>
+
+    <rect x="420" y="624" width="14" height="10" rx="2" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+    <text x="440" y="633" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">store / state</text>
+
+    <rect x="556" y="624" width="14" height="10" rx="2" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+    <text x="576" y="633" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">user input</text>
+
+    <line x1="700" y1="629" x2="724" y2="629" stroke="#eb6c36" stroke-width="1.2"/>
+    <polygon points="724,626 730,629 724,632" fill="#eb6c36"/>
+    <text x="738" y="633" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">accent path · gate flow</text>
+
+    <line x1="900" y1="629" x2="924" y2="629" stroke="#eb6c36" stroke-width="1" stroke-dasharray="6,4"/>
+    <polygon points="924,626 930,629 924,632" fill="#eb6c36"/>
+    <text x="938" y="633" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">re-gate loop (verify → fix → gate)</text>
+  </svg>
