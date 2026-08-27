@@ -86,16 +86,17 @@ and that is the most common way work here looks done without being done.
 
 ## Architecture
 
-The plugin earns its keep across three layers, with one loop that closes back on itself.
+One session flows through six lanes — user, model, hooks, agents+skills, scripts, verify — with one irreversible boundary.
 Click the diagram to open the interactive HTML version.
 
-[![mh@wasikarn core workflow: install activates a cache, runtime fires 9 deterministic gates in parallel, and a fresh-context verifier scores the result.](docs/diagrams/mh-core-workflow.png)](docs/diagrams/mh-core-workflow.html)
+[![mh@wasikarn core workflow: six-lane swimlane from user prompt through Claude Model, a PreToolUse dispatcher that fans out to 11 gates, advisory sensors, the agents/skills/scripts catalogues, and a verify lane of pre-commit and pre-push gauntlets.](docs/diagrams/mh-core-workflow.png)](docs/diagrams/mh-core-workflow.html)
 
-- **Install** — marketplace registers, manifest declares `defaultEnabled: false`, cache receives a working-tree copy, settings opt in.
-- **Runtime** — SessionStart injects doctrine, PreToolUse dispatcher fans out to 9 gates in parallel, strictest-wins merge decides one verdict per call.
-- **Verify** — fresh-context audit (`mh:compliance-audit`, `mh:deep-audit`) cannot grade its own work; a numeric stop condition re-gates on every fix.
+- **User → Model** — natural-language prompt (or slash command) reaches Claude Model, which is itself a tiered pipeline: Fable plans, Sonnet acts, Opus reviews, Haiku judges.
+- **Model → Dispatcher** — every skill/agent spawn, output-style emit, and tool response is bound by the PreToolUse dispatcher. Eleven gates run in parallel; strictest-wins decides one verdict per call.
+- **Hooks → Scripts** — SessionStart injects `docs/METHODOLOGY.md`; the dispatcher fans out to hook scripts (`dispatch-*.sh`, `*.py`) which are the same files the gauntlet re-invokes from git.
+- **Verify** — `pre-commit` runs the fast gate (syntax, JSON, harness-audit, LOC); `pre-push` runs the full 6-layer gauntlet. `compliance-audit` and `deep-audit` are fresh-context verifiers — manual, not auto-fired.
 
-The orange loop on the right (Score → Dispatcher) is the whole plugin: any change that crosses the gate without re-scoring is a regression waiting to ship. The rest is plumbing.
+The orange node is the only place where the maker cannot grade its own work. Everything else journals or runs as advisory.
 
 ---
 
