@@ -98,6 +98,45 @@ Click the diagram to open the interactive HTML version.
 
 The orange node is the only place where the maker cannot grade its own work. Everything else journals or runs as advisory.
 
+### Decision-sizing triad — METHODOLOGY Rule 1
+
+Before any non-trivial act, three yes/no questions. **Yes to any one of them routes the act through a plan-mode checkpoint** before editing — not the work itself, the analysis of the work. The match-rigor-to-stakes reflex is the doctrine; the plan-mode entry is the mechanism.
+
+[![mh@wasikarn decision-sizing triad: three yes/no questions (one-way door, blast radius, riskiest assumption) feeding a plan-mode checkpoint when any answer is yes, or proceed when all are no.](docs/diagrams/mh-decision-triad.png)](docs/diagrams/mh-decision-triad.html)
+
+- **One-way door?** If the act is irreversible (forced push, merged PR, deleted branch, public post) — stop and get explicit approval before proceeding.
+- **Blast radius?** If the failure mode touches more than one file, one subsystem, or one other person — narrow the change or checkpoint first.
+- **Riskiest assumption?** Name the one thing most likely to invalidate the plan if it turns out to be wrong. Probe it before committing.
+- **Default to suggesting plan-mode strongly.** The user keeps control (Shift+Tab or approve the plan); enter it yourself only when the door is clearly one-way or the user signals uncertainty. Skip entirely for trivial / known-small-fix / mechanical changes — under-planning a one-way door and over-planning a typo are the same error.
+
+For genuinely contested calls, `mattpocock-skills:grilling` is the on-demand escalation. `advisor()` is the routine pressure-test before substantive work and before declaring done — measured load-bearing in practice.
+
+### Gauntlet pipeline — pre-push 6-layer verifier
+
+The decision-triad tells you *whether* to plan. The gauntlet tells you *whether the artifact ships*. Pre-commit runs a fast subset; pre-push runs the full pre-push gauntlet through `scripts/run-gauntlet.sh`. All six layers launch in parallel as background processes and merge strictest-wins: any single ❌ sets `fail=1` and the push is blocked. Each layer writes its own log under `work-tmp/` so a failing layer is fully reproducible, not just a single exit code.
+
+[![mh@wasikarn gauntlet pipeline: a trigger node (git push or commit) fans out into six parallel verification layers — plugin-validate, shell-lint, json-lint, harness-audit, path-hygiene, hook-tests — each writing its own log, then a wait_layer funnel merges strictest-wins: proceed when all six pass (right, white), block when any single layer fails (left, coral focal).](docs/diagrams/mh-gauntlet-pipeline.png)](docs/diagrams/mh-gauntlet-pipeline.html)
+
+- **Six layers run in parallel.** Each is a deterministic verifier — no model-as-gate, no "looks fine" rationalization. One shell process per layer, no shared state.
+- **Strictest-wins merge via `wait_layer()`.** Every layer checks its PID's exit code; any non-zero sets the `fail=1` flag that the surrounding runner reads. Layers don't talk to each other — the merge is plain bash over PIDs.
+- **One log per layer.** `validate.log`, `lint.log`, `json.log`, `audit.log`, `pathhyg.log`, `hooktests.log`. A failing layer's full output is reproducible from the log alone, no re-run needed.
+- **Pre-commit runs the fast gate; pre-push runs the full gauntlet.** Same machinery, smaller scope on commit; everything runs on push. Either hook can block — pre-commit faster, pre-push more thorough.
+
+For the gauntlet's design intent and the merge contract, see [`scripts/run-gauntlet.sh`](scripts/run-gauntlet.sh) and the gauntlet-handoff narrative in `docs/research/`. The pre-commit fast gate is in [`git-hooks/pre-commit`](git-hooks/pre-commit).
+
+### Hook event × tier matrix — when each gate fires
+
+The gauntlet covers the *artifact*. Hooks cover the *session*: every Claude Code event fires zero or more handlers, each carrying a tier. The deny-vs-advise split is computational — a `gate:` prefix is immune to any profile or kill-switch, while `minimal` and `standard` handlers are advisory. The matrix below lists every handler at every event × tier intersection; the coral focal sits on PreToolUse × strict because one entry fans out to 11 underlying deny-gates via `hooks/pretooluse-table.json`.
+
+[![mh@wasikarn hook event × tier matrix: nine Claude Code hook events as rows (SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, PostToolUseFailure, Stop, PreCompact, SessionEnd, InstructionsLoaded) crossed with three enforcement tiers as columns (minimal, standard, strict). Each cell holds the entry count plus a representative handler name. PreToolUse × strict is the coral focal: 1 dispatcher + 11 deny-gates. Empty cells marked with an em-dash.](docs/diagrams/mh-hook-tier-matrix.png)](docs/diagrams/mh-hook-tier-matrix.html)
+
+- **9 events × 3 tiers.** Every cell names the handlers at that intersection. Empty cells (`—`) mean no handler exists at that intersection — not a typo, the registry genuinely has no entry there.
+- **PreToolUse is single-cell.** The hooks/hooks.json entry is the dispatcher; `hooks/pretooluse-table.json` carries the 11 underlying `gate:*` entries (all strict, all immune to kill-switch). Adding a new deny-gate means appending to the table, not editing `hooks.json`.
+- **30 hook entries total** across 9 events: 6 minimal / 9 standard / 15 strict. The strict column dominates because the deny-vs-advise doctrine puts load-bearing checks behind hooks the model can't argue with.
+- **Tier is load-bearing.** A handler can move between tiers only by re-registering it. Profile flags and kill-switches affect `standard` handlers; they do not reach `gate:` entries. This is the property that lets "the harness can be turned off for non-critical projects" coexist with "the irreversible paths are still blocked".
+
+See `hooks/hooks.json` and `hooks/pretooluse-table.json` for the registry source-of-truth.
+
 ---
 
 ## Quick start
