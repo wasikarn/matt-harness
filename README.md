@@ -89,11 +89,11 @@ and that is the most common way work here looks done without being done.
 One session flows through six lanes — user, model, hooks, agents+skills, scripts, verify — with one irreversible boundary.
 Click the diagram to open the interactive HTML version.
 
-[![mh@wasikarn core workflow: six-lane swimlane from user prompt through Claude Model, a PreToolUse dispatcher that fans out to 11 gates, advisory sensors, the agents/skills/scripts catalogues, and a verify lane of pre-commit and pre-push gauntlets.](docs/diagrams/mh-core-workflow.png)](docs/diagrams/mh-core-workflow.html)
+[![mh@wasikarn core workflow: six-lane swimlane from user prompt through Claude Model, a PreToolUse dispatcher (1 hook that fans out to 11 gate rules), advisory sensors, the agents/skills/scripts catalogues, and a verify lane of pre-commit and pre-push gauntlets.](docs/diagrams/mh-core-workflow.png)](docs/diagrams/mh-core-workflow.html)
 
 - **User → Model** — natural-language prompt (or slash command) reaches Claude Model, which is itself a tiered pipeline: Fable plans, Sonnet acts, Opus reviews, Haiku judges.
-- **Model → Dispatcher** — every skill/agent spawn, output-style emit, and tool response is bound by the PreToolUse dispatcher. Eleven gates run in parallel; strictest-wins decides one verdict per call.
-- **Hooks → Scripts** — SessionStart injects `docs/METHODOLOGY.md`; the dispatcher fans out to hook scripts (`dispatch-*.sh`, `*.py`) which are the same files the gauntlet re-invokes from git.
+- **Model → Dispatcher** — every skill/agent spawn, output-style emit, and tool response is bound by the PreToolUse dispatcher. One registered hook (`gate:pretooluse-dispatch`) fans out to 11 gate rules in `pretooluse-table.json`; strictest-wins decides one verdict per call.
+- **Hooks → Scripts** — SessionStart injects `docs/METHODOLOGY.md`; the dispatcher fans out to hook scripts (`dispatch-*.sh`, `*.py`) which are the same files the gauntlet re-invokes from git. 18 hook registrations across 9 event types.
 - **Verify** — `pre-commit` runs the fast gate (syntax, JSON, harness-audit, LOC); `pre-push` runs the full 6-layer gauntlet. `compliance-audit` and `deep-audit` are fresh-context verifiers — manual, not auto-fired.
 
 The orange node is the only place where the maker cannot grade its own work. Everything else journals or runs as advisory.
