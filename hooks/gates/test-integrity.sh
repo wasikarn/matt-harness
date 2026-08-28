@@ -13,10 +13,15 @@
 # SQL. New-file test creation needs no old-side assertion to remove, so it
 # is silent by construction — no separate carve-out required.
 #
-# Known, deliberate gap: this only catches a REMOVED assertion line or an
-# ADDED skip marker. An edit that inserts an early return/exit before
-# existing assertions (making them unreachable without deleting them) is
-# not detected — a real residual, not claimed as covered.
+# Known, deliberate gap: this catches a REMOVED assertion line, an ADDED
+# skip marker, and an ADDED always-false conditional wrap (`if false`/`if 0`/
+# `if [ 0 -eq 1 ]`) around otherwise-unchanged content — a compliance audit
+# (2026-08-28) found the last of these as a live bypass and it was folded in.
+# Still not detected: moving an assertion into a function that is never
+# called, or any other bespoke reachability trick a line-set diff can't see.
+# Closing that needs real control-flow/reachability analysis, out of scope
+# for a lightweight PreToolUse content-diff gate — a real residual, not
+# claimed as covered.
 set -uo pipefail
 
 if ! command -v python3 >/dev/null 2>&1; then
@@ -51,6 +56,18 @@ PATH_RE = re.compile(
 # use here. Also covers the python/pytest idiom for the non-bash test files.
 ASSERT_RE = re.compile(r"\bcheck\s*\"|\bassert\b|\bself\.assert|\bpytest\.raises\b|\bpytest\.fail\b")
 SKIP_RE = re.compile(r"#\s*SKIP\b|@pytest\.mark\.(skip|xfail)|\.skip\s*\(|\bxit\s*\(|\bit\.skip\s*\(", re.IGNORECASE)
+# Bash has no marker-string idiom for disabling a line the way pytest/jest do
+# -- it disables via control flow instead. Caught live by a compliance audit
+# (2026-08-28): wrapping a kept assertion in `if false; then ... fi` fully
+# neuters it while leaving the assertion'"'"'s own line text, and the diff, byte-
+# identical -- SKIP_RE alone missed it. Treated the same as an added skip
+# marker: an always-false conditional opener appearing in the new side and
+# not the old is itself the "skip" signal, independent of exact proximity to
+# an assertion line.
+DEAD_COND_RE = re.compile(
+    r"^\s*if\s*\(?\s*(false|0)\b|^\s*if\s*\[+\s*(0\s*-eq\s*1|1\s*-eq\s*0)\s*\]+",
+    re.IGNORECASE,
+)
 
 def assertion_lines(text):
     return {ln.strip() for ln in text.splitlines() if ASSERT_RE.search(ln)}
@@ -58,10 +75,14 @@ def assertion_lines(text):
 def skip_lines(text):
     return {ln.strip() for ln in text.splitlines() if SKIP_RE.search(ln)}
 
+def dead_cond_lines(text):
+    return {ln.strip() for ln in text.splitlines() if DEAD_COND_RE.search(ln)}
+
 def weakened(old_text, new_text):
     removed_assert = assertion_lines(old_text) - assertion_lines(new_text)
     added_skip = skip_lines(new_text) - skip_lines(old_text)
-    return bool(removed_assert) or bool(added_skip)
+    added_dead_cond = dead_cond_lines(new_text) - dead_cond_lines(old_text)
+    return bool(removed_assert) or bool(added_skip) or bool(added_dead_cond)
 
 def reason(path):
     return (

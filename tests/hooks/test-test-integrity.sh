@@ -1,10 +1,13 @@
 #!/usr/bin/env bash
 # Behavioral tests for hooks/gates/test-integrity.sh. Covers the content-diff
-# classifier (assertion removed -> ask, skip marker added -> ask), the path
+# classifier (assertion removed -> ask, skip marker added -> ask, an added
+# always-false conditional wrap around a kept assertion -> ask), the path
 # narrowing to real test-root shapes (not a bare "test"/"spec" substring),
 # and the negative controls the adversarial plan review demanded: new-file
 # test creation, an edit that only adds an assertion, and a non-test path
 # that merely contains "test"/"spec" as a substring must all stay silent.
+# Also proves a documented gap stays a documented gap (moving an assertion
+# into an uncalled function evades the diff by design, not by accident).
 # Run standalone: bash tests/hooks/test-test-integrity.sh
 set -uo pipefail
 
@@ -51,6 +54,24 @@ check "Edit removing a check() assertion -> ask" "$ok"
 out=$(payload_edit "$TESTFILE" 'check "case two" "$ok2"' '# SKIP: check "case two" "$ok2"' | bash "$GATE" 2>/dev/null)
 ok=1; is_ask "$out" && ok=0
 check "Edit adding a # SKIP marker -> ask" "$ok"
+
+# --- Positive: wrapping a kept assertion in an always-false conditional
+# still counts as disabling it, even though the assertion's own line text
+# is unchanged (real bypass found by a compliance audit, 2026-08-28) ---
+out=$(payload_edit "$TESTFILE" 'check "case two" "$ok2"' 'if false; then
+check "case two" "$ok2"
+fi' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" && ok=0
+check "Edit wrapping an assertion in 'if false; then...fi' -> ask" "$ok"
+
+# --- Documented gap, not silently unhandled: moving an assertion into a
+# function that's never called evades the line-set diff entirely (no
+# control-flow/reachability analysis here) -- see the gate's own header. ---
+out=$(payload_edit "$TESTFILE" 'check "case two" "$ok2"' 'never_called() {
+check "case two" "$ok2"
+}' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" || ok=0
+check "Edit moving an assertion into an uncalled function -> noask (documented gap)" "$ok"
 
 # --- Negative: only adding a new assertion -> noask ---
 out=$(payload_edit "$TESTFILE" 'check "case two" "$ok2"' 'check "case two" "$ok2"
