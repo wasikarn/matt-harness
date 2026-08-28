@@ -21,7 +21,10 @@ effort: high
 
 **Don't use it for:**
 - A one-off task → just do it; don't wrap a loop around it.
-- A plain timer/poll → use `/loop` or `/schedule`; no design needed.
+- A plain timer/poll → use `/loop` or `/schedule`; no design needed. (Classic `/loop`'s own
+  turn/cache cost — it fires as a full turn in whatever session set it up — is covered in
+  `docs/reference/env-vars.md`'s "Session-switch & turn-cost tips," not here; this skill is
+  about whether the goal is right, not what the mechanism costs.)
 - *How to wire the loop architecture* (pipelines, DAGs, long-run recovery) → that's the mechanism layer: `/loop`/`/schedule` for the wiring, the `Workflow` tool for multi-agent DAG pipelines, `orchestrate` for triaging competing tasks before any of that. **This skill only covers "is the goal right, and will it run away" — it does not re-explain mechanism.**
 
 ## Red-line premise: two levels of feedback

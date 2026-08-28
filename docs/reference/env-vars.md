@@ -72,6 +72,27 @@ Use the right model per task mid-session:
 /model opus     # complex architecture, multi-step reasoning
 ```
 
+### Session-switch & turn-cost tips (confirmed against `claude.com/blog/maximizing-the-value-of-your-claude-code-sessions`, 2026-08-29)
+
+- **`/model`, `/effort`, and Fast mode are all part of the prompt-cache key.** Switching any of
+  them mid-conversation re-prefills the *entire* conversation at full price on the next turn —
+  cheap at the start of a session or right after `/clear`, expensive in the middle of a long one.
+  `/effort` is also sticky (like the model pick, it carries into your next session as the
+  default) — run `/model` and `/effort` once in a fresh session if you're not sure what you're
+  actually on.
+- **`/clear` vs `/compact`:** `/clear` when starting a new task — don't carry one task's context
+  into the next. `/compact` when the earlier part of the *same* task is done and you still need
+  what came before it. `/rename` a session before `/clear`-ing it if you'll want to resume it
+  later.
+- **Classic `/loop` costs a full turn every time it fires, carrying the whole conversation with
+  it** — and if more than an hour passed since the last turn, that fire is also a cache miss on
+  top. Run a recurring `/loop` from a fresh session in another terminal, not the one you're
+  actively working in.
+- **`@file`-mention instead of typing a path.** It attaches the file to your message before
+  anything is sent, so there's no separate Read call. The file itself stays in context either
+  way, so mention it once per conversation — mentioning it again on a later turn generally
+  attaches a second copy.
+
 ## Context Window Management (ECC, stale — see correction below)
 
 The section below is the original ECC token-optimization guidance and predates Claude Code's
