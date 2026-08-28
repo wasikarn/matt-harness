@@ -290,6 +290,18 @@ ok=1
 [ ! -s "$JOURNAL" ] && ok=0
 check "an allow-only dispatch does not add a journal row" "$ok"
 
+# A non-blocking error (exit 1, non-2 nonzero) is one of the 5 per-entry
+# exit points and was never journaled (deep-audit 2026-08-28) -- the
+# scope this journal was built for is "ask/deny/defer/error", not just
+# "ask/deny/defer".
+: > "$JOURNAL"  # reset from the allow-only run above
+out=$(run_synthetic "$TMP/table-nonblocking.json" 2>/dev/null)
+ok=1
+if [ -f "$JOURNAL" ] && /usr/bin/grep -q '"decision": "error"' "$JOURNAL" && /usr/bin/grep -q '"id": "t:nonblocking_error"' "$JOURNAL"; then
+  ok=0
+fi
+check "a non-blocking-error verdict is journaled to gate-decisions.jsonl" "$ok"
+
 echo "=== gate-verdict journal fail-safe (the Critical finding the review caught) ==="
 # An unwritable journal path must NEVER change the dispatch's own merged
 # verdict -- the fail-open risk: an unguarded journal write throwing inside

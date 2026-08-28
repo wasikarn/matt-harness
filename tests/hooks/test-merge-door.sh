@@ -41,6 +41,14 @@ BATTERY=(
   "gh pr view -> noask (not a merge)|gh pr view 123|noask"
   "git merge -> noask (argv0 is git, not gh)|git merge feature-branch|noask"
   "gh api REST merge endpoint -> noask (documented non-goal)|gh api -X PUT repos/o/r/pulls/123/merge|noask"
+  "glued semicolon, no space -> ask (deep-audit 2026-08-28)|git push;gh pr merge 123|ask"
+  "glued &&, no space -> ask (deep-audit 2026-08-28)|git push&&gh pr merge 123|ask"
+  "glued pipe, no space -> ask (deep-audit 2026-08-28)|echo x|gh pr merge 123|ask"
+  "subshell wrap, no space -> ask (deep-audit 2026-08-28)|(gh pr merge 123)|ask"
+  "brace group -> ask (deep-audit 2026-08-28)|{ gh pr merge 123; }|ask"
+  "sudo -nu <user> bundled short flags -> ask (deep-audit 2026-08-28)|sudo -nu alice gh pr merge 123|ask"
+  "sudo -Sku <user> bundled short flags -> ask (deep-audit 2026-08-28)|sudo -Sku alice gh pr merge 123|ask"
+  "sudo -un <user>: u's value is the attached 'n', alice is the real wrapped cmd -> noask (must not over-fire)|sudo -un alice gh pr merge 123|noask"
 )
 
 for row in "${BATTERY[@]}"; do

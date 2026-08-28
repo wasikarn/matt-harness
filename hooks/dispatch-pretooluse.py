@@ -206,6 +206,7 @@ def main():
                 f"[mh:dispatch] {entry['id']} exited {rc} — non-blocking error, proceeding: {msg.splitlines()[0]}",
                 file=sys.stderr,
             )
+            _journal(entry.get("id", "?"), tool_name, "error")
             continue
 
         out = out.strip()

@@ -84,23 +84,42 @@ def _strip_heredocs(cmd):
 
 cmd = _strip_heredocs(d["tool_input"].get("command", ""))
 
-OPERATORS = {";", "&&", "||", "|", "&"}
+# Insert a literal ";" after each real newline (not in place of it, so a
+# following "#" comment still stops there) -- a backslash immediately
+# before the newline is a real line continuation, not a separator, and
+# is protected via a placeholder. Ported from the _newlines_to_seps
+# helper in worktree-guard.py (2026-08-04).
+def _newlines_to_seps(s):
+    placeholder = chr(0)
+    s = re.sub(r"\\\n", placeholder, s)
+    s = s.replace("\n", "\n; ")
+    return s.replace(placeholder, "\\\n")
+
+# shlex.split() only recognizes ;/&&/||/|/& as separators when whitespace
+# already surrounds them -- "git push;gh pr merge 123" tokenized as one
+# glued word "push;gh", so the second command in the chain never had its
+# own argv0 checked (deep-audit 2026-08-28). punctuation_chars=True makes
+# shlex split these out as their own tokens even with no surrounding
+# space, while still respecting quotes -- a genuinely-quoted ";" inside
+# an argument stays inside that one token. Grouping tokens ( ) { } get
+# the same treatment: without it, "(gh pr merge 123)" or "{ gh pr merge
+# 123; }" left a bare "(" / "{" as argv0 instead of "gh" -- a subshell/
+# brace-group bypass of the identical shape. Ported from
+# verifier-protect.sh / worktree-guard.py, which already use this
+# pattern for their own write-target detection.
+OPERATORS = {";", "&&", "||", "|", "&", "(", ")", "{", "}"}
+try:
+    tokens = list(shlex.shlex(_newlines_to_seps(cmd), posix=True, punctuation_chars=True))
+except ValueError:
+    tokens = cmd.split()
 windows, cur = [], []
-for line in re.split(r"\r?\n", cmd):
-    try:
-        tokens = shlex.split(line, posix=True)
-    except ValueError:
-        tokens = line.split()
-    for tok in tokens:
-        if tok in OPERATORS:
-            if cur:
-                windows.append(cur)
-            cur = []
-        else:
-            cur.append(tok)
-    if cur:
-        windows.append(cur)
+for tok in tokens:
+    if tok in OPERATORS:
+        if cur:
+            windows.append(cur)
         cur = []
+    else:
+        cur.append(tok)
 if cur:
     windows.append(cur)
 
@@ -141,22 +160,43 @@ for w in windows:
                 break
             argv0, rest = basename(rest[i]), rest[i + 1:]
         elif argv0 == "sudo":
-            # sudo -u/-g (short or long, space- or =-joined) select the
-            # effective identity and take a value -- the bare-flags-only
-            # path below would misread that value as the wrapped command
-            # argv0 instead (issue #115: `sudo -u alice gh pr merge`
-            # silently bypassed this gate). Attached short form (`-ualice`)
-            # is not handled -- same documented non-goal as every other
-            # flag-parsing edge in this unwrap.
-            VALUE_FLAGS = {"-u", "--user", "-g", "--group"}
+            # sudo -u/-g (short or long) select the effective identity and
+            # take a value. Handles space-joined, "="-joined long form, and
+            # attached short form ("-ualice") in one pass, PLUS bundled
+            # short flags where u/g sits anywhere in a combined token --
+            # standard getopt short-option semantics: once a value-taking
+            # character is hit, everything after it in that same token is
+            # the value for that flag, and only an empty remainder falls
+            # through to the next token. So "-nu alice" (n takes no value,
+            # u is last in the token) reads "alice" as the value for -u,
+            # taken from the next token -- but "-un alice" (u first, "n"
+            # left over in the same token) reads the attached "n" as the
+            # value for -u, so "alice" is the real wrapped command, not a
+            # value -- both resolved correctly below (deep-audit
+            # 2026-08-28, issue #115 fix only matched exact "-u"/"-g"
+            # tokens and missed every bundled form, e.g. "sudo -nu alice
+            # gh pr merge 123" still bypassed this gate after that fix).
+            # Other sudo flags that also take a value (-p, -C, -R, -T, -U)
+            # are not modeled here -- a bundle mixing one of those with
+            # u/g (e.g. "-pu") is an accepted non-goal, same tier as the
+            # habit-guard-not-adversarial-sandbox stance this file already
+            # takes in its header comment above.
+            LONG_VALUE_FLAGS = {"--user", "--group"}
             i = 0
             while i < len(rest):
                 t = rest[i]
                 bare = t.split("=", 1)[0]
-                if bare in VALUE_FLAGS:
+                if bare in LONG_VALUE_FLAGS:
                     i += 1 if "=" in t else min(2, len(rest) - i)
-                elif t.startswith("-"):
+                elif t.startswith("--"):
                     i += 1
+                elif t.startswith("-") and len(t) > 1:
+                    m = re.search(r"[ug]", t[1:])
+                    if m:
+                        attached = m.end() < len(t[1:])
+                        i += 1 if attached else min(2, len(rest) - i)
+                    else:
+                        i += 1
                 else:
                     break
             if i >= len(rest):

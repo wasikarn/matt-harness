@@ -256,6 +256,30 @@ test_deny  "$IRRECOVERABLE" "nice -n 5 rm -rf (nice with value flag)" \
   "$(bash_payload 'nice -n 5 rm -rf /tmp/x')"
 test_deny  "$IRRECOVERABLE" "nice rm -rf (bare nice wrapper)" \
   "$(bash_payload 'nice rm -rf /tmp/x')"
+
+# --- operator-glue / grouping-token bypass (deep-audit 2026-08-28): shlex.split()
+# without punctuation_chars requires whitespace around ;/&&/|| /| /& to see them
+# as separators, so "echo hi;rm -rf x" tokenized as one glued word "hi;rm" and
+# the second command's argv0 was never checked. Same fix also closes subshell/
+# brace grouping, which hid argv0 behind a bare "(" or "{" token. ---
+test_deny  "$IRRECOVERABLE" "glued semicolon, no space (was a bypass)" \
+  "$(bash_payload 'echo hi;rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "glued &&, no space (was a bypass)" \
+  "$(bash_payload 'echo hi&&rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "glued pipe, no space (was a bypass)" \
+  "$(bash_payload 'echo hi|rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "subshell wrap, no space (was a bypass)" \
+  "$(bash_payload '(rm -rf /tmp/x)')"
+test_deny  "$IRRECOVERABLE" "brace group (was a bypass)" \
+  "$(bash_payload '{ rm -rf /tmp/x; }')"
+test_allow "$IRRECOVERABLE" "quoted semicolon stays literal (must not over-block)" \
+  "$(bash_payload 'git commit -m "a;b"')"
+test_deny  "$IRRECOVERABLE" "sudo -nu <user> bundled short flags (was a bypass)" \
+  "$(bash_payload 'sudo -nu alice rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "sudo -Sku <user> bundled short flags (was a bypass)" \
+  "$(bash_payload 'sudo -Sku alice rm -rf /tmp/x')"
+test_allow "$IRRECOVERABLE" "sudo -un <user>: u's value is the attached 'n', alice is the real wrapped cmd (must not over-block)" \
+  "$(bash_payload 'sudo -un alice rm -rf /tmp/x')"
 test_deny  "$IRRECOVERABLE" "xargs rm -rf (rm via xargs)" \
   "$(bash_payload 'echo /tmp/x | xargs rm -rf')"
 test_deny  "$IRRECOVERABLE" "docker exec CONTAINER rm -rf (unwrap inner destructive)" \
