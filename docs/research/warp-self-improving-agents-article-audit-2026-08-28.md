@@ -11,7 +11,13 @@ the same idea. **Update:** candidates 1 and 2 below have since been built (v0.68
 Candidate 3 (a scheduled trigger) split in two: the CI-portable half was built (v0.68.538); the
 local half (a scheduled cold-start of `recursive-improve` itself) got its own ADR and was
 rejected (2026-08-28) — see the candidate-3 entry below for the reasoning and its accepted
-alternative. The corroborated gap is now fully resolved, not open.
+alternative. **Correction (2026-08-29, third-pass re-audit):** "fully resolved" overstated it.
+The mining/folding mechanism is real and built — but "on a schedule" holds for only 1 of the 3
+Observe signals (`harness-audit-drift.yml`, weekly cron). The gate-journal and feedback-cluster
+signals, and the Act step itself (the actual skill-file edit), still require a human to run
+`/mh:recursive-improve` manually every round, exactly as ADR 0011 deliberately scoped it. The
+gap is narrowed, not closed — accurate framing: "mining mechanism built; full scheduling stayed
+partial by deliberate ADR 0011 design."
 
 ## Method
 
@@ -147,3 +153,14 @@ still pending explicit go-ahead.
 - Not checked: how the six MATCH verdicts above were originally arrived at chronologically — i.e.,
   whether mh's design already resembled Warp's independently, or converged after seeing similar
   prior art. Not load-bearing for this audit either way.
+
+## Third-pass re-audit (2026-08-29) — top-line verdict corrected, code confirmed clean
+
+A fresh-context fork re-verified all 3 built candidates by direct execution, not by trusting this
+doc: `gate-journal-summary.sh` ran live and correctly aggregated 66 real journal rows (test suite
+4/4 pass); `feedback-surface-scan.py` ran live and correctly clustered 84 feedback memories (test
+suite 5/5 pass); `harness-audit-drift.yml` confirmed scheduled + live-commenting on issue #116,
+and `HOME="$(mktemp -d)" bash skills/meta/harness-audit/scripts/audit.sh .` (simulating a clean CI
+runner) → 0 CRIT, confirming it won't false-fire. All code held up. The one real finding was in
+this doc's own prose — the "fully resolved, not open" line above overclaimed the schedule
+coverage; corrected in place (see the **Correction** paragraph in the Verdict section above).

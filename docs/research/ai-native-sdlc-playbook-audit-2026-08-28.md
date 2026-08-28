@@ -205,7 +205,12 @@ verifiers against them. They found real bypasses in items 1-3, not just polish g
   with `collections.Counter` multisets and two new inertness strippers.
 - **Item 3 (dispatcher journal)**: only the `rc==2` deny path was journaled; the other 4
   dispatcher exits (non-blocking error, empty/unparseable stdout, missing `hookSpecificOutput`)
-  were silently unrecorded. Fixed — all 5 paths now journal.
+  were silently unrecorded. Fixed — all 5 exit points now set a named per-entry decision
+  variable and route through one journal call. **Precision correction (2026-08-29, third-pass
+  re-audit):** "all 5 paths now journal" reads as "5 rows written," which overstates it — by
+  design only non-`allow` decisions (`rc==2` deny, `rc!=0` error) actually write a row; the other
+  3 exits are allow-equivalent (no verdict to log) and correctly produce none. Accurate framing:
+  all 5 exits are now *decision-tracked*; only the non-allow ones journal.
 - **Disclosure fix**: `merge-door.sh`'s non-goal comment named the REST-API gap
   (`gh api .../pulls/N/merge`) but not the xargs/docker-exec unwrap gap it also has (unlike
   `irrecoverable.sh`, which unwraps both) — added, not built (different, larger unwrap shape per
@@ -216,3 +221,19 @@ Failure-mode-safety, evidence-backed via red→green tests per fix. Live-smoke-t
 against the actual running plugin cache (v0.68.542, not just the repo working tree) — 6/6 cases
 correct, including the gate-verdict journal itself recording the right decision at the right
 timestamp for each trigger.
+
+### Third-pass re-audit (2026-08-29) — clean, all fixes hold
+
+A fresh-context fork independently re-read all 4 gate files (`merge-door.sh`, `test-integrity.sh`,
+`irrecoverable.sh`, `dispatch-pretooluse.py`) and re-ran their tests fresh rather than trusting
+this doc's own claims: `test-merge-door.sh` 20/20, `test-integrity.sh` 19/19,
+`test-dispatch-pretooluse.sh` 23/0, `test-gates.sh` (covers `irrecoverable.sh`) 210/210 — all
+pass. Confirmed the `HOME=$TMP` test-isolation fix is real (13 occurrences in
+`test-dispatch-pretooluse.sh`), not just claimed. One imprecise line found and fixed above (the
+"all 5 paths journal" wording). Also swept two article items no prior pass had checked — managed
+settings for a regulated enterprise (`allowManagedHooksOnly` etc.) and recurring codebase
+security scans — both judged not-a-gap: the former is infrastructure for an org *consuming* the
+plugin under MDM, not something this repo builds for itself; the latter has a structural analog
+in `.github/workflows/harness-audit-drift.yml` (weekly cron, zero-human-in-path), just scoped to
+harness-structure drift rather than CVE-style scanning — partial credit, not a miss. No new
+findings; nothing to build.
