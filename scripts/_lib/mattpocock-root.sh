@@ -2,7 +2,7 @@
 # mattpocock-root.sh — shared resolver for the installed mattpocock-skills
 # plugin's cache root. Single source of truth for the session bootstrap
 # preflight (hooks/session/doctrine-bootstrap.sh) and the integration-refs
-# audit check (skills/meta/harness-audit/scripts/checks/51-mattpocock-integration-refs.sh)
+# audit check (skills/meta/harness-audit/scripts/checks/50-mattpocock-integration-refs.sh)
 # (#92/T13) — both previously duplicated ad-hoc versions of this lookup,
 # one of which (doctrine-bootstrap.sh) only checked the parent cache
 # directory's existence with no version resolution or completeness check.

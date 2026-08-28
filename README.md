@@ -126,13 +126,14 @@ For the gauntlet's design intent and the merge contract, see [`scripts/run-gaunt
 
 ### Hook profile stack — tier is a volume knob, not a severity
 
-The gauntlet covers the *artifact*. Hooks cover the *session*, and 29 hook registrations split
-across two dispatch paths that behave nothing alike. 18 route through `dispatch-single.sh`, where
-`tier` sets the *minimum* `MH_HOOK_PROFILE` at which a handler fires — lowering the profile peels
-handlers off starting with `strict`, so `strict` is the tier a profile change switches off *first*,
-not the strongest enforcement. The other 11 route through `dispatch-pretooluse.sh`, which carries
-no tier field at all and reads neither `MH_HOOK_PROFILE` nor `MH_DISABLED_HOOKS` — the actual
-deny-vs-advise boundary is this path, not a tier label.
+The gauntlet covers the *artifact*. Hooks cover the *session*, and 29 enforcement points split
+across two tables that behave nothing alike. 18 live in `hooks.json`; 17 of those route through
+`dispatch-single.sh`, where `tier` sets the *minimum* `MH_HOOK_PROFILE` at which a handler fires —
+lowering the profile peels handlers off starting with `strict`, so `strict` is the tier a profile
+change switches off *first*, not the strongest enforcement. The 18th is `PreToolUse`'s single
+entry, which routes through `dispatch-pretooluse.sh` instead and fans out to the other 11, in
+`pretooluse-table.json` — no tier field at all, reading neither `MH_HOOK_PROFILE` nor
+`MH_DISABLED_HOOKS` — the actual deny-vs-advise boundary is this path, not a tier label.
 
 [![mh@wasikarn hook enforcement: dispatch-single.sh's three-tier filter stack (strict on top since it's the first tier a lowered profile switches off, standard in the middle, minimal at the base as the always-on floor) vs dispatch-pretooluse.sh's untiered gate path, coral focal, immune to both MH_HOOK_PROFILE and MH_DISABLED_HOOKS.](docs/diagrams/mh-hook-profile-stack.png)](docs/diagrams/mh-hook-profile-stack.html)
 
