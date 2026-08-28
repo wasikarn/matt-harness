@@ -186,3 +186,33 @@ Full plan: `~/.claude/plans/proud-cooking-meteor.md` (session-local, not in this
 confirmed via a `git stash` before/after diff). Diagram content edits are out of this plan's
 scope (they need the `diagram-design` skill's own re-export pipeline) — named here so it doesn't
 get silently lost.
+
+### Deep-audit hardening pass (2026-08-28, same day)
+
+`mh:deep-audit` treated the "Built" verdicts above as unverified and dispatched 4 fresh-context
+verifiers against them. They found real bypasses in items 1-3, not just polish gaps — closed in
+3 commits, `ba390e06`/`0045414e`/`86856525` (v0.68.540-542):
+
+- **Item 1/2 classifier (`irrecoverable.sh`, `merge-door.sh`)**: `shlex.split()` without
+  `punctuation_chars` needs whitespace around `;`/`&&`/`||`/`|`/`&`/`(`/`)`/`{`/`}` to see them as
+  separators — `echo hi;rm -rf x` tokenized as one glued word and skipped the check entirely.
+  Bundled short-flag sudo (`sudo -nu alice`, `-Sku`) also evaded the value-flag scan. Both fixed
+  by reusing `verifier-protect.sh`'s existing `punctuation_chars=True` tokenizer and real getopt
+  bundling semantics, not invented from scratch.
+- **Item 2 (`test-integrity.sh`)**: the `check()` assertion oracle was redefinable to a no-op
+  with zero call-site diff; exit-gate deletion, duplicate-assertion-line collapse (set vs.
+  multiset), and heredoc/`: '...'`-noop relocation all evaded the original diff classifier. Fixed
+  with `collections.Counter` multisets and two new inertness strippers.
+- **Item 3 (dispatcher journal)**: only the `rc==2` deny path was journaled; the other 4
+  dispatcher exits (non-blocking error, empty/unparseable stdout, missing `hookSpecificOutput`)
+  were silently unrecorded. Fixed — all 5 paths now journal.
+- **Disclosure fix**: `merge-door.sh`'s non-goal comment named the REST-API gap
+  (`gh api .../pulls/N/merge`) but not the xargs/docker-exec unwrap gap it also has (unlike
+  `irrecoverable.sh`, which unwraps both) — added, not built (different, larger unwrap shape per
+  wrapper, out of this pass's scope).
+
+Score: 5.8→9.2/10 (+59%) on Correctness/Completeness/Documentation-accuracy/Test-coverage/
+Failure-mode-safety, evidence-backed via red→green tests per fix. Live-smoke-tested afterward
+against the actual running plugin cache (v0.68.542, not just the repo working tree) — 6/6 cases
+correct, including the gate-verdict journal itself recording the right decision at the right
+timestamp for each trigger.
