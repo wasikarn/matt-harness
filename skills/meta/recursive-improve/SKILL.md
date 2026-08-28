@@ -121,12 +121,18 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
   "do you approve." If the answer feels settled enough to skip, that feeling is exactly what the
   invariant above exists to override. (Contrast: `references/step-rationale.md`.)
 - A planning request is **not** authorization to execute. **A denial is not an approval.** If
-  `AskUserQuestion` is denied (dontAsk / headless `-p`), render the question(s) as numbered prose
-  and stop — the question(s) go on record, not an active poll loop; there's no live channel to
-  wait on inside one headless dispatch. Per-ask: a denial on one (HIGH-alone or LOW/MED-batch)
-  isn't a denial on the other — resolve independently. No human reachable → **stop at
-  analysis-only**, never fail open. A later turn with an explicit reply resumes at this same
-  gate, not Step 4.
+  `AskUserQuestion` is denied under `--permission-mode dontAsk`, render the question(s) as
+  numbered prose and stop — the question(s) go on record, not an active poll loop; there's no
+  live channel to wait on inside one headless dispatch. **This requires `dontAsk` explicitly —
+  bare headless `-p` starts in Manual mode by default (`code.claude.com/docs/en/agent-sdk/
+  headless`, confirmed 2026-08-28) and does NOT deny `AskUserQuestion` on its own. Without the
+  explicit flag, this gate does not fail closed — an unanswered prompt has no built-in timeout
+  and the invocation hangs indefinitely, a stuck job, not a clean stop.** Any headless
+  invocation of this skill (scheduled or otherwise) must pass `--permission-mode dontAsk` or
+  this stop-at-analysis-only guarantee does not hold. Per-ask: a denial on one (HIGH-alone or
+  LOW/MED-batch) isn't a denial on the other — resolve independently. No human reachable →
+  **stop at analysis-only**, never fail open. A later turn with an explicit reply resumes at
+  this same gate, not Step 4.
 - **Success criterion:** for each ask — an explicit Approve (with candidate(s) signed off), a
   Revise/Reject that loops back/ends, or (unreachable) the rendered question plus a
   stop-at-analysis-only statement. Only an Approve authorizes Step 4 for that ask's candidate(s);
