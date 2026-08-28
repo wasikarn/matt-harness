@@ -144,6 +144,42 @@ deny-vs-advise boundary is this path, not a tier label.
 See `hooks/hooks.json`, `hooks/pretooluse-table.json`, and `hooks/dispatch-single.sh` for the
 registry and filter source-of-truth.
 
+### Composing with mattpocock-skills
+
+"Compose, don't create" is the reason this repo exists, and only four mechanisms carry the real
+weight of it: a hook that emits a chain into every session, a preflight that checks the companion
+plugin is even installed, a mechanical audit that keeps a ledger honest, and one sparse prose
+boundary. Everything else — the ~25 places mh's surfaces merely *name* a matt skill in passing —
+is routing pointers, not wired relationships.
+
+[![mh@wasikarn composing with mattpocock-skills across four typed edges: routes-to, depends-on, verifies, hands-off-to.](docs/diagrams/mh-composition.png)](docs/diagrams/mh-composition.html)
+
+- **`routes-to`** — `hooks/advisory/flow-nudge.sh` emits the spec chain (`grilling` → `/to-spec` → `/to-tickets` → `/implement`) into session context on `UserPromptSubmit`. `grilling` fires bare (`model`-tier); the other three carry the leading slash and are user-invoked only.
+- **`depends-on`**, the required one — Quick start step 4 installs `mattpocock-skills@mattpocock` as a separate plugin; mh's own surfaces are unresolvable without it. `hooks/session/doctrine-bootstrap.sh` preflights the plugin's presence at every `SessionStart` and warns if it's missing or disabled.
+- **`verifies`** — harness-audit check 50 (4 sub-checks, all WARN-only) keeps `docs/reference/mattpocock-integration-map.md`'s 25-row ledger in sync with the installed plugin's own `plugin.json`.
+- **`hands-off-to`** — `skills/workflow/orchestrate/reference.md`'s boundary with `mattpocock-skills:wayfinder`, one of only two such prose boundaries in the whole fleet.
+- **`ask-matt` is the actual routing layer** (`CLAUDE.md`'s "Finding a surface" section), even though no hook wires to it — it owns the routing map for 10 skills mh deliberately doesn't duplicate.
+- **Two matt skills are drawn as adopted, not routed** — `code-review` and `writing-for-agents` *are* mh's own review and authoring surfaces now (the native kbg equivalents were retired), which is a node label, not a relationship to draw an arrow for.
+
+See `docs/reference/mattpocock-integration-map.md` and `docs/reference/graph-model.md` (the four
+typed edges this diagram reuses) for the full ledger and edge definitions.
+
+### Tiered pipeline — `mh:tiered-pipeline`, user-invoked
+
+Five stages, not four, and the fix budget for the two checking stages is shared, not doubled.
+`mh:tiered-pipeline` is a separate, user-invoked skill — it is not the ambient session model, and
+the plugin's own tiered chain never involves Haiku at any stage.
+
+[![mh:tiered-pipeline: Fable plans, Sonnet executes, Opus reviews then bug-hunts on a shared fix-retry budget, Fable does a triage-gated final review.](docs/diagrams/mh-tiered-pipeline.png)](docs/diagrams/mh-tiered-pipeline.html)
+
+- **Review and bug-hunt share one fix-retry budget of 3**, applied by Sonnet — not 3 fixes per stage. Exhausting it anywhere escalates to a human; the pipeline never re-dispatches itself.
+- **The final Fable review is triage-gated, not automatic.** It runs only when the pipeline was contested — at least one fix was used, or confidence fell below `0.75` — per TAO (arXiv:2506.12482): unconditional extra review tiers degrade agreement rather than improve it.
+- **Verdicts are schema-forced**, never taken from model prose — the same maker≠checker discipline as the rest of the harness.
+- **Nothing in the pipeline commits, pushes, or ships.** Every path ends with the result returned to a human.
+
+See `scripts/workflows/tiered-pipeline.js` and `skills/workflow/tiered-pipeline/SKILL.md` for the
+implementation.
+
 ---
 
 ## Quick start
