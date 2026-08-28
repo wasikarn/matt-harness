@@ -50,6 +50,31 @@ direction."
 regression that got auto-suppressed rather than surfaced, which is the incident this policy exists
 to prevent.
 
+## Step 1 — Gate-journal absence caveat (full detail)
+
+A gate absent from `gate-journal-summary.sh`'s output only means it never fired non-allow — it
+can't distinguish "not wired" from "wired but never triggered"; that's why the summary must be
+cross-checked against `hooks/pretooluse-table.json` before concluding either. The journal has no
+free-text reason field (`hooks/dispatch-pretooluse.py`'s `_journal()`), so it is frequency signal
+only.
+
+## Step 1 — Feedback-surface-scan heuristic (why not a convention)
+
+`feedback-surface-scan.py` mines path-mention text in `type: feedback` memories — a heuristic,
+not a structured tag. No new memory-writing convention was added because native ambient
+auto-memory is the majority writer and wouldn't follow one anyway. It already filters mentions of
+paths that no longer exist, but that filter doesn't replace reading the actual memory files
+before proposing an edit.
+
+## Step 3 — Why `--permission-mode dontAsk` is load-bearing for headless invocation
+
+Verified against `code.claude.com/docs/en/agent-sdk/headless` (confirmed 2026-08-28): bare
+headless `-p` starts in Manual permission mode by default and does NOT deny `AskUserQuestion` on
+its own. Without the explicit `dontAsk` flag, this gate does not fail closed — an unanswered
+prompt has no built-in timeout and the invocation hangs indefinitely, a stuck job, not a clean
+stop. This is why any headless invocation (scheduled or otherwise) must pass the flag explicitly
+for the stop-at-analysis-only guarantee to hold.
+
 ## Integration Notes — full detail
 
 - **METHODOLOGY:**

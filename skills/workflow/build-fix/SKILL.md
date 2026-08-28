@@ -1,6 +1,6 @@
 ---
 name: build-fix
-description: "Detect the project build system and incrementally fix build/type errors with minimal safe changes. Use when a build or type-check is failing. Delegates to the build-error-resolver agent. Don't use for logic bugs (mattpocock-skills:diagnosing-bugs)."
+description: "Build the fix: detect the build system and fix build/type errors minimally. Use when a build or type-check fails. Don't use for logic bugs (mattpocock-skills:diagnosing-bugs)."
 model: inherit
 effort: low
 ---
@@ -19,6 +19,6 @@ The agent returns:
 
 1. Errors fixed, with file paths.
 2. Errors remaining, if any.
-3. New errors introduced (should be zero).
+3. New errors introduced (should be zero) — verify by re-running the build, not by inspection.
 4. Unresolved issues, if any — with a suggested next step per issue.
 5. If no unresolved issues remain: suggested next step — a compiling build is not a passing one, run the test suite / mh:test-coverage before continuing.

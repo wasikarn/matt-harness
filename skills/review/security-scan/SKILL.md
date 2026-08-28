@@ -1,6 +1,6 @@
 ---
 name: security-scan
-description: "Run AgentShield against agent, hook, MCP, permission, and secret surfaces. Use when auditing harness/agent surfaces for security issues. Don't use for code-vulnerability review — use mh:security-auditor."
+description: "Scan agent, hook, MCP, permission, and secret surfaces via AgentShield. Use when auditing harness/agent surfaces. Don't use for code-vulnerability review — use mh:security-auditor."
 metadata:
   origin: ECC
 model: inherit
@@ -58,7 +58,7 @@ Do not invent findings. Use AgentShield output as the source of truth and separa
    - exact remediation
    - whether it is safe to auto-fix
 4. If `--fix` is requested, state the planned edits before applying fixes.
-5. Re-run the scan after fixes and report the before/after score.
+5. Re-run the scan after fixes; verify the score actually improved before reporting it as fixed.
 
 ## Output Contract
 

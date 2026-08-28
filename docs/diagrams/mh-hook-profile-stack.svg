@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg class="diagram" viewBox="0 0 1120 600" role="img" aria-labelledby="mh-stack-title mh-stack-desc" xmlns="http://www.w3.org/2000/svg">
     <title id="mh-stack-title">mh@wasikarn hook enforcement: dispatch-single.sh's three-tier filter stack vs dispatch-pretooluse.sh's untiered gate path.</title>
-    <desc id="mh-stack-desc">Two-part diagram. Left, a three-layer stack for 17 of the 18 hooks.json registrations, routed through dispatch-single.sh: strict (2 handlers) sits on top since it is the first tier switched off when MH_HOOK_PROFILE is lowered from its default of strict; standard (8 handlers) sits in the middle, off only if the profile is set to minimal; minimal (7 handlers) is the foundation layer, always on regardless of profile. Right, coral and dashed: the 18th hooks.json registration — PreToolUse's single dispatch-pretooluse.sh entry — fans out to 11 gate rules in pretooluse-table.json, which have no tier field at all and are immune to both MH_HOOK_PROFILE and MH_DISABLED_HOOKS — the one enforcement path no flag reaches.</desc>
+    <desc id="mh-stack-desc">Two-part diagram. Left, a three-layer stack for 17 of the 18 hooks.json registrations, routed through dispatch-single.sh: strict (2 handlers) sits on top since it is the first tier switched off when MH_HOOK_PROFILE is lowered from its default of strict; standard (8 handlers) sits in the middle, off only if the profile is set to minimal; minimal (7 handlers) is the foundation layer, always on regardless of profile. Right, coral and dashed: the 18th hooks.json registration — PreToolUse's single dispatch-pretooluse.sh entry — fans out to 13 gate rules in pretooluse-table.json, which have no tier field at all and are immune to both MH_HOOK_PROFILE and MH_DISABLED_HOOKS — the one enforcement path no flag reaches.</desc>
 
     <defs><style>@import url(https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap);</style>
       <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
@@ -13,7 +13,7 @@
 
     <!-- ===== ZONE CAPTIONS ===== -->
     <text x="76" y="60" fill="rgba(45,49,66,0.55)" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.10em">17 REGISTRATIONS · hooks/dispatch-single.sh — TIERED, MH_HOOK_PROFILE-FILTERABLE</text>
-    <text x="676" y="60" fill="rgba(235,108,54,0.85)" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.10em">11 RULES · hooks/dispatch-pretooluse.sh — UNTIERED, ALWAYS ON</text>
+    <text x="676" y="60" fill="rgba(235,108,54,0.85)" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.10em">13 RULES · hooks/dispatch-pretooluse.sh — UNTIERED, ALWAYS ON</text>
 
     <!-- directional glyph: lowering the profile peels layers from the top -->
     <path d="M 76 68 L 76 88" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
@@ -65,7 +65,7 @@
       <rect x="676" y="100" width="368" height="276" rx="6" fill="rgba(235,108,54,0.05)" stroke="rgba(235,108,54,0.50)" stroke-width="1.5" stroke-dasharray="4,4"/>
       <rect x="692" y="116" width="120" height="14" rx="2" fill="transparent" stroke="rgba(235,108,54,0.50)" stroke-width="0.8"/>
       <text x="752" y="126" fill="rgba(235,108,54,0.9)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PRETOOLUSE · FOCAL</text>
-      <text x="692" y="160" fill="#2d3142" font-size="16" font-weight="600" font-family="'Geist', sans-serif">11 gate: rules</text>
+      <text x="692" y="160" fill="#2d3142" font-size="16" font-weight="600" font-family="'Geist', sans-serif">13 gate: rules</text>
       <text x="692" y="180" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">no tier field on any entry</text>
       <text x="692" y="196" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">immune to MH_HOOK_PROFILE</text>
       <text x="692" y="212" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace">immune to MH_DISABLED_HOOKS</text>

@@ -1,6 +1,6 @@
 ---
 name: bug-sweep
-description: "Sweep: N parallel agents (default 5) each hunt one small bug, report-only. Use when hunting for small bugs across a codebase. Don't use for PR review (mattpocock-skills:code-review) or session audit (mh:deep-audit)."
+description: "Sweep: parallel agents hunt one bug, report-only. Use when hunting bugs across a codebase. Don't use for PR review (mattpocock-skills:code-review) or session audit (mh:deep-audit)."
 argument-hint: "[path] [count]"
 model: inherit
 effort: high

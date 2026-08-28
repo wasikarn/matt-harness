@@ -1,6 +1,6 @@
 ---
 name: ideate-search
-description: "Search past mh:ideate runs via the local qmd collection. Use when recalling a prior ideation run. Say 'ideate search/ค้นหาไอเดีย/หาไอเดีย'. Don't use for a new session (mh:ideate) or code/web research (research)."
+description: "Ideate-search: past mh:ideate runs via the qmd collection. Use when recalling a prior run. Don't use for a new session (mh:ideate) or web research."
 disable-model-invocation: true
 disable-model-invocation-reason: This is a user-only skill. The model should never invoke it unprompted; the user explicitly asks for a memory search. It's a read-only reporter against local state, so it is safe for the model to run when the user types it.
 model: inherit
@@ -32,6 +32,7 @@ mh:ideate-search microservice logging latency
    extracted text, `intent` set to "Find a past mh:ideate run matching this
    query", and `minScore: 0.5` to drop weak hits.
 4. Return the ranked results to the user verbatim.
+5. **Done when:** the ranked results — or an explicit "no matches" — are on record in the reply.
 
 ## What this command does NOT do
 

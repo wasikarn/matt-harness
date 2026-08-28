@@ -1,6 +1,6 @@
 ---
 name: compliance-audit
-description: "Audit a finished implementation against its plan via fresh-context verifiers. Use after a multi-phase plan. Don't use for an unplanned diff (mattpocock-skills:code-review) or readiness (mh:production-audit)."
+description: "Compliance-audit: verify a finished implementation against its plan via fresh-context verifiers. Use after a multi-phase plan. Don't use for an unplanned diff (mattpocock-skills:code-review)."
 argument-hint: Optional path to the plan file, PR number, or commit range
 disable-model-invocation: true
 disable-model-invocation-reason: costly multi-agent fan-out that gates a done-declaration — user decides when the audit runs, not the model

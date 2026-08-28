@@ -1,6 +1,6 @@
 ---
 name: post-mortem
-description: "Draft a post-mortem for a resolved bug (trigger/mechanism/patch/validation known). Use after mattpocock-skills:diagnosing-bugs; say 'เขียน post-mortem/บันทึกบั๊ก/incident report'. Don't use for in-progress or non-technical incidents."
+description: "Post-mortem: a writeup for a resolved bug (trigger/mechanism/patch/validation known). Use after mattpocock-skills:diagnosing-bugs; say 'เขียน post-mortem/บันทึกบั๊ก'. Don't use for in-progress incidents."
 argument-hint: Optional bug ID, Jira key, or summary
 disable-model-invocation: true
 disable-model-invocation-reason: writes a canonical doc (and optional tracker post) — user decides to record

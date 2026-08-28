@@ -1,6 +1,6 @@
 ---
 name: risk-check
-description: "Classify a PR's risk as LOW/MEDIUM/HIGH from diff size, sensitive-path, and file-hotspot signals. Use when scoping review effort. Advisory only — never gates a merge. Don't use for the merge decision (mh:ship-merge)."
+description: "Risk-check: classify a PR LOW/MEDIUM/HIGH from diff size, sensitive-path, and hotspot signals. Use when scoping review effort. Don't use for the merge decision (mh:ship-merge)."
 argument-hint: "[pr-number|branch]"
 model: inherit
 effort: low
@@ -157,6 +157,9 @@ print("Advisory only -- does not gate or skip anything. See mh:ship-merge for th
 print("merge decision, mattpocock-skills:code-review for the actual review.")
 ' "$PR_JSON" "${MH_PLUGIN_ROOT}/hooks/gates/lib" "$HIST_FILE" "$TRACKED_FILE" "$TOTAL_COMMITS"
 ```
+
+**Done when:** the printed tier and its reasons are on record — confirm the tier before citing it
+anywhere else (e.g. a review-effort scoping note); this skill never gates on its own output.
 
 ## Notes
 

@@ -1,6 +1,6 @@
 ---
 name: complexity-check
-description: "Measure cyclomatic complexity per function via `lizard`. Use when reviewing hotspots before refactoring. Advisory only. Don't use for bash/shell (unsupported) or Big-O (mh:performance-optimizer)."
+description: "Complexity-check: cyclomatic complexity per function via `lizard`. Use when reviewing hotspots before refactoring. Advisory only. Don't use for bash/shell or Big-O (mh:performance-optimizer)."
 argument-hint: "[path] [-C N]"
 model: inherit
 effort: medium

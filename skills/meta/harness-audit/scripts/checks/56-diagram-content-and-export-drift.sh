@@ -103,18 +103,22 @@ print(c['strict'], c['standard'], c['minimal'], c['untiered'])
       esac
     }
 
+    # README.md's own copy of this detail was deliberately trimmed by
+    # 036abef3 ("docs(readme): trim Architecture to the mh<->mattpocock
+    # composition diagram only") — the 5 anchors that used to live there
+    # (hook-registration/tiered-subset/gate-rule breakdown) point at prose
+    # that no longer belongs in README.md by design, not by drift. Checking
+    # them here would fight that decision every run. The diagram HTML/SVG
+    # files still carry this detail and are checked below; that's the one
+    # place a stale number is a real bug.
+
     # hooks.json total (18)
-    _check_anchor "$CLAUDE_DIR/README.md" "hook registrations across" "${_HOOK_REG_TOTAL} hook registrations across"
-    _check_anchor "$CLAUDE_DIR/README.md" "in \`hooks/hooks.json\` (" "${_HOOK_REG_TOTAL} in \`hooks/hooks.json\` (${_MINIMAL} minimal / ${_STANDARD} standard / ${_STRICT} strict / ${_UNTIERED} untiered dispatcher entry)"
     _check_anchor "$CLAUDE_DIR/docs/diagrams/mh-core-workflow.html" "hook registrations</text>" "${_HOOK_REG_TOTAL} hook registrations</text>"
 
     # hooks.json tiered subset routed through dispatch-single.sh (17)
-    _check_anchor "$CLAUDE_DIR/README.md" "of those route through" "${_HOOK_REG_TIERED} of those route through"
     _check_anchor "$CLAUDE_DIR/docs/diagrams/mh-hook-profile-stack.html" "REGISTRATIONS · hooks/dispatch-single.sh" "${_HOOK_REG_TIERED} REGISTRATIONS · hooks/dispatch-single.sh"
 
-    # gate rules in pretooluse-table.json (11)
-    _check_anchor "$CLAUDE_DIR/README.md" "hook that fans out to" "fans out to ${_GATE_RULES} gate rules"
-    _check_anchor "$CLAUDE_DIR/README.md" "aren't part of this stack at all" "The ${_GATE_RULES} \`gate:*\`"
+    # gate rules in pretooluse-table.json (13)
     _check_anchor "$CLAUDE_DIR/docs/diagrams/mh-core-workflow.html" "fans out to" "fans out to ${_GATE_RULES} gate rules"
     _check_anchor "$CLAUDE_DIR/docs/diagrams/mh-hook-profile-stack.html" "RULES · hooks/dispatch-pretooluse.sh" "${_GATE_RULES} RULES · hooks/dispatch-pretooluse.sh"
 

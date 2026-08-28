@@ -1,6 +1,6 @@
 ---
 name: summarize
-description: "Compress a document, transcript, or pasted text into a BLUF-structured summary. Use when condensing long content for a reader. Delegates to the summarizer agent. Don't use for structured data extraction or code review."
+description: "Summarize a document, transcript, or pasted text into a BLUF-structured summary. Use when condensing long content. Don't use for data extraction or code review."
 model: inherit
 effort: low
 ---
@@ -29,3 +29,6 @@ The agent returns:
    (prose / bullets / table).
 3. `detail` — only if the source has material worth drilling into beyond the summary.
 4. `flagged_ambiguity` — only if the source itself was unclear or self-contradictory.
+
+**Done when:** the fidelity check confirms no load-bearing fact from the source is missing from
+`summary`.

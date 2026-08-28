@@ -45,22 +45,16 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
 - Run `harness-audit`: `bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"` → CRIT/WARN/INFO findings —
   the loop's branchable score, both whether to act and what (`file:line`) to fix.
 - Read the gate-verdict journal: `bash "${CLAUDE_SKILL_DIR}/scripts/gate-journal-summary.sh"` →
-  per-gate ask/deny/defer counts since the journal started — operational feedback the audit and
-  MEMORY.md don't carry (a gate firing constantly may be over-broad). A gate absent from this
-  summary only means it never fired non-allow — it can't distinguish "not wired" from "wired but
-  never triggered"; cross-check `hooks/pretooluse-table.json` before concluding either. The
-  journal has no free-text reason field
-  (`hooks/dispatch-pretooluse.py`'s `_journal()`), so this is frequency signal only — read the
-  actual gate source before proposing a change, don't rank on the count alone.
+  per-gate ask/deny/defer counts (frequency signal only, no free-text reason — read the actual
+  gate source before proposing a change). Absence from the summary ≠ not-wired; cross-check
+  `hooks/pretooluse-table.json` (why: `references/step-rationale.md`).
 - Read `MEMORY.md` for recorded decisions, deferred candidates, and prior-cycle accepted
   regressions — the durable WHY backlog the audit doesn't encode.
 - Scan feedback-memory clusters: `python3 "${CLAUDE_SKILL_DIR}/scripts/feedback-surface-scan.py"`
   → repo surfaces (skill/hook/script/doc) mentioned by 2+ `type: feedback` memories in prose —
-  where human correction has already repeated. Heuristic (path-mention text matching, not a
-  structured tag — no new memory-writing convention was added, since native ambient auto-memory
-  is the majority writer and wouldn't follow one anyway); already filters mentions of paths that
-  no longer exist, but still read the actual memory files before proposing an edit, don't rank on
-  the count alone.
+  where human correction has already repeated. Heuristic, already filters stale paths, but still
+  read the actual memory files before proposing an edit (why heuristic-not-convention:
+  `references/step-rationale.md`).
 - Scan the session transcript for operator corrections or repeated workflows signaling a gap the
   audit doesn't catch.
 - Take a witness pre-snapshot: `bash "${CLAUDE_SKILL_DIR}/scripts/inventory-witness.sh"
@@ -83,11 +77,10 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
   rank the full set before committing to an order, don't just work top-to-bottom. Escalation
   options: `references/step-rationale.md`.
 - **Scope guard (advisory — doc-followed, not code-enforced):** each candidate should touch
-  **≤ 5 files / ≤ 200 lines** — bigger than that is not a loop iteration, hand it to `/mattpocock-skills:implement`;
-  don't smuggle a large change through. (File count is a proxy for risk, not the risk itself —
-  `references/step-rationale.md`.) **There is no override that lets a >5-file/>200-line
-  candidate execute through this loop even when you judge it mechanical and low-risk; it still
-  routes to `/mattpocock-skills:implement`, where a human decides with full context, not this ritual.**
+  **≤ 5 files / ≤ 200 lines** — bigger than that is not a loop iteration, hand it to
+  `/mattpocock-skills:implement`. **No override lets a bigger candidate execute through this loop
+  even when it looks mechanical and low-risk** — a human decides with full context instead. (File
+  count is a risk proxy, not the risk itself: `references/step-rationale.md`.)
 - **Cross-iteration evasion guard.** Before ranking a new candidate, check it against Step 6's
   routed-to-`/mattpocock-skills:implement` memory entries for root-cause overlap with anything previously excluded on
   scope grounds — if it shares a root cause with a deferred systemic finding, name that
@@ -117,19 +110,14 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
   smuggled past a LOW/MED item) — but don't reuse the LOW/MED batch's "recommended order"
   framing; name each HIGH candidate on its own line.
 - **Neither ask collapses, even when Step 2's ranking is unambiguous.** This gate is
-  authorization, not information-gathering — an unambiguous ranking answers "what's best," not
-  "do you approve." If the answer feels settled enough to skip, that feeling is exactly what the
-  invariant above exists to override. (Contrast: `references/step-rationale.md`.)
+  authorization, not information-gathering — never skip it because the ranking feels settled.
+  (Why: `references/step-rationale.md`.)
 - A planning request is **not** authorization to execute. **A denial is not an approval.** If
   `AskUserQuestion` is denied under `--permission-mode dontAsk`, render the question(s) as
-  numbered prose and stop — the question(s) go on record, not an active poll loop; there's no
-  live channel to wait on inside one headless dispatch. **This requires `dontAsk` explicitly —
-  bare headless `-p` starts in Manual mode by default (`code.claude.com/docs/en/agent-sdk/
-  headless`, confirmed 2026-08-28) and does NOT deny `AskUserQuestion` on its own. Without the
-  explicit flag, this gate does not fail closed — an unanswered prompt has no built-in timeout
-  and the invocation hangs indefinitely, a stuck job, not a clean stop.** Any headless
-  invocation of this skill (scheduled or otherwise) must pass `--permission-mode dontAsk` or
-  this stop-at-analysis-only guarantee does not hold. Per-ask: a denial on one (HIGH-alone or
+  numbered prose and stop — no live channel to wait on inside one headless dispatch. **Any
+  headless invocation of this skill (scheduled or otherwise) must pass `--permission-mode
+  dontAsk` explicitly** — bare `-p` does not fail closed on its own (why this flag is
+  load-bearing: `references/step-rationale.md`). Per-ask: a denial on one (HIGH-alone or
   LOW/MED-batch) isn't a denial on the other — resolve independently. No human reachable →
   **stop at analysis-only**, never fail open. A later turn with an explicit reply resumes at
   this same gate, not Step 4.
@@ -143,12 +131,9 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
 - Route each candidate to the cheapest correct executor (inline for trivial; a matching senior
   agent for specialized work, gated per `orchestrate`). Give each a **done-when** — an observable
   output, not a topic.
-- **Repeated failure escalates, it does not retry** (the escalate-not-retry principle — trying
-  the same candidate again after a failure is guessing, not fixing, so retrying isn't on the
-  table). A candidate's executor gets exactly **one** attempt; on hitting a failure it records
-  not-done with the verbatim failure signal, surfaced at Step 6, and does not re-attempt. No
-  failure counter, because there's nothing to count — a retry-count would normalize silent
-  unattended iterations. Escalate to the human gate instead.
+- **Repeated failure escalates, it does not retry.** A candidate's executor gets exactly **one**
+  attempt; on failure it records not-done with the verbatim failure signal (surfaced at Step 6)
+  and does not re-attempt — no failure counter, no retry, escalate to the human gate instead.
 - Apply changes one candidate at a time so Verify attributes the metric delta.
 - **Success criterion:** each candidate's done-when is met, or recorded not-done with a reason
   (no silent drop).
@@ -165,10 +150,9 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
   iteration did **not** help. Do **not** report success. Surface the flat/negative delta as the
   rollback decision (Step 6); the audit exit count is the deterministic stop condition (score,
   not feel).
-- **Named bias guard — survivorship.** If the candidate's diff touched the verifier itself
-  (`hooks/gates/**`, `hooks/hooks.json`, `skills/meta/harness-audit/**`, `checks/**`), a lower count
-  could mean the check narrowed, not the defect fixed — apply extra scrutiny (read the diff,
-  don't trust the count) before calling it "improved."
+- **Named bias guard — survivorship.** If the diff touched the verifier itself (`hooks/gates/**`,
+  `hooks/hooks.json`, `skills/meta/harness-audit/**`, `checks/**`), a lower count could mean the
+  check narrowed, not the defect fixed — read the diff before calling it "improved."
 - Run the relevant deterministic check on touched code: `bash scripts/run-gauntlet.sh`
   (plugin-validate + shell-lint + JSON-lint + harness-audit), `bash tests/hooks/test-gates.sh`
   (3 deny-gates), `bash -n`/`py_compile` on edited scripts.
@@ -194,22 +178,17 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
 
 ## Output Format
 
-The Step 6 iteration-report template lives in `references/output-format.md` — read it before
-emitting the report. See `references/output-format-disambiguation.md` for
-`not-done`/`routed_to_implement`/`dropped`/`drift_guard: n/a` — easy to conflate, worked cases there.
+Template: `references/output-format.md`. Field disambiguation
+(`not-done`/`routed_to_implement`/`dropped`/`drift_guard: n/a`): `references/output-format-disambiguation.md`.
 
 ## Failure Modes to Avoid
 
-- **Proposing without observing** — skip Step 1; anchor every candidate to a reader gap, audit
-  finding, or `file:line`.
-- **Treating the gate as a formality** — Step 3's `AskUserQuestion` is mandatory; denial ≠
-  approval; never fail open.
-- **Self-starting or unattended** — dropping `disable-model-invocation`, model-as-gate, or
-  skipping the per-mutation human gate.
+- **Proposing without observing** — anchor every candidate to a reader gap, audit finding, or `file:line`.
+- **Treating the gate as a formality** — Step 3's `AskUserQuestion` is mandatory; denial ≠ approval; never fail open.
+- **Self-starting or unattended** — dropping `disable-model-invocation` or the per-mutation human gate.
 - **Claiming success without a measured delta** — Step 5's drift guard: flat delta did not help.
 - **Silent rollback** — auto-reverting hides the signal; surface + ask (Step 6).
-- **Scope creep through the side door** — routing a >5-file/>200-line candidate here instead of
-  `/mattpocock-skills:implement` (Step 2).
+- **Scope creep through the side door** — a >5-file/>200-line candidate here instead of `/mattpocock-skills:implement`.
 
 ## Integration Notes (Project-Specific)
 

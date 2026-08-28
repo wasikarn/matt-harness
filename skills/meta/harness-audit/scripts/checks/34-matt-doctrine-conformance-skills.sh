@@ -95,7 +95,16 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
     # generic noun — same bar as no-op/two-cut. next.js and
     # frontend-design-direction follow M12's framework-proper-noun and the
     # humanize skill-name-derived-lead precedents respectively.
-    synthesise-seam|slice|doctrine|doctrine-backed|triage|mental-model|catalogue|catalog|test-driven|deep-module|diagnosis|build|compact|scan|teach|adonisjs|backend|frontend|drizzle|effect-ts|fastapi|grpc|hono|langchain|tauri|mysql/mariadb|pythonic|score|incident|router|eval-driven|dart/flutter|humanize|prep-map|pr|typescript|db/sql|fix-authenticity|requirement-coverage|wcag|fowler|tier|pre-flight|finish|next.js|frontend-design-direction) : ;;  # silent
+    # M14 additions (2026-08-28, "fix all WARN/INFO" pass): cost-report,
+    # frame, ideate-search, complexity-check, compliance-audit, deep-audit,
+    # review-fixtures, risk-check, test-coverage, post-mortem, refactor-clean,
+    # tiered are skill-name-derived leads, same class as incident/triage/
+    # humanize. sweep is bug-sweep's own name, same class as scan. ship
+    # covers both ship-merge/ship-release (a coined pipeline-stage verb, same
+    # class as tier/finish). summarize is tech-humanize's own precedent
+    # applied literally: the skill's own name used as its own leading verb.
+    # ingest is wiki-ingest's own name fragment, same class as sweep/scan.
+    synthesise-seam|slice|doctrine|doctrine-backed|triage|mental-model|catalogue|catalog|test-driven|deep-module|diagnosis|build|compact|scan|teach|adonisjs|backend|frontend|drizzle|effect-ts|fastapi|grpc|hono|langchain|tauri|mysql/mariadb|pythonic|score|incident|router|eval-driven|dart/flutter|humanize|prep-map|pr|typescript|db/sql|fix-authenticity|requirement-coverage|wcag|fowler|tier|pre-flight|finish|next.js|frontend-design-direction|cost-report|frame|ideate-search|sweep|complexity-check|compliance-audit|deep-audit|review-fixtures|risk-check|test-coverage|post-mortem|refactor-clean|ship|summarize|tiered|ingest) : ;;  # silent
     *) info "$name: description does not open with a matt-style coined term (first word: '$first_word') — leading word recruits a pretrained prior, not a generic noun" ;;
   esac
 

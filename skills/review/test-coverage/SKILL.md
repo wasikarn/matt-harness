@@ -1,5 +1,5 @@
 ---
-description: "Analyze coverage, identify gaps, and generate missing tests toward the target threshold. Use when coverage is below target. Don't use for a single failing test (debug it directly)."
+description: "Test-coverage: generate missing tests toward the target threshold. Use when coverage is below target. Don't use for a single failing test (debug it directly)."
 name: test-coverage
 model: inherit
 effort: high

@@ -1,6 +1,6 @@
 ---
 name: refactor-clean
-description: "Safely identify and remove dead code (JS/TS, Python, Go, Rust) with test verification after each change. Use when cleaning up unused code. Delegates to the refactor-cleaner agent. Don't use for logic refactors beyond dead-code removal."
+description: "Refactor-clean: remove dead code (JS/TS, Python, Go, Rust), verifying tests after each change. Use when cleaning unused code. Don't use for logic refactors."
 model: inherit
 effort: low
 ---
@@ -19,6 +19,6 @@ The agent returns:
 
 1. Items deleted, grouped by category (unused exports / files / dependencies / duplicates).
 2. Items skipped, with the reason (test failed, dynamic import, public API, uncertain).
-3. Test status before and after (all green required to keep a deletion).
+3. Test status before and after — verify green both times before keeping a deletion.
 4. Lines saved.
 5. Suggested next step: deletions landed, tests green → mattpocock-skills:code-review before shipping the removal; nothing safe to remove → done.
