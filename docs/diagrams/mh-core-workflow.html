@@ -267,14 +267,14 @@
     <!-- Claude Model → output-style (downstream) -->
     <path d="M 360 364 L 360 400" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
 
-    <!-- Skill/Agent spawn → Dispatcher (focal accent: gate before tool fires) -->
-    <path d="M 440 290 L 480 304 Q 490 306 500 314" fill="none" stroke="#eb6c36" stroke-width="1.5" marker-end="url(#arrow-accent)"/>
+    <!-- Skill/Agent spawn → Dispatcher (focal accent: gate before tool fires). Own channel x=458, offset from the y=322 delegate arrow above so it doesn't run along the same line. -->
+    <path d="M 440 300 L 458 300 L 458 307 L 500 307" fill="none" stroke="#eb6c36" stroke-width="1.5" marker-end="url(#arrow-accent)"/>
 
-    <!-- output-style → Dispatcher (every model response passes through) -->
-    <path d="M 440 422 L 480 340" fill="none" stroke="#eb6c36" stroke-width="1.5" marker-end="url(#arrow-accent)"/>
+    <!-- output-style → Dispatcher (every model response passes through). Own channel x=466. -->
+    <path d="M 440 442 L 466 442 L 466 341 L 500 341" fill="none" stroke="#eb6c36" stroke-width="1.5" marker-end="url(#arrow-accent)"/>
 
-    <!-- Response → Dispatcher (every tool call passes through) -->
-    <path d="M 440 552 L 480 352" fill="none" stroke="#eb6c36" stroke-width="1.5" marker-end="url(#arrow-accent)"/>
+    <!-- Response → Dispatcher (every tool call passes through). Own channel x=474. -->
+    <path d="M 440 552 L 474 552 L 474 372 L 500 372" fill="none" stroke="#eb6c36" stroke-width="1.5" marker-end="url(#arrow-accent)"/>
 
     <!-- Dispatcher → Advisory sensors (parallel journal) -->
     <path d="M 596 380 L 596 416" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>

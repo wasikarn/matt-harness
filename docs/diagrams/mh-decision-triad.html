@@ -63,15 +63,15 @@
     <path d="M 560 200 L 560 240" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
     <path d="M 560 200 L 560 216 L 900 216 L 900 240" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
 
-    <!-- Each diamond: YES (left side, coral) → merge to checkpoint path -->
+    <!-- Each diamond: YES (left side, coral) → merge to checkpoint path. Q1 runs the trunk to the dot; Q2/Q3 land on the trunk at distinct heights (398, 408) so their arrowheads don't stack on top of each other or Q1's own corner. -->
     <path d="M 152 304 L 152 384 L 320 384 L 320 416" stroke="#eb6c36" stroke-width="1.4" fill="none" marker-end="url(#arrow-accent)"/>
-    <path d="M 492 304 L 492 384 L 320 384" stroke="#eb6c36" stroke-width="1.4" fill="none" marker-end="url(#arrow-accent)"/>
-    <path d="M 832 304 L 832 384 L 320 384" stroke="#eb6c36" stroke-width="1.4" fill="none" marker-end="url(#arrow-accent)"/>
+    <path d="M 492 304 L 492 398 L 320 398" stroke="#eb6c36" stroke-width="1.4" fill="none" marker-end="url(#arrow-accent)"/>
+    <path d="M 832 304 L 832 408 L 320 408" stroke="#eb6c36" stroke-width="1.4" fill="none" marker-end="url(#arrow-accent)"/>
 
-    <!-- Each diamond: NO (right side) → merge to proceed path -->
+    <!-- Each diamond: NO (right side) → merge to proceed path. Q1 runs the trunk to the dot; Q2/Q3 land on the trunk at distinct heights (368, 376) — Q2 previously dangled 32px short of the trunk. -->
     <path d="M 288 304 L 288 360 L 660 360 L 660 384" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
-    <path d="M 628 304 L 628 360" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
-    <path d="M 968 304 L 968 360 L 660 360" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+    <path d="M 628 304 L 628 368 L 660 368" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+    <path d="M 968 304 L 968 376 L 660 376" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
 
     <!-- Merge dot → endpoints -->
     <path d="M 320 472 L 320 496" stroke="#eb6c36" stroke-width="1.4" fill="none" marker-end="url(#arrow-accent)"/>

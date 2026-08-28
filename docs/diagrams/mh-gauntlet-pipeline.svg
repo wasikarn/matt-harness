@@ -3,7 +3,8 @@
     <title id="mh-gauntlet-title">mh@wasikarn gauntlet pipeline: one trigger fans out to six parallel verification layers that merge strictest-wins.</title>
     <desc id="mh-gauntlet-desc">Process diagram. A trigger node (pre-commit hook for fast checks, pre-push for full gauntlet) forks into six parallel verification layers stacked vertically: plugin-validate, shell-lint, json-lint, harness-audit, path-hygiene, hook-tests. Each layer writes its own log. A merge funnel collects verdicts via wait_layer; any single failure sets fail=1 and the action is blocked. Two endpoints: proceed (right, white) or block (left, coral focal).</desc>
 
-    <defs><style>@import url(https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap);</style>
+    <defs>
+      <style>@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap");</style>
       <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
         <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
       </marker>
@@ -38,13 +39,13 @@
     <path d="M 660 404 L 720 404 L 720 540" stroke="#4f5d75" stroke-width="1.2" fill="none"/>
     <path d="M 660 472 L 720 472 L 720 540" stroke="#4f5d75" stroke-width="1.2" fill="none"/>
 
-    <!-- Each layer → its log file (small dashed offshoot to right of each box) -->
-    <path d="M 660 116 L 1080 116" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="4,3" fill="none"/>
-    <path d="M 660 184 L 1080 184" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="4,3" fill="none"/>
-    <path d="M 660 252 L 1080 252" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="4,3" fill="none"/>
-    <path d="M 660 320 L 1080 320" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="4,3" fill="none"/>
-    <path d="M 660 388 L 1080 388" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="4,3" fill="none"/>
-    <path d="M 660 456 L 1080 456" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="4,3" fill="none"/>
+    <!-- Each layer → its log file (small dashed offshoot to right of each box). Stops at x=985, clear of the longest label ("hooktests.log" at 9px mono, right-anchored at x=1080) — previously ran to x=1080 and drew straight through the text. -->
+    <path d="M 660 116 L 985 116" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="4,3" fill="none"/>
+    <path d="M 660 184 L 985 184" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="4,3" fill="none"/>
+    <path d="M 660 252 L 985 252" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="4,3" fill="none"/>
+    <path d="M 660 320 L 985 320" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="4,3" fill="none"/>
+    <path d="M 660 388 L 985 388" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="4,3" fill="none"/>
+    <path d="M 660 456 L 985 456" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="4,3" fill="none"/>
 
     <!-- Merge funnel → endpoints -->
     <path d="M 720 556 L 720 596 L 880 596" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
