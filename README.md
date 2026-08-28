@@ -86,12 +86,12 @@ and that is the most common way work here looks done without being done.
 
 ## Architecture
 
-One session flows through six lanes — user, model, hooks, agents+skills, scripts, verify — with one irreversible boundary.
+One session flows through five lanes — user, model, hooks, catalog, verify — with one irreversible boundary.
 Click the diagram to open the interactive HTML version.
 
-[![mh@wasikarn core workflow: six-lane swimlane from user prompt through Claude Model, a PreToolUse dispatcher (1 hook that fans out to 11 gate rules), advisory sensors, the agents/skills/scripts catalogues, and a verify lane of pre-commit and pre-push gauntlets.](docs/diagrams/mh-core-workflow.png)](docs/diagrams/mh-core-workflow.html)
+[![mh@wasikarn core workflow: five-lane swimlane from user prompt through Claude Model, a PreToolUse dispatcher (1 hook that fans out to 11 gate rules), advisory sensors, the agent/skill/script catalog, and a verify lane of pre-commit and pre-push gauntlets.](docs/diagrams/mh-core-workflow.png)](docs/diagrams/mh-core-workflow.html)
 
-- **User → Model** — natural-language prompt (or slash command) reaches Claude Model, which is itself a tiered pipeline: Fable plans, Sonnet acts, Opus reviews, Haiku judges.
+- **User → Model** — natural-language prompt (or slash command) reaches Claude Model — one model by default for the session. `mh:tiered-pipeline` (Fable plans, Sonnet acts, Opus reviews with a capped fix loop, Opus bug-hunts, Fable does a gated final review) is a separate, user-invoked skill, not the ambient session model.
 - **Model → Dispatcher** — every skill/agent spawn, output-style emit, and tool response is bound by the PreToolUse dispatcher. One registered hook (`gate:pretooluse-dispatch`) fans out to 11 gate rules in `pretooluse-table.json`; strictest-wins decides one verdict per call.
 - **Hooks → Scripts** — SessionStart injects `docs/METHODOLOGY.md`; the dispatcher fans out to hook scripts (`dispatch-*.sh`, `*.py`) which are the same files the gauntlet re-invokes from git. 18 hook registrations across 9 event types.
 - **Verify** — `pre-commit` runs the fast gate (syntax, JSON, harness-audit, LOC); `pre-push` runs the full 6-layer gauntlet. `compliance-audit` and `deep-audit` are fresh-context verifiers — manual, not auto-fired.
@@ -124,18 +124,25 @@ The decision-triad tells you *whether* to plan. The gauntlet tells you *whether 
 
 For the gauntlet's design intent and the merge contract, see [`scripts/run-gauntlet.sh`](scripts/run-gauntlet.sh) and the gauntlet-handoff narrative in `docs/research/`. The pre-commit fast gate is in [`git-hooks/pre-commit`](git-hooks/pre-commit).
 
-### Hook event × tier matrix — when each gate fires
+### Hook profile stack — tier is a volume knob, not a severity
 
-The gauntlet covers the *artifact*. Hooks cover the *session*: every Claude Code event fires zero or more handlers, each carrying a tier. The deny-vs-advise split is computational — a `gate:` prefix is immune to any profile or kill-switch, while `minimal` and `standard` handlers are advisory. The matrix below lists every handler at every event × tier intersection; the coral focal sits on PreToolUse × strict because one entry fans out to 11 underlying deny-gates via `hooks/pretooluse-table.json`.
+The gauntlet covers the *artifact*. Hooks cover the *session*, and 29 hook registrations split
+across two dispatch paths that behave nothing alike. 18 route through `dispatch-single.sh`, where
+`tier` sets the *minimum* `MH_HOOK_PROFILE` at which a handler fires — lowering the profile peels
+handlers off starting with `strict`, so `strict` is the tier a profile change switches off *first*,
+not the strongest enforcement. The other 11 route through `dispatch-pretooluse.sh`, which carries
+no tier field at all and reads neither `MH_HOOK_PROFILE` nor `MH_DISABLED_HOOKS` — the actual
+deny-vs-advise boundary is this path, not a tier label.
 
-[![mh@wasikarn hook event × tier matrix: nine Claude Code hook events as rows (SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, PostToolUseFailure, Stop, PreCompact, SessionEnd, InstructionsLoaded) crossed with three enforcement tiers as columns (minimal, standard, strict). Each cell holds the entry count plus a representative handler name. PreToolUse × strict is the coral focal: 1 dispatcher + 11 deny-gates. Empty cells marked with an em-dash.](docs/diagrams/mh-hook-tier-matrix.png)](docs/diagrams/mh-hook-tier-matrix.html)
+[![mh@wasikarn hook enforcement: dispatch-single.sh's three-tier filter stack (strict on top since it's the first tier a lowered profile switches off, standard in the middle, minimal at the base as the always-on floor) vs dispatch-pretooluse.sh's untiered gate path, coral focal, immune to both MH_HOOK_PROFILE and MH_DISABLED_HOOKS.](docs/diagrams/mh-hook-profile-stack.png)](docs/diagrams/mh-hook-profile-stack.html)
 
-- **9 events × 3 tiers.** Every cell names the handlers at that intersection. Empty cells (`—`) mean no handler exists at that intersection — not a typo, the registry genuinely has no entry there.
-- **PreToolUse is single-cell.** The hooks/hooks.json entry is the dispatcher; `hooks/pretooluse-table.json` carries the 11 underlying `gate:*` entries (all strict, all immune to kill-switch). Adding a new deny-gate means appending to the table, not editing `hooks.json`.
-- **30 hook entries total** across 9 events: 6 minimal / 9 standard / 15 strict. The strict column dominates because the deny-vs-advise doctrine puts load-bearing checks behind hooks the model can't argue with.
-- **Tier is load-bearing.** A handler can move between tiers only by re-registering it. Profile flags and kill-switches affect `standard` handlers; they do not reach `gate:` entries. This is the property that lets "the harness can be turned off for non-critical projects" coexist with "the irreversible paths are still blocked".
+- **The stack reads top-to-bottom as "first switched off" to "always on".** `strict` (2 handlers) sits on top: it fires only when the profile is exactly `strict`, the default. `standard` (8 handlers) sits in the middle: it drops out only if the profile is lowered all the way to `minimal`. `minimal` (7 handlers) is the floor: it fires at every profile setting.
+- **`MH_DISABLED_HOOKS` filters by id, ahead of the tier check** — a per-hook kill switch independent of the profile stack, checked first inside `dispatch-single.sh`.
+- **The 11 `gate:*` rules in `hooks/pretooluse-table.json` aren't part of this stack at all.** No entry there carries a `tier` field; `dispatch-pretooluse.sh`'s own header states there is no tiering concept on this path by construction. This is the one enforcement surface no flag reaches.
+- **29 registrations total** — 18 in `hooks/hooks.json` (7 minimal / 8 standard / 2 strict / 1 untiered dispatcher entry) + 11 in `hooks/pretooluse-table.json` (untiered).
 
-See `hooks/hooks.json` and `hooks/pretooluse-table.json` for the registry source-of-truth.
+See `hooks/hooks.json`, `hooks/pretooluse-table.json`, and `hooks/dispatch-single.sh` for the
+registry and filter source-of-truth.
 
 ---
 

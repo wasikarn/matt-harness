@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg class="diagram" viewBox="0 0 1440 720" role="img" aria-labelledby="mh-core-title mh-core-desc" xmlns="http://www.w3.org/2000/svg">
-    <title id="mh-core-title">mh@wasikarn runtime workflow: user prompt flows through six lanes — user, model, hooks, agents and skills, scripts, verify — with the PreToolUse dispatcher as the irreversible boundary.</title>
-    <desc id="mh-core-desc">A six-lane swimlane showing one happy-path session. The user sends a prompt. The model invokes skills or agents and is bound by the PreToolUse dispatcher, which is one registration that fans out to eleven gate rules in a table and merges strictest-wins. Advisory sensors journal after each tool call. On commit, a pre-commit gate runs fast checks before pre-push gauntlet runs six validation layers. A callout notes that compliance-audit and deep-audit run on fresh context and are not auto-fired in the runtime loop.</desc>
+    <title id="mh-core-title">mh@wasikarn runtime workflow: user prompt flows through five lanes — user, model, hooks, catalog, verify — with the PreToolUse dispatcher as the irreversible boundary.</title>
+    <desc id="mh-core-desc">A five-lane swimlane showing one happy-path session. The user sends a prompt. The model — a single Claude model by default, or the separate opt-in mh:tiered-pipeline skill — invokes skills or agents and is bound by the PreToolUse dispatcher, which is one registration that fans out to eleven gate rules in a table and merges strictest-wins. Seven advisory sensors journal after each tool call. The catalog lane holds 17 agents, 59 skills, and the workflow/hook scripts that back them. On commit, a pre-commit gate runs fast checks before pre-push gauntlet runs six validation layers. A callout notes that compliance-audit and deep-audit run on fresh context and are not auto-fired in the runtime loop.</desc>
 
     <defs>
       <style>@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap");</style>
-      <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+            <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
         <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
       </marker>
       <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
@@ -26,10 +26,8 @@
     <rect x="252" y="104" width="216" height="500" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
     <!-- Lane: Hooks -->
     <rect x="480" y="104" width="232" height="500" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-    <!-- Lane: Agents + Skills -->
-    <rect x="724" y="104" width="220" height="500" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-    <!-- Lane: Scripts -->
-    <rect x="956" y="104" width="220" height="500" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+    <!-- Lane: Catalog (merged agents+skills / scripts — 5-lane cap, type-swimlane.md §7) -->
+    <rect x="724" y="104" width="452" height="500" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
     <!-- Lane: Verify -->
     <rect x="1188" y="104" width="220" height="500" rx="8" fill="rgba(235,108,54,0.04)" stroke="rgba(235,108,54,0.30)" stroke-width="0.8" stroke-dasharray="4,4"/>
 
@@ -41,10 +39,8 @@
       <text x="360" y="117" fill="rgba(45,49,66,0.55)">MODEL</text>
       <rect x="540" y="108" width="112" height="12" rx="2" fill="#f5f5f5"/>
       <text x="596" y="117" fill="rgba(45,49,66,0.55)">HOOKS</text>
-      <rect x="754" y="108" width="160" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="834" y="117" fill="rgba(45,49,66,0.55)">AGENTS + SKILLS</text>
-      <rect x="1014" y="108" width="104" height="12" rx="2" fill="#f5f5f5"/>
-      <text x="1066" y="117" fill="rgba(45,49,66,0.55)">SCRIPTS</text>
+      <rect x="884" y="108" width="76" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="922" y="117" fill="rgba(45,49,66,0.55)">CATALOG</text>
       <rect x="1252" y="108" width="92" height="12" rx="2" fill="#f5f5f5"/>
       <text x="1298" y="117" fill="rgba(235,108,54,0.85)">VERIFY</text>
     </g>
@@ -67,8 +63,8 @@
       <rect x="288" y="166" width="40" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
       <text x="308" y="175" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">ACTOR</text>
       <text x="360" y="194" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Claude Model</text>
-      <text x="360" y="212" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Fable plan · Sonnet act</text>
-      <text x="360" y="226" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">Opus review · Haiku judge</text>
+      <text x="360" y="212" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">one model, this session</text>
+      <text x="360" y="226" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">tiered-pipeline: opt-in</text>
     </g>
 
     <!-- Node: Skill / Agent spawn -->
@@ -128,7 +124,7 @@
       <rect x="508" y="422" width="56" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
       <text x="536" y="431" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">JOURNAL</text>
       <text x="596" y="450" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Advisory sensors</text>
-      <text x="596" y="468" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">9 nudges · journal-only</text>
+      <text x="596" y="468" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">7 nudges · journal-only</text>
       <text x="596" y="482" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">flow · loop · jira · plan</text>
     </g>
 
@@ -250,14 +246,14 @@
     <!-- Dispatcher → Advisory sensors (parallel journal) -->
     <path d="M 596 380 L 596 416" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
 
-    <!-- Dispatcher → Scripts lane (dispatch uses hook scripts) -->
-    <path d="M 692 458 L 976 458" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
+    <!-- Dispatcher → Catalog lane (dispatch uses hook scripts) -->
+    <path d="M 692 446 L 976 446" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
 
     <!-- Scripts → Verify (run-gauntlet → pre-push gauntlet) -->
     <path d="M 1156 200 L 1188 200 L 1188 330 L 1208 330" fill="none" stroke="#4f5d75" stroke-width="1" marker-end="url(#arrow)"/>
 
-    <!-- Hooks (Advisory) → Scripts (Stop memory-audit-commit uses scripts) -->
-    <path d="M 692 458 L 976 458" fill="none" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="3,3"/>
+    <!-- Hooks (Advisory) → Catalog (Stop memory-audit-commit uses scripts) — offset 12px from the arrow above per §6 rule 3, was an exact-overlap defect -->
+    <path d="M 692 470 L 976 470" fill="none" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="3,3"/>
 
     <!-- ===== FOOTER CALLOUT inside Verify lane ===== -->
     <g font-family="'Instrument Serif', serif" font-style="italic" font-size="13" fill="#4f5d75">
