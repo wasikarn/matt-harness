@@ -56,8 +56,10 @@
     </g>
 
     <!-- ===== ARROWS (drawn first, behind nodes) ===== -->
-    <!-- Start → first fan-out -->
-    <path d="M 560 152 L 560 184" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+    <!-- Start → first fan-out. Ends exactly where the fan-out below begins (200) —
+         previously stopped at 184, a 16px gap with nothing drawn between it and the
+         fan-out arrows' own start point. -->
+    <path d="M 560 152 L 560 200" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
     <!-- Fan-out to three diamonds -->
     <path d="M 560 200 L 560 216 L 220 216 L 220 240" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
     <path d="M 560 200 L 560 240" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
@@ -73,9 +75,10 @@
     <path d="M 628 304 L 628 368 L 660 368" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
     <path d="M 968 304 L 968 376 L 660 376" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
 
-    <!-- Merge dot → endpoints -->
-    <path d="M 320 472 L 320 496" stroke="#eb6c36" stroke-width="1.4" fill="none" marker-end="url(#arrow-accent)"/>
-    <path d="M 660 440 L 660 464" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+    <!-- Merge dot → endpoints. Each starts exactly at its dot's own edge (cy + r) —
+         previously started 51-56px below the dot, floating disconnected from it. -->
+    <path d="M 320 421 L 320 496" stroke="#eb6c36" stroke-width="1.4" fill="none" marker-end="url(#arrow-accent)"/>
+    <path d="M 660 389 L 660 464" stroke="#4f5d75" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
 
     <!-- ===== ARROW LABELS ===== -->
     <!-- YES labels on coral branches (small caps, mono) -->
