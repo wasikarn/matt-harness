@@ -103,10 +103,20 @@ single agent's read.
      (command not found). Confirmed by direct execution before the fix (both exited 127) and after
      (both exited 0 with real output). Unrelated to this audit's own findings, but recursive-improve
      could not have completed its documented Observe step 1 at all until this was fixed.
-3. **Not built.** Scheduled trigger for either of the above — deliberately last and most
-   speculative. mh's `recursive-improve` is user-triggered by design (no autonomous/unattended mode
-   is a stated invariant, not an oversight); making the *mining* scheduled without also
-   re-litigating that invariant needs its own decision, not a silent extension of items 1–2.
+3. **Split in two on drill-down (2026-08-28).** "Scheduled trigger" turned out to be two
+   different things with very different risk profiles, not one:
+   - **CI half — built (v0.68.538).** `.github/workflows/harness-audit-drift.yml`: a weekly +
+     manual-dispatch scheduled run of `harness-audit` only, commenting on issue #116 when CRIT >
+     0. Deliberately narrow — `gate-journal-summary.sh` and `feedback-surface-scan.py` both read
+     local developer-machine state that doesn't exist on a CI runner, so a broader "digest all 3
+     signals" job would have silently no-op'd on 2 of 3 forever. Caught before building anything,
+     not after.
+   - **Local half — drafted, not decided.** A scheduled local invocation of `recursive-improve`
+     itself (so the two local-only signals get mined periodically) needs its own ADR, not a
+     routine build — `docs/research/adr-0011-scheduled-recursive-improve-invocation.md`. ADR
+     0009's own text names `recursive-improve` and "cron/`claude -p` self-start" explicitly as
+     outside its carve-out, retained from ADR 0006. The ADR is drafted and awaiting the
+     operator's ruling; nothing runtime shipped with it.
 
 ## Compliance audit (2026-08-28)
 
