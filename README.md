@@ -180,6 +180,37 @@ the plugin's own tiered chain never involves Haiku at any stage.
 See `scripts/workflows/tiered-pipeline.js` and `skills/workflow/tiered-pipeline/SKILL.md` for the
 implementation.
 
+### Orchestrate routing — how a pile of competing tasks gets sorted
+
+`orchestrate` decides whether and how to spend effort on an ask before treating it as a bounded
+decision — inline, parallel, sequential, or drop.
+
+[![orchestrate routing: Fast Path Gate, then group-before-scoring into one of three routing matrices, with a security override cutting across any quadrant, into four route verdicts.](docs/diagrams/mh-orchestrate-routing.png)](docs/diagrams/mh-orchestrate-routing.html)
+
+- **Fast Path Gate first** — 4 conditions; if all hold, execute inline and skip the matrices entirely.
+- **Group before scoring** — Step 0 clusters related asks before any matrix runs, so five small asks about the same file don't get scored (and dispatched) as five separate decisions.
+- **Three routing matrices**, picked by shape: Eisenhower, Impact × Effort, Value × Risk.
+- **Security override cuts across any quadrant** — auth, secrets, crypto, input validation, or dependency work always goes to `security-reviewer` first, regardless of what the matrix says.
+- **The fan-out cap is a clamp applied after routing, not a matrix input** — hard cap 5 agents per wave, prefer 2-4; nothing enforces it automatically, it's dispatch discipline.
+- **The `L2`/`L3`/`L4` dispatch-tier labels from the source matrices are deliberately omitted here.** They're unrelated to the retired L2–L5 autonomy ladder (ADR 0006), but a bare `L2`/`L3` cell with no room for that disambiguation would read as exactly the autonomy machinery this harness dropped. The four route verdicts already carry the routing meaning without it.
+
+See `skills/workflow/orchestrate/SKILL.md` and `reference.md` (Fast Path Gate, the three matrices,
+the security override, fan-out cap) for the full routing logic.
+
+### Validation chain — one gate, the rest is discipline
+
+Builder → Validator → conditional Fixer → Re-validator. Of those four handoffs, exactly one is
+computationally enforced; the rest is prompt discipline the lead has to actually follow.
+
+[![Validation chain: Builder, Validator, and a conditional Fixer plus Re-validator, gated by task-complete-separation.](docs/diagrams/mh-validation-chain.png)](docs/diagrams/mh-validation-chain.html)
+
+- **The chain is conditional past Validator** — a passing verdict ends the chain there; only a rejected verdict spawns a Fixer and a Re-validator.
+- **`gate:task:complete-separation` is the one mechanical block** (`PreToolUse:TaskUpdate`) — no subagent can mark its own task `completed`, no matter which step it's in. Only the main session can, because a subagent's `agent_type` is fixed at spawn and can't be forged.
+- **Everything else is unenforced** — the DAG ordering, the structured-verdict shape, copying upstream contracts into the next spawn prompt. All prompt discipline, not a runtime backstop.
+
+See `skills/workflow/orchestrate/SKILL.md:47-51` and `reference.md`'s Validation chain section, plus
+`docs/reference/graph-model.md`'s `depends-on` row, for the full mechanics.
+
 ---
 
 ## Quick start
