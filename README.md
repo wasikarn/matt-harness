@@ -86,72 +86,12 @@ and that is the most common way work here looks done without being done.
 
 ## Architecture
 
-One session flows through five lanes — user, model, hooks, catalog, verify — with one irreversible boundary.
-Click the diagram to open the interactive HTML version.
-
-[![mh@wasikarn core workflow: five-lane swimlane from user prompt through Claude Model, a PreToolUse dispatcher (1 hook that fans out to 11 gate rules), advisory sensors, the agent/skill/script catalog, and a verify lane of pre-commit and pre-push gauntlets.](docs/diagrams/mh-core-workflow.png)](docs/diagrams/mh-core-workflow.html)
-
-- **User → Model** — natural-language prompt (or slash command) reaches Claude Model — one model by default for the session. `mh:tiered-pipeline` (Fable plans, Sonnet acts, Opus reviews with a capped fix loop, Opus bug-hunts, Fable does a gated final review) is a separate, user-invoked skill, not the ambient session model.
-- **Model → Dispatcher** — every skill/agent spawn, output-style emit, and tool response is bound by the PreToolUse dispatcher. One registered hook (`gate:pretooluse-dispatch`) fans out to 11 gate rules in `pretooluse-table.json`; strictest-wins decides one verdict per call.
-- **Hooks → Scripts** — SessionStart injects `docs/METHODOLOGY.md`; the dispatcher fans out to hook scripts (`dispatch-*.sh`, `*.py`) which are the same files the gauntlet re-invokes from git. 18 hook registrations across 9 event types.
-- **Verify** — `pre-commit` runs the fast gate (syntax, JSON, harness-audit, LOC); `pre-push` runs the full 6-layer gauntlet. `compliance-audit` and `deep-audit` are fresh-context verifiers — manual, not auto-fired.
-
-The orange node is the only place where the maker cannot grade its own work. Everything else journals or runs as advisory.
-
-### Decision-sizing triad — METHODOLOGY Rule 1
-
-Before any non-trivial act, three yes/no questions. **Yes to any one of them routes the act through a plan-mode checkpoint** before editing — not the work itself, the analysis of the work. The match-rigor-to-stakes reflex is the doctrine; the plan-mode entry is the mechanism.
-
-[![mh@wasikarn decision-sizing triad: three yes/no questions (one-way door, blast radius, riskiest assumption) feeding a plan-mode checkpoint when any answer is yes, or proceed when all are no.](docs/diagrams/mh-decision-triad.png)](docs/diagrams/mh-decision-triad.html)
-
-- **One-way door?** If the act is irreversible (forced push, merged PR, deleted branch, public post) — stop and get explicit approval before proceeding.
-- **Blast radius?** If the failure mode touches more than one file, one subsystem, or one other person — narrow the change or checkpoint first.
-- **Riskiest assumption?** Name the one thing most likely to invalidate the plan if it turns out to be wrong. Probe it before committing.
-- **Default to suggesting plan-mode strongly.** The user keeps control (Shift+Tab or approve the plan); enter it yourself only when the door is clearly one-way or the user signals uncertainty. Skip entirely for trivial / known-small-fix / mechanical changes — under-planning a one-way door and over-planning a typo are the same error.
-
-For genuinely contested calls, `mattpocock-skills:grilling` is the on-demand escalation. `advisor()` is the routine pressure-test before substantive work and before declaring done — measured load-bearing in practice.
-
-### Gauntlet pipeline — pre-push 6-layer verifier
-
-The decision-triad tells you *whether* to plan. The gauntlet tells you *whether the artifact ships*. Pre-commit runs a fast subset; pre-push runs the full pre-push gauntlet through `scripts/run-gauntlet.sh`. All six layers launch in parallel as background processes and merge strictest-wins: any single ❌ sets `fail=1` and the push is blocked. Each layer writes its own log under `work-tmp/` so a failing layer is fully reproducible, not just a single exit code.
-
-[![mh@wasikarn gauntlet pipeline: a trigger node (git push or commit) fans out into six parallel verification layers — plugin-validate, shell-lint, json-lint, harness-audit, path-hygiene, hook-tests — each writing its own log, then a wait_layer funnel merges strictest-wins: proceed when all six pass (right, white), block when any single layer fails (left, coral focal).](docs/diagrams/mh-gauntlet-pipeline.png)](docs/diagrams/mh-gauntlet-pipeline.html)
-
-- **Six layers run in parallel.** Each is a deterministic verifier — no model-as-gate, no "looks fine" rationalization. One shell process per layer, no shared state.
-- **Strictest-wins merge via `wait_layer()`.** Every layer checks its PID's exit code; any non-zero sets the `fail=1` flag that the surrounding runner reads. Layers don't talk to each other — the merge is plain bash over PIDs.
-- **One log per layer.** `validate.log`, `lint.log`, `json.log`, `audit.log`, `pathhyg.log`, `hooktests.log`. A failing layer's full output is reproducible from the log alone, no re-run needed.
-- **Pre-commit runs the fast gate; pre-push runs the full gauntlet.** Same machinery, smaller scope on commit; everything runs on push. Either hook can block — pre-commit faster, pre-push more thorough.
-
-For the gauntlet's design intent and the merge contract, see [`scripts/run-gauntlet.sh`](scripts/run-gauntlet.sh) and the gauntlet-handoff narrative in `docs/research/`. The pre-commit fast gate is in [`git-hooks/pre-commit`](git-hooks/pre-commit).
-
-### Hook profile stack — tier is a volume knob, not a severity
-
-The gauntlet covers the *artifact*. Hooks cover the *session*, and 29 enforcement points split
-across two tables that behave nothing alike. 18 live in `hooks.json`; 17 of those route through
-`dispatch-single.sh`, where `tier` sets the *minimum* `MH_HOOK_PROFILE` at which a handler fires —
-lowering the profile peels handlers off starting with `strict`, so `strict` is the tier a profile
-change switches off *first*, not the strongest enforcement. The 18th is `PreToolUse`'s single
-entry, which routes through `dispatch-pretooluse.sh` instead and fans out to the other 11, in
-`pretooluse-table.json` — no tier field at all, reading neither `MH_HOOK_PROFILE` nor
-`MH_DISABLED_HOOKS` — the actual deny-vs-advise boundary is this path, not a tier label.
-
-[![mh@wasikarn hook enforcement: dispatch-single.sh's three-tier filter stack (strict on top since it's the first tier a lowered profile switches off, standard in the middle, minimal at the base as the always-on floor) vs dispatch-pretooluse.sh's untiered gate path, coral focal, immune to both MH_HOOK_PROFILE and MH_DISABLED_HOOKS.](docs/diagrams/mh-hook-profile-stack.png)](docs/diagrams/mh-hook-profile-stack.html)
-
-- **The stack reads top-to-bottom as "first switched off" to "always on".** `strict` (2 handlers) sits on top: it fires only when the profile is exactly `strict`, the default. `standard` (8 handlers) sits in the middle: it drops out only if the profile is lowered all the way to `minimal`. `minimal` (7 handlers) is the floor: it fires at every profile setting.
-- **`MH_DISABLED_HOOKS` filters by id, ahead of the tier check** — a per-hook kill switch independent of the profile stack, checked first inside `dispatch-single.sh`.
-- **The 11 `gate:*` rules in `hooks/pretooluse-table.json` aren't part of this stack at all.** No entry there carries a `tier` field; `dispatch-pretooluse.sh`'s own header states there is no tiering concept on this path by construction. This is the one enforcement surface no flag reaches.
-- **29 registrations total** — 18 in `hooks/hooks.json` (7 minimal / 8 standard / 2 strict / 1 untiered dispatcher entry) + 11 in `hooks/pretooluse-table.json` (untiered).
-
-See `hooks/hooks.json`, `hooks/pretooluse-table.json`, and `hooks/dispatch-single.sh` for the
-registry and filter source-of-truth.
-
-### Composing with mattpocock-skills
-
 "Compose, don't create" is the reason this repo exists, and only four mechanisms carry the real
 weight of it: a hook that emits a chain into every session, a preflight that checks the companion
 plugin is even installed, a mechanical audit that keeps a ledger honest, and one sparse prose
 boundary. Everything else — the ~25 places mh's surfaces merely *name* a matt skill in passing —
 is routing pointers, not wired relationships.
+Click the diagram to open the interactive HTML version.
 
 [![mh@wasikarn composing with mattpocock-skills across four typed edges: routes-to, depends-on, verifies, hands-off-to.](docs/diagrams/mh-composition.png)](docs/diagrams/mh-composition.html)
 
@@ -164,53 +104,6 @@ is routing pointers, not wired relationships.
 
 See `docs/reference/mattpocock-integration-map.md` and `docs/reference/graph-model.md` (the four
 typed edges this diagram reuses) for the full ledger and edge definitions.
-
-### Tiered pipeline — `mh:tiered-pipeline`, user-invoked
-
-Five stages, not four, and the fix budget for the two checking stages is shared, not doubled.
-`mh:tiered-pipeline` is a separate, user-invoked skill — it is not the ambient session model, and
-the plugin's own tiered chain never involves Haiku at any stage.
-
-[![mh:tiered-pipeline: Fable plans, Sonnet executes, Opus reviews then bug-hunts on a shared fix-retry budget, Fable does a triage-gated final review.](docs/diagrams/mh-tiered-pipeline.png)](docs/diagrams/mh-tiered-pipeline.html)
-
-- **Review and bug-hunt share one fix-retry budget of 3**, applied by Sonnet — not 3 fixes per stage. Exhausting it anywhere escalates to a human; the pipeline never re-dispatches itself.
-- **The final Fable review is triage-gated, not automatic.** It runs only when the pipeline was contested — at least one fix was used, or confidence fell below `0.75` — per TAO (arXiv:2506.12482): unconditional extra review tiers degrade agreement rather than improve it.
-- **Verdicts are schema-forced**, never taken from model prose — the same maker≠checker discipline as the rest of the harness.
-- **Nothing in the pipeline commits, pushes, or ships.** Every path ends with the result returned to a human.
-
-See `scripts/workflows/tiered-pipeline.js` and `skills/workflow/tiered-pipeline/SKILL.md` for the
-implementation.
-
-### Orchestrate routing — how a pile of competing tasks gets sorted
-
-`orchestrate` decides whether and how to spend effort on an ask before treating it as a bounded
-decision — inline, parallel, sequential, or drop.
-
-[![orchestrate routing: Fast Path Gate, then group-before-scoring into one of three routing matrices, with a security override cutting across any quadrant, into four route verdicts.](docs/diagrams/mh-orchestrate-routing.png)](docs/diagrams/mh-orchestrate-routing.html)
-
-- **Fast Path Gate first** — 4 conditions; if all hold, execute inline and skip the matrices entirely.
-- **Group before scoring** — Step 0 clusters related asks before any matrix runs, so five small asks about the same file don't get scored (and dispatched) as five separate decisions.
-- **Three routing matrices**, picked by shape: Eisenhower, Impact × Effort, Value × Risk.
-- **Security override cuts across any quadrant** — auth, secrets, credentials, crypto, input validation, or dependency work always goes to `security-reviewer` first, regardless of what the matrix says.
-- **The fan-out cap is a clamp applied after routing, not a matrix input** — hard cap 5 agents per wave, prefer 2-4; nothing enforces it automatically, it's dispatch discipline.
-- **The `L2`/`L3`/`L4` dispatch-tier labels from the source matrices are deliberately omitted here.** They're unrelated to the retired L2–L5 autonomy ladder (ADR 0006), but a bare `L2`/`L3` cell with no room for that disambiguation would read as exactly the autonomy machinery this harness dropped. The four route verdicts already carry the routing meaning without it.
-
-See `skills/workflow/orchestrate/SKILL.md` and `reference.md` (Fast Path Gate, the three matrices,
-the security override, fan-out cap) for the full routing logic.
-
-### Validation chain — one gate, the rest is discipline
-
-Builder → Validator → conditional Fixer → Re-validator. Of those four handoffs, exactly one is
-computationally enforced; the rest is prompt discipline the lead has to actually follow.
-
-[![Validation chain: Builder, Validator, and a conditional Fixer plus Re-validator, gated by task-complete-separation.](docs/diagrams/mh-validation-chain.png)](docs/diagrams/mh-validation-chain.html)
-
-- **The chain is conditional past Validator** — a passing verdict ends the chain there; only a rejected verdict spawns a Fixer and a Re-validator.
-- **`gate:task:complete-separation` is the one mechanical block** (`PreToolUse:TaskUpdate`) — no subagent can mark its own task `completed`, no matter which step it's in. Only the main session can, because a subagent's `agent_type` is fixed at spawn and can't be forged.
-- **Everything else is unenforced** — the DAG ordering, the structured-verdict shape, copying upstream contracts into the next spawn prompt. All prompt discipline, not a runtime backstop.
-
-See `skills/workflow/orchestrate/SKILL.md:47-51` and `reference.md`'s Validation chain section, plus
-`docs/reference/graph-model.md`'s `depends-on` row, for the full mechanics.
 
 ---
 
