@@ -56,11 +56,44 @@
 #     call over a different gate's broken row would be disproportionate,
 #     and we can't even tell whether the broken entry would have matched.
 import json
+import os
 import re
 import subprocess
 import sys
+from datetime import datetime, timezone
 
 RANK = {"allow": 0, "ask": 1, "defer": 2, "deny": 3}
+
+
+def _journal(gate_id, tool_name, decision):
+    # Gate-verdict journal: append a JSONL row for a non-"allow" verdict only
+    # (matches the actual need -- "how often did gate X block/ask" -- and
+    # avoids logging on every allow, which at up to 4 matched gates per Bash
+    # call would run at several times the write rate of the existing
+    # cost-tracker.sh/instructions-loaded-journal.sh telemetry precedents).
+    # Non-negotiable: this must NEVER be able to affect the dispatch's own
+    # exit code or merged decision. An unwritable/nonexistent journal path
+    # (no ~/.local/share/kbg/metrics yet, read-only $HOME, full disk) throws
+    # inside the try below and is swallowed -- if it instead propagated,
+    # this file's own header (see "any other exit code -> non-blocking
+    # error... proceeds regardless") documents the resulting failure mode:
+    # a fail-OPEN across all matched gates, not the fail-closed this file
+    # otherwise guarantees. Mirrors instructions-loaded-journal.sh's
+    # swallow-everything shape (mkdir -p + >> ... 2>/dev/null + unconditional
+    # exit 0), translated to Python.
+    try:
+        log_dir = os.path.join(os.environ.get("HOME", ""), ".local", "share", "kbg", "metrics")
+        os.makedirs(log_dir, exist_ok=True)
+        row = {
+            "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "id": gate_id,
+            "tool_name": tool_name,
+            "decision": decision,
+        }
+        with open(os.path.join(log_dir, "gate-decisions.jsonl"), "a") as f:
+            f.write(json.dumps(row) + "\n")
+    except Exception:
+        pass
 
 
 def main():
@@ -163,6 +196,7 @@ def main():
             msg = err.strip()
             if msg:
                 deny_messages.append(msg)
+            _journal(entry.get("id", "?"), tool_name, "deny")
             continue
 
         if rc != 0:
@@ -190,6 +224,8 @@ def main():
             continue
 
         decision = hso.get("permissionDecision")
+        if decision in RANK and decision != "allow":
+            _journal(entry.get("id", "?"), tool_name, decision)
         if decision in RANK and RANK[decision] > worst_rank:
             worst_rank = RANK[decision]
             worst_reason = hso.get("permissionDecisionReason")

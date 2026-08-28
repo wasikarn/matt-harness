@@ -29,12 +29,26 @@ jobs:
       - name: validate plugin manifest (strict)
         run: claude plugin validate --strict .
 
-  # NOTE: the eval-harness job was removed — it referenced eval/, scripts/evals/,
-  # and eval/run-eval.py, all deleted in the c452102 reset. The eval gate is
-  # pending rebuild (per CLAUDE.md); re-add a job here when eval/ is restored.
-  # The critical-hooks suite is also NOT run in CI. It is ~121s locally but ~20 min
-  # on GitHub runners (subprocess-spawn amplification: 8 audit.sh runs + many
-  # verification-gate scans + a python3 cold-start per test), too slow + fragile for
-  # a recurring job. It is verified by the local pre-commit gate, and Linux-only
-  # portability is checked locally with the gnubin + uname-shim simulator (see
-  # memory ci-suite-portability). Re-add a job here only if the suite gets fast.
+  harness-audit:
+    name: harness-audit (0 CRIT)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: run harness-audit
+        run: bash skills/meta/harness-audit/scripts/audit.sh .
+
+  # NOTE: the eval-harness job (dataset-driven claude -p evals against eval/,
+  # scripts/evals/, eval/run-eval.py) was removed in the c452102 reset and has
+  # not been rebuilt — see root CLAUDE.md's Validation section for current
+  # status (no longer framed as "pending rebuild"; harness-audit above is the
+  # CI regression check that exists today). The critical-hooks suite is also
+  # NOT run in CI. It is ~121s locally but ~20 min on GitHub runners
+  # (subprocess-spawn amplification: 8 audit.sh runs + many verification-gate
+  # scans + a python3 cold-start per test), too slow + fragile for a
+  # recurring job — unlike the single audit.sh run above (~14s locally). It
+  # is verified by the local pre-commit gate, and Linux-only portability is
+  # checked locally with the gnubin + uname-shim simulator (see memory
+  # ci-suite-portability). Re-add a job here only if the suite gets fast.

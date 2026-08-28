@@ -1,5 +1,21 @@
 #!/usr/bin/env bash
 # 2. Symlink integrity — skills
+#
+# CI-safety (reproduced 2026-08-28 by an adversarial plan review: 0 CRIT
+# locally vs 76 CRIT under an isolated $HOME simulating a fresh GitHub
+# runner). This loop's per-component F1 CRIT depends on either a local
+# ~/.claude symlink farm (dev-mode install) or the plugin cache
+# ($PLUGIN_ACTIVE, set earlier in audit.sh) — a clean checkout with neither
+# has genuinely no way to prove loadability, which is a different fact than
+# "every skill is missing." Distinguish by whether $HOME/.claude/skills
+# exists AT ALL: if it does, this machine is using symlink-mode and a
+# missing individual symlink is still a real, per-component gap (unchanged
+# behavior below). If it does not, AND $PLUGIN_ACTIVE=0, neither delivery
+# mechanism is configured here at all — downgrade to one aggregated WARN
+# instead of one CRIT per skill, and skip the loop.
+if [ "${PLUGIN_ACTIVE:-0}" -eq 0 ] && [ ! -d "$HOME/.claude/skills" ]; then
+  warn "no plugin cache and no ~/.claude/skills symlink farm present — skill loadability unverified in this environment (expected on a clean CI checkout; not a per-skill finding)"
+else
 for d in "$CLAUDE_DIR/skills"/*/ "$CLAUDE_DIR/skills"/*/*/; do
   [ -d "$d" ] || continue
   name=$(basename "$d")
@@ -29,4 +45,5 @@ for d in "$CLAUDE_DIR/skills"/*/ "$CLAUDE_DIR/skills"/*/*/; do
     crit "skill '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
   fi
 done
+fi
 

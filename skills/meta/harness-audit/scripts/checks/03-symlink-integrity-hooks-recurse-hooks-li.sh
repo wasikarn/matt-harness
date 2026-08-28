@@ -2,7 +2,18 @@
 # 3. Symlink integrity — hooks (recurse: hooks live in gates/, advisory/, …)
 # globstar with set -e exits if the directory is empty and the pattern expands
 # literally to itself; use find so empty/minimal fixtures don't kill the audit.
-if [ -d "$CLAUDE_DIR/hooks" ]; then
+#
+# CI-safety (see check 02's identical guard for the full reasoning — same
+# 76-CRIT-under-isolated-$HOME reproduction, 2026-08-28 adversarial plan
+# review). $HOME/.claude/hooks existing at all distinguishes symlink-mode
+# (per-component CRIT stays real) from a clean checkout with neither
+# delivery mechanism configured (one aggregated WARN instead).
+HOOKS_LOADABILITY_UNVERIFIABLE=0
+if [ "${PLUGIN_ACTIVE:-0}" -eq 0 ] && [ ! -d "$HOME/.claude/hooks" ]; then
+  HOOKS_LOADABILITY_UNVERIFIABLE=1
+  warn "no plugin cache and no ~/.claude/hooks symlink farm present — hook loadability unverified in this environment (expected on a clean CI checkout; not a per-hook finding)"
+fi
+if [ "$HOOKS_LOADABILITY_UNVERIFIABLE" -eq 0 ] && [ -d "$CLAUDE_DIR/hooks" ]; then
   while IFS= read -r -d '' f; do
     [ -f "$f" ] || continue
     case "${f#"$CLAUDE_DIR"/hooks/}" in tests/*|*__pycache__*) continue;; esac
@@ -46,6 +57,10 @@ fi
 # integrity covered only skills and hooks. (The commands/ loop that used to
 # live here was dropped 2026-08-25, #112 — commands/ retired as a surface
 # type entirely, every command converted to a skill.)
+# CI-safety: same guard shape as check 02/the hooks loop above.
+if [ "${PLUGIN_ACTIVE:-0}" -eq 0 ] && [ ! -d "$HOME/.claude/agents" ]; then
+  warn "no plugin cache and no ~/.claude/agents symlink farm present — agent loadability unverified in this environment (expected on a clean CI checkout; not a per-agent finding)"
+else
 for f in "$CLAUDE_DIR/agents"/*.md; do
   [ -f "$f" ] || continue
   name=$(basename "$f")
@@ -53,11 +68,16 @@ for f in "$CLAUDE_DIR/agents"/*.md; do
     crit "agent '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
   fi
 done
+fi
 
 # 3c. Symlink integrity — output-styles.
 # Output styles ship as .md files in claude/output-styles/ and must symlink
 # to ~/.claude/output-styles/<name>.md so Claude Code can apply them via
 # /output-style. Same regression class as harness-audit's 3b (committed but not loadable).
+# CI-safety: same guard shape as check 02/the hooks loop above.
+if [ "${PLUGIN_ACTIVE:-0}" -eq 0 ] && [ ! -d "$HOME/.claude/output-styles" ]; then
+  warn "no plugin cache and no ~/.claude/output-styles symlink farm present — output-style loadability unverified in this environment (expected on a clean CI checkout; not a per-output-style finding)"
+else
 for f in "$CLAUDE_DIR/output-styles"/*.md; do
   [ -f "$f" ] || continue
   name=$(basename "$f")
@@ -65,4 +85,5 @@ for f in "$CLAUDE_DIR/output-styles"/*.md; do
     crit "output-style '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
   fi
 done
+fi
 

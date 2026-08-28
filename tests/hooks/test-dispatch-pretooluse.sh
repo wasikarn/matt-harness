@@ -50,19 +50,19 @@ check() { # check <desc> <ok:0|1>
 }
 
 echo "=== silent case (no matcher hits) ==="
-out=$(echo "$(read_payload /tmp/x)" | env CLAUDE_PLUGIN_ROOT="$ROOT" bash "$DISPATCH_SH" 2>/dev/null); rc=$?
+out=$(echo "$(read_payload /tmp/x)" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" bash "$DISPATCH_SH" 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "Read matches zero gates: exit 0, empty stdout" "$ok"
 
 echo "=== deny parity (irrecoverable.sh via Bash) ==="
-direct_rc=$(echo "$(bash_payload 'rm -rf /tmp/test')" | env CLAUDE_PLUGIN_ROOT="$ROOT" bash "$ROOT/hooks/gates/irrecoverable.sh" >/dev/null 2>/dev/null; echo $?)
-dispatch_rc=$(echo "$(bash_payload 'rm -rf /tmp/test')" | env CLAUDE_PLUGIN_ROOT="$ROOT" bash "$DISPATCH_SH" >/dev/null 2>/dev/null; echo $?)
+direct_rc=$(echo "$(bash_payload 'rm -rf /tmp/test')" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" bash "$ROOT/hooks/gates/irrecoverable.sh" >/dev/null 2>/dev/null; echo $?)
+dispatch_rc=$(echo "$(bash_payload 'rm -rf /tmp/test')" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" bash "$DISPATCH_SH" >/dev/null 2>/dev/null; echo $?)
 ok=1; [ "$direct_rc" -eq 2 ] && [ "$dispatch_rc" -eq 2 ] && ok=0
 check "rm -rf: direct and dispatched both exit 2 (direct=$direct_rc dispatch=$dispatch_rc)" "$ok"
 
 echo "=== ask parity (verifier-protect.sh via Write) ==="
-direct_out=$(echo "$(write_payload "hooks/gates/foo.sh" "x")" | env CLAUDE_PLUGIN_ROOT="$ROOT" bash "$ROOT/hooks/gates/verifier-protect.sh" 2>/dev/null)
-dispatch_out=$(echo "$(write_payload "hooks/gates/foo.sh" "x")" | env CLAUDE_PLUGIN_ROOT="$ROOT" bash "$DISPATCH_SH" 2>/dev/null)
+direct_out=$(echo "$(write_payload "hooks/gates/foo.sh" "x")" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" bash "$ROOT/hooks/gates/verifier-protect.sh" 2>/dev/null)
+dispatch_out=$(echo "$(write_payload "hooks/gates/foo.sh" "x")" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" bash "$DISPATCH_SH" 2>/dev/null)
 ok=1
 if echo "$direct_out" | /usr/bin/grep -q '"permissionDecision": "ask"' && \
    echo "$dispatch_out" | /usr/bin/grep -q '"permissionDecision": "ask"'; then
@@ -71,8 +71,8 @@ fi
 check "Write to hooks/gates/foo.sh: both direct and dispatched ask" "$ok"
 
 echo "=== deny parity (task-complete-separation.sh via TaskUpdate) ==="
-direct_rc=$(echo "$(taskupdate_payload completed general-purpose)" | env CLAUDE_PLUGIN_ROOT="$ROOT" bash "$ROOT/hooks/gates/task-complete-separation.sh" >/dev/null 2>/dev/null; echo $?)
-dispatch_rc=$(echo "$(taskupdate_payload completed general-purpose)" | env CLAUDE_PLUGIN_ROOT="$ROOT" bash "$DISPATCH_SH" >/dev/null 2>/dev/null; echo $?)
+direct_rc=$(echo "$(taskupdate_payload completed general-purpose)" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" bash "$ROOT/hooks/gates/task-complete-separation.sh" >/dev/null 2>/dev/null; echo $?)
+dispatch_rc=$(echo "$(taskupdate_payload completed general-purpose)" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" bash "$DISPATCH_SH" >/dev/null 2>/dev/null; echo $?)
 ok=1; [ "$direct_rc" -eq 2 ] && [ "$dispatch_rc" -eq 2 ] && ok=0
 check "subagent TaskUpdate(completed): direct and dispatched both exit 2" "$ok"
 
@@ -85,8 +85,8 @@ echo x > "$WS/repo1/f.txt"; git -C "$WS/repo1" add f.txt
 git -C "$WS/repo1" -c user.email=t@t -c user.name=t commit -q -m add-f
 edit_payload() { python3 -c 'import json, sys; print(json.dumps({"tool_name": "Edit", "tool_input": {"file_path": sys.argv[1]}, "session_id": sys.argv[2]}))' "$1" "$2"; }
 P=$(edit_payload "$WS/repo1/f.txt" sess1234)
-direct_out=$(echo "$P" | env CLAUDE_PLUGIN_ROOT="$ROOT" CLAUDE_PROJECT_DIR="$WS/repo1" MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= bash "$ROOT/hooks/gates/worktree-guard-dispatch.sh" 2>/dev/null)
-dispatch_out=$(echo "$P" | env CLAUDE_PLUGIN_ROOT="$ROOT" CLAUDE_PROJECT_DIR="$WS/repo1" MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= bash "$DISPATCH_SH" 2>/dev/null)
+direct_out=$(echo "$P" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" CLAUDE_PROJECT_DIR="$WS/repo1" MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= bash "$ROOT/hooks/gates/worktree-guard-dispatch.sh" 2>/dev/null)
+dispatch_out=$(echo "$P" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" CLAUDE_PROJECT_DIR="$WS/repo1" MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= bash "$DISPATCH_SH" 2>/dev/null)
 ok=1
 python3 -c '
 import json, sys
@@ -140,7 +140,7 @@ exit 0
 EOF
 
 run_synthetic() { # run_synthetic <table.json>
-  echo "$(bash_payload 'irrelevant')" | env CLAUDE_PLUGIN_ROOT="$ROOT" python3 "$DISPATCH_PY" "$1" "$FIXTURE_DIR/.."
+  echo "$(bash_payload 'irrelevant')" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" python3 "$DISPATCH_PY" "$1" "$FIXTURE_DIR/.."
 }
 
 # ask beats allow+updatedInput -- blocking decision suppresses the redirect.
@@ -234,7 +234,7 @@ check "totally unparseable table.json -> exit 2 (fail closed, not silently open)
 ok=1; /usr/bin/grep -qi "FATAL" "$TMP/corrupt-stderr" && ok=0
 check "unparseable table.json -> a clear FATAL stderr message, not a bare traceback" "$ok"
 
-out=$(echo "$(bash_payload 'irrelevant')" | env CLAUDE_PLUGIN_ROOT="$ROOT" python3 "$DISPATCH_PY" "$TMP/no-such-table.json" "$FIXTURE_DIR/.." 2>/dev/null); rc=$?
+out=$(echo "$(bash_payload 'irrelevant')" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" python3 "$DISPATCH_PY" "$TMP/no-such-table.json" "$FIXTURE_DIR/.." 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "table.json path doesn't exist at all -> exit 2 (fail closed)" "$ok"
 
@@ -265,6 +265,45 @@ ok=1; [ "$rc" -eq 2 ] && ok=0
 check "one entry has an invalid matcher regex -> the OTHER entry still runs and denies" "$ok"
 ok=1; /usr/bin/grep -q "t:bad-regex" "$TMP/bad-regex-stderr" && /usr/bin/grep -qi "invalid matcher" "$TMP/bad-regex-stderr" && ok=0
 check "invalid matcher regex is named and logged, not silently dropped" "$ok"
+
+echo "=== gate-verdict journal (item 2: closes 'how often did gate X fire') ==="
+# Non-allow verdict -> a row is written, with the right shape.
+JOURNAL="$TMP/.local/share/kbg/metrics/gate-decisions.jsonl"
+out=$(run_synthetic "$TMP/table-deny-vs-ask.json" 2>/dev/null); rc=$?
+ok=1
+if [ -f "$JOURNAL" ] && /usr/bin/grep -q '"decision": "deny"' "$JOURNAL" && /usr/bin/grep -q '"id": "t:denier"' "$JOURNAL"; then
+  ok=0
+fi
+check "a deny verdict is journaled to gate-decisions.jsonl" "$ok"
+
+# Volume control: an allow-only dispatch must NOT add a row (journal only
+# non-allow decisions -- matches the actual need and avoids the unbounded
+# per-tool-call write-rate the adversarial review flagged).
+: > "$JOURNAL"  # reset from the deny row just written above
+cat > "$TMP/table-allow-only.json" <<EOF
+[
+  {"id": "t:allow_ui", "matcher": "Bash", "script": "fixtures/allow_ui.sh"}
+]
+EOF
+out=$(run_synthetic "$TMP/table-allow-only.json" 2>/dev/null)
+ok=1
+[ ! -s "$JOURNAL" ] && ok=0
+check "an allow-only dispatch does not add a journal row" "$ok"
+
+echo "=== gate-verdict journal fail-safe (the Critical finding the review caught) ==="
+# An unwritable journal path must NEVER change the dispatch's own merged
+# verdict -- the fail-open risk: an unguarded journal write throwing inside
+# dispatch-pretooluse.py exits non-zero, and this file's own header
+# documents what a non-2 exit means: non-blocking error, proceeds as if no
+# gate fired at all. Point HOME at a path whose parent is not writable, so
+# `os.makedirs(log_dir, exist_ok=True)` inside _journal() fails.
+RO_HOME="$TMP/ro-home"
+mkdir -p "$RO_HOME"
+chmod 555 "$RO_HOME"
+denier_rc=$(echo "$(bash_payload 'irrelevant')" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$RO_HOME/no-write-here" python3 "$DISPATCH_PY" "$TMP/table-deny-vs-ask.json" "$FIXTURE_DIR/.." >/dev/null 2>/dev/null; echo $?)
+chmod 755 "$RO_HOME"  # restore before the trap tries to trash it
+ok=1; [ "$denier_rc" -eq 2 ] && ok=0
+check "deny verdict unchanged (still exit 2) when the journal path is unwritable" "$ok"
 
 echo
 echo "PASS=$pass FAIL=$fail"

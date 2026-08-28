@@ -147,22 +147,42 @@ not just two isolated facts.
   categorical wall at self-launch, not a continuum the article's `bands.yaml` merely "goes
   further" along — different axis, not more of the same one.
 
-### Build candidates, ranked by evidence strength (still none built — facts for the user to decide on)
+### Build candidates — status as of 2026-08-28
 
-1. **Restore a merge-door hook.** A `PreToolUse (Bash)` gate matching `gh pr merge`, mirroring
-   `production-gate.sh`'s pattern, would close the one place mh's Deploy-stage control regressed
-   below the article's own baseline example. Concrete, small, evidenced by a real gap left by a
-   specific commit.
-2. **Test-file-edit gate during Rule 4 bugfix flow.** Closes a gap mh's own doctrine argues
-   against leaving open (maker≠checker), not just an absence relative to the article.
-3. **Gate-verdict journal.** One-line append from each `hooks/gates/*` script to a
-   `gate-decisions.jsonl`, mirroring the pattern already proven by the 3 existing telemetry
-   hooks (`cost-tracker.sh`, `skill-usage-telemetry.sh`, `instructions-loaded-journal.sh`).
-   Closes the "score, not feel" gap in mh's own stated doctrine, not just an article mismatch.
-4. Repoint `flow-nudge.sh` from `grilling` to `grill-with-docs` (near-zero cost, matches
-   matt-pocock's own stated preference, closes most of the Plan-stage artifact gap for free).
-5. Config-change-triggered regression evals (Round 1's Candidate 1, now better-evidenced: the
-   design already exists in `eval-harness/SKILL.md`, unenforced — this is "wire it up," not
-   "design it").
-6. Reusable release-gate hook template (Round 1's Candidate 2 — unchanged, still speculative,
-   no downstream project asking for it).
+Planned via `EnterPlanMode`, revised once after an adversarial `mh:plan-reviewer` pass (2 Critical
++ 6 High findings, all folded in — see the plan's own "Revised after..." note), then built.
+Full plan: `~/.claude/plans/proud-cooking-meteor.md` (session-local, not in this repo).
+
+1. **Built.** `hooks/gates/merge-door.sh` (`gate:bash:merge-door`) — `ask` tier, reuses
+   `irrecoverable.sh`'s argv-tokenizing classifier (the original "word-boundary regex" precedent
+   was factually wrong and would have false-positived on HEREDOC/commit-message prose). 9-case
+   test battery, `tests/hooks/test-merge-door.sh`.
+2. **Built.** `hooks/gates/test-integrity.sh` (`gate:write:test-integrity`) — stateless
+   content-diff classifier (assertion-line removed, or skip marker added), narrowed to real
+   test-root path shapes. The original path-substring-only design was zero-signal (~100% ask
+   rate on both the desired and undesired case) — fixed per a follow-up AskUserQuestion decision.
+   5-case test battery, `tests/hooks/test-test-integrity.sh`.
+3. **Built.** Gate-verdict journal in `hooks/dispatch-pretooluse.py` (non-`allow` decisions only,
+   try/except-wrapped so an unwritable journal path can never flip the dispatch's own verdict —
+   the review's sharpest Critical finding: the original "one line" design would have silently
+   failed *open* across all 11 gates on any I/O error). 3 new regression tests in
+   `tests/hooks/test-dispatch-pretooluse.sh`, including the fail-safe itself.
+4. **Built.** `hooks/advisory/flow-nudge.sh`'s spec-flow branch now names
+   `/mattpocock-skills:grill-with-docs` as a user-typed step; bare `grilling` (model-invocable,
+   correct as-is) on the line above is unchanged. The original plan would have flipped `grilling`
+   to `grill-with-docs` outright — `grill-with-docs` carries `disable-model-invocation: true`,
+   so that swap would have nudged the model at a call the platform hard-blocks.
+5. **Built, rescoped.** No new eval infrastructure — `harness-audit` added as a new CI job
+   (`.github/workflows/validate.yml`). Required a real prerequisite fix first: checks 02/03's
+   loadability assertions depended on the local plugin cache/`~/.claude` symlink farm and went
+   from 0 CRIT locally to 76 CRIT reproduced under an isolated `$HOME` (a fresh CI checkout has
+   neither) — fixed by downgrading to one aggregated WARN when neither delivery mechanism is
+   configured at all, verified against the same isolated-`$HOME` reproduction (now 0 CRIT).
+6. **Dropped**, per an AskUserQuestion decision — no downstream project asking for it.
+
+**Known side effect, not fixed in this pass**: adding gates 1-2 changed the live hook-count fact
+(11 → 13 PreToolUse table entries) that `docs/diagrams/mh-core-workflow.html` and
+`mh-hook-profile-stack.html` hardcode — harness-audit check 56 now WARNs on both (2 new WARNs,
+confirmed via a `git stash` before/after diff). Diagram content edits are out of this plan's
+scope (they need the `diagram-design` skill's own re-export pipeline) — named here so it doesn't
+get silently lost.

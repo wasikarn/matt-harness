@@ -6,6 +6,12 @@
     "description": "Gate: block irrecoverable Bash patterns (rm -rf, push --force, --no-verify, reset --hard, clean -f)"
   },
   {
+    "id": "gate:bash:merge-door",
+    "matcher": "Bash",
+    "script": "hooks/gates/merge-door.sh",
+    "description": "Gate: ask before a raw `gh pr merge` runs outside the ship-merge skill flow. Restores the merge-door protection convergence-merge-gate.sh used to provide before it was retired 2026-08-24 (#82) with no replacement. Emits permissionDecision: ask. Known non-goal: the REST equivalent (gh api .../pulls/N/merge) is not covered."
+  },
+  {
     "id": "gate:write:verifier-protect",
     "matcher": "Write|Edit|NotebookEdit",
     "script": "hooks/gates/verifier-protect.sh",
@@ -52,6 +58,12 @@
     "matcher": "Write",
     "script": "hooks/gates/config-write-guard.sh",
     "description": "Gate: ask before creating a brand-new Claude Code settings file (.claude/settings.json, .claude/settings.local.json). Editing an existing one is unaffected — create-vs-modify asymmetry, mirrors the pre-commit new-file LOC gate at tool-call time (#98)."
+  },
+  {
+    "id": "gate:write:test-integrity",
+    "matcher": "Write|Edit|MultiEdit",
+    "script": "hooks/gates/test-integrity.sh",
+    "description": "Gate: ask when an edit to an existing test-shaped path (tests/**, test_*.py, *_test.*, *.test.*, *.spec.*) removes an assertion line or adds a skip/disable marker. Stateless content-diff classifier, no session-phase tracking. Enforces METHODOLOGY.md Rule 4 (don't weaken a test while fixing the code it covers) computationally instead of by prose alone."
   },
   {
     "id": "gate:write:worktree-guard",
