@@ -14,14 +14,24 @@
 # is silent by construction — no separate carve-out required.
 #
 # Known, deliberate gap: this catches a REMOVED assertion line, an ADDED
-# skip marker, and an ADDED always-false conditional wrap (`if false`/`if 0`/
-# `if [ 0 -eq 1 ]`) around otherwise-unchanged content — a compliance audit
-# (2026-08-28) found the last of these as a live bypass and it was folded in.
+# skip marker, and an ADDED always-false conditional/loop wrap around
+# otherwise-unchanged content — `if`/`elif`/`while` opening on a bare
+# `false`/`0`, or a `[ ]`/`[[ ]]`/bare-`test` numeric comparison that is
+# itself statically false (`0 -eq 1`, `1 -eq 2`, `2 -ne 2`, any literal
+# pair, not just 0/1). A same-day deep-audit fresh-context check found the
+# first version of this (2026-08-28, `if false` only) overclaimed: `elif
+# false`, `while false`, `if [ 1 -eq 2 ]`, and bare `if test 0 -eq 1` all
+# bypassed it silently — verified live, each is a real always-false wrap,
+# same family as the original finding, just a different spelling.
+# Deliberately NOT flagged, and not a gap: `if [ 0 ]` / `if [[ false ]]`
+# (single-operand tests) — bash treats a non-empty string as true regardless
+# of its text, so both of those are always-TRUE, not a skip (verified live;
+# matching them would be a false positive, not a closed gap).
 # Still not detected: moving an assertion into a function that is never
-# called, or any other bespoke reachability trick a line-set diff can't see.
-# Closing that needs real control-flow/reachability analysis, out of scope
-# for a lightweight PreToolUse content-diff gate — a real residual, not
-# claimed as covered.
+# called, a runtime-variable-gated skip (`if [ "$SKIP" = 1 ]`), or any other
+# bespoke reachability trick a line-set diff can't see. Closing that needs
+# real control-flow/reachability analysis, out of scope for a lightweight
+# PreToolUse content-diff gate — a real residual, not claimed as covered.
 set -uo pipefail
 
 if ! command -v python3 >/dev/null 2>&1; then
@@ -57,15 +67,18 @@ PATH_RE = re.compile(
 ASSERT_RE = re.compile(r"\bcheck\s*\"|\bassert\b|\bself\.assert|\bpytest\.raises\b|\bpytest\.fail\b")
 SKIP_RE = re.compile(r"#\s*SKIP\b|@pytest\.mark\.(skip|xfail)|\.skip\s*\(|\bxit\s*\(|\bit\.skip\s*\(", re.IGNORECASE)
 # Bash has no marker-string idiom for disabling a line the way pytest/jest do
-# -- it disables via control flow instead. Caught live by a compliance audit
-# (2026-08-28): wrapping a kept assertion in `if false; then ... fi` fully
-# neuters it while leaving the assertion'"'"'s own line text, and the diff, byte-
-# identical -- SKIP_RE alone missed it. Treated the same as an added skip
-# marker: an always-false conditional opener appearing in the new side and
-# not the old is itself the "skip" signal, independent of exact proximity to
-# an assertion line.
-DEAD_COND_RE = re.compile(
-    r"^\s*if\s*\(?\s*(false|0)\b|^\s*if\s*\[+\s*(0\s*-eq\s*1|1\s*-eq\s*0)\s*\]+",
+# -- it disables via control flow instead. `if`/`elif`/`while` opening on a
+# bare false/0, or a bracket/test numeric comparison that'"'"'s statically
+# false, all fully neuter a kept assertion while leaving the assertion'"'"'s
+# own line text -- and the diff -- byte-identical, so SKIP_RE alone misses
+# every one of them. Deliberately excludes `[ 0 ]`/`[[ false ]]`-style
+# single-operand tests: those are non-empty-string checks and evaluate TRUE
+# in bash (verified live), so matching them would be a false positive.
+DEAD_KEYWORD_RE = re.compile(
+    r"^\s*(if|elif|while)\s*\(?\s*(false|0)\b", re.IGNORECASE
+)
+DEAD_NUMERIC_RE = re.compile(
+    r"^\s*(?:if|elif|while)\s*(?:\[+|test\s+)\s*(\d+)\s*(-eq|-ne)\s*(\d+)\b",
     re.IGNORECASE,
 )
 
@@ -76,7 +89,19 @@ def skip_lines(text):
     return {ln.strip() for ln in text.splitlines() if SKIP_RE.search(ln)}
 
 def dead_cond_lines(text):
-    return {ln.strip() for ln in text.splitlines() if DEAD_COND_RE.search(ln)}
+    out = set()
+    for raw in text.splitlines():
+        ln = raw.strip()
+        if DEAD_KEYWORD_RE.search(ln):
+            out.add(ln)
+            continue
+        m = DEAD_NUMERIC_RE.search(ln)
+        if m:
+            a, op, b = int(m.group(1)), m.group(2), int(m.group(3))
+            is_dead = (op == "-eq" and a != b) or (op == "-ne" and a == b)
+            if is_dead:
+                out.add(ln)
+    return out
 
 def weakened(old_text, new_text):
     removed_assert = assertion_lines(old_text) - assertion_lines(new_text)

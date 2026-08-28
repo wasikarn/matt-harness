@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # Behavioral tests for hooks/gates/test-integrity.sh. Covers the content-diff
 # classifier (assertion removed -> ask, skip marker added -> ask, an added
-# always-false conditional wrap around a kept assertion -> ask), the path
-# narrowing to real test-root shapes (not a bare "test"/"spec" substring),
-# and the negative controls the adversarial plan review demanded: new-file
-# test creation, an edit that only adds an assertion, and a non-test path
-# that merely contains "test"/"spec" as a substring must all stay silent.
-# Also proves a documented gap stays a documented gap (moving an assertion
-# into an uncalled function evades the diff by design, not by accident).
+# always-false conditional/loop wrap around a kept assertion -> ask across
+# its if/elif/while and bracket/bare-test spellings), the path narrowing to
+# real test-root shapes (not a bare "test"/"spec" substring), and the
+# negative controls the adversarial plan review demanded: new-file test
+# creation, an edit that only adds an assertion, a non-test path that merely
+# contains "test"/"spec" as a substring, and the always-TRUE `[ 0 ]`/
+# `[[ false ]]` single-operand tests (must all stay silent). Also proves a
+# documented gap stays a documented gap (moving an assertion into an
+# uncalled function evades the diff by design, not by accident).
 # Run standalone: bash tests/hooks/test-test-integrity.sh
 set -uo pipefail
 
@@ -63,6 +65,53 @@ check "case two" "$ok2"
 fi' | bash "$GATE" 2>/dev/null)
 ok=1; is_ask "$out" && ok=0
 check "Edit wrapping an assertion in 'if false; then...fi' -> ask" "$ok"
+
+# --- Positive: the same always-false wrap in its other common spellings
+# (elif/while, bracket/bare-test numeric comparisons other than 0/1) --
+# a deep-audit fresh-context check (2026-08-28) found these bypassed the
+# first version of the fix above; verified live with real bash truthiness
+# before adding, not assumed from the regex text. ---
+out=$(payload_edit "$TESTFILE" 'check "case two" "$ok2"' 'if [ 1 -eq 2 ]; then
+echo x
+elif false; then
+check "case two" "$ok2"
+fi' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" && ok=0
+check "Edit wrapping an assertion in 'elif false' -> ask" "$ok"
+
+out=$(payload_edit "$TESTFILE" 'check "case two" "$ok2"' 'while false; do
+check "case two" "$ok2"
+done' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" && ok=0
+check "Edit wrapping an assertion in 'while false; do...done' -> ask" "$ok"
+
+out=$(payload_edit "$TESTFILE" 'check "case two" "$ok2"' 'if [ 1 -eq 2 ]; then
+check "case two" "$ok2"
+fi' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" && ok=0
+check "Edit wrapping an assertion in 'if [ 1 -eq 2 ]' (non-0/1 literals) -> ask" "$ok"
+
+out=$(payload_edit "$TESTFILE" 'check "case two" "$ok2"' 'if test 0 -eq 1; then
+check "case two" "$ok2"
+fi' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" && ok=0
+check "Edit wrapping an assertion in bare 'if test 0 -eq 1' (no brackets) -> ask" "$ok"
+
+# --- Negative: `[ 0 ]` and `[[ false ]]` are single-operand string tests --
+# bash evaluates a non-empty string as TRUE regardless of its text, so
+# neither actually disables the wrapped assertion. Matching them would be
+# a false positive, not a closed gap -- verified live before asserting. ---
+out=$(payload_edit "$TESTFILE" 'check "case two" "$ok2"' 'if [ 0 ]; then
+check "case two" "$ok2"
+fi' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" || ok=0
+check "Edit wrapping an assertion in 'if [ 0 ]' (always true) -> noask" "$ok"
+
+out=$(payload_edit "$TESTFILE" 'check "case two" "$ok2"' 'if [[ false ]]; then
+check "case two" "$ok2"
+fi' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" || ok=0
+check "Edit wrapping an assertion in 'if [[ false ]]' (always true) -> noask" "$ok"
 
 # --- Documented gap, not silently unhandled: moving an assertion into a
 # function that's never called evades the line-set diff entirely (no
