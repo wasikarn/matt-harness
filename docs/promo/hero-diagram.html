@@ -120,13 +120,15 @@
   <div class="frame">
     <header class="diagram-head">
       <div>
-        <div class="eyebrow">mh@wasikarn · v0.68.515</div>
+        <div class="eyebrow">mh@wasikarn</div>
         <h1>The three moments a session runs through</h1>
       </div>
       <span class="chip">Layer stack · governance catalog</span>
     </header>
 
-    <svg viewBox="0 0 920 580" role="img" aria-label="Three-layer operating model: Doctrine injects, Runtime gates and advises, Ship verifies before land">
+    <svg viewBox="0 0 920 580" role="img" aria-labelledby="hero-title hero-desc">
+      <title id="hero-title">Three-layer operating model: Doctrine, Runtime, Ship</title>
+      <desc id="hero-desc">Doctrine injects docs/METHODOLOGY.md, CLAUDE.md, and BOUNDARY.md at SessionStart. Runtime is the focal layer: 11 deny-gates and 7 advisory sensors sit on either side of the model as it acts, gates blocking on hit with no model override, sensors only journaling. Ship runs pre-commit's 4 parallel checks, then pre-push's 6-layer gauntlet, before anything lands.</desc>
       <defs>
         <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
           <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
@@ -177,13 +179,13 @@
       <g font-family="Geist Mono, ui-monospace, monospace" font-size="11">
         <rect x="60" y="284" width="220" height="124" rx="4"
               fill="var(--surface-2)" stroke="var(--accent)" stroke-width="1.2"/>
-        <text x="72" y="304" font-family="Geist" font-weight="600" font-size="12" fill="var(--ink)">9 deny-gates</text>
+        <text x="72" y="304" font-family="Geist" font-weight="600" font-size="12" fill="var(--ink)">11 deny-gates</text>
         <text x="72" y="320" fill="var(--muted)">hooks/gates/</text>
-        <text x="72" y="338" fill="var(--ink)">irrecoverable · verifier-protect</text>
-        <text x="72" y="354" fill="var(--ink)">db-write · credential · config</text>
-        <text x="72" y="370" fill="var(--ink)">worktree-guard (×2)</text>
-        <text x="72" y="386" fill="var(--ink)">atlassian-mcp · task-complete</text>
-        <text x="72" y="402" font-size="9" fill="var(--accent)" font-weight="600">deny on hit · no model override</text>
+        <text x="72" y="336" fill="var(--ink)">irrecoverable · verifier ×2</text>
+        <text x="72" y="350" fill="var(--ink)">db-write · credential · config</text>
+        <text x="72" y="364" fill="var(--ink)">worktree-guard ×2 · jira-acli</text>
+        <text x="72" y="378" fill="var(--ink)">atlassian-mcp · task-complete</text>
+        <text x="72" y="398" font-size="9" fill="var(--accent)" font-weight="600">deny on hit · no model override</text>
       </g>
 
       <!-- Center: focal node "Model acts" -->
