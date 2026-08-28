@@ -12,7 +12,10 @@
 # Known, deliberate non-goal: the REST equivalent (`gh api ... /pulls/N/merge`)
 # is NOT covered. Catching every way to reach that endpoint is an arms race
 # this gate does not try to win — `gh pr merge` is the documented, ordinary
-# path `ship-merge` itself uses and the one operators actually type.
+# path `ship-merge` itself uses and the one operators actually type. Unlike
+# irrecoverable.sh, PREFIX_WRAPPERS below has no xargs/docker-exec unwrap, so
+# a wrapped form like `echo x | xargs -I{} gh pr merge {}` also isn't caught
+# (deep-audit 2026-08-28) — same reasoning: not the ordinary typed path.
 set -uo pipefail
 
 # Fast path: skip the python3 cold-start unless both "gh" and "merge" survive
