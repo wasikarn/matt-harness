@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg class="diagram" viewBox="0 0 1120 720" role="img" aria-labelledby="mh-gauntlet-title mh-gauntlet-desc" xmlns="http://www.w3.org/2000/svg">
+<svg class="diagram" viewBox="0 0 1120 780" role="img" aria-labelledby="mh-gauntlet-title mh-gauntlet-desc" xmlns="http://www.w3.org/2000/svg">
     <title id="mh-gauntlet-title">mh@wasikarn gauntlet pipeline: one trigger fans out to six parallel verification layers that merge strictest-wins.</title>
     <desc id="mh-gauntlet-desc">Process diagram. A trigger node (pre-commit hook for fast checks, pre-push for full gauntlet) forks into six parallel verification layers stacked vertically: plugin-validate, shell-lint, json-lint, harness-audit, path-hygiene, hook-tests. Each layer writes its own log. A merge funnel collects verdicts via wait_layer; any single failure sets fail=1 and the action is blocked. Two endpoints: proceed (right, white) or block (left, coral focal).</desc>
 
@@ -17,7 +17,7 @@
     </defs>
 
     <!-- background -->
-    <rect width="1120" height="720" fill="#f5f5f5"/>
+    <rect width="1120" height="780" fill="#f5f5f5"/>
 
     <!-- ===== ARROWS (drawn first, behind nodes) ===== -->
     <!-- Trigger → fanout (right then down) -->
@@ -63,10 +63,14 @@
     <rect x="60" y="72" width="180" height="48" rx="24" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
     <text x="150" y="100" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">git push (or commit)</text>
 
-    <!-- Editorial aside (right of trigger) -->
+    <!-- Editorial aside (top-right, clear of every node — matches mh-decision-triad
+         and mh-tiered-pipeline's placement. Previously sat inline at x=260,y=86/104,
+         right where the plugin-validate box starts (x=400,y=104): the second line's
+         baseline landed exactly on the box's top edge and its width ran into the
+         box's left portion. -->
     <g font-family="'Instrument Serif', serif" font-style="italic" fill="rgba(45,49,66,0.65)">
-      <text x="260" y="86" font-size="13">"Pre-commit runs the fast gate.</text>
-      <text x="260" y="104" font-size="13">Pre-push runs the full gauntlet."</text>
+      <text x="1080" y="28" font-size="13" text-anchor="end">"Pre-commit runs the fast gate.</text>
+      <text x="1080" y="46" font-size="13" text-anchor="end">Pre-push runs the full gauntlet."</text>
     </g>
 
     <!-- Fanout dot -->
@@ -158,21 +162,24 @@
     <text x="290" y="686" fill="#eb6c36" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">any layer ❌ → fail=1</text>
 
     <!-- ===== LEGEND ===== -->
-    <line x1="32" y1="668" x2="1088" y2="668" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
-    <text x="32" y="684" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND · STAGES CARRY TYPE</text>
+    <!-- Shifted down 52px (668 to 720 for the divider): the Block endpoint box
+         (y644-700) previously overlapped the divider line, the LEGEND label, and
+         2 of the 4 swatches below it. viewBox/background grown 720 to 780 to fit. -->
+    <line x1="32" y1="720" x2="1088" y2="720" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+    <text x="32" y="736" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND · STAGES CARRY TYPE</text>
 
-    <rect x="32" y="696" width="20" height="10" rx="5" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
-    <text x="60" y="705" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Trigger (oval)</text>
+    <rect x="32" y="748" width="20" height="10" rx="5" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+    <text x="60" y="757" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Trigger (oval)</text>
 
-    <rect x="220" y="696" width="20" height="10" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="0.8"/>
-    <text x="248" y="705" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Layer (rectangle)</text>
+    <rect x="220" y="748" width="20" height="10" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="0.8"/>
+    <text x="248" y="757" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Layer (rectangle)</text>
 
-    <circle cx="384" cy="701" r="4" fill="#4f5d75"/>
-    <text x="396" y="705" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Merge dot</text>
+    <circle cx="384" cy="753" r="4" fill="#4f5d75"/>
+    <text x="396" y="757" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Merge dot</text>
 
-    <line x1="540" y1="701" x2="564" y2="701" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
-    <text x="572" y="705" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Strictest-wins branch</text>
+    <line x1="540" y1="753" x2="564" y2="753" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+    <text x="572" y="757" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Strictest-wins branch</text>
 
-    <line x1="760" y1="701" x2="784" y2="701" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="4,3"/>
-    <text x="792" y="705" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Log file (per-layer)</text>
+    <line x1="760" y1="753" x2="784" y2="753" stroke="#7a8399" stroke-width="0.8" stroke-dasharray="4,3"/>
+    <text x="792" y="757" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Log file (per-layer)</text>
   </svg>
