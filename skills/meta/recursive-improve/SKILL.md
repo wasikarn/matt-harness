@@ -44,6 +44,12 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
 
 - Run `harness-audit`: `bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"` → CRIT/WARN/INFO findings —
   the loop's branchable score, both whether to act and what (`file:line`) to fix.
+- Read the gate-verdict journal: `bash "${CLAUDE_SKILL_DIR}/scripts/gate-journal-summary.sh"` →
+  per-gate ask/deny/defer counts since the journal started — operational feedback the audit and
+  MEMORY.md don't carry (a gate firing constantly may be over-broad; a recently-added gate with
+  zero fires may not be wired correctly). The journal has no free-text reason field
+  (`hooks/dispatch-pretooluse.py`'s `_journal()`), so this is frequency signal only — read the
+  actual gate source before proposing a change, don't rank on the count alone.
 - Read `MEMORY.md` for recorded decisions, deferred candidates, and prior-cycle accepted
   regressions — the durable WHY backlog the audit doesn't encode.
 - Scan the session transcript for operator corrections or repeated workflows signaling a gap the
