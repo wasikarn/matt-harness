@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-  <svg class="diagram" viewBox="0 0 1120 720" role="img" aria-labelledby="mh-gauntlet-title mh-gauntlet-desc" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs><style type="text/css"><![CDATA[@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');]]></style></defs>
+<svg class="diagram" viewBox="0 0 1120 720" role="img" aria-labelledby="mh-gauntlet-title mh-gauntlet-desc" xmlns="http://www.w3.org/2000/svg">
     <title id="mh-gauntlet-title">mh@wasikarn gauntlet pipeline: one trigger fans out to six parallel verification layers that merge strictest-wins.</title>
     <desc id="mh-gauntlet-desc">Process diagram. A trigger node (pre-commit hook for fast checks, pre-push for full gauntlet) forks into six parallel verification layers stacked vertically: plugin-validate, shell-lint, json-lint, harness-audit, path-hygiene, hook-tests. Each layer writes its own log. A merge funnel collects verdicts via wait_layer; any single failure sets fail=1 and the action is blocked. Two endpoints: proceed (right, white) or block (left, coral focal).</desc>
 
     <defs>
-      <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <style>@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap");</style>
+            <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
         <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
       </marker>
       <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
