@@ -8,6 +8,13 @@ name: harness-audit-drift
 # feedback-surface-scan.py both read local developer-machine state
 # (~/.local/share/kbg/metrics, ~/.claude/projects/.../memory) that doesn't
 # exist on a CI runner, so neither is part of this job.
+#
+# The CRIT-triggered comment also names this gap explicitly (2026-08-28) --
+# built as the accepted alternative to ADR 0011 (docs/research/
+# adr-0011-scheduled-recursive-improve-invocation.md, rejected same day: a
+# scheduled local cron/launchd cold-start of recursive-improve itself was
+# judged not worth crossing the no-model-self-launch invariant for). This
+# stays pure computation, no model invocation, so the invariant is untouched.
 
 on:
   schedule:
@@ -44,6 +51,13 @@ jobs:
               echo '```'
               echo "$output"
               echo '```'
+              echo ""
+              echo "Note: this is 1 of \`recursive-improve\`'s 3 Observe-step signals. The other"
+              echo "two -- the gate-verdict journal and feedback-memory clusters -- read"
+              echo "local-machine-only state this CI runner can't see (ADR:"
+              echo "\`docs/research/adr-0011-scheduled-recursive-improve-invocation.md\`, rejected"
+              echo "2026-08-28 -- CI can't safely pull them either). Run \`/mh:recursive-improve\`"
+              echo "locally to pick those up; this comment only ever reflects harness-audit."
             } > /tmp/drift-comment.md
             gh issue comment 116 --repo "${GITHUB_REPOSITORY}" --body-file /tmp/drift-comment.md
           fi

@@ -7,9 +7,11 @@ forks: matt-harness collects operational feedback signal (gate-verdict journal, 
 `mh:learn` transcript scans) but has **no loop that mines that signal and folds it back into a
 skill's own file content, on a schedule, without a human re-triggering it per round.** Everything
 else the article names is either a genuine match already shipped, or a narrower/partial version of
-the same idea. **Update:** candidates 1 and 2 below have since been built (v0.68.535, v0.68.536),
-narrowing the gap to candidate 3 (a scheduled trigger) only, which is deliberately unbuilt pending
-its own explicit decision.
+the same idea. **Update:** candidates 1 and 2 below have since been built (v0.68.535, v0.68.536).
+Candidate 3 (a scheduled trigger) split in two: the CI-portable half was built (v0.68.538); the
+local half (a scheduled cold-start of `recursive-improve` itself) got its own ADR and was
+rejected (2026-08-28) — see the candidate-3 entry below for the reasoning and its accepted
+alternative. The corroborated gap is now fully resolved, not open.
 
 ## Method
 
@@ -111,12 +113,19 @@ single agent's read.
      local developer-machine state that doesn't exist on a CI runner, so a broader "digest all 3
      signals" job would have silently no-op'd on 2 of 3 forever. Caught before building anything,
      not after.
-   - **Local half — drafted, not decided.** A scheduled local invocation of `recursive-improve`
-     itself (so the two local-only signals get mined periodically) needs its own ADR, not a
-     routine build — `docs/research/adr-0011-scheduled-recursive-improve-invocation.md`. ADR
-     0009's own text names `recursive-improve` and "cron/`claude -p` self-start" explicitly as
-     outside its carve-out, retained from ADR 0006. The ADR is drafted and awaiting the
-     operator's ruling; nothing runtime shipped with it.
+   - **Local half — rejected (2026-08-28).** A scheduled local invocation of `recursive-improve`
+     itself needed its own ADR, not a routine build, since ADR 0009's own text names
+     `recursive-improve` and "cron/`claude -p` self-start" explicitly as outside its carve-out,
+     retained from ADR 0006 —
+     `docs/research/adr-0011-scheduled-recursive-improve-invocation.md`. The ADR deliberately
+     shipped with no recommended verdict; when the operator asked for one directly, the
+     recommendation was reject (thin value — Step 4 stays manual either way — against being the
+     first-ever crossing of the no-model-self-launch invariant, same shape as 4 prior declined
+     "reasoning governance runtime" proposals from 2026-07-01), and the operator accepted it.
+     Superseded by a cheaper, invariant-safe alternative built the same day: the CRIT-triggered
+     comment in `harness-audit-drift.yml` now names this gap explicitly (harness-audit is only 1
+     of 3 Observe signals; the other 2 need `/mh:recursive-improve` run locally) — pure
+     computation, no model invocation, so the invariant is untouched.
 
 ## Compliance audit (2026-08-28)
 

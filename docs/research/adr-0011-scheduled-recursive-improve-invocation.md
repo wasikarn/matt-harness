@@ -1,8 +1,18 @@
 # ADR 0011 — Scheduled invocation of recursive-improve (candidate 3, Option B)
 
-> **Status:** 🟡 Proposed — awaiting operator decision. Not implemented; no cron job, launchd
-> config, or code shipped alongside this document.
-> **Date:** 2026-08-28 · **Decider:** Operator (not yet ruled).
+> **Status:** 🔴 Rejected (2026-08-28). Not implemented; no cron job, launchd config, or code
+> shipped alongside this document, and none will be built from this ADR.
+> **Date:** 2026-08-28 · **Decider:** Operator.
+> **Reasoning:** the incremental value is thin — Step 4 (Act) stays a manual human decision
+> either way, so this only saves typing a command periodically. The `dontAsk` fail-closed
+> mechanism is real, but accepting this is the first-ever crossing of the no-model-self-launch
+> invariant, and this proposal is structurally the same shape as the 4 "reasoning governance
+> runtime" proposals already declined on 2026-07-01 (an unattended process periodically
+> reconsidering the harness, justified as safe because "nothing will actually happen"). Not
+> worth trading the invariant's bright-line simplicity for a convenience win this small.
+> Superseded in practice by a CI-only reminder extension to `harness-audit-drift.yml` (no model
+> invocation, so it doesn't touch this invariant at all) — see that workflow's own history for
+> the built alternative.
 > **Relationship to prior ADRs:** Does **not** supersede ADR 0006 or ADR 0009. ADR 0009's own
 > "What this ADR does NOT authorize" section names `recursive-improve` explicitly as **out of
 > scope** for its auto-continue carve-out, and its retained-invariants list keeps "the
@@ -98,21 +108,20 @@ ADR 0009 already granted.
 
 ## Decision
 
-**Not made by this document.** This ADR exists to give the operator a scoped,
-evidence-grounded artifact to rule on — it deliberately doesn't recommend a verdict, since
+**Rejected (2026-08-28).** The document deliberately shipped without a recommended verdict —
 pushing toward one is exactly the kind of self-interested judgment call this repo's own doctrine
-argues a model shouldn't make about loosening its own operating constraints.
+argues a model shouldn't make about loosening its own operating constraints. The operator then
+asked for a recommendation directly; given that explicit ask, the recommendation was reject, for
+the reasons in the status header above, and the operator accepted it.
 
 ## What this ADR does NOT authorize
 
-- Nothing in this document changes runtime behavior by itself. No cron job, launchd config, or
-  code was created alongside it.
-- If accepted: still requires resolving where rendered output lands, and — following ADR 0009's
-  own precedent for a much narrower case — likely a multi-reviewer adversarial pass before
-  implementation, since this would be the first-ever exception to the no-self-launch invariant.
+- Nothing in this document changes runtime behavior. No cron job, launchd config, or code was
+  created alongside it, and none will be built from this ADR — it is rejected, not deferred.
 
 ## Revisit trigger
 
-N/A until the operator rules. If accepted, standard practice per ADR 0009's own process (a
-fresh-context adversarial review before shipping) applies before any implementation, not this
-draft alone.
+None planned. If the underlying trade-off changes materially — e.g. the no-model-self-launch
+invariant itself is revisited at the ADR 0006/0009 level, for reasons unrelated to this proposal
+— this ADR can be reopened as a fresh proposal, following ADR 0009's own precedent: a
+multi-reviewer adversarial pass before any implementation, not a single drafting session's say-so.
