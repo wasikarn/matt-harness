@@ -237,3 +237,18 @@ plugin under MDM, not something this repo builds for itself; the latter has a st
 in `.github/workflows/harness-audit-drift.yml` (weekly cron, zero-human-in-path), just scoped to
 harness-structure drift rather than CVE-style scanning — partial credit, not a miss. No new
 findings; nothing to build.
+
+**Closing the plan's own open questions.** The implementation plan (session-local, not in this
+repo) named 2 unverified items: whether `audit.sh`'s individual checks would survive Ubuntu's
+BSD-vs-GNU tool differences, and whether the CI job would actually behave correctly on a real
+GitHub runner rather than just the isolated-`$HOME` local simulation. Both are now empirically
+closed: `.github/workflows/validate.yml`'s `harness-audit (0 CRIT)` job runs on `ubuntu-latest`
+and has gone green on every push since it shipped (checked via `gh run list` — 5/5 recent runs
+succeeded, most recently run `33193283597`). The diagram hook-count drift named as a known side
+effect (11→13) is also already fixed — both `mh-core-workflow.html` and
+`mh-hook-profile-stack.html` say 13, and a fresh local `audit.sh` run right now is fully clean (0
+CRIT, 0 WARN, 2 INFO-only budget trackers). The one item that's genuinely still open, and likely
+to stay that way: whether an `ask`-tier gate prompt behaves sensibly in a non-interactive/
+background session with nobody to answer it — a standing property of the ask-tier design itself,
+not unique to this build, and not something this repo can verify without a real unattended
+background run to observe.
