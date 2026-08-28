@@ -122,6 +122,60 @@ check "case two" "$ok2"
 ok=1; is_ask "$out" || ok=0
 check "Edit moving an assertion into an uncalled function -> noask (documented gap)" "$ok"
 
+# --- Positive: redefining the check() oracle itself to a no-op silently
+# guts every call site without touching a single one of them (deep-audit
+# 2026-08-28, confirmed live: call sites stay byte-identical, only the
+# helper's own meaning changes -- not a reachability trick, a straight
+# diff on the shared assertion helper). ---
+out=$(payload_edit "$TESTFILE" 'check() {
+  [ "$2" = 0 ] && pass=$((pass + 1)) || fail=$((fail + 1))
+}' 'check() {
+  pass=$((pass + 1))
+}' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" && ok=0
+check "Edit redefining the check() oracle to a no-op -> ask" "$ok"
+
+# --- Positive: deleting the final exit-gate line is invisible to a
+# call-site diff, but it is the line that turns an accumulated fail count
+# into the script's actual exit code -- this repo's own tests (including
+# this gate's own) all use this idiom (deep-audit 2026-08-28). ---
+out=$(payload_edit "$TESTFILE" '[ "$fail" -eq 0 ] && exit 0 || exit 1' 'echo done' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" && ok=0
+check "Edit deleting the [ \$fail -eq 0 ] exit-gate line -> ask" "$ok"
+
+# --- Positive: two textually-identical assertion lines, one removed --
+# set-based tracking collapsed both into one entry, so removing one of a
+# pair was invisible (deep-audit 2026-08-28; fixed via Counter multisets). ---
+out=$(payload_edit "$TESTFILE" 'check "dup" "$okd"
+check "dup" "$okd"' 'check "dup" "$okd"' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" && ok=0
+check "Edit removing one of two identical assertion lines -> ask" "$ok"
+
+# --- Negative: both identical assertion lines stay -> noask (proves the
+# multiset fix does not over-fire on an unrelated same-count edit). ---
+out=$(payload_edit "$TESTFILE" 'check "dup" "$okd"
+check "dup" "$okd"' 'check "dup" "$okd"
+check "dup" "$okd"' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" || ok=0
+check "Edit keeping both identical assertion lines -> noask" "$ok"
+
+# --- Positive: relocating an assertion into an inert HEREDOC body leaves
+# the line text present but never executed (deep-audit 2026-08-28). ---
+out=$(payload_edit "$TESTFILE" 'check "case two" "$ok2"' "cat <<'MARK'
+check \"case two\" \"\$ok2\"
+MARK" | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" && ok=0
+check "Edit relocating an assertion into a HEREDOC body -> ask" "$ok"
+
+# --- Positive: relocating an assertion into a ": '...'" colon no-op block
+# (bash's inert-multiline-comment idiom) has the identical effect (deep-
+# audit 2026-08-28). ---
+out=$(payload_edit "$TESTFILE" 'check "case two" "$ok2"' ": '
+check \"case two\" \"\$ok2\"
+'" | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" && ok=0
+check "Edit relocating an assertion into a ': ...' no-op block -> ask" "$ok"
+
 # --- Negative: only adding a new assertion -> noask ---
 out=$(payload_edit "$TESTFILE" 'check "case two" "$ok2"' 'check "case two" "$ok2"
 check "case three" "$ok3"' | bash "$GATE" 2>/dev/null)
