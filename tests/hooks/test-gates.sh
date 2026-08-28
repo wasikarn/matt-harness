@@ -244,6 +244,10 @@ test_allow "$IRRECOVERABLE" "git checkout main (1 nonflag = branch switch)" \
 # --- prefix-wrapper unwrap: a destructive command hidden behind sudo/env/nice/xargs/docker ---
 test_deny  "$IRRECOVERABLE" "sudo rm -rf (wrapper unwrap)" \
   "$(bash_payload 'sudo rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "sudo -u <user> rm -rf (issue #115: value-taking flag bypass)" \
+  "$(bash_payload 'sudo -u alice rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "sudo --user=<user> rm -rf (issue #115, = form)" \
+  "$(bash_payload 'sudo --user=alice rm -rf /tmp/x')"
 test_deny  "$IRRECOVERABLE" "env VAR=val rm -rf (env-assignment wrapper)" \
   "$(bash_payload 'env FOO=1 rm -rf /tmp/x')"
 test_deny  "$IRRECOVERABLE" "env -u VAR rm -rf (env-unset-flag wrapper)" \

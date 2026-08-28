@@ -5,7 +5,9 @@
 # named by the adversarial plan review that sank the original word-boundary-
 # regex design: a HEREDOC/commit-message mention of "gh pr merge" as prose
 # must NOT ask, and the `gh api .../merge` REST equivalent is a documented,
-# deliberate non-goal (also must not ask).
+# deliberate non-goal (also must not ask). Also covers the sudo -u/-g
+# value-taking-flag bypass (issue #115, fixed 2026-08-28): before the fix,
+# `sudo -u alice gh pr merge` was misread as argv0="alice", not "gh".
 # Run standalone: bash tests/hooks/test-merge-door.sh
 set -uo pipefail
 
@@ -32,6 +34,9 @@ BATTERY=(
   "gh pr merge, no PR number -> ask|gh pr merge|ask"
   "extra internal whitespace -> ask (argv-tokenized, not regex)|gh  pr   merge 123|ask"
   "sudo-wrapped -> ask (prefix-wrapper unwrap)|sudo gh pr merge 123|ask"
+  "sudo -u <user>-wrapped -> ask (issue #115 fix)|sudo -u alice gh pr merge 123|ask"
+  "sudo --user=<user>-wrapped -> ask (issue #115 fix, = form)|sudo --user=alice gh pr merge 123|ask"
+  "sudo -g <group>-wrapped -> ask (issue #115 fix)|sudo -g admins gh pr merge 123|ask"
   "second command in an operator chain -> ask|echo hi && gh pr merge 123|ask"
   "gh pr view -> noask (not a merge)|gh pr view 123|noask"
   "git merge -> noask (argv0 is git, not gh)|git merge feature-branch|noask"

@@ -140,7 +140,29 @@ for w in windows:
             if i >= len(rest):
                 break
             argv0, rest = basename(rest[i]), rest[i + 1:]
-        else:  # command, nohup, time, sudo — bare flags then the wrapped command
+        elif argv0 == "sudo":
+            # sudo -u/-g (short or long, space- or =-joined) select the
+            # effective identity and take a value -- the bare-flags-only
+            # path below would misread that value as the wrapped command
+            # argv0 instead (issue #115: `sudo -u alice gh pr merge`
+            # silently bypassed this gate). Attached short form (`-ualice`)
+            # is not handled -- same documented non-goal as every other
+            # flag-parsing edge in this unwrap.
+            VALUE_FLAGS = {"-u", "--user", "-g", "--group"}
+            i = 0
+            while i < len(rest):
+                t = rest[i]
+                bare = t.split("=", 1)[0]
+                if bare in VALUE_FLAGS:
+                    i += 1 if "=" in t else min(2, len(rest) - i)
+                elif t.startswith("-"):
+                    i += 1
+                else:
+                    break
+            if i >= len(rest):
+                break
+            argv0, rest = basename(rest[i]), rest[i + 1:]
+        else:  # command, nohup, time — bare flags then the wrapped command
             i = 0
             while i < len(rest) and rest[i].startswith("-"):
                 i += 1
