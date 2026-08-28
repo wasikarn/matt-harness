@@ -35,7 +35,7 @@
 
   <svg class="diagram" viewBox="0 0 1040 820" role="img" aria-labelledby="mh-orch-title mh-orch-desc" xmlns="http://www.w3.org/2000/svg">
     <title id="mh-orch-title">mh:orchestrate routing: Fast Path Gate, matrix selection, a security override, four route verdicts, and the unenforced fan-out clamp.</title>
-    <desc id="mh-orch-desc">Flowchart. Tasks enter a Fast Path Gate decision: if all four conditions hold (single bounded task, small deterministic-checkable output, not security-sensitive), execution happens inline and the flow ends there. Otherwise the flow proceeds to a grouping step that merges items needing the same mental model, then a matrix-selection step choosing among Eisenhower, Impact times Effort, or Value times Risk depending on time pressure versus backlog versus architecture-bet framing. A coral dashed side callout notes that any item touching auth, secrets, crypto, input validation, or dependencies overrides the matrix and routes to security-reviewer first, regardless of quadrant. The matrix step feeds one of four route verdicts -- inline, parallel, sequential, or drop -- which then passes through a fan-out clamp step noting the hard cap of five agents per wave has no automatic enforcement in the repo; the lead is the clamp. The flow ends at an output table of task, route, agent, done-when, and status.</desc>
+    <desc id="mh-orch-desc">Flowchart. Tasks enter a Fast Path Gate decision: if all four conditions hold (single bounded task, small deterministic-checkable output, not security-sensitive), execution happens inline and the flow ends there. Otherwise the flow proceeds to a grouping step that merges items needing the same mental model, then a matrix-selection step choosing among Eisenhower, Impact times Effort, or Value times Risk depending on time pressure versus backlog versus architecture-bet framing. A coral dashed side callout notes that any item touching auth, secrets, credentials, crypto, input validation, or dependencies overrides the matrix and routes to security-reviewer first, regardless of quadrant. The matrix step feeds one of four route verdicts -- inline, parallel, sequential, or drop -- which then passes through a fan-out clamp step noting the hard cap of five agents per wave has no automatic enforcement in the repo; the lead is the clamp. The flow ends at an output table of task, route, agent, done-when, and status.</desc>
 
     <defs>
       <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
@@ -110,14 +110,15 @@
 
     <!-- ===== SECURITY OVERRIDE (coral, Security/Boundary treatment) ===== -->
     <g>
-      <rect x="800" y="356" width="220" height="108" rx="6" fill="rgba(235,108,54,0.05)" stroke="rgba(235,108,54,0.50)" stroke-width="1.4" stroke-dasharray="4,4"/>
+      <rect x="800" y="356" width="220" height="130" rx="6" fill="rgba(235,108,54,0.05)" stroke="rgba(235,108,54,0.50)" stroke-width="1.4" stroke-dasharray="4,4"/>
       <rect x="812" y="364" width="88" height="14" rx="2" fill="transparent" stroke="rgba(235,108,54,0.50)" stroke-width="0.8"/>
       <text x="856" y="374" fill="rgba(235,108,54,0.9)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">OVERRIDE</text>
       <text x="910" y="396" fill="#2d3142" font-size="11.5" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Security override</text>
-      <text x="910" y="414" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">auth · secrets · crypto</text>
-      <text x="910" y="428" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">input-validation · dependencies</text>
-      <text x="910" y="448" fill="rgba(235,108,54,0.9)" font-size="8" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">→ security-reviewer first,</text>
-      <text x="910" y="460" fill="rgba(235,108,54,0.9)" font-size="8" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">write agent takes it after</text>
+      <text x="910" y="414" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">auth · secrets · credentials</text>
+      <text x="910" y="428" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">crypto · input-validation</text>
+      <text x="910" y="442" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">dependencies</text>
+      <text x="910" y="462" fill="rgba(235,108,54,0.9)" font-size="8" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">→ security-reviewer first,</text>
+      <text x="910" y="474" fill="rgba(235,108,54,0.9)" font-size="8" font-weight="600" font-family="'Geist Mono', monospace" text-anchor="middle">write agent takes it after</text>
     </g>
 
     <!-- ===== 4 ROUTE VERDICTS ===== -->

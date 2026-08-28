@@ -3,9 +3,8 @@
     <title id="mh-comp-title">mh@wasikarn composing with mattpocock-skills across four typed edges: routes-to, depends-on, verifies, hands-off-to.</title>
     <desc id="mh-comp-desc">Two-zone architecture diagram. Left zone, mh@wasikarn: flow-nudge.sh, doctrine-bootstrap.sh, harness-audit check 50, and orchestrate/reference.md. Right zone, mattpocock-skills: ask-matt as the actual routing layer with no incoming hook wired to it, a 4-skill spec chain that flow-nudge routes to on every non-trivial prompt, the installed plugin itself as a coral focal node that mh depends on and verifies against, two adopted surfaces labeled as mh's own review and authoring doctrine rather than drawn as an edge, and wayfinder as the target of the one hands-off-to prose boundary. A bottom band lists the 10 skills deferred to ask-matt's own routing map, shown as a shaded zone with no arrow, since deferral is the absence of a relationship, not a relationship.</desc>
 
-    <defs>
-      <style>@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap");</style>
-            <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+    <defs><style>@import url(https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap);</style>
+      <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
         <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
       </marker>
       <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
@@ -28,13 +27,13 @@
     <text x="720" y="130" fill="rgba(45,49,66,0.55)" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.12em">MATTPOCOCK-SKILLS</text>
 
     <!-- ===== ARROWS (drawn before nodes) ===== -->
-    <!-- 1. flow-nudge --routes-to--> spec chain -->
+    <!-- 1. flow-nudge, routes-to, spec chain -->
     <path d="M 308 184 L 450 184 L 450 256 L 600 256" fill="none" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
-    <!-- 2. doctrine-bootstrap --depends-on--> matt plugin (CORAL FOCAL) -->
+    <!-- 2. doctrine-bootstrap, depends-on, matt plugin (CORAL FOCAL) -->
     <path d="M 308 288 L 480 288 L 480 340 L 600 340" fill="none" stroke="#eb6c36" stroke-width="1.6" marker-end="url(#arrow-accent)"/>
-    <!-- 3. check 50 --verifies--> matt plugin (link-blue: cross-plugin check) -->
+    <!-- 3. check 50, verifies, matt plugin (link-blue: cross-plugin check) -->
     <path d="M 308 392 L 520 392 L 520 364 L 600 364" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
-    <!-- 4. orchestrate --hands-off-to--> wayfinder (dashed: prose-only, sparse) -->
+    <!-- 4. orchestrate, hands-off-to, wayfinder (dashed: prose-only, sparse) -->
     <path d="M 308 496 L 540 496 L 540 568 L 600 568" fill="none" stroke="#4f5d75" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
 
     <!-- ===== ARROW LABELS ===== -->
@@ -77,7 +76,7 @@
       <rect x="84" y="354" width="72" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
       <text x="120" y="363" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">CHECK 50</text>
       <text x="192" y="388" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">harness-audit</text>
-      <text x="192" y="406" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="middle">4 sub-checks A–D, WARN-only</text>
+      <text x="192" y="406" fill="#4f5d75" font-size="8.5" font-family="'Geist Mono', monospace" text-anchor="middle">4 sub-checks A–D (A–C WARN, D info)</text>
       <text x="192" y="420" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">ledger ↔ plugin.json sync</text>
     </g>
 

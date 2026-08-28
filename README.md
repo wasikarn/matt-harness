@@ -157,7 +157,7 @@ is routing pointers, not wired relationships.
 
 - **`routes-to`** — `hooks/advisory/flow-nudge.sh` emits the spec chain (`grilling` → `/to-spec` → `/to-tickets` → `/implement`) into session context on `UserPromptSubmit`. `grilling` fires bare (`model`-tier); the other three carry the leading slash and are user-invoked only.
 - **`depends-on`**, the required one — Quick start step 4 installs `mattpocock-skills@mattpocock` as a separate plugin; mh's own surfaces are unresolvable without it. `hooks/session/doctrine-bootstrap.sh` preflights the plugin's presence at every `SessionStart` and warns if it's missing or disabled.
-- **`verifies`** — harness-audit check 50 (4 sub-checks, all WARN-only) keeps `docs/reference/mattpocock-integration-map.md`'s 25-row ledger in sync with the installed plugin's own `plugin.json`.
+- **`verifies`** — harness-audit check 50 (4 sub-checks A-D; A-C are WARN, D is INFO) keeps `docs/reference/mattpocock-integration-map.md`'s 25-row ledger in sync with the installed plugin's own `plugin.json`.
 - **`hands-off-to`** — `skills/workflow/orchestrate/reference.md`'s boundary with `mattpocock-skills:wayfinder`, one of only two such prose boundaries in the whole fleet.
 - **`ask-matt` is the actual routing layer** (`CLAUDE.md`'s "Finding a surface" section), even though no hook wires to it — it owns the routing map for 10 skills mh deliberately doesn't duplicate.
 - **Two matt skills are drawn as adopted, not routed** — `code-review` and `writing-for-agents` *are* mh's own review and authoring surfaces now (the native kbg equivalents were retired), which is a node label, not a relationship to draw an arrow for.
@@ -191,7 +191,7 @@ decision — inline, parallel, sequential, or drop.
 - **Fast Path Gate first** — 4 conditions; if all hold, execute inline and skip the matrices entirely.
 - **Group before scoring** — Step 0 clusters related asks before any matrix runs, so five small asks about the same file don't get scored (and dispatched) as five separate decisions.
 - **Three routing matrices**, picked by shape: Eisenhower, Impact × Effort, Value × Risk.
-- **Security override cuts across any quadrant** — auth, secrets, crypto, input validation, or dependency work always goes to `security-reviewer` first, regardless of what the matrix says.
+- **Security override cuts across any quadrant** — auth, secrets, credentials, crypto, input validation, or dependency work always goes to `security-reviewer` first, regardless of what the matrix says.
 - **The fan-out cap is a clamp applied after routing, not a matrix input** — hard cap 5 agents per wave, prefer 2-4; nothing enforces it automatically, it's dispatch discipline.
 - **The `L2`/`L3`/`L4` dispatch-tier labels from the source matrices are deliberately omitted here.** They're unrelated to the retired L2–L5 autonomy ladder (ADR 0006), but a bare `L2`/`L3` cell with no room for that disambiguation would read as exactly the autonomy machinery this harness dropped. The four route verdicts already carry the routing meaning without it.
 
