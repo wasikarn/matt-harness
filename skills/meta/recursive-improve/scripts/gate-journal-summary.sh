@@ -30,6 +30,8 @@ with open(path) as f:
             row = json.loads(line)
         except ValueError:
             continue
+        if not isinstance(row, dict):
+            continue
         total += 1
         counts[(row.get("id", "?"), row.get("decision", "?"))] += 1
         ts = row.get("ts")

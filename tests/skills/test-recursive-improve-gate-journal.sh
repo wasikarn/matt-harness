@@ -37,10 +37,12 @@ EOF
 out=$(HOME="$tmp_populated" bash "$SCRIPT" 2>&1)
 rc=$?
 ok=1
-[ "$rc" -eq 0 ] || ok=1
-echo "$out" | /usr/bin/grep -q "3 non-allow verdicts" && \
-  echo "$out" | /usr/bin/grep -q "   2  deny    gate:bash:irrecoverable" && \
-  echo "$out" | /usr/bin/grep -q "   1  ask     gate:write:verifier-protect" && ok=0
+if [ "$rc" -eq 0 ] && \
+   echo "$out" | /usr/bin/grep -q "3 non-allow verdicts" && \
+   echo "$out" | /usr/bin/grep -q "   2  deny    gate:bash:irrecoverable" && \
+   echo "$out" | /usr/bin/grep -q "   1  ask     gate:write:verifier-protect"; then
+  ok=0
+fi
 check "populated journal -> counts aggregated and sorted by frequency" "$ok"
 
 # Case 3: malformed line in the journal is skipped, not fatal.
@@ -55,7 +57,22 @@ rc=$?
 ok=1; [ "$rc" -eq 0 ] && echo "$out" | /usr/bin/grep -q "1 non-allow verdicts" && ok=0
 check "malformed line is skipped, real row still counted" "$ok"
 
-trash "$tmp_missing" "$tmp_populated" "$tmp_malformed" 2>/dev/null || true
+# Case 4: syntactically valid JSON that isn't an object (a list, a bare number) is
+# skipped, not a crash -- found by compliance-audit 2026-08-28 (AttributeError on
+# row.get() when row isn't a dict; the except ValueError only catches JSON syntax
+# errors, not type mismatches).
+tmp_nondict="$(mktemp -d)"
+mkdir -p "$tmp_nondict/.local/share/kbg/metrics"
+cat > "$tmp_nondict/.local/share/kbg/metrics/gate-decisions.jsonl" <<'EOF'
+[1, 2, 3]
+{"ts": "2026-08-28T13:10:39Z", "id": "gate:bash:irrecoverable", "tool_name": "Bash", "decision": "deny"}
+EOF
+out=$(HOME="$tmp_nondict" bash "$SCRIPT" 2>&1)
+rc=$?
+ok=1; [ "$rc" -eq 0 ] && echo "$out" | /usr/bin/grep -q "1 non-allow verdicts" && ok=0
+check "valid-JSON-non-dict line is skipped, real row still counted" "$ok"
+
+trash "$tmp_missing" "$tmp_populated" "$tmp_malformed" "$tmp_nondict" 2>/dev/null || true
 
 echo ""
 echo "=== $pass passed, $fail failed ==="

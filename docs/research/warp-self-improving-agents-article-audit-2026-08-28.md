@@ -81,8 +81,12 @@ single agent's read.
    note below).
 2. **Built (v0.68.536).** A per-skill feedback capture *signal*, redesigned from the original
    "capture convention" framing after checking the actual store first: a new writing convention
-   was rejected because native ambient auto-memory is the majority writer (~97% of this repo's own
-   memory files per `skills/meta/learn/SKILL.md`) and wouldn't follow a new tagging field anyway.
+   was rejected because native ambient auto-memory is the majority writer — per
+   `skills/meta/learn/SKILL.md:23-31`, 132 of this repo's memory files vs. 3 sessions where
+   `/mh:learn` itself ran, as of 2026-07-20 (a compliance-audit verifier caught that the "~97%"
+   figure once used to summarize this was arithmetic derived from that count, not a verbatim or
+   rechecked stat — corrected here to cite the actual numbers, month-old as they are) — and
+   wouldn't follow a new tagging field anyway.
    Instead, `scripts/feedback-surface-scan.py` mines the *existing* prose in `type: feedback`
    memories for repo-path mentions and clusters by surface (skills/hooks/scripts/docs). Empirically
    validated against this repo's real store before building: 83 feedback memories, real clustering
@@ -103,6 +107,17 @@ single agent's read.
    speculative. mh's `recursive-improve` is user-triggered by design (no autonomous/unattended mode
    is a stated invariant, not an oversight); making the *mining* scheduled without also
    re-litigating that invariant needs its own decision, not a silent extension of items 1–2.
+
+## Compliance audit (2026-08-28)
+
+`/mh:compliance-audit` run against `c851f062..be6285ba` (the 2 commits above), 3 fresh-context
+verifiers, 12-item checklist. 11/12 CONFORMS, 1 DEVIATED-but-justified (the candidate 2 design
+substitution — independently confirmed reasonable, not scope-avoidance). 3 unflagged defects the
+verifiers found and this pass fixed: a dead assertion in `test-recursive-improve-gate-journal.sh`
+Case 2 (checked grep output but not exit code — mutation-tested after the fix: a broken script now
+correctly fails it), an `AttributeError` crash in `gate-journal-summary.sh` on syntactically-valid
+non-dict JSON lines (also mutation-tested), and the "~97%" imprecision fixed above. No push yet —
+still pending explicit go-ahead.
 
 ## Unresolved
 
