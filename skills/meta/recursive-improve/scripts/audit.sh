@@ -6,7 +6,7 @@ set -euo pipefail
 
 __src="${BASH_SOURCE[0]:-$0}"
 __dir="$(cd "$(dirname "$__src")" && pwd)"
-__root="$(cd "${__dir}/../../.." && pwd)"
+__root="$(cd "${__dir}/../../../.." && pwd)"
 
 # Default to the plugin root when called without arguments, so the audit
 # works from any project CWD rather than resolving '.' against the operator's

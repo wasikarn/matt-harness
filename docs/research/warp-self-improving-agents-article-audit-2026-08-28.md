@@ -7,7 +7,9 @@ forks: matt-harness collects operational feedback signal (gate-verdict journal, 
 `mh:learn` transcript scans) but has **no loop that mines that signal and folds it back into a
 skill's own file content, on a schedule, without a human re-triggering it per round.** Everything
 else the article names is either a genuine match already shipped, or a narrower/partial version of
-the same idea. Nothing built — this is a comparison audit only, per the user's request.
+the same idea. **Update:** candidates 1 and 2 below have since been built (v0.68.535, v0.68.536),
+narrowing the gap to candidate 3 (a scheduled trigger) only, which is deliberately unbuilt pending
+its own explicit decision.
 
 ## Method
 
@@ -70,30 +72,44 @@ single agent's read.
 | Deterministic evals against golden outputs | **MATCH (strong)** | Same doc |
 | Track global metrics, feed them back into the improver | **GAP** | `gate-decisions.jsonl` + `costs.jsonl` exist and are exactly this kind of signal, but neither feeds anything self-improving — write-only telemetry, the article's own named anti-pattern |
 
-## Candidates named, not built
+## Candidates
 
-1. **Feed the gate-verdict journal into `recursive-improve`'s Observe step.** The collection half
-   already exists (`gate-decisions.jsonl`); the mining half doesn't. Lowest-effort way to close
-   part of the corroborated gap without inventing new infrastructure — `recursive-improve` already
-   has the Observe→Propose→Ask→Act shape, it just isn't reading this file today.
-2. **A per-skill feedback capture convention**, if a specific skill starts accumulating repeated
-   human corrections worth compounding (mirrors the article's PR/issue-comment capture, adapted to
-   this repo's memory-type "feedback" mechanism rather than inventing a new store).
-3. **Scheduled trigger** for any of the above — deliberately last and most speculative. mh's
-   `recursive-improve` is user-triggered by design (no autonomous/unattended mode is a stated
-   invariant, not an oversight); making the *mining* scheduled without also re-litigating that
-   invariant needs its own decision, not a silent extension of items 1–2.
-
-None of these is scoped or approved — named for the user's call, per this audit's own mandate to
-compare, not build.
+1. **Built (`3a2c90a8`, v0.68.535).** Feed the gate-verdict journal into `recursive-improve`'s
+   Observe step. New `scripts/gate-journal-summary.sh` aggregates `gate-decisions.jsonl` by
+   (gate id, decision); wired as a new Observe bullet. Frequency signal only — journal carries no
+   free-text reason field, documented as a caveat in the bullet itself (resolves the "Unresolved"
+   note below).
+2. **Built (v0.68.536).** A per-skill feedback capture *signal*, redesigned from the original
+   "capture convention" framing after checking the actual store first: a new writing convention
+   was rejected because native ambient auto-memory is the majority writer (~97% of this repo's own
+   memory files per `skills/meta/learn/SKILL.md`) and wouldn't follow a new tagging field anyway.
+   Instead, `scripts/feedback-surface-scan.py` mines the *existing* prose in `type: feedback`
+   memories for repo-path mentions and clusters by surface (skills/hooks/scripts/docs). Empirically
+   validated against this repo's real store before building: 83 feedback memories, real clustering
+   (`hooks/gates/` ×4, `hooks/hooks.json` ×3, `docs/METHODOLOGY.md` ×3) — but 3 of the top 10
+   mentioned paths no longer existed (renamed/retired surfaces), so an existence filter is load-
+   bearing, not polish, and is regression-tested (`tests/skills/
+   test-recursive-improve-feedback-surface-scan.sh`, case 5). This also confirms the "if a specific
+   skill starts accumulating repeated corrections" trigger from the original candidate framing was
+   already met, not speculative.
+   - **Bonus fix, same commit:** discovered while checking recursive-improve's own path-resolution
+     convention (needed to place the new script consistently) — both pre-existing Observe-step
+     wrappers, `scripts/audit.sh` and `scripts/inventory-witness.sh`, had an off-by-one `../../..`
+     that resolved to `<repo>/skills` instead of `<repo>`, causing every invocation to exit 127
+     (command not found). Confirmed by direct execution before the fix (both exited 127) and after
+     (both exited 0 with real output). Unrelated to this audit's own findings, but recursive-improve
+     could not have completed its documented Observe step 1 at all until this was fixed.
+3. **Not built.** Scheduled trigger for either of the above — deliberately last and most
+   speculative. mh's `recursive-improve` is user-triggered by design (no autonomous/unattended mode
+   is a stated invariant, not an oversight); making the *mining* scheduled without also
+   re-litigating that invariant needs its own decision, not a silent extension of items 1–2.
 
 ## Unresolved
 
-- Not checked: whether `mh:learn`'s transcript-scan cadence could be repointed at
-  `gate-decisions.jsonl` cheaply, or whether that file's current shape (verdict + tool + reason,
-  no free-text human comment) even carries the kind of "why" signal Warp's design depends on —
-  the journal was built for volume/audit, not commentary, so candidate 1 may need a schema change
-  first.
+- **Resolved by the build**: candidate 1's journal schema question — the journal was left
+  frequency-only (no schema change), and the Observe bullet says so explicitly rather than
+  overclaiming a "why". Still not checked: whether `mh:learn`'s transcript-scan cadence could be
+  repointed at `gate-decisions.jsonl` cheaply if a free-text reason ever gets added later.
 - Not checked: how the six MATCH verdicts above were originally arrived at chronologically — i.e.,
   whether mh's design already resembled Warp's independently, or converged after seeing similar
   prior art. Not load-bearing for this audit either way.

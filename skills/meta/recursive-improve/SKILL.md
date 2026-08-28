@@ -52,6 +52,13 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
   actual gate source before proposing a change, don't rank on the count alone.
 - Read `MEMORY.md` for recorded decisions, deferred candidates, and prior-cycle accepted
   regressions — the durable WHY backlog the audit doesn't encode.
+- Scan feedback-memory clusters: `python3 "${CLAUDE_SKILL_DIR}/scripts/feedback-surface-scan.py"`
+  → repo surfaces (skill/hook/script/doc) mentioned by 2+ `type: feedback` memories in prose —
+  where human correction has already repeated. Heuristic (path-mention text matching, not a
+  structured tag — no new memory-writing convention was added, since native ambient auto-memory
+  is the majority writer and wouldn't follow one anyway); already filters mentions of paths that
+  no longer exist, but still read the actual memory files before proposing an edit, don't rank on
+  the count alone.
 - Scan the session transcript for operator corrections or repeated workflows signaling a gap the
   audit doesn't catch.
 - Take a witness pre-snapshot: `bash "${CLAUDE_SKILL_DIR}/scripts/inventory-witness.sh"

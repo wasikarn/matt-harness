@@ -6,6 +6,6 @@ set -euo pipefail
 
 __src="${BASH_SOURCE[0]:-$0}"
 __dir="$(cd "$(dirname "$__src")" && pwd)"
-__root="$(cd "${__dir}/../../.." && pwd)"
+__root="$(cd "${__dir}/../../../.." && pwd)"
 
 exec bash "${__root}/skills/inventory/scripts/inventory-witness.sh" "$@"
