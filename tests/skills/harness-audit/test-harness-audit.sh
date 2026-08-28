@@ -184,6 +184,106 @@ else
 $CHECK39_OUT"
 fi
 
+# Check 56 — diagram content/export/a11y drift. Sub-check B (export
+# freshness) walks two hops via git status: html->svg and svg->png. A
+# deep-audit pass (2026-08-28) found the first cut only walked svg->png —
+# editing the .html source (every diagram's actual authored source) with no
+# svg/png touch produced zero warnings. These fixtures prove both hops fire,
+# and that a properly-completed re-export (both hops touched) stays silent.
+# Built as a real git repo, not the read-only fixture dirs above, because
+# sub-check B's whole mechanism is `git status --porcelain` — there is no
+# way to simulate "dirty relative to HEAD" without an actual commit history.
+_mk56fixture() {
+  local root
+  root=$(mktemp -d)
+  mkdir -p "$root/.claude-plugin" "$root/hooks/advisory" "$root/docs/diagrams"
+  printf '{"name": "mh"}\n' > "$root/.claude-plugin/plugin.json"
+  printf '{"hooks": {}}\n' > "$root/hooks/hooks.json"
+  printf '[]\n' > "$root/hooks/pretooluse-table.json"
+  printf '<html><svg></svg></html>\n' > "$root/docs/diagrams/fixture-diagram.html"
+  printf '<svg xmlns="http://www.w3.org/2000/svg"></svg>\n' > "$root/docs/diagrams/fixture-diagram.svg"
+  printf 'not-a-real-png-just-needs-to-exist\n' > "$root/docs/diagrams/fixture-diagram.png"
+  git -C "$root" init -q
+  git -C "$root" -c user.email=test@test -c user.name=test add -A
+  git -C "$root" -c user.email=test@test -c user.name=test commit -q -m "baseline"
+  printf '%s' "$root"
+}
+
+# Hop 1 (html -> svg): edit html only, leave svg/png untouched.
+FIX56_A=$(_mk56fixture)
+printf '<html><svg>EDITED</svg></html>\n' > "$FIX56_A/docs/diagrams/fixture-diagram.html"
+CHECK56_A_OUT=$(bash "$AUDIT" "$FIX56_A" --only 56 2>&1 || true)
+trash "$FIX56_A" 2>/dev/null || true
+if printf '%s\n' "$CHECK56_A_OUT" | grep -q "fixture-diagram.html changed but .*fixture-diagram.svg wasn't re-exported"; then
+  ok "check-56 catches an html-only edit (svg never re-exported)"
+else
+  bad "check-56 did NOT catch an html-only edit — the html->svg hop has regressed:
+$CHECK56_A_OUT"
+fi
+
+# Hop 2 (svg -> png): edit svg only, leave png untouched.
+FIX56_B=$(_mk56fixture)
+printf '<svg xmlns="http://www.w3.org/2000/svg">EDITED</svg>\n' > "$FIX56_B/docs/diagrams/fixture-diagram.svg"
+CHECK56_B_OUT=$(bash "$AUDIT" "$FIX56_B" --only 56 2>&1 || true)
+trash "$FIX56_B" 2>/dev/null || true
+if printf '%s\n' "$CHECK56_B_OUT" | grep -q "fixture-diagram.svg changed but .*fixture-diagram.png wasn't re-exported"; then
+  ok "check-56 catches an svg-only edit (png never re-exported)"
+else
+  bad "check-56 did NOT catch an svg-only edit — the svg->png hop has regressed:
+$CHECK56_B_OUT"
+fi
+
+# All three files touched (a real, correct re-export) — must stay silent
+# about export freshness. Touching only html+svg (forgetting the png) would
+# be a real bug this same check should catch via hop 2 — don't under-test it.
+FIX56_C=$(_mk56fixture)
+printf '<html><svg>EDITED</svg></html>\n' > "$FIX56_C/docs/diagrams/fixture-diagram.html"
+printf '<svg xmlns="http://www.w3.org/2000/svg">EDITED</svg>\n' > "$FIX56_C/docs/diagrams/fixture-diagram.svg"
+printf 'not-a-real-png-just-needs-to-exist-EDITED\n' > "$FIX56_C/docs/diagrams/fixture-diagram.png"
+CHECK56_C_OUT=$(bash "$AUDIT" "$FIX56_C" --only 56 2>&1 || true)
+trash "$FIX56_C" 2>/dev/null || true
+if printf '%s\n' "$CHECK56_C_OUT" | grep -q "wasn't re-exported"; then
+  bad "check-56 false-positived on a fully re-exported diagram (both hops touched):
+$CHECK56_C_OUT"
+else
+  ok "check-56 stays silent when both export hops are touched"
+fi
+unset -f _mk56fixture
+
+# Regression guard for the sub-check C finding-count bug (deep-audit,
+# 2026-08-28): `case "$out" in *"0 finding"*)` is a false-negative trap —
+# "10 finding(s)" and "20 finding(s)" both contain the literal substring
+# "0 finding", so a real double-digit geometry failure would silently pass
+# as clean. Tested as an isolated snippet (not a full fixture run) because
+# forcing verify-geometry.py itself to emit >=10 real findings would depend
+# on diagram-design plugin internals this repo doesn't control or bundle.
+# Messages already contain a colon ("Summary: ..."), so a colon-joined
+# "msg:want" pair can't be split on ":" without truncating the message
+# itself — caught by this test's own first draft failing for the wrong
+# reason. Parallel arrays instead, indexed together.
+_geom56_msgs=(
+  "Summary: 1 file(s) checked, 0 finding(s)."
+  "Summary: 1 file(s) checked, 10 finding(s)."
+  "Summary: 1 file(s) checked, 20 finding(s)."
+  "garbage with no count"
+)
+_geom56_want=("0" "10" "20" "")
+_geomcount_regression_ok=1
+for _i in "${!_geom56_msgs[@]}"; do
+  _msg="${_geom56_msgs[$_i]}"
+  _want="${_geom56_want[$_i]}"
+  _got=$(printf '%s' "$_msg" | grep -oE '[0-9]+ finding' | grep -oE '^[0-9]+' | head -1)
+  if [ "${_got:-}" != "$_want" ]; then
+    _geomcount_regression_ok=0
+    bad "check-56 geometry-count extraction: '$_msg' -> got '${_got:-<empty>}', want '${_want:-<empty>}'"
+  fi
+done
+unset _i _geom56_msgs _geom56_want
+if [ "$_geomcount_regression_ok" -eq 1 ]; then
+  ok "check-56 geometry-count extraction correctly rejects 10/20-finding outputs (not fooled by the '0 finding' substring)"
+fi
+unset _msg _want _got _geomcount_regression_ok
+
 echo ""
 echo "self-test: $pass passed, $fail failed"
 if [ "$fail" -ne 0 ]; then
