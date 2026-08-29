@@ -712,6 +712,8 @@ def _git_first_commit(d):
     """(sha, epoch) of the memory dir's first commit, or (None, None) if it isn't
     a git repo (or has 0 commits)."""
     try:
+        # 10s: local git log walking full history, no network — generous
+        # margin against a large memory-store history, not empirically tuned.
         out = subprocess.run(
             ["git", "-C", d, "log", "--reverse", "--format=%H|%ct"],
             capture_output=True, text=True, timeout=10,
@@ -736,6 +738,9 @@ def _baseline_tree_files(d, sha):
     O(1) subprocess calls instead of O(N).
     """
     try:
+        # 10s: local git ls-tree, one call for the whole baseline tree —
+        # generous margin, not empirically tuned; see _git_first_commit above
+        # for the same rationale.
         out = subprocess.run(
             ["git", "-C", d, "ls-tree", "--name-only", sha],
             capture_output=True, text=True, timeout=10,
@@ -763,6 +768,9 @@ def _git_fold_commits(d):
     """
     sep = "\x01"
     try:
+        # 10s: local git log -p over MEMORY.md's own history only (not the
+        # whole repo), so this stays cheap even as the repo grows — generous
+        # margin, not empirically tuned.
         out = subprocess.run(
             ["git", "-C", d, "log", f"--format=COMMIT{sep}%h{sep}%s", "-p", "--", "MEMORY.md"],
             capture_output=True, text=True, timeout=10,

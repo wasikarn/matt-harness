@@ -32,6 +32,8 @@ PROTECTED = {"main", "master", "develop"}
 
 
 def git(args, cwd):
+    # 5s: only ever called for a local, no-network rev-parse (see call site) —
+    # generous margin over that, not tuned empirically.
     try:
         return subprocess.run(["git", "-C", cwd, *args],
                               capture_output=True, text=True, timeout=5).stdout.strip()
@@ -40,6 +42,10 @@ def git(args, cwd):
 
 
 def git_ok(args, cwd):
+    # 15s vs git()'s 5s: this one's call sites are `fetch origin` (network) and
+    # `worktree add` (filesystem work), both slower than a local rev-parse —
+    # deliberate split, not arbitrary drift, though neither number is
+    # empirically tuned.
     try:
         r = subprocess.run(["git", "-C", cwd, *args],
                             capture_output=True, text=True, timeout=15)
