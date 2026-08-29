@@ -72,26 +72,41 @@ Use the right model per task mid-session:
 /model opus     # complex architecture, multi-step reasoning
 ```
 
-### Session-switch & turn-cost tips (confirmed against `claude.com/blog/maximizing-the-value-of-your-claude-code-sessions`, 2026-08-29)
+### Session-switch & turn-cost tips
 
-- **`/model`, `/effort`, and Fast mode are all part of the prompt-cache key.** Switching any of
+Cross-checked against `code.claude.com/docs/en/{commands,prompt-caching}.md`, 2026-08-29 (not just
+the originating blog — see the audit doc cited below for what didn't survive that check).
+
+- **`/model`, `/effort`, and Fast mode are all part of the prompt-cache key** (confirmed:
+  `prompt-caching.md` — "Each model has its own cache," "each effort level has its own cache,"
+  and enabling fast mode "adds a request header that is part of the cache key"). Switching any of
   them mid-conversation re-prefills the *entire* conversation at full price on the next turn —
   cheap at the start of a session or right after `/clear`, expensive in the middle of a long one.
-  `/effort` is also sticky (like the model pick, it carries into your next session as the
-  default) — run `/model` and `/effort` once in a fresh session if you're not sure what you're
-  actually on.
+  `/effort` is also sticky — `code.claude.com/docs/en/model-config.md` confirms Claude Code writes
+  the effort key to your user settings when you set it interactively (`max`/`ultracode` are
+  session-only, not sticky). Run `/model` and `/effort` once in a fresh session if you're not sure
+  what you're actually on.
 - **`/clear` vs `/compact`:** `/clear` when starting a new task — don't carry one task's context
   into the next. `/compact` when the earlier part of the *same* task is done and you still need
-  what came before it. `/rename` a session before `/clear`-ing it if you'll want to resume it
-  later.
+  what came before it (see "Strategic Compaction" below for the finer-grained when-to-compact
+  table). To resume a session later, pass a name straight to `/clear` itself —
+  `/clear <name>` labels the conversation you're leaving for the `/resume` picker; there is no
+  separate `/rename` command (confirmed against `commands.md`; a prior draft of this section
+  claimed one existed — it doesn't).
+- **`/autocompact <tokens>`** (e.g. `/autocompact 200k`) sets an explicit auto-compaction
+  threshold — confirmed real syntax against `commands.md`. Useful on a 1M-context model if you'd
+  rather auto-compact kick in at the old 200k-ish point than run the full window down first.
 - **Classic `/loop` costs a full turn every time it fires, carrying the whole conversation with
   it** — and if more than an hour passed since the last turn, that fire is also a cache miss on
   top. Run a recurring `/loop` from a fresh session in another terminal, not the one you're
-  actively working in.
+  actively working in. (Sourced from Anthropic's own blog on this topic; the specific "carries the
+  whole conversation per fire" and "cache miss after ~1hr" mechanics aren't independently spelled
+  out in the public reference docs as of this check.)
 - **`@file`-mention instead of typing a path.** It attaches the file to your message before
   anything is sent, so there's no separate Read call. The file itself stays in context either
   way, so mention it once per conversation — mentioning it again on a later turn generally
-  attaches a second copy.
+  attaches a second copy. (Same sourcing caveat as `/loop` above — blog-sourced, not yet
+  independently confirmed in the public reference docs.)
 
 ## Context Window Management (ECC, stale — see correction below)
 

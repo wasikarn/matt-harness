@@ -14,8 +14,17 @@ llm-wiki) for prior art.
 ## Verdict
 
 Most of the article is already reflected in doctrine, several points exceed the article's own
-precision (see below), and 6 genuine, cheap gaps surfaced — no architectural surprises. This is
-a maintenance-tier finding, not a rebuild.
+precision (see below), and **9** genuine GAP rows surfaced across the 4 facet tables — no
+architectural surprises. This is a maintenance-tier finding, not a rebuild.
+
+**Correction (deep-audit pass, same day):** this section originally said "6 genuine, cheap gaps
+surfaced," matching only the count of GAP rows that made it into the first "Build candidates"
+list below — it undercounted the facet tables' own 9 GAP rows by 3, and 2 of those 3
+(`/autocompact 200k`, the daily-commands cheat sheet) had silently disappeared between the facet
+tables and that list with no decline rationale, unlike the third (haiku pin), which was
+explicitly declined. A `/mh:deep-audit` pass caught this along with one shipped factual error
+(see below) — both are now fixed; see "Build candidates" for the corrected, complete disposition
+of all 9.
 
 ## Facet A — Input/output pricing & prompt caching
 
@@ -63,24 +72,45 @@ a maintenance-tier finding, not a rebuild.
 | "Main session only gets back what subagent chose to report" | COVERED, exceeds article | CLAUDE.md's "Same crux, N-worker fan-in" — treats the synthesis step as a code-vs-prompt reliability question, not just a fact |
 | Give noisy repeated job `model: haiku` | **GAP, not worth building blind** | Grepped all 17 `agents/*.md`: zero `haiku` pins (10 sonnet, 7 opus). `CLAUDE_CODE_SUBAGENT_MODEL=inherit` confirmed live, so pins would actually take effect. But none of the 17 agents fit a haiku-tier noisy job (all are review/design/architecture); no repo pain point has surfaced yet. |
 
-## Build candidates (ranked, all cheap doc-only edits)
+## Build candidates — disposition of all 9 GAP rows
 
-1. **`/loop` cache-miss/full-turn-cost note** — sharpest gap. Add to
-   `skills/meta/loop-design-check` or `docs/reference/env-vars.md`: classic `/loop` fires as a
-   full turn carrying the whole conversation every time, and a >1hr gap is also a cache miss —
-   run it from a fresh session/terminal instead of the one you're working in.
-2. **`env-vars.md` token-cost table**: add `/effort` (sticky, cache-keyed) and Fast mode
-   (cache-breaking) as rows; add a one-line caveat to the existing `/model` section that a
-   mid-session switch re-prefills the whole conversation at full price — cheap at session start
-   or right after `/clear`, expensive mid-conversation.
-3. **`/clear` vs `/compact` decision rule + `/rename` tip** — one line each, likely in
-   `docs/reference/env-vars.md` alongside the existing `/compact` coverage.
-4. **@-mention doctrine** — one line: `@file` attaches without a Read call and only needs
-   mentioning once per conversation.
-5. Not recommended: haiku model-tier pin (no current agent is a natural fit — YAGNI until a
-   noisy/repeated job actually shows up) and the CLAUDE.md-length tension in facet B (real, but
-   restructuring CLAUDE.md is a separate, larger decision, not a copy-edit).
+Built into `docs/reference/env-vars.md`'s "Session-switch & turn-cost tips" section, with a
+one-line cross-ref from `skills/meta/loop-design-check`:
 
-Candidates 1-4 touch `docs/reference/**` and/or `skills/meta/loop-design-check` — both inside
-the version-bump gate (runtime-loaded surfaces), so shipping them requires the usual
-`plugin.json`/`marketplace.json` bump, not just a content edit.
+1. **`/loop` cache-miss/full-turn-cost note** — sharpest gap, blog-sourced (see caveat below).
+2. **`/effort` sticky + cache-keyed, Fast mode cache-breaking, `/model` mid-session caveat** —
+   one bullet, cross-checked against `code.claude.com/docs/en/{commands,prompt-caching,model-config}.md`.
+3. **`/clear` vs `/compact` decision rule** — cross-referenced to the pre-existing "Strategic
+   Compaction" table instead of duplicating it.
+4. **@-mention doctrine** — one line, blog-sourced (see caveat below).
+5. **`/autocompact 200k`** — added on the deep-audit pass below; confirmed real syntax
+   (`/autocompact [auto|<tokens>]`), originally flagged GAP in Facet C but dropped from the first
+   build list without explanation.
+
+Explicitly declined, with reasoning:
+
+6. **`model: haiku` agent pin** — no current agent (all 17 are review/design/architecture) is a
+   natural fit; YAGNI until a noisy/repeated job actually shows up.
+7. **"Daily commands + quiet flags" cheat-sheet block in CLAUDE.md** (Facet B) — declined on the
+   deep-audit pass: this is editorial polish, not an accuracy or functional gap. CLAUDE.md already
+   documents its actual daily commands where they're relevant (Validation section, git-hooks
+   section); consolidating them into one cheat-sheet block is a nice-to-have, not a defect, and
+   risks becoming a second, driftable copy of commands documented elsewhere. Not built.
+8. **CLAUDE.md-length tension** (Facet B) — real, but restructuring CLAUDE.md is a separate,
+   larger decision, not a copy-edit.
+
+**Not a GAP after re-verification, corrected:**
+
+9. **`/rename` before `/clear`** — the original build shipped this as a real command; a
+   `/mh:deep-audit` fact-check against `code.claude.com/docs/en/commands.md` found no `/rename`
+   command exists. The actual mechanism is `/clear <name>` — the name is an argument to `/clear`
+   itself, not a separate prior step. **This was a factual error shipped into the public repo's
+   docs for one commit (`c7c1d81c`)** before this same-day correction. Fixed in place, same
+   section.
+
+**Sourcing caveat:** items 1 and 4 (`/loop`, @-mention) come from Anthropic's own blog post only.
+A `claude-code-guide` fact-check against the public reference docs (`commands.md`,
+`prompt-caching.md`) could not independently corroborate either mechanic (not contradicted,
+just not documented at that level of detail) — item 9's `/rename` was the one blog claim that
+*was* contradicted. The env-vars.md section now carries this caveat inline rather than presenting
+1 and 4 with the same confidence as the cross-checked items.
