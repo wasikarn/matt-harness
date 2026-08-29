@@ -75,7 +75,9 @@ Use the right model per task mid-session:
 ### Session-switch & turn-cost tips
 
 Cross-checked against `code.claude.com/docs/en/{commands,prompt-caching}.md`, 2026-08-29 (not just
-the originating blog — see the audit doc cited below for what didn't survive that check).
+the originating blog — see the audit doc cited below for what didn't survive that check). Anthropic's
+own companion post covers the same ground end to end: "Choosing a Claude model and effort level in
+Claude Code" (claude.com/blog/claude-model-and-effort-level-in-claude-code).
 
 - **`/model`, `/effort`, and Fast mode are all part of the prompt-cache key** (confirmed:
   `prompt-caching.md` — "Each model has its own cache," "each effort level has its own cache,"

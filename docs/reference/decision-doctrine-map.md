@@ -21,6 +21,14 @@ hard, contested-diagnosis case now escalates to `mattpocock-skills:grilling`
 (adversarial pressure-testing), backed by the `judgment-ladder.md` /
 `strategic-judgment.md` references.
 
+**Naming collision, not the same mechanism:** this `advisor()` is a Claude Code SDK-level tool —
+consult a stronger reviewer over the whole conversation transcript, no API call of your own. It is
+unrelated to Anthropic's Messages API `advisor_20260301` server-side tool (the "advisor strategy":
+a cheap executor model calls a stronger advisor model mid-task, both within one `/v1/messages`
+request) — same name, different layer, different mechanism. Confirmed 2026-08-29
+(`docs/research/claude-models-explained-article-audit-2026-08-29.md`); zero hits for
+`advisor_20260301` anywhere in this repo — nothing here implements the API-level tool.
+
 ## Decision-sizing triad (run before any non-trivial act)
 
 Owned by **METHODOLOGY.md Rule 1, sub-rule "Size the decision before acting"**.
