@@ -129,6 +129,31 @@ owner yet. Full cross-check: two-agent parallel audit against `overview.md` + `b
 chars; check 20 enforces 1,536, sourced from a different page) is deliberately unresolved — verify
 `code.claude.com/docs/en/skills` directly before touching that number either way.
 
+**Evals-first authoring (Anthropic Agent Skills best-practices, adopted 2026-08-29):** before
+drafting a new skill's body, run the task WITHOUT the skill and write down 3 concrete example
+requests it should handle — what's asked, what context/files it needs, what a correct answer
+looks like. If Claude already clears the bar on all 3 without any skill at all, the skill
+shouldn't exist (the no-op test, above, is the same instinct applied post-hoc to individual
+sentences; this applies it pre-hoc to the whole skill). Then write only the instructions that
+close the gaps the baseline run actually showed — not instructions for a failure mode you
+imagined but never observed. Deliberately lighter than the official doc's full 5-step
+eval-driven-development process (a JSON `{query, files, expected_behavior}` schema, a
+build-your-own-harness step) — `mh:eval-harness` exists for exactly that scale, aimed at
+downstream product quality, not per-skill authoring. This is the proportionate version for a
+personal harness: 3 real examples and an honest baseline check, not a formal suite.
+
+**Degrees of freedom (same source, adopted 2026-08-29):** match how tightly a step is specified
+to how expensive a wrong deviation would be — not a uniform level of detail across the whole
+skill. High freedom (a paragraph of judgment criteria, several valid approaches) for genuinely
+open calls where the model's judgment is the point. Medium freedom (parameterized pseudocode
+or a script with documented options) for semi-structured work with a few right shapes. Low
+freedom (an exact script, run it, no deviation) for fragile or high-stakes operations where an
+improvised variant breaks something — file-format manipulation, anything destructive, anything
+where "close enough" isn't. A different axis from the two-cut check above: two-cut governs
+*whether to split a skill*; this governs *how tightly to constrain a single step once it's in
+one*. Over-specifying a judgment call reads as condescending noise the model ignores;
+under-specifying a fragile one is where a plausible-looking wrong variant slips through.
+
 **Escalation to `AskUserQuestion`:** a branch belongs in the passive footer only while it's
 anticipatory — conditional on a fact not yet known (did the reviewer comment, did CI go red). If
 every branch is already true/decidable right now and there's no sensible default, that's a

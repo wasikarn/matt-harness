@@ -22,6 +22,17 @@ Run before publishing. Each item must be checkable. See CLAUDE.md's "Skill autho
 - [ ] **Completion criterion** on every procedure step (resists premature completion).
 - [ ] **No-op test** passed — each sentence changes behaviour vs default; remove the ones that don't.
 - [ ] **Two-cut check** — split-by-invocation or split-by-sequence only when the cut earns it; otherwise sharpen the criterion (kbg is MAXIMAL-BOUNDED).
+- [ ] **Evals-first** — before drafting the body, write 3 concrete example requests this skill
+  should handle (what's asked, what files/context it needs, what correct behavior looks like)
+  and check whether Claude already handles them acceptably WITHOUT the skill. If it does, the
+  skill may not need to exist; only write instructions that close the gaps the baseline
+  actually showed. Not a formal eval harness (`mh:eval-harness` covers that for downstream
+  products) — a lighter authoring-time discipline. See `docs/skill-authoring-conventions.md`.
+- [ ] **Degrees of freedom** — match instruction specificity to how much a wrong deviation
+  costs: prose heuristics for a genuinely open judgment call with several valid approaches, a
+  parameterized script/pseudocode for a semi-structured task, an exact script with no deviation
+  allowed for a fragile or high-stakes operation. Don't over-specify a judgment call or
+  under-specify a fragile one. See `docs/skill-authoring-conventions.md`.
 - [ ] **Failure mode** named at the drift step inline, not only in a header.
 - [ ] **Provenance** — if imported from matt-pocock, ECC, or another upstream, add a nested
   `metadata:` map to frontmatter (`metadata:` on its own line, `  origin: <upstream>` indented

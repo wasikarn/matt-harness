@@ -124,6 +124,24 @@ own CLAUDE.md/rules read into context, not just its files.
 gap (2026-07-17): `code-implementer`/`/implement` were built checking only (2), skipping (1) —
 collided with matt's own `engineering/implement` skill, caught by the user, not by this checklist. -->
 
+### Vetting a new third-party plugin/skill before relying on it
+
+Distinct concern from the sourcing-priority list above (that's about where to *look* when
+*authoring*; this is about *trusting* something already installed). Anthropic's own Agent
+Skills security guidance says treat installing a skill like installing software — a skill
+gives Claude new capabilities through instructions and code, so a malicious or careless one can
+direct tool/Bash use that doesn't match its stated purpose (confirmed against
+`platform.claude.com/.../agent-skills/overview.md`, 2026-08-29). Before relying on a **new**
+third-party plugin, MCP server, or skill for real work: read its SKILL.md/scripts once for what
+network calls, file writes, or Bash commands it can actually trigger, especially anything with
+credential or payment-data access; skills that fetch external URLs carry particular risk, since
+fetched content can itself carry instructions. This is a forward practice, applied at the point
+of adding something new — not a retroactive audit. This repo already runs several third-party
+plugins with real capability (`mattpocock-skills`, the firecrawl suite, `superset`,
+`diagram-design`, `playwright`, several first-party MCP connectors), none of which has a
+documented one-time vetting note; that's a named gap in the existing set, not something this
+paragraph closes by itself.
+
 ## Agent skills
 
 ### Issue tracker
