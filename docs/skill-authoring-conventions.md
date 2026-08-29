@@ -13,7 +13,14 @@ exists once commands/ retired as a surface type.)
 README.md Quick Start). Renamed from `writing-great-skills` in matt v1.2.0 (no alias) and
 restructured: the live elements are leading words, one trigger per branch, completion criterion +
 demand, the no-op test, and progressive disclosure across the two loads (context load vs cognitive
-load); skill-only mechanics (invocation choice, router skills) live in its `SKILL-MECHANICS.md`.
+load — a writing heuristic: how many tokens a passage costs vs how hard it is to parse); skill-only
+mechanics (invocation choice, router skills) live in its `SKILL-MECHANICS.md`. **Not the same axis
+as Anthropic's own "progressive disclosure"** (`platform.claude.com/.../agent-skills/overview.md`,
+confirmed 2026-08-29): that's a 3-level *runtime loading-stage* mechanism (metadata always
+loaded → SKILL.md body loaded on trigger → bundled files loaded only when read), a mechanical fact
+about when content enters context, not a writing heuristic about how to phrase it. Same term,
+different question — don't conflate matt's "two loads" with Anthropic's "three levels" when citing
+either.
 The old "two-cuts" and "failure-mode guard" labels no longer exist as named terms — two-cuts'
 content lives in its When-to-split section (+ SKILL-MECHANICS.md for the invocation cut), and the
 failure-modes section was distributed across the sections that now own each mode.

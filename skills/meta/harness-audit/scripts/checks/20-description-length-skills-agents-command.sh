@@ -10,6 +10,11 @@
 # is undercounted today — but the 1,536-char cap is on the COMBINED
 # description+when_to_use text, so a future skill adding when_to_use would need
 # this check to sum both fields.
+# Also unaccounted for: `skillListingMaxDescChars` (a Claude Code setting) can
+# move this 1,536 default the same way check 43 already reads
+# skillListingBudgetFraction dynamically from settings. Unset in this repo today,
+# so the hardcoded default below is correct for now — would need the same
+# settings-lookup treatment if that ever changes.
 DESC_MAX=1536
 for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md "$CLAUDE_DIR/agents"/*.md "$CLAUDE_DIR/commands"/*.md; do
   [ -f "$f" ] || continue
