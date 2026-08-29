@@ -56,7 +56,7 @@ skill owns the routing pattern, not the price sheet.
 
 ## Best Practices
 
-- **Start with the cheapest model** and only route to expensive models when complexity thresholds are met
+- **Start with the cheapest model** and only route to expensive models when complexity thresholds are met — unless the cheapest tier has no effort dial (Haiku currently doesn't, see Technique Map item 5), in which case start one tier up and sweep effort there first
 - **Sweep effort levels on the current model before routing to a cheaper one** — a smaller, cheaper change to test, and it composes with model routing rather than replacing it
 - **Set explicit budget limits** before processing batches — fail early rather than overspend
 - **Log model selection decisions** so you can tune thresholds based on real data
