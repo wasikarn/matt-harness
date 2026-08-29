@@ -80,18 +80,27 @@ may be edited by this agent; a second agent may be working the same tree in para
 
 ## What was deliberately not done
 
-- **No cross-surface/cross-section consistency checker built.** This is the one genuine, evidenced
-  gap (claims 4 and 13 above share it). **Candidate, precisely scoped:** a new `harness-audit`
-  check (next free number after the current highest) that flags, at minimum, self-contradiction
-  within a single file — e.g. a claim that a mechanism X does Y, checked against the file's own
-  other sections making a conflicting claim about X. A general-purpose semantic-contradiction
-  detector is out of reach deterministically (same reasoning `docs/harness-decay-cadence.md`'s
-  "Refused extension" section already used to decline a runtime reasoning-verifier); a narrower,
-  file-scoped grep-for-known-contradiction-shapes check (e.g., "cats X from the cache" appearing
-  near a sentence asserting the opposite) is the buildable slice, closer to what `memory-lint.py`'s
-  pattern-cluster mode already does for the memory store. Not proposed for cross-*file* consistency
-  (open-ended, no bounded grep target) — only within a single file, where the 2026-08-26 incident
-  actually occurred. Left as a candidate per the dispatch instructions, not built.
+- **No cross-surface/cross-section consistency checker built — declined on evidence, 2026-08-29,
+  not deferred.** This candidate (a new `harness-audit` check flagging in-file self-contradiction)
+  was scored against a follow-up `advisor()` pass and the evidence doesn't clear the bar: (1) n=1 —
+  the only known incident (`CLAUDE.md:364`) was a *factual* claim that happened to conflict with
+  another section, not a reusable grammatical shape; a grep keyed to that phrase never fires again,
+  and a grep keyed to generic negation shapes is a semantic detector wearing a regex costume. (2)
+  This repo has already declined the general version of this twice in writing:
+  `docs/harness-decay-cadence.md`'s "Refused extension" (a runtime reasoning-verifier) and
+  `memory-lint.py --find-contradictions` itself, which stays advisory-only ("read each pair by
+  hand, never auto-merge") for the exact same class of problem, one surface over — confirmed
+  structurally scoped to the memory store only (`type:`-matched pairs across memory `.md` files),
+  not repo docs, so it can't be pointed at `CLAUDE.md` as-is either. (3) Check 53
+  (`cross-file-content-drift.sh`) is the closest existing precedent for fuzzy-matching prose in
+  this fleet, and it took a Jaccard-similarity pipeline, an allowlist, and four documented ceilings
+  to reach **~15% precision on n=19** — a new check with less design evidence than that, gating on
+  prose semantics, is a noise generator with a check number. (4) The operating-model crux: "section
+  A contradicts section B" isn't a score a shell script can produce without an LLM in the loop, and
+  an LLM in a gate is the maker grading itself (ADR 0006). The gap this audit found is real and
+  stays named here for the next audit to check before re-proposing it — but the deliverable was
+  naming it, not building a detector for it. The 2026-08-26 incident's actual detection mechanism
+  was a human sweep, and that isn't a tooling failure to fix.
 - **No CLAUDE.md trim.** Claim 8 found CLAUDE.md conforms to the article's content-ratio advice on
   read; proposing a cut without a "score, not feel" measure would violate the decay cadence's own
   rule. The absent CLAUDE.md-size instrument is named as a fact, not a recommendation to add one —
