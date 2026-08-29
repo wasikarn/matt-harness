@@ -58,8 +58,11 @@ content an attacker (or a compromised upstream source) could embed instructions 
 
 ## 3. Model assignment by cognitive load, not by default
 
-Most agents omit `model:` (inherits the session default). Pin `model: opus` when the task is
-genuinely analysis-heavy and benefits from independent judgment quality —
+Every agent in the fleet carries an explicit `model:` (fleet convention since v0.68.430 — see
+`docs/skill-authoring-conventions.md`'s "Explicit `model:` + `effort:`" section; this line
+previously said "most agents omit `model:`," which stopped being true then and was caught
+stale 2026-08-29). Pin `model: opus` when the task is genuinely analysis-heavy and benefits
+from independent judgment quality —
 `requirement-analyst` does this. Pinning a fresh-context verifier while the main session
 often runs a different model is deliberate: it makes the verifier
 independent by *model*, not just by context, which is a stronger form of the maker≠checker
@@ -166,8 +169,9 @@ mining production data to discover it after.
   must join its routing table.
 - `skills/meta/harness-audit/scripts/checks/` — 04 (frontmatter completeness), 09 (explicit
   `tools:`, CRIT), 12 (routing coverage), 24 (tool-token validity), 25 (skills-ref
-  resolution), 45 (no `Agent` grant, WARN) are the mechanical checks over this doc's items 1
-  through 6.
+  resolution), 41 (no `Agent` grant, WARN — corrected 2026-08-29 from a stale "45" citation;
+  45 is `score-decision`'s unrelated `disable-model-invocation` CRIT guard) are the mechanical
+  checks over this doc's items 1 through 6.
   There is deliberately no structural body-regex check (heading presence, etc.) — that class
   was tried for skills and retired after a 5/5 false-positive rate (CLAUDE.md, skill
   authoring doctrine section); this doc is prose guidance, not a gate.

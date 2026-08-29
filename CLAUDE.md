@@ -21,15 +21,24 @@ coverage already exceeds them.
 
 ## Adding or removing a surface
 
-Auto-discovered directories: `agents/`, `skills/`, `hooks/`, `output-styles/`, `themes/`
-(`commands/` retired as a surface type 2026-08-25, #112). The step-by-step (inlined from the
+Auto-discovered directories this plugin currently uses: `agents/`, `skills/`, `hooks/`,
+`output-styles/`, `themes/` (`commands/` retired as a surface type 2026-08-25, #112) — this is
+"the 5 this plugin ships," not an exhaustive list of what Claude Code plugins support more
+broadly (`workflows/`, `.mcp.json`, `.lsp.json`, `monitors/monitors.json`, `bin/`, and a
+plugin-root `settings.json` are also real, just unused here — confirmed against
+`code.claude.com/docs/en/plugins-reference.md`, 2026-08-29). The step-by-step (inlined from the
 removed `add-surface` skill, 2026-08-24 #80):
 
 1. Create/remove the file(s), following the pattern of an existing component in the same
    directory. A new skill/agent needs `bucket:` frontmatter (top-level key, right after
    `description:`). Skills: `meta`/`review`/`patterns`/`agent-support`/`design`/`workflow`.
    Agents: `design`/`review`/`build`/`analysis`/`utility`. It groups the `BOUNDARY.md`
-   tables; harness-audit checks 04/05 WARN if missing.
+   tables; harness-audit checks 04/05 WARN if missing. **A brand-new top-level `skills/`
+   bucket** (a 7th folder alongside the 6 above) additionally needs its path added to
+   `.claude-plugin/plugin.json`'s own `skills` array — that array, once declared, *replaces*
+   the default `skills/` directory scan rather than adding to it (an official-docs-confirmed
+   marketplace-root exception, 2026-08-29), so an undeclared bucket is silently invisible to
+   skill discovery even though the files exist on disk.
 2. Hooks: register/deregister in `hooks/hooks.json`; add tests for any gate. After removing
    a hook's test section, grep the ENTIRE test file (not just the deleted section) for every
    shared helper function's name and remove any with zero remaining callers.

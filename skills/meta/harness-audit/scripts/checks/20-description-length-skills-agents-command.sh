@@ -5,6 +5,11 @@
 # which can cut off the negation clause and degrade routing. fm_get --block
 # returns the full block-scalar body (with indent stripped), so multi-line
 # descriptions are measured accurately against the limit.
+# Gap, not a live bug (verified 2026-08-29): this only measures `description`.
+# Zero surfaces in this repo currently carry a `when_to_use:` field, so nothing
+# is undercounted today — but the 1,536-char cap is on the COMBINED
+# description+when_to_use text, so a future skill adding when_to_use would need
+# this check to sum both fields.
 DESC_MAX=1536
 for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md "$CLAUDE_DIR/agents"/*.md "$CLAUDE_DIR/commands"/*.md; do
   [ -f "$f" ] || continue

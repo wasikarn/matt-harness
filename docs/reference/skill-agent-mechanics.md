@@ -49,13 +49,30 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
   reasoned through directly under METHODOLOGY Rule 1 (triad + `advisor()`,
   `mattpocock-skills:grilling` for hard/contested calls). A pile of competing asks routes
   through `orchestrate` first.
-- **`SKILL.md` frontmatter ≠ `agents/*.md` frontmatter:** the real skill-file field for tool
-  control is `allowed-tools` (pre-approves without asking; skills have no hard-restriction
-  field), not `tools:` — that's the `agents/*.md` subagent field (hard-restricts to a fixed
-  set). Confirmed against the official `skills.md` reference and the CLI binary's compiled
-  schema keys. `metadata` / `metadata.origin` / `disable-model-invocation-reason` are
-  non-standard-but-harmless kbg conventions: unrecognized frontmatter keys warn, never
-  error, and carry zero behavioral effect.
+- **`SKILL.md` frontmatter ≠ `agents/*.md` frontmatter:** a skill's tool-control fields are
+  `allowed-tools` (pre-approves without asking, turn-scoped — clears on the next message) and
+  `disallowed-tools` (a turn-scoped denylist — corrected 2026-08-29; this line previously
+  claimed skills have no hard-restriction field, which is wrong). `tools:` is the separate
+  `agents/*.md` subagent field (hard-restricts to a fixed set for that subagent's whole run,
+  not just one turn). Confirmed against `code.claude.com/docs/en/skills`.
+  `metadata` is itself a documented, spec-recognized field (a free-form YAML map) — corrected
+  2026-08-29 from a prior mislabeling as kbg-native. What's actually unrecognized by the
+  platform: the flat dotted-key form `metadata.origin:` (correct usage is a nested map,
+  `metadata:` then an indented `origin:` — `skills/review/pr/SKILL.md` was the one skill using
+  the wrong flat form, fixed the same day) and `disable-model-invocation-reason`. Unrecognized
+  frontmatter keys inside Claude Code are silently tolerated (no confirmed warning, no error);
+  a *separate* six-field portability allowlist (`name`, `description`, `license`,
+  `compatibility`, `metadata`, `allowed-tools`) applies only when packaging a skill for the
+  Skills API or a claude.ai upload — anything outside that set is a hard error there, though
+  harmless inside Claude Code itself. None of this fleet's skills currently target that
+  packaging path.
+- **Auto-compaction skill re-attach budget (code.claude.com/docs/en/skills, verified
+  2026-08-29):** when a conversation is summarized, Claude Code re-attaches the most recent
+  invocation of each skill used so far, keeping the first 5,000 tokens of each, filled
+  newest-invoked-first against a **combined 25,000-token budget** across all re-attached
+  skills — an older-invoked skill can be dropped entirely once the budget fills. Relevant to
+  this fleet's long multi-skill sessions (`orchestrate`, `deep-audit`, `recursive-improve`);
+  not previously documented anywhere in this repo.
 - **`/goal` vs `goal-craft`:** `/goal` is Claude Code's own native completion-condition loop
   (v2.1.139+, judged each turn by a separate small model). kbg never wraps or auto-invokes
   `/goal` — the user always types it themselves, no exceptions (prose-only; holds because no

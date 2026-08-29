@@ -19,7 +19,7 @@ The matt-harness convention is to prefer **`tools:` (allowlist)** for new agents
 tools: Read, Grep, Glob, Bash
 ```
 
-**What it means:** the agent may use `Read`, `Grep`, `Glob`, and `Bash`. It may **not** use `Write`, `Edit`, `NotebookEdit`, `WebFetch`, `WebSearch`, `Task`, or any other tool the vendor offers.
+**What it means:** the agent may use `Read`, `Grep`, `Glob`, and `Bash`. It may **not** use `Write`, `Edit`, `NotebookEdit`, `WebFetch`, `WebSearch`, `Agent` (renamed from `Task` in v2.1.63 — `Task(...)` still works as a backward-compatible alias), or any other tool the vendor offers.
 
 **What it excludes:** everything not in the list. The list is the contract.
 
@@ -51,7 +51,7 @@ tools: Read, Grep, Glob, Bash
 disallowedTools: Write, Edit, NotebookEdit
 ```
 
-**What it means:** the agent inherits the vendor's default toolset minus `Write`, `Edit`, and `NotebookEdit`. It may use `Read`, `Grep`, `Glob`, `Bash`, `WebFetch`, `WebSearch`, `Task`, and anything else not in the denylist.
+**What it means:** the agent inherits the vendor's default toolset minus `Write`, `Edit`, and `NotebookEdit`. It may use `Read`, `Grep`, `Glob`, `Bash`, `WebFetch`, `WebSearch`, `Agent`, and anything else not in the denylist.
 
 **What it excludes:** only the listed tools. Everything else is implicitly available.
 

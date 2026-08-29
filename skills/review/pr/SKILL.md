@@ -2,7 +2,8 @@
 name: pr
 description: "PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`mh:ship-merge`) or review replies (`mh:address-review`)."
 allowed-tools: AskUserQuestion Read Glob Grep Bash(gh pr *) Bash(gh repo view *) Bash(git push *) Bash(git log *) Bash(git diff *) Bash(git status *) Bash(git branch *) Bash(git remote *) Bash(git fetch *) Bash(git rebase *)
-metadata.origin: kbg-native
+metadata:
+  origin: kbg-native
 model: inherit
 effort: medium
 ---
