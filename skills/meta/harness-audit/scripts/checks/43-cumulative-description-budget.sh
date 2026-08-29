@@ -26,18 +26,22 @@
 # Partial reconciliation, this machine, 2026-08-29: a headless `claude -p
 # "/context"` run reported this fleet's real "Skills" listing cost at 16.7k
 # TOKENS — ~6.3x this check's own char/4 estimate (2,661 tokens) for the exact
-# same 59-skill fleet at the same moment. Two likely drivers, not fully
-# isolated: (1) chars/4 assumes English-average tokenization, but 20/59 skill
-# descriptions (34%) carry Thai trigger phrases, which tokenize far less
-# efficiently under BPE; (2) the real listing includes each skill's `name` and
-# per-entry formatting overhead, not just the raw `description` field this
-# check sums. Also unreconciled: the model in that run had a 1,000,000-token
-# window, not the 200,000 this check's default math hardcodes — if the
-# platform's "1% of the model's context window" claim is literal, the real
-# default budget on a large-context model is far higher than 8000 chars.
-# Net: this check's char/4 arithmetic is a rough proxy, not a token-accurate
-# measurement — treat its number as directional, and cross-check with a real
-# `/context` run before trusting it near the edge of a WARN.
+# same 59-skill fleet at the same moment. A same-day Thai-tokenization theory
+# for this gap was CHECKED AND REFUTED 2026-08-29 (deep-audit pass): a repo-wide
+# grep for Thai script (Unicode 0E00-0E7F) found zero hits anywhere in any of
+# the 59 skills/*/SKILL.md or 17 agents/*.md files, frontmatter or body — the
+# "34% of descriptions carry Thai" figure this comment previously cited was
+# unverified when written and is false. Don't re-cite it. The gap is real and
+# still unexplained: candidates are (1) the real listing includes each skill's
+# `name` and per-entry formatting overhead, not just the raw `description`
+# field this check sums, and (2) the model in that `/context` run had a
+# 1,000,000-token window, not the 200,000 this check's default math hardcodes
+# — if the platform's "1% of the model's context window" claim is literal, the
+# real default budget on a large-context model is far higher than 8000 chars.
+# Neither is verified as the actual cause. Net: this check's char/4 arithmetic
+# is a rough proxy, not a token-accurate measurement — treat its number as
+# directional, and cross-check with a real `/context` run before trusting it
+# near the edge of a WARN.
 _local_settings="$REPO_ROOT/.claude/settings.local.json"
 _global_settings="$HOME/.claude/settings.json"
 _frac=""
