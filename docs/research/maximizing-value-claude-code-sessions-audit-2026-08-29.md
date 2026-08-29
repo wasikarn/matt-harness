@@ -164,4 +164,17 @@ the ~56-line "Skill/agent/command mechanics & routing" section is pure lookup ma
 field reference, `disable-model-invocation` carrier list) with no "must recall before acting"
 urgency — same shape as the "Agent skills" and "Skill authoring doctrine" sections, which already
 use a pointer-plus-short-summary pattern successfully. Candidate: move it to `docs/reference/`,
-leave a pointer. Not built — human call.
+leave a pointer. **Built** (`f3b3dd08`, `docs/reference/skill-agent-mechanics.md`, CLAUDE.md
+489→429 lines).
+
+**"Adding or removing a surface" (29 lines) — revisited, decision: keep in CLAUDE.md, do not
+move.** This is the weaker candidate `84ba92da` above already refers to, and checking its own
+history directly settles it: `84ba92da` (2026-07-10) already made this exact move once — heading
+stayed, the 7-step procedure became a one-line pointer to `.claude/skills/add-surface/SKILL.md`.
+That skill was deleted in the #80 dedup sweep (2026-08-24); the pointer went silently stale, and
+someone had to notice and manually re-inline the full procedure — the version sitting in
+CLAUDE.md right now. `harness-audit` check 26 only validates Claude Code's native `@file` import
+syntax, not a plain prose pointer, so nothing computational would have caught that break, and
+nothing has been added since #80 that would catch a repeat. This isn't the theoretical caution
+the fork raised — it's this exact content's own documented failure, already happened once.
+Verdict: **not moved.**
