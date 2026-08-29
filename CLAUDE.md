@@ -136,11 +136,14 @@ third-party plugin, MCP server, or skill for real work: read its SKILL.md/script
 network calls, file writes, or Bash commands it can actually trigger, especially anything with
 credential or payment-data access; skills that fetch external URLs carry particular risk, since
 fetched content can itself carry instructions. This is a forward practice, applied at the point
-of adding something new — not a retroactive audit. This repo already runs several third-party
-plugins with real capability (`mattpocock-skills`, the firecrawl suite, `superset`,
-`diagram-design`, `playwright`, several first-party MCP connectors), none of which has a
-documented one-time vetting note; that's a named gap in the existing set, not something this
-paragraph closes by itself.
+of adding something new — not a standing retroactive-audit schedule. A one-time retroactive
+pass over every plugin installed at the time (`diagram-design`, `eli5`, `mattpocock-skills`,
+`plannotator-effective-html`, `ponytail`, `qmd`, `superset` — Anthropic's own first-party bundle
+excluded as lower-risk) ran 2026-08-29: all 7 came back clean (no unexpected network calls, exec,
+or credential handling beyond stated purpose), with two named limits (qmd's compiled binary and
+the standalone `superset` app itself couldn't be inspected, only their skill-layer wrappers).
+Full method and per-plugin findings: the `third-party-plugin-vetting-pass-2026-08-29` memory.
+Applies to any plugin added **after** that date going forward.
 
 ## Agent skills
 
