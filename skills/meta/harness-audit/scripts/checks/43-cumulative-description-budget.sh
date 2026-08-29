@@ -38,6 +38,18 @@
 # 1,000,000-token window, not the 200,000 this check's default math hardcodes
 # — if the platform's "1% of the model's context window" claim is literal, the
 # real default budget on a large-context model is far higher than 8000 chars.
+# A second theory was checked and ruled out 2026-08-29 too: code.claude.com/docs/en/skills
+# documents a real historical bug ("Before v2.1.196, [the /context Skills row]
+# counted the full text of every description and could show a value several
+# times larger than the configured budget") that would explain an inflated
+# reading exactly like this. Ruled out because the measuring machine ran
+# Claude Code 2.1.251, well past that fix — the 16.7k figure isn't the old
+# bug reappearing. The docs' own suggested diagnostic (`/doctor`, "an estimate
+# of the listing's context cost and its biggest contributors") doesn't run
+# headlessly (`claude -p "/doctor"` times out with zero output — interactive-
+# only) and couldn't be checked from this environment. The gap stays real,
+# unexplained, and un-re-explained by either ruled-out theory — don't re-cite
+# Thai tokenization OR the v2.1.196 bug as the cause.
 # Neither is verified as the actual cause. Net: this check's char/4 arithmetic
 # is a rough proxy, not a token-accurate measurement — treat its number as
 # directional, and cross-check with a real `/context` run before trusting it
