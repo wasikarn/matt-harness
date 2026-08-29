@@ -114,3 +114,29 @@ A `claude-code-guide` fact-check against the public reference docs (`commands.md
 just not documented at that level of detail) — item 9's `/rename` was the one blog claim that
 *was* contradicted. The env-vars.md section now carries this caveat inline rather than presenting
 1 and 4 with the same confidence as the cross-checked items.
+
+## Fourth pass (2026-08-29, same day) — direct primary-source check on the remaining hedge
+
+The deep-audit pass above relied partly on a subagent's report for the `/loop` and @-mention
+"could not verify" verdict. Since that subagent's own read of `/rename` turned out to miss the
+correct doc, its other verdicts got a second, direct check — `WebFetch` against 3 pages myself,
+not delegated: `code.claude.com/docs/en/scheduled-tasks.md` (the actual `/loop` reference page,
+confirmed real: "A scheduled prompt fires between your turns, not while Claude is mid-response,"
+consistent with the hedge's claim but not spelling out the whole-conversation-resend or
+cache-miss mechanics in those terms), `interactive-mode.md`, and `context-window.md` (both
+describe `@` as triggering file-path autocomplete and document `Read`-tool costs generically, but
+neither states the attach-without-Read or re-mention-duplicates mechanic). All three confirm the
+hedge is still accurate — **no edit needed**, the existing "not independently spelled out" framing
+in `env-vars.md` holds under direct primary-source check, not just the earlier subagent's read.
+
+**Warp article, re-checked same session, no new build needed.** `ทบทวนอย่างละเอียดอีกครั้ง` covered
+both this article and `warp-self-improving-agents-article-audit-2026-08-28.md` in one request.
+That audit already went through 3 independent rounds (build → compliance-audit → third-pass
+live-execution re-audit, 2026-08-28/29) and is settled. Per `advisor()`, a 4th full re-audit with
+fresh forks would just re-derive the same evidence; instead, both built scripts were live-executed
+again this session: `skills/meta/recursive-improve/scripts/gate-journal-summary.sh` (66 real
+journal rows, exit 0) and `feedback-surface-scan.py` (real clustering output, exit 0), plus
+`.github/workflows/harness-audit-drift.yml` confirmed still scheduled (`0 9 * * 1`). No drift.
+No cross-interaction found with this article's cache/turn-cost lessons: `harness-audit-drift.yml`
+is a GitHub Actions cron, not a Claude Code `/loop` session, so prompt-cache economics don't apply
+to it.
