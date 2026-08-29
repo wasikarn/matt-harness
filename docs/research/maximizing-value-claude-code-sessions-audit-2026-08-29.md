@@ -140,3 +140,28 @@ journal rows, exit 0) and `feedback-surface-scan.py` (real clustering output, ex
 No cross-interaction found with this article's cache/turn-cost lessons: `harness-audit-drift.yml`
 is a GitHub Actions cron, not a Claude Code `/loop` session, so prompt-cache economics don't apply
 to it.
+
+## Fifth pass — the 2 revisit candidates, analyzed by 2 parallel forks
+
+**Haiku-tier agent pin: still YAGNI, now with a live precedent.** `agents/summarizer.md` — the
+closest fit to the article's "noisy repeated job" pattern — was actually pinned `model: haiku`
+once (v0.68.395, `54242ac2`), then reverted to `sonnet` a week later (v0.68.430, `c1df6891`):
+"haiku lacks effort support," and summarizer runs `effort: medium` as a real dependency, not
+incidental. High-volume repeat dispatches do exist (`Explore` 1990 calls, `general-purpose` 3114
+in `costs.jsonl`), but both are Claude Code platform built-ins with no repo-owned frontmatter to
+pin a model onto. No candidate found; this isn't theory, it's a tried-and-reverted result.
+
+**CLAUDE.md length: mostly deliberate, one real move candidate found.** Section-by-section pass:
+most of the file's ~34,580 chars are safety/ambient-critical by design (git hygiene, plugin
+lifecycle version-bump gate, branching model) — moving them would trade ambient enforcement for
+on-demand recall, a real behavioral risk this repo has already been burned by twice: the qmd/
+research-first rule was vendored into a skill once and silently lost to two unrelated namespace
+migrations before landing back in CLAUDE.md by deliberate decision (documented inline). Separately,
+`84ba92da` once moved the "Adding or removing a surface" workflow out to a skill; an unrelated
+dedup sweep (#80, 2026-08-24) deleted that skill and inlined the content back — accidental
+parking, not a reasoned call, but the same failure mode. One real candidate survived this history:
+the ~56-line "Skill/agent/command mechanics & routing" section is pure lookup material (frontmatter
+field reference, `disable-model-invocation` carrier list) with no "must recall before acting"
+urgency — same shape as the "Agent skills" and "Skill authoring doctrine" sections, which already
+use a pointer-plus-short-summary pattern successfully. Candidate: move it to `docs/reference/`,
+leave a pointer. Not built — human call.
