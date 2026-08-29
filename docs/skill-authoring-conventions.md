@@ -98,6 +98,30 @@ any surface missing either key, a non-tier `effort:` value, or a non-`inherit` s
 `model:` (unless `context: fork`) — deliberately NOT the per-surface tier map, which stays a
 judgment call retiered via normal version-bumped edits.
 
+**Reference-file conventions (Anthropic Agent Skills best-practices, verified 2026-08-29):**
+source: `platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices.md`. Three
+rules; one was already followed once but never generalized:
+
+- **One level deep from SKILL.md.** Every reference file must be linked directly from SKILL.md —
+  never SKILL.md → `advanced.md` → `details.md`. Claude partial-reads long files with `head -100`;
+  a second-hop reference risks never being reached at all. Previously stated only as one skill's
+  local note (`tech-humanize/SKILL.md:123`); this promotes it repo-wide.
+- **Table of contents on any reference file over 100 lines**, so a partial read still shows the
+  full scope before the rest of the file loads.
+- **MCP tools named in fully-qualified `ServerName:tool_name` form** in skill/agent prose (e.g.
+  `qmd:query`, not bare `query`) — avoids a "tool not found" miss once more than one MCP server is
+  active. Applies to root `CLAUDE.md`'s own qmd/context7 references and any skill body that names
+  an MCP tool.
+
+Declined from the same audit, not adopted: eval-driven authoring (write 3
+`{query, files, expected_behavior}` scenarios before the skill body, so the skill solves a
+demonstrated gap rather than an imagined one) and the "degrees of freedom" framing (match
+prose-vs-exact-script specificity to task fragility) — both real, both left for a future pass, no
+owner yet. Full cross-check: two-agent parallel audit against `overview.md` + `best-practices.md`,
+2026-08-29. The description-length discrepancy the same audit surfaced (official spec states 1,024
+chars; check 20 enforces 1,536, sourced from a different page) is deliberately unresolved — verify
+`code.claude.com/docs/en/skills` directly before touching that number either way.
+
 **Escalation to `AskUserQuestion`:** a branch belongs in the passive footer only while it's
 anticipatory — conditional on a fact not yet known (did the reviewer comment, did CI go red). If
 every branch is already true/decidable right now and there's no sensible default, that's a
