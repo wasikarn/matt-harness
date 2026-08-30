@@ -35,7 +35,7 @@
 
   <svg class="diagram" viewBox="0 0 1120 600" role="img" aria-labelledby="mh-stack-title mh-stack-desc" xmlns="http://www.w3.org/2000/svg">
     <title id="mh-stack-title">mh@wasikarn hook enforcement: dispatch-single.sh's three-tier filter stack vs dispatch-pretooluse.sh's untiered gate path.</title>
-    <desc id="mh-stack-desc">Two-part diagram. Left, a three-layer stack for 17 of the 18 hooks.json registrations, routed through dispatch-single.sh: strict (2 handlers) sits on top since it is the first tier switched off when MH_HOOK_PROFILE is lowered from its default of strict; standard (8 handlers) sits in the middle, off only if the profile is set to minimal; minimal (7 handlers) is the foundation layer, always on regardless of profile. Right, coral and dashed: the 18th hooks.json registration — PreToolUse's single dispatch-pretooluse.sh entry — fans out to 13 gate rules in pretooluse-table.json, which have no tier field at all and are immune to both MH_HOOK_PROFILE and MH_DISABLED_HOOKS — the one enforcement path no flag reaches.</desc>
+    <desc id="mh-stack-desc">Two-part diagram. Left, a three-layer stack for 18 of the 19 hooks.json registrations, routed through dispatch-single.sh: strict (2 handlers) sits on top since it is the first tier switched off when MH_HOOK_PROFILE is lowered from its default of strict; standard (8 handlers) sits in the middle, off only if the profile is set to minimal; minimal (8 handlers) is the foundation layer, always on regardless of profile. Right, coral and dashed: the 19th hooks.json registration — PreToolUse's single dispatch-pretooluse.sh entry — fans out to 13 gate rules in pretooluse-table.json, which have no tier field at all and are immune to both MH_HOOK_PROFILE and MH_DISABLED_HOOKS — the one enforcement path no flag reaches.</desc>
 
     <defs>
       <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
@@ -46,7 +46,7 @@
     <rect width="1120" height="600" fill="#f5f5f5"/>
 
     <!-- ===== ZONE CAPTIONS ===== -->
-    <text x="76" y="60" fill="rgba(45,49,66,0.55)" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.10em">17 REGISTRATIONS · hooks/dispatch-single.sh — TIERED, MH_HOOK_PROFILE-FILTERABLE</text>
+    <text x="76" y="60" fill="rgba(45,49,66,0.55)" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.10em">18 REGISTRATIONS · hooks/dispatch-single.sh — TIERED, MH_HOOK_PROFILE-FILTERABLE</text>
     <text x="676" y="60" fill="rgba(235,108,54,0.85)" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.10em">13 RULES · hooks/dispatch-pretooluse.sh — UNTIERED, ALWAYS ON</text>
 
     <!-- directional glyph: lowering the profile peels layers from the top -->
@@ -85,8 +85,8 @@
       <rect x="76" y="284" width="536" height="92" fill="white" stroke="#2d3142" stroke-width="1"/>
       <rect x="92" y="296" width="100" height="14" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
       <text x="142" y="306" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">TIER: MINIMAL</text>
-      <text x="200" y="332" fill="#2d3142" font-size="16" font-weight="600" font-family="'Geist', sans-serif">7 handlers</text>
-      <text x="92" y="356" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace">doctrine-bootstrap · cost-tracker · +5</text>
+      <text x="200" y="332" fill="#2d3142" font-size="16" font-weight="600" font-family="'Geist', sans-serif">8 handlers</text>
+      <text x="92" y="356" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace">doctrine-bootstrap · cost-tracker · +6</text>
       <text x="596" y="316" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">the profile floor</text>
       <text x="596" y="330" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="end">fires at every profile setting</text>
     </g>

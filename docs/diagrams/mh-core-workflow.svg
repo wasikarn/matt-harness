@@ -4,7 +4,7 @@
     <desc id="mh-core-desc">A five-lane swimlane showing one happy-path session. The user sends a prompt. The model — a single Claude model by default, or the separate opt-in mh:tiered-pipeline skill — invokes skills or agents and is bound by the PreToolUse dispatcher, which is one registration that fans out to thirteen gate rules in a table and merges strictest-wins. Seven advisory sensors journal after each tool call. The catalog lane holds 17 agents, 59 skills, and the workflow/hook scripts that back them. On commit, a pre-commit gate runs fast checks before pre-push gauntlet runs six validation layers. A callout notes that compliance-audit and deep-audit run on fresh context and are not auto-fired in the runtime loop.</desc>
 
     <defs>
-      <style>@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap");</style>
+      <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
       <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
         <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
       </marker>
@@ -184,7 +184,7 @@
       <rect x="984" y="422" width="56" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
       <text x="1012" y="431" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">HOOKS</text>
       <text x="1066" y="450" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">dispatch-*.sh · *.py</text>
-      <text x="1066" y="468" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">18 hook registrations</text>
+      <text x="1066" y="468" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">19 hook registrations</text>
       <text x="1066" y="482" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">9 events</text>
     </g>
 
