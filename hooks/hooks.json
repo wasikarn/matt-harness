@@ -166,6 +166,19 @@
         ]
       },
       {
+        "id": "stop:nudge-compliance-tracker",
+        "description": "Stop: measure flow-nudge compliance -- does an EnterPlanMode or advisor() tool call follow each plan-first nudge fire in this transcript. Re-derived stateless per Stop, appended to ~/.local/share/kbg/metrics/nudge-compliance.jsonl. Closes the Cue-without-Feedback gap named in mh-memory/requirement-analyst-flow-nudge-v0591-2026-07-18.md. Tier: minimal (always on) -- silent bookkeeping, not advisory noise.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "stop:nudge-compliance-tracker", "minimal", "${CLAUDE_PLUGIN_ROOT}/hooks/stop/nudge-compliance-tracker.sh"],
+            "async": true,
+            "timeout": 10
+          }
+        ]
+      },
+      {
         "id": "stop:memory-audit-commit",
         "description": "Stop: if the current project's memory store is already a git repo (opt-in, one-time user-run `git init` — this hook never inits it), commit any dirty changes for a real audit trail / rollback path. No-op otherwise. Tier: minimal (always on) -- silent bookkeeping, not advisory noise.",
         "hooks": [

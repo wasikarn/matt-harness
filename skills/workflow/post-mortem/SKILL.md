@@ -58,7 +58,7 @@ Draft the canonical engineering record of a fixed bug. This is the document that
 
 ## Phase 3: Draft
 
-**Goal**: Produce the post-mortem document using the 9-section template below.
+**Goal**: Produce the post-mortem document using the 10-section template below.
 
 **Tone check before writing**: re-read the Core Principles section above. Blameless, concrete, no hedging.
 
@@ -102,6 +102,10 @@ Example: "`test_tada_single_stream_sync` fails pre-fix, passes post-fix; CI gree
 ## 9. Follow-Ups
 Tracked items to prevent recurrence. Each item needs an **individual owner** (not a team) and a **verifiable completion criterion** — vague ownership is the most-cited reason follow-ups rot. If genuinely unassigned, write "Unowned — needs assignment" rather than skip the field.
 Example: "- [ ] Add dumbModel single-stream config to the CI workload matrix (owner: @priya, done when: it runs in CI nightly). - [ ] Audit all `numStreams` branches for the same assumption (owner: @jordan, done when: audit doc lists every branch + verdict). - [ ] Document fast-path policy: no sync skip without explicit safety proof (owner: Unowned — needs assignment)."
+
+## 10. Assumption Trace
+The belief in force before the incident: what the team assumed was true, why that seemed reasonable at the time, and the specific evidence that proved it wrong. Distinct from Root Cause (the code mechanism) — this is the human belief-state that let the mechanism go unquestioned. Distinct from Escape Reason (which process/check missed it) — this is what was believed, not what should have caught it.
+Example: "We assumed `numStreams == 1` meant single-GPU, so no sync was needed — reasonable, since every other fast-path in this file makes the same assumption. Proved wrong when tracing `deviceStreamSync()` showed a write still in flight on a supposedly single-stream launch."
 ```
 
 **Actions**:
@@ -152,6 +156,7 @@ Example: "- [ ] Add dumbModel single-stream config to the CI workload matrix (ow
 - **Gate revisit trigger (Rule 1)**: 3 repo-committed post-mortems now exist under `docs/post-mortems/` — re-check whether the Phase 1 four-input gate still causes abandonment, or drop this caveat. If usage shows people bouncing off it, loosen the gate before adding more structure elsewhere.
 - **Post-diagnosing-bugs workflow**: `mattpocock-skills:diagnosing-bugs` Phase 6 (Cleanup) requires the confirmed hypothesis stated in the commit/PR message, plus the regression test from Phase 5 and the minimised repro from Phase 2 — together these cover the 4 required inputs (reproducible trigger, known mechanism, identified patch, passing validation). That output IS the input to `mh:post-mortem` Phase 1. Run `mh:post-mortem` immediately after `diagnosing-bugs` concludes, while context is warm.
 - **Severity tier**: If the bug caused an incident (SLO breach, customer-visible outage), tag the post-mortem with the incident severity; otherwise it's standard.
+- **Section 10 (Assumption Trace) origin**: added 2026-08-30 after an article audit found all 4 real post-mortems under `docs/post-mortems/` shared the same gap — none named the specific belief that made the bug's root cause go unquestioned. Distinct from Escape Reason (process gap) and Root Cause (code mechanism); applies going forward, not retrofitted onto the 4 existing records.
 - **Hooks active**: `hooks/gates/verifier-protect.sh` asks for approval on edits to the gate/audit verifier surfaces, not CLAUDE.md/METHODOLOGY.md directly.
 - **Memory**: Write a `project` memory entry if the escape reason reveals a systemic gap (e.g., "CI matrix missing dumbModel" → `project_ci_gap_<date>.md`).
 

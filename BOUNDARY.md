@@ -160,6 +160,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | skill-usage-telemetry.sh | PostToolUse(Skill): journal every skill invocation to ~/.local/share/kbg/metrics/skill-usage.jsonl — usage evidence (not "feel") for the future matt-skill vs harness-skill overlap cull (#90/T11). This event has no decision control here — audit logging only, never a gate. |
 | cost-tracker.sh | Stop: log cumulative per-model token usage to ~/.local/share/kbg/metrics/costs.jsonl |
 | memory-audit-commit.sh | Stop: commit any dirty changes in the current project's memory store to its own git history. Restores a real audit trail / rollback path for the memory store, which previously had zero version control — see docs/research/agent-memory-engineering-2026-08-07.md proposal A4 (verified 2026-08-07: `git rev-parse --is-inside-work-tree` failed against the live store, confirmed, not assumed). |
+| nudge-compliance-tracker.sh | Stop: measure flow-nudge compliance -- did a plan-first nudge get acted on (EnterPlanMode, or a genuine advisor() consultation) before the NEXT nudge fired, or ignored. |
 | stale-task-nudge.sh | Stop: nudge the model when a task it created is still `in_progress` right as the turn ends, with nothing in this turn touching it — the exact shape of a real incident (2026-08-09): a task was marked in_progress, a final report delivered as the turn's last output, and TaskUpdate(completed) never called. Caught only because the user happened to ask "check tasks that are still open". |
 | test-compliance-audit-nudge.sh | compliance-audit-nudge unit tests: simulates PostToolUse/Bash JSON payloads (with a real fixture transcript file for the ExitPlanMode-detection cases) and asserts stdout output (JSON with additionalContext) vs silence (nudge skipped). The hook never blocks, so all tests expect exit 0. Run standalone: bash tests/hooks/test-compliance-audit-nudge.sh |
 | test-config-write-guard.sh | Behavioral tests for config-write-guard.sh (#98, deferred backlog from spec #75). Run standalone: bash tests/hooks/test-config-write-guard.sh |
@@ -190,7 +191,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | crisp | Sole live-response register: concise, easy to read, human. Claude Code's Concise contract (result first, no preamble, full content for errors/security/destructive confirmations) as the base, with staff-engineer decision framing switched on only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-28T15:19:34Z_
+_Generated: 2026-08-30T04:48:40Z_
 
 ---
 
