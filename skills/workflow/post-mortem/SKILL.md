@@ -105,7 +105,8 @@ Example: "- [ ] Add dumbModel single-stream config to the CI workload matrix (ow
 
 ## 10. Assumption Trace
 The belief in force before the incident: what the team assumed was true, why that seemed reasonable at the time, and the specific evidence that proved it wrong. Distinct from Root Cause (the code mechanism) — this is the human belief-state that let the mechanism go unquestioned. Distinct from Escape Reason (which process/check missed it) — this is what was believed, not what should have caught it.
-Example: "We assumed `numStreams == 1` meant single-GPU, so no sync was needed — reasonable, since every other fast-path in this file makes the same assumption. Proved wrong when tracing `deviceStreamSync()` showed a write still in flight on a supposedly single-stream launch."
+**Hindsight-bias risk**: this section is written after the root cause is already known, which biases recall toward a cleaner, more-reasonable-sounding belief than what was actually held at the time. Anchor to something said or written *before* the fix was found — a commit message, a chat line, an earlier hypothesis in the same investigation. If no such contemporaneous artifact exists, say so explicitly ("no record of the belief before the fix — reconstructed from memory, may be biased by knowing the outcome") rather than presenting a reconstructed belief as fact.
+Example: "We assumed `numStreams == 1` meant single-GPU, so no sync was needed — reasonable, since every other fast-path in this file makes the same assumption. Proved wrong when tracing `deviceStreamSync()` showed a write still in flight on a supposedly single-stream launch. (Anchored to the investigation's own Slack thread, timestamped before the fix commit.)"
 ```
 
 **Actions**:
@@ -128,7 +129,8 @@ Example: "We assumed `numStreams == 1` meant single-GPU, so no sync was needed �
 5. When declaring a broader concern "resolved," "closed," or "already addressed" — as opposed to verifying one specific identifier — grep the affected file(s) for every other occurrence of the relevant term before asserting closure. State what was actually checked ("all N occurrences of X in file Y reflect the fix") rather than a blanket "verified against the diff" implying coverage it didn't do.
 6. Verify links (PR numbers, issue keys) are real.
 7. Ensure Section 4 (Symptom Linkage) actually connects Section 3 → Section 2. If it doesn't, the mechanism isn't fully understood.
-8. Render this checklist explicitly in your response — one line per action above, noting what was checked and the result — before presenting the final draft. Don't fold Phase 4's verification into another section's prose (e.g., a stray Section 9 bullet); a visible checklist keeps the checks re-verifiable later instead of just asserted, and resists silently skipping a step under compression.
+8. Check Section 10 (Assumption Trace) for hindsight-bias reconstruction: does the stated belief trace to something said or written before the fix was found, or is it a plausible-sounding story assembled after the fact? If no contemporaneous artifact exists, confirm the draft says so explicitly rather than presenting the reconstruction as fact.
+9. Render this checklist explicitly in your response — one line per action above, noting what was checked and the result — before presenting the final draft. Don't fold Phase 4's verification into another section's prose (e.g., a stray Section 9 bullet); a visible checklist keeps the checks re-verifiable later instead of just asserted, and resists silently skipping a step under compression.
 
 ---
 
