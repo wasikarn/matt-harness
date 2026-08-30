@@ -56,12 +56,21 @@ either.
 - A 2021 Frontiers systematic review (PMC8397507) found insufficient evidence
   that bias-mitigation interventions substantially help real-life decisions,
   and that abstract knowledge alone doesn't transfer.
-- Morewedge et al. (2015, *Policy Insights BBS*) and its field-validated
-  follow-up, Sellier, Scopelliti & Morewedge (2019, *Psychological Science*,
-  "Debiasing Training Improves Decision Making in the Field") found real,
-  2-3-month-persistent effects (19-29% fewer bias-driven errors in real case
-  write-ups) — but only from *engaging, repeated, feedback-driven* training
-  (serious games), never passive lectures.
+- Morewedge et al. (2015, *Policy Insights BBS*) found a single play of a
+  purpose-built serious game measurably reduced confirmation bias, bias blind
+  spot, and correspondence bias, with effects still measurable weeks to months
+  later. Its field-validated follow-up, Sellier, Scopelliti & Morewedge (2019,
+  *Psychological Science*, "Debiasing Training Improves Decision Making in the
+  Field," corrigendum at PubMed 32423341), found trained graduate students
+  were 19% less likely to choose the inferior, bias-confirming option in an
+  unannounced real business-case exercise modeled on the Challenger launch
+  decision — but only from *engaging, repeated, feedback-driven* training (the
+  same serious game), never passive lectures. (Verified directly against
+  primary-source search results 2026-08-30, not just the doc's own earlier
+  paraphrase — the original draft blended a 19-29% range and a "2-3-month"
+  figure across both papers without attributing which came from which; only
+  the 19% Sellier figure could be pinned down with confidence, so the
+  Morewedge-specific number is described qualitatively instead of guessed.)
 - Net: the literature's own split maps almost exactly onto the article's
   Knowledge vs. Cue/Routine/Repetition/Feedback distinction — passive
   knowledge fails to transfer, practiced/reinforced routines do.
