@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Session/Stop hook smoke tests: doctrine-bootstrap (SessionStart),
 # command-root-anchor (SessionStart), memory-health-nudge (SessionStart),
-# cost-tracker (Stop), memory-audit-commit (Stop). These hooks never block
+# cost-tracker (Stop), nudge-compliance-tracker (Stop), memory-audit-commit (Stop).
+# These hooks never block
 # (no permissionDecision) —
 # tests assert exit 0 + expected side effect (stdout injection / env-file
 # append / metrics-file append), and that each fails safe (exit 0, no side
@@ -14,6 +15,7 @@ DOCTRINE="$ROOT/hooks/session/doctrine-bootstrap.sh"
 ROOT_ANCHOR="$ROOT/hooks/session/command-root-anchor.sh"
 MEMORY_NUDGE="$ROOT/hooks/session/memory-health-nudge.sh"
 COST_TRACKER="$ROOT/hooks/stop/cost-tracker.sh"
+NUDGE_COMPLIANCE_TRACKER="$ROOT/hooks/stop/nudge-compliance-tracker.sh"
 MEMORY_COMMIT="$ROOT/hooks/stop/memory-audit-commit.sh"
 STALE_TASK_NUDGE="$ROOT/hooks/stop/stale-task-nudge.sh"
 
@@ -605,6 +607,116 @@ rc=$?
 assert "same path-traversal-shaped taskId, fired again → silent (dedup still works, not bypassed by sanitization)" "$ok"
 
 trash "$nudge_fix" "$nudge_home" 2>/dev/null || true
+
+echo ""
+echo "=== nudge-compliance-tracker hook (Stop) ==="
+
+# make_fire_line -- one flow-nudge fire, as it actually appears in a transcript
+# (attachment/hook_success/UserPromptSubmit, content prefix-matched by the hook).
+make_fire_line() {
+  python3 -c 'import json; print(json.dumps({"type": "attachment", "attachment": {"type": "hook_success", "hookName": "UserPromptSubmit", "content": "[mh:flow-nudge] Non-trivial work detected — interrogate..."}}))'
+}
+# make_enterplanmode_line -- a real EnterPlanMode tool_use, as it appears on an
+# assistant-type transcript line.
+make_enterplanmode_line() {
+  python3 -c 'import json; print(json.dumps({"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "EnterPlanMode", "input": {}}]}}))'
+}
+# make_advisor_line -- a genuine advisor() consultation, per the real shape found by the
+# 2026-08-30 audit: nested under message.usage.iterations[], not a top-level tool_use.
+make_advisor_line() {
+  python3 -c 'import json; print(json.dumps({"type": "assistant", "message": {"content": [], "usage": {"iterations": [{"type": "advisor_message"}]}}}))'
+}
+make_noise_line() {
+  python3 -c 'import json; print(json.dumps({"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Read", "input": {}}]}}))'
+}
+
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+{ make_fire_line; make_enterplanmode_line; } > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-session"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$NUDGE_COMPLIANCE_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/nudge-compliance.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" && "$out" == "$payload" && -f "$metrics_file" ]] \
+  && printf '%s' "$row" | /usr/bin/grep -q '"nudges_fired":1' \
+  && printf '%s' "$row" | /usr/bin/grep -q '"nudges_complied":1' \
+  && printf '%s' "$row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null && ok=1 || ok=0
+assert "one fire + EnterPlanMode after it -> 1 fired, 1 complied" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+{ make_fire_line; make_noise_line; } > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-session"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$NUDGE_COMPLIANCE_TRACKER" 2>/dev/null)
+metrics_file="$fake_home/.local/share/kbg/metrics/nudge-compliance.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+printf '%s' "$row" | /usr/bin/grep -q '"nudges_fired":1' \
+  && printf '%s' "$row" | /usr/bin/grep -q '"nudges_complied":0' && ok=1 || ok=0
+assert "one fire, no EnterPlanMode/advisor after it -> 1 fired, 0 complied" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
+# Regression test for the bounded-window fix (2026-08-30 deep-audit): an earlier
+# draft used "any later response marks every earlier fire compliant" -- fire#1 with
+# nothing before fire#2, fire#2 with EnterPlanMode after it, must score 1/2, not 2/2.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+{ make_fire_line; make_fire_line; make_enterplanmode_line; } > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-window"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$NUDGE_COMPLIANCE_TRACKER" 2>/dev/null)
+metrics_file="$fake_home/.local/share/kbg/metrics/nudge-compliance.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+printf '%s' "$row" | /usr/bin/grep -q '"nudges_fired":2' \
+  && printf '%s' "$row" | /usr/bin/grep -q '"nudges_complied":1' && ok=1 || ok=0
+assert "two fires, response only before the 2nd -> 1/2 complied, not 2/2 (bounded window, not 'any later')" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+{ make_fire_line; make_advisor_line; } > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-advisor"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$NUDGE_COMPLIANCE_TRACKER" 2>/dev/null)
+metrics_file="$fake_home/.local/share/kbg/metrics/nudge-compliance.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+printf '%s' "$row" | /usr/bin/grep -q '"nudges_fired":1' \
+  && printf '%s' "$row" | /usr/bin/grep -q '"nudges_complied":1' && ok=1 || ok=0
+assert "advisor_message iteration (not a tool_use) also counts as compliance" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+printf 'this is not json\n{ broken\n' > "$transcript"
+{ cat "$transcript"; make_fire_line; make_enterplanmode_line; } > "${transcript}.mixed"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-malformed"}))' "${transcript}.mixed")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$NUDGE_COMPLIANCE_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/nudge-compliance.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" ]] && printf '%s' "$row" | /usr/bin/grep -q '"nudges_fired":1' \
+  && printf '%s' "$row" | /usr/bin/grep -q '"nudges_complied":1' && ok=1 || ok=0
+assert "malformed lines interleaved with a real fire don't crash the pass or skew the count" "$ok"
+trash "$fake_home" "$transcript" "${transcript}.mixed" 2>/dev/null || true
+
+fake_home=$(mktemp -d)
+payload=$(python3 -c 'import json; print(json.dumps({"transcript_path": "/nonexistent/transcript.jsonl", "session_id": "test-session"}))')
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$NUDGE_COMPLIANCE_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/nudge-compliance.jsonl"
+[[ "$rc" == "0" && "$out" == "$payload" && ! -f "$metrics_file" ]] && ok=1 || ok=0
+assert "fails safe (exit 0, echoes payload, no metrics row) for a missing transcript" "$ok"
+trash "$fake_home" 2>/dev/null || true
+
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+make_fire_line > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-nojq"}))' "$transcript")
+out=$(printf '%s' "$payload" | env PATH="$NOPY_BIN" HOME="$fake_home" bash "$NUDGE_COMPLIANCE_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/nudge-compliance.jsonl"
+[[ "$rc" == "0" && "$out" == "$payload" && ! -f "$metrics_file" ]] && ok=1 || ok=0
+assert "no jq on PATH -> echoes payload, exit 0, zero metrics rows (#93)" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
 
 echo ""
 total=$((pass + fail))

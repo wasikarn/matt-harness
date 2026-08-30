@@ -28,10 +28,28 @@
 #
 # Re-derives from the full transcript every Stop (stateless, no counter file to corrupt
 # or fall out of sync -- same convention as hooks/stop/cost-tracker.sh) and appends one
-# row per Stop to nudge-compliance.jsonl. Rolling compliance rate for a session:
-#   jq -s '[.[] | select(.session_id=="<sid>")] | max_by(.timestamp) | .nudges_complied / (.nudges_fired // 1)' nudge-compliance.jsonl
+# row per Stop to nudge-compliance.jsonl. Each row's own fired/complied counts only ever
+# grow within a session (re-derived from the whole transcript so far), so the LATEST row
+# per session is found by max_by(.nudges_fired), not max_by(.timestamp) -- two Stop hooks
+# firing in the same UTC second (async:true, back-to-back turns) can tie on timestamp and
+# pick a stale, lower count; nudges_fired is monotonic within a session by construction and
+# never ties on a real progression. Rolling compliance rate for a session:
+#   jq -s '[.[] | select(.session_id=="<sid>")] | max_by(.nudges_fired) | .nudges_complied / (.nudges_fired // 1)' nudge-compliance.jsonl
 # Across all sessions (last row per session_id, since rows accumulate per-Stop):
-#   jq -s 'group_by(.session_id) | map(max_by(.timestamp)) | (map(.nudges_complied) | add) / (map(.nudges_fired) | add)' nudge-compliance.jsonl
+#   jq -s 'group_by(.session_id) | map(max_by(.nudges_fired)) | (map(.nudges_complied) | add) / (map(.nudges_fired) | add)' nudge-compliance.jsonl
+#
+# Known ceiling (2026-08-30 deep-audit): attachment.hookName, attachment.content, and
+# message.usage.iterations[].type=="advisor_message" are real but internal, undocumented
+# Claude Code transcript fields with no public schema guarantee -- the same class of risk
+# hooks/advisory/plan-review-nudge.sh already names for tool_response.plan. If a future
+# Claude Code version renames or relocates any of them, this hook keeps running, keeps
+# exiting 0, and silently reports nudges_complied:0 forever -- indistinguishable from real
+# non-compliance, with nothing else to catch it. No fix possible from inside this repo (the
+# shape is CC's contract, not ours) -- tests/hooks/test-session-stop.sh's
+# "nudge-compliance-tracker hook" section fixtures these exact field names, so it goes quiet
+# in lockstep with the hook on a real schema change; re-run a live-fire smoke test (fire a
+# real flow-nudge, call advisor() or EnterPlanMode, check nudge-compliance.jsonl) after any
+# Claude Code version bump.
 set -uo pipefail
 
 payload=$(cat)
