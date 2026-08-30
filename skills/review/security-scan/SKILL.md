@@ -70,7 +70,9 @@ Return:
 4. Lower-confidence findings grouped separately.
 5. A remediation order.
 6. Commands run and whether the scan was local, CI, or npx-backed.
-7. Suggested next step: critical/high findings in application code → mh:security-auditor for a deeper code-vulnerability pass; clean scan or only lower-confidence inventory items → done.
+7. **Suggested next step:**
+   - Critical/high findings in application code → `mh:security-auditor` for a deeper code-vulnerability pass.
+   - Clean scan or only lower-confidence inventory items → done.
 
 ## CI Pattern
 

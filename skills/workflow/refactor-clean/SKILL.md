@@ -21,4 +21,6 @@ The agent returns:
 2. Items skipped, with the reason (test failed, dynamic import, public API, uncertain).
 3. Test status before and after — verify green both times before keeping a deletion.
 4. Lines saved.
-5. Suggested next step: deletions landed, tests green → mattpocock-skills:code-review before shipping the removal; nothing safe to remove → done.
+5. **Suggested next step:**
+   - Deletions landed, tests green → `mattpocock-skills:code-review` before shipping the removal.
+   - Nothing safe to remove → done.

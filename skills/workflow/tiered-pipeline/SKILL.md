@@ -78,6 +78,7 @@ pushes, or ships — the result returns to the human.
 - Does **not** loop past the shared 3-fix cap — exhaustion stops and reports.
 - Does **not** substitute for PR review (`mattpocock-skills:code-review`) or a quick inline edit.
 
-**Suggested next step:** on `approved`, review the diff yourself and commit;
-on `needs-human`/`escalated`, read the open findings and decide — rerun with a
-sharper task, fix by hand, or drop it.
+**Suggested next step:**
+- `approved` → review the diff yourself and commit.
+- `needs-human`/`escalated` → read the open findings and decide: rerun with a sharper task,
+  fix by hand, or drop it.

@@ -60,18 +60,46 @@ catalog pointer, never "this lens proves correctness"). The curated catalog is
 cc-thinking-skills repo it links to — kbg does not vendor them locally.
 
 **Suggested next step footers:** a workflow skill run as a discrete
-step may end its Output/Summary phase with a `Suggested next step:` marker — outcome-branched
-(`situation → action`), citing skills as `mh:<name>` (the only surface type left — commands/
-retired 2026-08-25, #112). Skills are ALWAYS
-cited `mh:`-form (never `/name`) — get this right at authoring time: `harness-audit` check 37
-only catches rename/deletion drift on refs already in `mh:` form; check 46 catches a skill
-mis-cited in bare slash form (confirmed: this exact bug shipped historically — a former
-`commands/pr.md` and
+step may end its Output/Summary phase with a `**Suggested next step:**` marker — outcome-branched
+(`situation → action`). Canonical shape (copy `skills/review/pr/SKILL.md`'s footer, don't reinvent
+it): the bold marker alone on its own line, optionally prefixed by that phase's own step number
+(`4. **Suggested next step:**`), followed by one `- <outcome> → \`<surface>\`` bullet per branch.
+Not permitted: branches sharing the marker's line, an H2 heading in place of the marker, an
+unbolded or lowercase marker, or unbacktick'd surface names — `harness-audit` check 57 catches
+drift from this shape (file-level: it only requires the canonical line to appear somewhere in a
+file that mentions "suggested next step" at all, so it never fires on ordinary report-content
+prose like "a suggested next step per issue").
+
+An mh-owned skill is cited `mh:<name>` (this repo's own surface type — commands/ retired
+2026-08-25, #112). A **matt-owned** skill is cited `mattpocock-skills:<name>` the same way — the
+"ALWAYS `mh:`-form" framing this section used to carry was narrower than shipped practice
+(`bug-sweep`, `refactor-clean`, and `complexity-check` all correctly cite
+`mattpocock-skills:code-review`/`diagnosing-bugs`). Either namespace, model-invocable, cite bare;
+`disable-model-invocation: true` on either side means the footer prints the literal slash string
+the user types themselves — `` `/mh:<name>` `` or `` `/mattpocock-skills:<name>` `` — never
+"invoke X now" in either case. Verified 2026-08-30: a namespaced slash citation like
+`` `/mattpocock-skills:implement` `` does not false-positive check 46 (its bare-`/name` regex
+requires no `:` before the closing backtick).
+
+**Passive footer, active runtime — a deliberate split, not a loophole.** The footer text itself
+stays passive: never "invoke X now" / auto-chain (that collides with the no-model-self-start
+doctrine) — get this right at authoring time, since `harness-audit` check 37 only catches
+rename/deletion drift on refs already in `mh:` form, and check 46 catches a skill mis-cited in
+bare slash form (confirmed: this exact bug shipped historically — a former `commands/pr.md` and
 `diagnosing-bugs/SKILL.md` both cited a skill as `/name` undetected until a manual survey caught
-it, v0.35.0). Passive suggestion only — never "invoke X now" / auto-chain (that collides with the
-no-model-self-start doctrine). Skip self-contained reference/pattern/catalog surfaces (a forced
+it, v0.35.0). What the footer's passivity does NOT constrain is the model's own next turn: once a
+model-invocable skill's footer names a next step, the model may act on it in that turn exactly as
+it would on any other self-invocable skill trigger — the doctrine gates the *text a skill's
+author writes*, not whether the *runtime model* may continue. A gated (`disable-model-invocation`)
+next step still requires relaying the literal string for the user to type; that boundary is
+unaffected.
+
+Skip self-contained reference/pattern/catalog surfaces (a forced
 footer there is the retired canonical-sections ceremony, 2026-06-16) and terminal workflows
-(post-mortem, ship-release terminus).
+(post-mortem, ship-release terminus). No `PostToolUse (Skill)` hook exists for this and none is
+planned: that event fires when a skill's instructions *load*, not when its work finishes, so a
+completion-time nudge there would fire at the wrong moment — the footer text embedded in the
+skill's own Output phase is the only mechanism.
 
 **`model_limitation:` frontmatter field:** optional, kbg-native (non-standard-but-harmless
 per root `CLAUDE.md`'s skill/agent mechanics section). Declare it when a skill's correctness rests on

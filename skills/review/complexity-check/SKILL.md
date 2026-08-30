@@ -118,7 +118,7 @@ Python/JS surface only — say so rather than implying full coverage.
 <!-- ponytail: bash coverage gap, add a shell-specific CCN heuristic (or a dedicated
      tool) only if a real need shows up — don't build one speculatively. -->
 
-## Suggested next step
-
-Hotspots found → `ponytail:ponytail-review` or `mattpocock-skills:code-review` for a
-broader look at whether the complexity is warranted. Clean scan → no action needed.
+**Suggested next step:**
+- Hotspots found → `ponytail:ponytail-review` or `mattpocock-skills:code-review` for a
+  broader look at whether the complexity is warranted.
+- Clean scan → no action needed.

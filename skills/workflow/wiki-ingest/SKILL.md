@@ -99,5 +99,5 @@ Report back:
 2. `ingest.sh`'s own stdout verbatim.
 3. The `hotcache.md` diff-stat check from gotcha 3 — explicit skip notice if
    it didn't change.
-4. Suggested next step: `mh:wiki-scan` to confirm the new page doesn't
-   introduce an orphan or a broken citation.
+4. **Suggested next step:**
+   - `mh:wiki-scan` to confirm the new page doesn't introduce an orphan or a broken citation.

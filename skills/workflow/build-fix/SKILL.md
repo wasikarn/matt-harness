@@ -21,4 +21,8 @@ The agent returns:
 2. Errors remaining, if any.
 3. New errors introduced (should be zero) — verify by re-running the build, not by inspection.
 4. Unresolved issues, if any — with a suggested next step per issue.
-5. If no unresolved issues remain: suggested next step — a compiling build is not a passing one, run the test suite / mh:test-coverage before continuing.
+
+**Suggested next step:**
+- No unresolved issues remain → a compiling build is not a passing one; run the test suite /
+  `mh:test-coverage` before continuing.
+- Unresolved issues remain → see the per-issue suggestion in item 4 above.

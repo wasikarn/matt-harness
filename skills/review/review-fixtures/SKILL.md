@@ -191,7 +191,7 @@ more skepticism. Don't edit the target file as part of this command — that's a
 decision. Confirm `<iteration-path>/dispatch-prompts.md` was actually written (Step 6) before
 reporting done — a skipped save silently loses the only reproducible record.
 
-Suggested next step:
+**Suggested next step:**
 - Findings trace to the target file → open it (Step 1's resolved path), apply the fix, then
   re-run fixtures to measure the change (don't ship an unmeasured fix as proven). **When
   re-running, hand the agent the repo file path, never a name-based reference** — the

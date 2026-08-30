@@ -41,7 +41,13 @@ Run before publishing. Each item must be checkable. See CLAUDE.md's "Skill autho
   shipped that exact mistake until fixed 2026-08-29). See `skills/meta/compress-docs/SKILL.md`
   for the correct shape.
 - [ ] **Named Model footer** — if the skill makes load-bearing reasoning/judgment choices, add a `## Named Model` footer citing cc-thinking-skills lenses from `docs/reference/reasoning-models.md`, framed as a scaffold (not proof of correctness). Skip for purely mechanical/catalog surfaces. **Same edit, update the catalog row too**: `reasoning-models.md`'s unified index table only reflects reality if every new footer updates the cited model's `status`/`kbg home` cells there — confirmed drift 2026-07-14 (`theory-of-constraints`/`leverage-points` sat marked "considered — no live anchor" for 11 days after `agents/performance-optimizer.md` applied them in v0.30.2).
-- [ ] **Suggested next step** — if this is a workflow skill a user runs as a discrete step, end with a `Suggested next step:` marker (outcome-branched; skills `mh:<name>`, commands `/<name>`). Skip for reference/pattern/catalog surfaces and terminal workflows.
+- [ ] **Suggested next step** — if this is a workflow skill a user runs as a discrete step, end its Output/Summary
+  phase with `**Suggested next step:**` (optionally prefixed by that phase's own step number, e.g. `4. **Suggested
+  next step:**`) followed by one outcome-branched bullet per case: `- <outcome> → \`mh:<name>\`` for a model-invocable
+  skill, or the literal `/mh:<name>` / `/mattpocock-skills:<name>` for a gated one (`disable-model-invocation: true`)
+  the user must type themselves. Passive suggestion only — never "invoke X now" or auto-chain. Skip for
+  reference/pattern/catalog surfaces and terminal workflows. `commands/` retired 2026-08-25 (#112); there is no
+  command form to cite anymore. Full convention + canonical example: `docs/skill-authoring-conventions.md`.
 
 # Your Skill Title
 
