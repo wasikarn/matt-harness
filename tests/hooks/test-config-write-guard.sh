@@ -64,6 +64,17 @@ ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
 check "dangling symlink already at settings.json path -> unreadable, cannot verify -> ask" "$ok"
 rm -f "$FIXTURE/.claude/settings.json"
 
+# Regression: a stray non-UTF-8 byte anywhere in the on-disk file used to
+# raise UnicodeDecodeError, which is NOT an OSError subclass -- it fell
+# through the local except into the outer bare except and silently allowed,
+# even when the edit unambiguously rewrites hooks. Found by compliance-audit
+# adversarial verification 2026-08-30.
+printf '{"hooks":{"PreToolUse":[]},\xff\xfe"other":1}' > "$FIXTURE/.claude/settings.json"
+out=$(payload_write_content "$FIXTURE/.claude/settings.json" '{"hooks":{"PreToolUse":[{"id":"evil"}]}}' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "on-disk file has invalid UTF-8 byte, edit changes hooks -> unreadable, cannot verify -> ask" "$ok"
+rm -f "$FIXTURE/.claude/settings.json"
+
 out=$(payload_write "$FIXTURE/.claude/config.json" | bash "$GUARD" 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "unrelated .claude/config.json (wrong basename) -> exit 0, no output" "$ok"

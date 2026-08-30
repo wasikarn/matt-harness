@@ -114,8 +114,17 @@ try:
     try:
         with open(path, "r") as f:
             old_raw = f.read()
-    except OSError:
-        old_raw = None  # dangling symlink or unreadable -- cannot verify
+    except (OSError, UnicodeDecodeError):
+        # OSError: dangling symlink or unreadable. UnicodeDecodeError: the
+        # on-disk file has a non-UTF-8 byte somewhere -- NOT an OSError
+        # subclass, so this needs its own arm. Without it, a single stray
+        # invalid byte anywhere in the file (from prior corruption or an
+        # unrelated Bash-mediated write) would fall through to the outer
+        # bare except and silently allow every subsequent Write/Edit against
+        # this file, including one that rewrites hooks/enabledPlugins --
+        # defeating the exact path this gate exists to cover. Cannot verify
+        # either way, so treat it the same as unreadable.
+        old_raw = None
 
     old_keys = security_keys(old_raw) if old_raw is not None else None
     new_raw = reconstruct(tool, ti, old_raw) if old_raw is not None else None
