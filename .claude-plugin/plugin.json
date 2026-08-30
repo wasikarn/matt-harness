@@ -1,7 +1,7 @@
 {
   "name": "mh",
   "displayName": "Matt Harness",
-  "version": "v0.68.560",
+  "version": "v0.68.561",
   "description": "A Matt-Pocock-first Claude Code harness. Its tiered pipeline has Fable plan, Sonnet execute, and Opus review with code-counted fix caps, then bug-hunt and a gated final review. Its idea-to-ship flow runs grill, prototype, spec, tickets, and ship. It adds computational deny-gates and advisory sensors, SessionStart doctrine injection, a self-auditing fleet of skills, agents, and hooks, and backend-stack support for Drizzle, MySQL/MariaDB, and gRPC.",
   "author": {
     "name": "wasikarn"

@@ -38,6 +38,25 @@ env-quirk notes), never something a hook checks for. `qmd` likewise has no hook 
 MCP tool referenced only in skill/command doctrine (hedged to "if configured" per ticket 94), not
 something any hook invokes or guards.
 
+## Audit-trail substrates are split, not unified
+
+"The audit trail" spans two separate substrates answering two different questions, not one
+store — worth naming explicitly since a single-database design (SQLite, one events table)
+was evaluated against this split and rejected as not unifying anything real:
+
+- **Categorical, append-only JSONL** — `hooks/gates/` and `hooks/advisory/` write per-install
+  runtime journals under `$HOME` (gate-decisions, costs, instructions-loaded, skill-usage,
+  nudge-compliance, precompact-snapshots). These answer "how often, and which category" —
+  they carry no free-text field, so there is nothing in them for full-text search to index.
+- **Prose, git-committed markdown** — decisions, research, and post-mortems as `docs/`
+  content and this repo's own memory store, both full-text-and-semantically searchable via
+  the `qmd` MCP. These answer "what happened and why."
+
+Nothing currently joins the two — reading "how often" and "why" together means querying
+both substrates separately by hand. That is a real gap, but it is a query-surface gap, not
+a storage gap: merging both into one SQLite database would not unify anything the two
+substrates don't already cover between them, just add a sync burden neither currently has.
+
 ## The 2×2 cell each event populates
 
 | Direction × Execution | Computational (deterministic) | Inferential (semantic) |

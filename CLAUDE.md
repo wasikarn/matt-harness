@@ -26,8 +26,12 @@ Auto-discovered directories this plugin currently uses: `agents/`, `skills/`, `h
 "the 5 this plugin ships," not an exhaustive list of what Claude Code plugins support more
 broadly (`workflows/`, `.mcp.json`, `.lsp.json`, `monitors/monitors.json`, `bin/`, and a
 plugin-root `settings.json` are also real, just unused here — confirmed against
-`code.claude.com/docs/en/plugins-reference.md`, 2026-08-29). The step-by-step (inlined from the
-removed `add-surface` skill, 2026-08-24 #80):
+`code.claude.com/docs/en/plugins-reference.md`, 2026-08-29). Drafting a brand-new skill's
+content from scratch (the interview → draft SKILL.md → eval → iterate loop) is what the
+installed `skill-creator:skill-creator` skill is for — run that first, then continue with
+step 1 below for the file's placement and step 3 onward for shipping it; skill-creator has
+no awareness of this repo's own manifest/version-bump/BOUNDARY.md ritual. The step-by-step
+(inlined from the removed `add-surface` skill, 2026-08-24 #80):
 
 1. Create/remove the file(s), following the pattern of an existing component in the same
    directory. A new skill/agent needs `bucket:` frontmatter (top-level key, right after
