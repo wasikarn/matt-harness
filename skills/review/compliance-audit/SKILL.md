@@ -1,6 +1,6 @@
 ---
 name: compliance-audit
-description: "Compliance-audit: verify a finished implementation against its plan via fresh-context verifiers. Use after a multi-phase plan. Don't use for an unplanned diff (mattpocock-skills:code-review)."
+description: "Compliance-audit: verify a finished implementation against its plan via fresh-context verifiers."
 argument-hint: Optional path to the plan file, PR number, or commit range
 disable-model-invocation: true
 disable-model-invocation-reason: costly multi-agent fan-out that gates a done-declaration — user decides when the audit runs, not the model
@@ -17,6 +17,9 @@ review: quality/security/style lenses belong to `mattpocock-skills:code-review` 
 `mh:security-auditor`; production readiness belongs to `mh:production-audit`.
 Pre-code mirror image: `mh:plan-reviewer` reviews the plan before code exists;
 this audits the diff after.
+
+**When to use / not:** use after a multi-phase plan. Don't use for an unplanned diff
+(`mattpocock-skills:code-review`).
 
 ## Core Principles
 

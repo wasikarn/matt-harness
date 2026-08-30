@@ -1,6 +1,6 @@
 ---
 name: wiki-ingest
-description: "Ingest a source document into the llm-wiki vault. Use when saving a document there. Don't use for searching (qmd MCP) or kbg's own memory (mh:learn)."
+description: "Ingest a source document into the llm-wiki vault."
 argument-hint: <absolute/path/to/source.md> [topic]
 disable-model-invocation: true
 disable-model-invocation-reason: mutates the operator's personal vault outside this repo — copies into raw/, creates a wiki/ page, and appends to log.md (and, when the guard allows it, hotcache.md). A human must type /mh:wiki-ingest themselves.
@@ -14,6 +14,9 @@ Copy a source document into `~/llm-wiki` and register it — wraps the vault's
 own `scripts/ingest.sh`, never reimplements it. User-invoked only: this writes
 to the operator's personal vault, outside this repo, and the write is
 append-only-by-design rather than cleanly reversible.
+
+**When to use / not:** use when saving a document there. Don't use for searching (`qmd` MCP) or
+kbg's own memory (`mh:learn`).
 
 ## Usage
 

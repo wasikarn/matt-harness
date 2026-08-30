@@ -1,6 +1,6 @@
 ---
 name: ship-release
-description: "Ship a release: bump, changelog, review gate, tag, merge, monitor. Use when cutting a release. Don't use for PR merges (mh:ship-merge) or hotfixes."
+description: "Ship a release: bump, changelog, review gate, tag, merge, monitor."
 argument-hint: Optional version-bump type (major / minor / patch) or specific version
 disable-model-invocation: true
 disable-model-invocation-reason: irreversible external — cuts a release (tag/merge/publish)
@@ -11,6 +11,9 @@ effort: high
 # Ship Release
 
 Cut a release from the current branch. This orchestrates version bump, changelog, final verification, tag, and merge — with gates at each step.
+
+**When to use / not:** use when cutting a release. Don't use for PR merges (`mh:ship-merge`) or
+hotfixes.
 
 ## Core Principles
 

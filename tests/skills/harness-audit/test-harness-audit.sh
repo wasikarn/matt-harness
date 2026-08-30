@@ -160,6 +160,28 @@ else
 fi
 unset MH_MATT_CACHE
 
+# Check 50 sub-check C — pipefail-abort regression guard (2026-08-30 drill-down).
+# `_row=$(grep -E ... "$_ledger" 2>/dev/null | head -1)` at line ~125 had no
+# `|| true`: a promoted matt skill entirely absent from the ledger — the exact
+# state right after an upstream rename, before the ledger catches up, i.e. the
+# scenario this sub-check exists to catch — makes grep exit 1, pipefail
+# propagates through head, and set -e kills the whole audit.sh process with no
+# `=== Summary` line. Same class of guard as the check-39 test above, but
+# run_check()'s Critical/Warnings/Info parse can't detect this failure mode: on
+# a crash those lines never print, so run_check() silently reports 0/0/0,
+# indistinguishable from "check ran clean" — hence the raw-output capture here
+# instead of routing through run_check().
+export MH_MATT_CACHE="$FIX/check-50-crash-ledger-gap/fake-matt-cache"
+CHECK50C_OUT=$(bash "$AUDIT" "$FIX/check-50-crash-ledger-gap" --only 50 2>&1 || true)
+unset MH_MATT_CACHE
+if printf '%s\n' "$CHECK50C_OUT" | grep -q "ledger row missing for promoted matt skill 'foo'" \
+   && printf '%s\n' "$CHECK50C_OUT" | grep -q "=== Summary"; then
+  ok "check-50 crash-ledger-gap fixture: sub-check C warns without crashing (pipefail regression)"
+else
+  bad "check-50 crash-ledger-gap fixture crashed or missed the WARN:
+$CHECK50C_OUT"
+fi
+
 # Check 39 — grep -c pipefail-abort regression guard (2026-08-17 bug sweep).
 # `_count=$(grep -c ... 2>/dev/null)` with no `|| true` dies under set -e when
 # the pattern legitimately has zero matches — the exact doc-rot condition this

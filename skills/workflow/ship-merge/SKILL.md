@@ -1,6 +1,6 @@
 ---
 name: ship-merge
-description: "Ship a PR: validate, server-side merge, monitor CI. Use when a reviewed PR is ready to land. Don't use for failing CI or hotfixes (mh:incident)."
+description: "Ship a PR: validate, server-side merge, monitor CI."
 argument-hint: Optional PR number or branch name
 disable-model-invocation: true
 disable-model-invocation-reason: external, irreversible action — executes a server-side PR merge on GitHub that cannot be undone; only a human-typed /mh:ship-merge, confirmed through Phase 2's explicit go/no-go, may trigger it
@@ -9,6 +9,9 @@ effort: high
 ---
 
 # Ship Merge
+
+**When to use / not:** use when a reviewed PR is ready to land. Don't use for failing CI or
+hotfixes (`mh:incident`).
 
 **Needs**: the `gh` CLI installed and authenticated (`gh auth status`) — every phase below merges and validates through it.
 

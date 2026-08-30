@@ -220,7 +220,11 @@ print(c['strict'], c['standard'], c['minimal'], c['untiered'])
       # so a real double-digit geometry failure would have silently passed
       # as clean. Found and fixed by deep-audit (2026-08-28).
       _out=$(python3 "$_VERIFY_GEOM" "$_f" 2>&1 || true)
-      _geom_count=$(printf '%s' "$_out" | grep -oE '[0-9]+ finding' | grep -oE '^[0-9]+' | head -1)
+      # `|| true` neutralises `set -e` propagation when neither grep matches
+      # (verify-geometry.py output with no "N finding" text at all — e.g. it
+      # raised instead) — same idiom as check 34's `triggers=$(... ) || true`,
+      # same bug class as check 50:125, both confirmed by the 2026-08-30 sweep.
+      _geom_count=$(printf '%s' "$_out" | grep -oE '[0-9]+ finding' | grep -oE '^[0-9]+' | head -1) || true
       if [ "${_geom_count:-}" != "0" ]; then
         warn "diagram-drift check 56: verify-geometry.py failed on ${_f#"$CLAUDE_DIR"/} — $(printf '%s' "$_out" | tr '\n' ' ')"
       fi

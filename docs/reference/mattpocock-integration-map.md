@@ -20,7 +20,7 @@ routed only when a kbg surface has a concrete reason to name the skill.
 | skill | invocation | kbg touchpoint / deferral |
 |---|---|---|
 | ask-matt | user | the actual routing layer — `CLAUDE.md`'s "Finding a surface" section sends routing questions to `/mattpocock-skills:ask-matt` directly (kbg's own routers, `ask-kbg` + `kbg-help`, removed 2026-08-24 #80) |
-| code-review | model | adopted — the review surface since the kbg review pipeline retired (2026-08-24 #82) |
+| code-review | model | adopted — the review surface since the kbg review pipeline retired (2026-08-24 #82); shares its bare name with Claude Code's own first-party bundled skill (`/code-review`, alias `/review`) — namespacing means no real conflict, but bare `/code-review` typed from muscle memory resolves to Anthropic's skill, not matt's |
 | codebase-design | model | deferred — ask-matt's map owns it; kbg's native design agents are `mh:code-architect` / `mh:backend-architect` |
 | diagnosing-bugs | model | `docs/agent-voice-extension.md`, `skills/workflow/post-mortem/SKILL.md` (input-contract source since `commands/fix-bug` retired, 2026-08-24 #86) |
 | domain-modeling | model | `docs/agents/domain.md`, `docs/reference/judgment-ladder.md`, `docs/reference/strategic-judgment.md` |
@@ -44,3 +44,43 @@ routed only when a kbg surface has a concrete reason to name the skill.
 | to-questionnaire | user | deferred — ask-matt's map owns it (decision → stakeholder questionnaire) |
 | wait-what | user | deferred — ask-matt's map owns it (re-pitch last reply) |
 | writing-for-agents | model | root `CLAUDE.md`'s Skill authoring doctrine section, `docs/skill-authoring-conventions.md` (canonical authoring doctrine; renamed from writing-great-skills in matt v1.2.0) |
+
+## Reverse handoffs
+
+Places where matt names a real, undocumented gap in his own docs and an mh mechanism happens to
+answer it — not designed as a fix, discovered by reading matt's own text closely. Written up
+2026-08-30 after two of these were found once, forgotten (no memory, no doc, no git trace), and had
+to be rediscovered from scratch on a second sweep. Each entry: matt's own quote, mh's answer, and
+the caveat stated plainly — a partial answer written up as partial, not as a clean win.
+
+1. **triage's missing "deferred/not-now" state ↔ mh's `parked` label.** Matt's own
+   `docs/engineering/triage.md`: *"Five states aren't enough... Matt has agreed the blocked case is
+   real... None of it has shipped. The workaround people use is a repo-local extra label."* mh's
+   `docs/agents/triage-labels.md`'s `parked` label is exactly that workaround. Partial: answers 1 of
+   matt's 3 named shapes (deferred/not-now), not `blocked`-on-issue or awaiting-verification.
+
+2. **research's no cross-session reuse ↔ mh's qmd-first rule.** Matt's own
+   `docs/engineering/research.md`: *"Does a later session reuse what an earlier run found? No...
+   The shipped skill does not solve it."* mh's `CLAUDE.md` "Research: check qmd before web search"
+   section is a standing, automatic semantic-search-first rule — qualitatively past "fetch it
+   again." Caveat: `qmd` isn't bundled with the plugin, operator-environment-dependent.
+
+3. **improve-codebase-architecture's CDN-fragile HTML report ↔ mh's diagram-design doctrine.**
+   Matt's own `docs/engineering/improve-codebase-architecture.md`: *"The report loads Tailwind and
+   Mermaid from CDNs, so it needs network access when you open it, and it breaks silently when
+   something blocks those scripts... This is an open issue and a real rough edge."* — and names the
+   fix himself: *"The workaround is to ask for inline CSS and hand-built SVG diagrams instead of
+   the CDN scaffold."* mh's user-global CLAUDE.md points at the third-party `diagram-design` skill,
+   whose output is exactly that self-contained single HTML file. Caveat: third-party plugin, and it
+   replaces the diagram half of matt's report shape, not the whole report.
+
+4. **implement's no parallel-session support ↔ mh's worktree-guard.py.** Matt's own
+   `docs/engineering/implement.md`: *"one field report describes a `git commit --amend` in one
+   session landing on another session's commit, a stash vanishing from `refs/stash`, and commits
+   landing on the wrong branch, all in a single afternoon across three issues."* mh's
+   `hooks/gates/worktree-guard.py` auto-redirects concurrent-session writes into per-session
+   worktrees. Three caveats, and the third is matt's own: opt-in via `MH_GUARDED_WORKSPACE` (no
+   default); Bash-mediated writes — the exact `--amend` case — deny rather than redirect; and matt
+   rules the whole worktree approach a partial answer, *"note that `refs/stash` is shared across
+   worktrees too, so worktrees alone do not fix the stash case."* mh's answer is worktree-based, so
+   it inherits that limit unchanged.

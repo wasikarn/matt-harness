@@ -1,6 +1,6 @@
 ---
 name: tiered-pipeline
-description: "Tiered: run a task through the Fable→Sonnet→Opus maker/checker pipeline (fixes, bug-hunt, gated review). Use when a task warrants multi-tier review. Don't use for quick edits."
+description: "Tiered: run a task through the Fable→Sonnet→Opus maker/checker pipeline (fixes, bug-hunt, gated review)."
 disable-model-invocation: true
 disable-model-invocation-reason: Spawns a multi-agent Workflow that edits real files with no in-flow AskUserQuestion gate, and the Workflow tool's own doctrine requires explicit user opt-in for multi-agent orchestration — the typed command IS that opt-in. Ambient prose like "run the pipeline on this" must never trigger 4-10 agents unprompted.
 model: inherit
@@ -16,6 +16,8 @@ cap 3, counted in code) → Opus bug-hunts (shared cap) → Fable final review
 (triage-gated)**. Every branch decision is computed in the script, never taken
 from model prose; verdicts are schema-forced and fail-closed. Nothing commits,
 pushes, or ships — the result returns to the human.
+
+**When to use / not:** use when a task warrants multi-tier review. Don't use for quick edits.
 
 ## Usage
 

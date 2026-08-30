@@ -39,9 +39,18 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
   fi
   # "Don't use for" in description (skill pattern) — exclude self during bootstrap.
   # Name-only skills (description ≤ 20 chars) carry no routing text; skip routing checks.
+  # Also excluded: `disable-model-invocation: true` skills, same reasoning check 47
+  # already applies to its own near-duplicate of this pair of checks — a gated
+  # skill's description is never read for auto-triggering at all (confirmed
+  # 2026-08-30: "removes the skill from Claude's context entirely",
+  # code.claude.com/docs/en/skills.md), so neither a negation clause nor a
+  # trigger-pattern clause in it does anything; matt's own rule is to keep
+  # these descriptions to a one-line human-facing summary and move that
+  # content into the body instead (`docs/reference/skill-agent-mechanics.md`).
   desc=$(fm_get "$f" "description" --block)
   desc_len=${#desc}
-  if [ "$name" != "harness-audit" ] && [ "$desc_len" -gt 20 ]; then
+  _gated=$(fm_get "$f" "disable-model-invocation" | tr -d ' ')
+  if [ "$name" != "harness-audit" ] && [ "$desc_len" -gt 20 ] && [ "$_gated" != "true" ]; then
     if ! echo "$desc" | grep -qiE "Don't use for|Do NOT use for|Do NOT trigger"; then
       warn "skill '$name' missing negation clause (e.g. 'Don't use for') in description"
     fi

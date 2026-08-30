@@ -1,6 +1,6 @@
 ---
 name: score-decision
-description: "Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices."
+description: "Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace."
 disable-model-invocation: true
 disable-model-invocation-reason: on-demand formal scorer — the model applies Decision Scoring (METHODOLOGY Rule 14) inline by default; this skill is the explicit, structured artifact the operator requests when a decision needs a traceable verdict
 argument-hint: "The pending decision to score"
@@ -11,6 +11,9 @@ effort: high
 # Score a Decision
 
 Apply the Decision Scoring Framework (METHODOLOGY Rule 14) to a pending decision — approve / reject / rank / recommend / optimize / validate — and return a structured, traceable verdict. **Score, not feel.**
+
+**When to use / not:** use when a decision needs a verdict. Don't use for trivial or already-decided
+choices.
 
 ## Procedure
 

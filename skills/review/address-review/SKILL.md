@@ -1,6 +1,6 @@
 ---
 name: address-review
-description: "Triage open PR review comments: fetch, classify, fix, reply. Use when replying to feedback; say 'address review/แก้ตามรีวิว'. Don't use for review (mattpocock-skills:code-review) or merge (mh:ship-merge)."
+description: "Triage open PR review comments: fetch, classify, fix, reply."
 argument-hint: Optional PR number
 disable-model-invocation: true
 disable-model-invocation-reason: external write — posts replies to GitHub PR review threads
@@ -11,6 +11,9 @@ effort: high
 # Address Review
 
 You are helping a developer respond to PR review feedback from someone else (human reviewer, mattpocock-skills:code-review, code-review-graph, external tool). Discipline: triage before fixing, fix in clusters, reply per-thread with a sha citation, leave zero open actionable threads on exit.
+
+**When to use / not:** use when replying to feedback; say "address review/แก้ตามรีวิว". Don't use
+for review itself (`mattpocock-skills:code-review`) or merge (`mh:ship-merge`).
 
 **Needs**: the `gh` CLI installed and authenticated (`gh auth status`) — every phase below reads/writes PR review threads through it.
 

@@ -1,6 +1,6 @@
 ---
 name: ideate-search
-description: "Ideate-search: past mh:ideate runs via the qmd collection. Use when recalling a prior run. Don't use for a new session (mh:ideate) or web research."
+description: "Ideate-search: past mh:ideate runs via the qmd collection."
 disable-model-invocation: true
 disable-model-invocation-reason: This is a user-only skill. The model should never invoke it unprompted; the user explicitly asks for a memory search. It's a read-only reporter against local state, so it is safe for the model to run when the user types it.
 model: inherit
@@ -10,6 +10,9 @@ effort: low
 # The ideate-search skill
 
 User-facing search across past `mh:ideate` runs.
+
+**When to use / not:** use when recalling a prior run. Don't use for a new session (`mh:ideate`)
+or web research.
 
 When the user types `mh:ideate-search` followed by a query, run the deterministic
 search helper and return the ranked results exactly as-is.

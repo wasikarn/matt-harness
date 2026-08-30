@@ -122,7 +122,15 @@ else
     warn "mattpocock integration ledger missing (docs/reference/mattpocock-integration-map.md): ${#_matt_promoted[@]} promoted skills unaccounted — route each from a kbg surface or record an explicit deferral"
   else
     for _pn in ${_matt_promoted[@]+"${_matt_promoted[@]}"}; do
-      _row=$(grep -E "^\|[[:space:]]*${_pn}[[:space:]]*\|" "$_ledger" 2>/dev/null | head -1)
+      # `|| true` neutralises `set -e` propagation when grep finds zero
+      # matches (the exact "no ledger row yet" state this loop exists to
+      # WARN about, e.g. right after an upstream rename) — same idiom as
+      # check 34's `triggers=$(... ) || true`. Confirmed 2026-08-30 by a
+      # repo-wide sweep: check 56:223 carried the identical bug (fixed
+      # alongside this one); check 35:45's same-shape line is safe by
+      # construction (its inner regex is a strict subset of the outer grep
+      # that produced its input) and was left alone.
+      _row=$(grep -E "^\|[[:space:]]*${_pn}[[:space:]]*\|" "$_ledger" 2>/dev/null | head -1) || true
       if [ -z "$_row" ]; then
         warn "ledger row missing for promoted matt skill '$_pn' — add a kbg route or an explicit deferral to docs/reference/mattpocock-integration-map.md"
         continue

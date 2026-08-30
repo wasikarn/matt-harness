@@ -30,9 +30,22 @@
 # check guards against doesn't apply to them the same way (a fleet-wide
 # survey found only 2/19 agents and 14/19 commands conformant — enforcing
 # there would be mostly low-value noise, not a signal).
+#
+# Also excluded: `disable-model-invocation: true` skills, for the identical
+# reason as agents/commands above — they are never auto-triggered on
+# description match either. Confirmed 2026-08-30, not assumed: the flag
+# "removes the skill from Claude's context entirely" (`code.claude.com/docs/en/skills.md`),
+# so a gated skill's description is never read for triggering at all, and a
+# "Don't use for X" disambiguation clause in it does nothing — matt's own
+# `writing-for-agents/SKILL-MECHANICS.md` rule is to keep these descriptions
+# to a one-line human-facing summary specifically because of this, moving
+# the disambiguation into the body instead (`docs/reference/skill-agent-mechanics.md`).
+# Enforcing this check against them would nudge authors to put the clause
+# back where it does nothing, undoing that fix.
 for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
   [ -f "$f" ] || continue
   case "$f" in */skills/_*) continue ;; esac
+  [ "$(fm_get "$f" "disable-model-invocation" | tr -d ' ')" = "true" ] && continue
   name=$(basename "$(dirname "$f")")
 
   desc=$(fm_get "$f" "description" --block)
