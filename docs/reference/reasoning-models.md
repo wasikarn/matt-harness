@@ -181,6 +181,23 @@ Read the full scaffold with Bash:
 cat "${MH_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"
 ```
 
+## Additional frameworks — not from cc-thinking-skills
+
+Found via primary-source research (2026-08-30, see
+`docs/research/thinking-skills-frameworks-followup-research-2026-08-30.md`), each with its
+own distinct origin — not vendored from cc-thinking-skills, so no `Upstream dir` column
+(there's no `skills/<dir>/SKILL.md` to read; the primary source is named directly). Same
+"considered, no anchor" convention as most of the 39-model table above: named here because
+a catalog claiming to be unified had a real, evidenced gap, not because kbg is adopting them
+(same Rule 2 guardrail applies — see the analytical-thinking-article-kbg-audit-2026-08-19
+memory: an article resonating is not proven need).
+
+| Model | Source | kbg status | kbg home | How it shows up |
+| --- | --- | --- | --- | --- |
+| mece | Barbara Minto, McKinsey, *The Pyramid Principle: Logic in Writing and Thinking* (developed 1963-73; Minto traces the underlying idea to Aristotle) | considered | — | Partition a problem into categories that don't overlap and leave nothing out, before analyzing any of them. No existing row checks partition-completeness of a problem space — `systems-thinking` maps relationships, `first-principles` probes depth, neither checks exhaustiveness or double-counting |
+| analysis-of-competing-hypotheses | Richards J. Heuer Jr. (CIA, 45-year veteran), Ch. 8 of *Psychology of Intelligence Analysis* (CIA Center for the Study of Intelligence, 1999) | considered | — | Build a matrix of every plausible hypothesis against every piece of evidence, then hunt for evidence that *disconfirms* each hypothesis rather than confirms the leading one. `red-team` is adversarial roleplay against one position; `bayesian`/`probabilistic` update likelihoods without a structured multi-hypothesis matrix; `steel-manning` evaluates two sides, not N — closest decades-field-tested real-world analog to "what evidence would change our conclusion?" |
+| key-assumptions-check | Same Heuer/Pherson tradecraft family as ACH — a distinct sibling technique, not a rename | considered | — | Systematically list *every* assumption underlying the current analytic line and stress-test each one, rather than naming just the single riskiest one. METHODOLOGY Rule 1 already asks for the one riskiest assumption; this is a more exhaustive, checklist-driven procedure than a single-name lens |
+
 ## Mapping models to Claude Code workflow patterns
 
 The cc-thinking-skills collection is a vocabulary of structured-reasoning scaffolds.
