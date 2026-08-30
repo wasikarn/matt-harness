@@ -70,12 +70,12 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | goal-craft | Compact a /goal completion condition: done-when check, one-way-door screen, turn bound. Use when drafting a /goal condition. Don't use for single-turn tasks (do it directly). | inline | auto |
 | harness-audit | Harness-state surface, two modes: fleet/schema audit, --health for session token cost. Use for harness audits or cost checks. Don't use for repo lint/security (mh:security-auditor). | inline | auto |
 | idea-scan | Scan a personal ideas.db (SQLite: ideas/verdicts/events/FTS5), read-only, if present. Use when checking idea-backlog status. Don't use for mh's own memory (mh:memory-lint). | inline | auto |
-| ideate-search | Ideate-search: past mh:ideate runs via the qmd collection. Use when recalling a prior run. Don't use for a new session (mh:ideate) or web research. | inline | manual |
+| ideate-search | Ideate-search: past mh:ideate runs via the qmd collection. | inline | manual |
 | learn | Scan a session transcript for cross-turn patterns ambient auto-memory misses. Use when wrapping up a session; batch-gate via AskUserQuestion. Don't use for single known memories. | inline | auto |
 | loop-design-check | Pre-flight gate + review checklist against loop failure modes — spinning, verifier-gaming, wrong-answer completion. Use when designing/reviewing an agent loop. Don't use for one-off tasks. | inline | auto |
 | memory-lint | Scan memory store for dangling [[links]], orphans, index drift; --trim archives bloat. Use when MEMORY.md over cap. Don't use for semantic review or harness health. | inline | auto |
-| recursive-improve | Cage: human-gated, anti-unattended harness loop. Use when the user asks to improve or audit the harness. Don't use for bug fixes or new surfaces. | inline | manual |
-| score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. Use when a decision needs a verdict. Don't use for trivial or already-decided choices. | inline | manual |
+| recursive-improve | Cage: human-gated, anti-unattended harness loop. | inline | manual |
+| score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. | inline | manual |
 | wiki-scan | Scan llm-wiki vault health: orphans, frontmatter, citation integrity, stats. Use when checking vault integrity. Don't use for kbg's memory store (mh:memory-lint) or semantic search (qmd). | inline | auto |
 
 ### patterns
@@ -94,11 +94,11 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 ### review
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
-| address-review | Triage open PR review comments: fetch, classify, fix, reply. Use when replying to feedback; say 'address review/แก้ตามรีวิว'. Don't use for review (mattpocock-skills:code-review) or merge (mh:ship-merge). | inline | manual |
+| address-review | Triage open PR review comments: fetch, classify, fix, reply. | inline | manual |
 | blind-spot-hunter-shapes | Catalog of 7 highest-yield blind-spot shapes (cross-file, framework-behavior, data-flow-asymmetry, identity, scope-mismatch, emitted-string, vacuous-test). Auto-loads when blind-spot-hunter runs. Don't use for escalation/output-format or standalone hunting. | inline | auto |
 | bug-sweep | Sweep: parallel agents hunt one bug, report-only. Use when hunting bugs across a codebase. Don't use for PR review (mattpocock-skills:code-review) or session audit (mh:deep-audit). | inline | auto |
 | complexity-check | Complexity-check: cyclomatic complexity per function via `lizard`. Use when reviewing hotspots before refactoring. Advisory only. Don't use for bash/shell or Big-O (mh:performance-optimizer). | inline | auto |
-| compliance-audit | Compliance-audit: verify a finished implementation against its plan via fresh-context verifiers. Use after a multi-phase plan. Don't use for an unplanned diff (mattpocock-skills:code-review). | inline | manual |
+| compliance-audit | Compliance-audit: verify a finished implementation against its plan via fresh-context verifiers. | inline | manual |
 | deep-audit | Deep-audit: post-implementation audit — verify every claim, score before/after, fix evidence-backed gaps, re-score. Use after an implementation pass. Don't use for a first-pass review (mattpocock-skills:code-review). | inline | auto |
 | pr | PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`mh:ship-merge`) or review replies (`mh:address-review`). | inline | auto |
 | production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /mattpocock-skills:implement). | inline | auto |
@@ -117,13 +117,13 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | ideate | Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Use when the question is open-ended. Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks. | inline | manual |
 | incident | Incident: run a production incident incl. hotfix. Use when alerts fire or user asks for hotfix. Thai: 'เหตุฉุกเฉิน'. Don't use for non-prod bugs or post-mortem. | inline | auto |
 | orchestrate | Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | inline | auto |
-| post-mortem | Post-mortem: a writeup for a resolved bug (trigger/mechanism/patch/validation known). Use after mattpocock-skills:diagnosing-bugs; say 'เขียน post-mortem/บันทึกบั๊ก'. Don't use for in-progress incidents. | inline | manual |
+| post-mortem | Post-mortem: a writeup for a resolved bug (trigger/mechanism/patch/validation known). | inline | manual |
 | refactor-clean | Refactor-clean: remove dead code (JS/TS, Python, Go, Rust), verifying tests after each change. Use when cleaning unused code. Don't use for logic refactors. | inline | auto |
-| ship-merge | Ship a PR: validate, server-side merge, monitor CI. Use when a reviewed PR is ready to land. Don't use for failing CI or hotfixes (mh:incident). | inline | manual |
-| ship-release | Ship a release: bump, changelog, review gate, tag, merge, monitor. Use when cutting a release. Don't use for PR merges (mh:ship-merge) or hotfixes. | inline | manual |
+| ship-merge | Ship a PR: validate, server-side merge, monitor CI. | inline | manual |
+| ship-release | Ship a release: bump, changelog, review gate, tag, merge, monitor. | inline | manual |
 | summarize | Summarize a document, transcript, or pasted text into a BLUF-structured summary. Use when condensing long content. Don't use for data extraction or code review. | inline | auto |
-| tiered-pipeline | Tiered: run a task through the Fable→Sonnet→Opus maker/checker pipeline (fixes, bug-hunt, gated review). Use when a task warrants multi-tier review. Don't use for quick edits. | inline | manual |
-| wiki-ingest | Ingest a source document into the llm-wiki vault. Use when saving a document there. Don't use for searching (qmd MCP) or kbg's own memory (mh:learn). | inline | manual |
+| tiered-pipeline | Tiered: run a task through the Fable→Sonnet→Opus maker/checker pipeline (fixes, bug-hunt, gated review). | inline | manual |
+| wiki-ingest | Ingest a source document into the llm-wiki vault. | inline | manual |
 
 ## Hooks — Repo
 | Hook | Purpose |
@@ -192,7 +192,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | crisp | Sole live-response register: concise, easy to read, human. Claude Code's Concise contract (result first, no preamble, full content for errors/security/destructive confirmations) as the base, with staff-engineer decision framing switched on only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-30T08:07:55Z_
+_Generated: 2026-08-30T15:00:09Z_
 
 ---
 

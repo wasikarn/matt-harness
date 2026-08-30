@@ -34,23 +34,28 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
   "Implementation → verify" rows of `docs/reference/decision-doctrine-map.md` for which ones
   and why they don't). Re-check carriers via the frontmatter-scoped sweep (a bare
   `grep -rl` misreports: surfaces that only *mention* another one's flag in prose also
-  match): `for f in skills/*/*/SKILL.md; do [ -f "$f" ] && head -20 "$f" | grep -qF
-  'disable-model-invocation: true' && echo "$f"; done`. 3 of the 10 carriers are
-  **CRIT**-guarded against a rewrite silently dropping the flag:
-  `recursive-improve/SKILL.md` (check 36), `score-decision/SKILL.md` (check 45),
-  `ship-merge/SKILL.md` (check 40); the other 7 have no equivalent guard yet. Check 30 only
+  match): `for f in skills/*/*/SKILL.md; do [ -f "$f" ] && [ "$(fm_get "$f"
+  disable-model-invocation)" = true ] && echo "$f"; done`. **All 10 carriers are now
+  CRIT-guarded** against a rewrite silently dropping the flag, one check per skill (verified
+  2026-08-30): `recursive-improve/SKILL.md` (check 36), `score-decision/SKILL.md` (check 45),
+  `ship-merge/SKILL.md` (check 40), `ideate-search/SKILL.md` (check 58),
+  `tiered-pipeline/SKILL.md` (check 59), `wiki-ingest/SKILL.md` (check 60),
+  `address-review/SKILL.md` (check 61), `post-mortem/SKILL.md` (check 62),
+  `ship-release/SKILL.md` (check 63), `compliance-audit/SKILL.md` (check 64). Check 30 only
   WARNs that a `-reason` field exists — it's the presence-of-reason check, not the
-  flag-survives-a-rewrite check; the three CRIT checks are what close that gap.
-  **Partial, incidental backstop for the other 7, verified 2026-08-30:** since the
-  description-shape fix below made these 10 descriptions clause-free, checks 05 and 47 now
-  fire WARN/INFO on any of the 7 unguarded carriers if the flag is stripped without the
-  description being restored too — empirically confirmed by stripping the flag from
-  `wiki-ingest` (no CRIT guard) in a scratch copy and observing both checks fire. This is not
-  a substitute for a real CRIT guard (WARN/INFO, not CRIT; a deliberate edit could still pad
-  the description with a fake clause to dodge it) — the 7-carrier gap above is still open and
-  worth closing properly — but it's a strictly better starting point than before this commit,
-  when the pre-existing trigger-list descriptions already satisfied 05/47 regardless of the
-  flag's state, so a stripped flag produced no signal at all.
+  flag-survives-a-rewrite check; the ten CRIT checks are what close that gap. Check 30's own
+  gate idiom was also switched from `head -20 | grep -qF` to frontmatter-scoped `fm_get` in
+  the same pass, closing a latent (never live on this tree) false-negative: a stripped flag
+  whose description prose still happened to contain the literal string would otherwise have
+  let check 30 WARN "missing reason" on a skill that no longer carries the flag at all.
+  **Superseded 2026-08-30 — history, not current state:** an earlier commit (`ed40f0db`,
+  same day) had documented a partial, incidental WARN/INFO backstop for the then-7 unguarded
+  carriers (checks 05/47 firing if the flag was stripped without also restoring the
+  description) as a stopgap ahead of building real CRIT guards. That gap is now closed by
+  checks 58-64 above; the backstop is no longer load-bearing for these 10 surfaces, but the
+  finding stands as a real, verified interim result — checks 05/47 still provide the same
+  incidental signal for any *future* `disable-model-invocation` carrier that hasn't yet
+  gotten its own dedicated CRIT check.
 - **Description shape for these 10 carriers.** All 10 descriptions were rewritten 2026-08-30 to a
   one-line summary — the "Use when X. Don't use for Y (Z instead)" trigger clauses moved into a
   `**When to use / not:**` body line each (`recursive-improve` already had one; the other 9 got new

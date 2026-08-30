@@ -90,6 +90,100 @@ else
   bad "check-45 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
 fi
 
+# Checks 58-64 — CRIT guards for the 7 disable-model-invocation carriers that
+# previously had no equivalent to checks 36/40/45 (2026-08-30 deep-audit
+# finding). Same bad/good pattern as check 36 above, one pair per skill.
+run_check 58 "$FIX/check-58-bad"
+if [ "$CRIT_FOUND" -ge 1 ]; then
+  ok "check-58 bad fixture fires CRIT (crit=$CRIT_FOUND)"
+else
+  bad "check-58 bad fixture did NOT fire CRIT (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 58 "$FIX/check-58-good"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-58 good fixture silent"
+else
+  bad "check-58 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
+run_check 59 "$FIX/check-59-bad"
+if [ "$CRIT_FOUND" -ge 1 ]; then
+  ok "check-59 bad fixture fires CRIT (crit=$CRIT_FOUND)"
+else
+  bad "check-59 bad fixture did NOT fire CRIT (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 59 "$FIX/check-59-good"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-59 good fixture silent"
+else
+  bad "check-59 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
+run_check 60 "$FIX/check-60-bad"
+if [ "$CRIT_FOUND" -ge 1 ]; then
+  ok "check-60 bad fixture fires CRIT (crit=$CRIT_FOUND)"
+else
+  bad "check-60 bad fixture did NOT fire CRIT (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 60 "$FIX/check-60-good"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-60 good fixture silent"
+else
+  bad "check-60 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
+run_check 61 "$FIX/check-61-bad"
+if [ "$CRIT_FOUND" -ge 1 ]; then
+  ok "check-61 bad fixture fires CRIT (crit=$CRIT_FOUND)"
+else
+  bad "check-61 bad fixture did NOT fire CRIT (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 61 "$FIX/check-61-good"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-61 good fixture silent"
+else
+  bad "check-61 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
+run_check 62 "$FIX/check-62-bad"
+if [ "$CRIT_FOUND" -ge 1 ]; then
+  ok "check-62 bad fixture fires CRIT (crit=$CRIT_FOUND)"
+else
+  bad "check-62 bad fixture did NOT fire CRIT (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 62 "$FIX/check-62-good"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-62 good fixture silent"
+else
+  bad "check-62 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
+run_check 63 "$FIX/check-63-bad"
+if [ "$CRIT_FOUND" -ge 1 ]; then
+  ok "check-63 bad fixture fires CRIT (crit=$CRIT_FOUND)"
+else
+  bad "check-63 bad fixture did NOT fire CRIT (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 63 "$FIX/check-63-good"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-63 good fixture silent"
+else
+  bad "check-63 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
+run_check 64 "$FIX/check-64-bad"
+if [ "$CRIT_FOUND" -ge 1 ]; then
+  ok "check-64 bad fixture fires CRIT (crit=$CRIT_FOUND)"
+else
+  bad "check-64 bad fixture did NOT fire CRIT (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 64 "$FIX/check-64-good"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-64 good fixture silent"
+else
+  bad "check-64 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
 # Regression test — a `compliance-audit` adversarial pass (2026-07-23) found
 # the raw `head -20 | grep -qF` form (checks 36/45's original shape)
 # false-negatives when the literal flag string appears only in prose (e.g.
