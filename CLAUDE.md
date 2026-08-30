@@ -412,7 +412,13 @@ Grouped by behavior area (not a flat bucket — find the group first, then the l
   `scripts/workflows/` are invoked by cache path from other projects, and `frame.md` cats
   `contexts/*.md` via `${MH_PLUGIN_ROOT}`. The gate covers all of them (scripts/+contexts/
   added 2026-08-21 after three scripts/-only commits silently never reached the installed
-  cache). CLAUDE.md-only edits skip the bump, and that costs nothing at
+  cache). It also covers `docs/diagrams/*` (and the now-dead, glob-only `docs/diagrams/src/*`
+  — that build-pipeline directory was removed in the 2026-08-28 diagram overhaul) —
+  deliberately added in 949fcf44/97132587 (v0.68.512-513), but for a different reason than
+  everything else on this list: nothing reads diagram content from the cache at runtime, this
+  just keeps shipped documentation assets bumping the cache in step with executable surfaces.
+  Confirmed live 2026-08-31: a `docs/diagrams/*`-only commit correctly blocked on an unchanged
+  version. CLAUDE.md-only edits skip the bump, and that costs nothing at
   runtime: **no shipped surface reads CLAUDE.md from the cache.** Verified 2026-08-26 by
   grepping every surface dir for a `${MH_PLUGIN_ROOT}`/cache path ending in `CLAUDE.md`;
   zero hits. `recursive-improve/SKILL.md` and `orchestrate/reference.md` cat

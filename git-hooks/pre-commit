@@ -13,10 +13,12 @@
 #   2. **/*.json          → jq -e (parses cleanly)
 #   3. {agents,skills,hooks,scripts}/* staged → harness-audit ecosystem
 #      health check, blocking on CRITICAL findings only.
-#   4. shipped-surface files staged (6 surface dirs + scripts/ + contexts/ +
+#   4. shipped-surface files staged (5 surface dirs + scripts/ + contexts/ +
 #      docs/METHODOLOGY.md + docs/reference/** — everything loaded or sourced
-#      from the per-version plugin cache at runtime) → plugin.json version must
-#      change in this commit, and both manifests' version fields must agree
+#      from the per-version plugin cache at runtime — plus docs/diagrams/* and
+#      the now-dead docs/diagrams/src/*, gated for cache-consistency of
+#      shipped docs assets, not a runtime-read reason) → plugin.json version
+#      must change in this commit, and both manifests' version fields must agree
 #      (same-version edits are cache no-ops).
 #   5. brand-new agents/*.md, or
 #      skills/*/SKILL.md over 200 lines → hard-blocked (new-file LOC gate).
@@ -244,13 +246,18 @@ run_version_layer() {
     rc=1
   fi
   local shipped=0
-  # Runtime-served content beyond the 6 surface dirs counts as shipped:
+  # Runtime-served content beyond the 5 surface dirs counts as shipped:
   # doctrine-bootstrap injects docs/METHODOLOGY.md and score-decision
   # cats docs/reference/* from the versioned cache; shipped skill scripts source
   # scripts/_lib/*.sh relative out of the cache; frame.md cats contexts/*.md
   # via ${MH_PLUGIN_ROOT}. Same stale-cache class for all of them (the
   # scripts/+contexts/ gap bit for real on 2026-08-21 — 3 scripts/-only
   # commits never reached the installed cache until a manual bump).
+  # docs/diagrams/* + docs/diagrams/src/* (the latter now dead, its
+  # build-pipeline directory removed in the 2026-08-28 diagram overhaul) are
+  # also gated, but for a different reason — nothing reads diagram content
+  # from the cache at runtime; it's deliberate cache-consistency for shipped
+  # docs assets (949fcf44/97132587, v0.68.512-513).
   while IFS= read -r f; do
     case "$f" in
       agents/*|skills/*|hooks/*|output-styles/*|themes/*|scripts/*|contexts/*|docs/METHODOLOGY.md|docs/reference/*|docs/diagrams/*|docs/diagrams/src/*) shipped=1 ;;
