@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg class="diagram" viewBox="0 0 1440 720" role="img" aria-labelledby="mh-core-title mh-core-desc" xmlns="http://www.w3.org/2000/svg">
     <title id="mh-core-title">mh@wasikarn runtime workflow: user prompt flows through five lanes — user, model, hooks, catalog, verify — with the PreToolUse dispatcher as the irreversible boundary.</title>
-    <desc id="mh-core-desc">A five-lane swimlane showing one happy-path session. The user sends a prompt. The model — a single Claude model by default, or the separate opt-in mh:tiered-pipeline skill — invokes skills or agents and is bound by the PreToolUse dispatcher, which is one registration that fans out to thirteen gate rules in a table and merges strictest-wins. Seven advisory sensors journal after each tool call. The catalog lane holds 17 agents, 59 skills, and the workflow/hook scripts that back them. On commit, a pre-commit gate runs fast checks before pre-push gauntlet runs six validation layers. A callout notes that compliance-audit and deep-audit run on fresh context and are not auto-fired in the runtime loop.</desc>
+    <desc id="mh-core-desc">A five-lane swimlane showing one happy-path session. The user sends a prompt. The model — a single Claude model by default, or the separate opt-in mh:tiered-pipeline skill — invokes skills or agents and is bound by the PreToolUse dispatcher, which is one registration that fans out to thirteen gate rules in a table and merges strictest-wins. Seven advisory sensors journal after each tool call. The catalog lane holds 17 agents, 60 skills, and the workflow/hook scripts that back them. On commit, a pre-commit gate runs fast checks before pre-push gauntlet runs six validation layers. A callout notes that compliance-audit and deep-audit run on fresh context and are not auto-fired in the runtime loop.</desc>
 
     <defs>
       <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
@@ -142,7 +142,7 @@
     <g>
       <rect x="744" y="280" width="180" height="100" rx="6" fill="white" stroke="#2d3142" stroke-width="1"/>
       <rect x="752" y="286" width="48" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.40)" stroke-width="0.8"/>
-      <text x="776" y="295" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">59 SKILLS</text>
+      <text x="776" y="295" fill="rgba(45,49,66,0.8)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">60 SKILLS</text>
       <text x="834" y="314" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Catalog of know-how</text>
       <text x="834" y="332" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">meta · review · workflow</text>
       <text x="834" y="346" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">patterns · design · agent-support</text>
