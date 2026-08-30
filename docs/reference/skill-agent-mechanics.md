@@ -41,6 +41,16 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
   `ship-merge/SKILL.md` (check 40); the other 7 have no equivalent guard yet. Check 30 only
   WARNs that a `-reason` field exists — it's the presence-of-reason check, not the
   flag-survives-a-rewrite check; the three CRIT checks are what close that gap.
+  **Partial, incidental backstop for the other 7, verified 2026-08-30:** since the
+  description-shape fix below made these 10 descriptions clause-free, checks 05 and 47 now
+  fire WARN/INFO on any of the 7 unguarded carriers if the flag is stripped without the
+  description being restored too — empirically confirmed by stripping the flag from
+  `wiki-ingest` (no CRIT guard) in a scratch copy and observing both checks fire. This is not
+  a substitute for a real CRIT guard (WARN/INFO, not CRIT; a deliberate edit could still pad
+  the description with a fake clause to dodge it) — the 7-carrier gap above is still open and
+  worth closing properly — but it's a strictly better starting point than before this commit,
+  when the pre-existing trigger-list descriptions already satisfied 05/47 regardless of the
+  flag's state, so a stripped flag produced no signal at all.
 - **Description shape for these 10 carriers.** All 10 descriptions were rewritten 2026-08-30 to a
   one-line summary — the "Use when X. Don't use for Y (Z instead)" trigger clauses moved into a
   `**When to use / not:**` body line each (`recursive-improve` already had one; the other 9 got new
