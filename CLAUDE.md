@@ -315,10 +315,14 @@ with the worktree gate; both are safe to reach for when you want to try somethin
 losing your place. Neither is a substitute for the git-branch discipline this section
 enforces.
 
-**Never run `mattpocock-skills:git-guardrails-claude-code`'s setup in this repo (prose-only —
-no check blocks it).** It wires a PreToolUse hook blocking *all* `git push` unconditionally,
-not just `--force` — a direct conflict with this section's workflow. Not installed here; a
-standing caveat, not an active problem.
+**Never run `mattpocock-skills:git-guardrails-claude-code`'s setup in this repo.** It wires a
+PreToolUse hook blocking *all* `git push` unconditionally, not just `--force` — a direct
+conflict with this section's workflow. Not installed here; a standing caveat, not an active
+problem. The skill's install step is a Write/Edit to an existing `.claude/settings.json`
+merging a new entry into `hooks.PreToolUse` — `config-write-guard.sh` (#98) now asks on
+exactly that edit shape (any change to the `hooks` or `enabledPlugins` keys), so the mechanism
+has a backstop; the instruction itself still stands regardless — the gate covers this one edit
+shape, it doesn't make the workflow a fit for this repo's own hook architecture.
 
 <!-- Verified 2026-08-01. -->
 

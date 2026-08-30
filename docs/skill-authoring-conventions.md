@@ -12,7 +12,11 @@ exists once commands/ retired as a surface type.)
 (installed as the `mattpocock-skills` plugin, not vendored in this repo since v0.46.0 — see
 README.md Quick Start). Renamed from `writing-great-skills` in matt v1.2.0 (no alias) and
 restructured: the live elements are leading words, one trigger per branch, completion criterion +
-demand, the no-op test, and progressive disclosure across the two loads (context load vs cognitive
+demand, the no-op test, negation (`writing-for-agents/SKILL.md`: steering by prohibition drags the
+forbidden behaviour into context — state the target behaviour, not the ban; no mechanical check
+exists for this one, same as completion criterion below — deciding whether a given negative-sounding
+instruction is a necessary prohibition or the pattern matt describes needs semantic judgment a regex
+can't make reliably), and progressive disclosure across the two loads (context load vs cognitive
 load — a writing heuristic: how many tokens a passage costs vs how hard it is to parse); skill-only
 mechanics (invocation choice, router skills) live in its `SKILL-MECHANICS.md`. **Not the same axis
 as Anthropic's own "progressive disclosure"** (`platform.claude.com/.../agent-skills/overview.md`,

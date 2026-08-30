@@ -55,9 +55,9 @@
   },
   {
     "id": "gate:write:config-guard",
-    "matcher": "Write",
+    "matcher": "Write|Edit",
     "script": "hooks/gates/config-write-guard.sh",
-    "description": "Gate: ask before creating a brand-new Claude Code settings file (.claude/settings.json, .claude/settings.local.json). Editing an existing one is unaffected — create-vs-modify asymmetry, mirrors the pre-commit new-file LOC gate at tool-call time (#98)."
+    "description": "Gate: ask before creating a brand-new Claude Code settings file (.claude/settings.json, .claude/settings.local.json), and ask on an edit to an existing one that changes the hooks or enabledPlugins keys (verified by reconstructing the edit and comparing against the on-disk content) — every other key stays frictionless (#98)."
   },
   {
     "id": "gate:write:test-integrity",

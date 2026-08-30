@@ -36,7 +36,7 @@ routed only when a kbg surface has a concrete reason to name the skill.
 | to-tickets | user | `hooks/advisory/flow-nudge.sh` spec chain (user-typed step) |
 | triage | user | deferred — ask-matt's map owns it (user-typed issue router; former `kbg-help` touchpoint removed 2026-08-24 #80) |
 | wayfinder | user | `skills/workflow/orchestrate/SKILL.md` (boundary: multi-session decision maps) |
-| wizard | model | deferred — ask-matt's map owns it (human-only provisioning steps) |
+| wizard | model | deferred — ask-matt's map owns it (model-invoked deliberately, so the agent can reach for it mid-build the moment it hits a step only a human can perform — PR #680; the skill walks a human through that step, it isn't itself human-only) |
 | grill-me | user | deferred — ask-matt's map owns it (batched grilling interview) |
 | grilling | model | `hooks/advisory/flow-nudge.sh` spec-chain entry + base plan-first route, `README.md` |
 | handoff | user | deferred — ask-matt's map owns it (no kbg equivalent) |

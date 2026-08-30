@@ -13,6 +13,18 @@ payload_write() { # payload_write <file_path>
   python3 -c 'import json,sys; print(json.dumps({"tool_name":"Write","tool_input":{"file_path":sys.argv[1],"content":""}}))' "$1"
 }
 
+payload_write_content() { # payload_write_content <file_path> <content>
+  python3 -c 'import json,sys; print(json.dumps({"tool_name":"Write","tool_input":{"file_path":sys.argv[1],"content":sys.argv[2]}}))' "$1" "$2"
+}
+
+payload_edit() { # payload_edit <file_path> <old_string> <new_string> [replace_all:true|false]
+  python3 -c '
+import json, sys
+replace_all = len(sys.argv) > 4 and sys.argv[4] == "true"
+print(json.dumps({"tool_name":"Edit","tool_input":{"file_path":sys.argv[1],"old_string":sys.argv[2],"new_string":sys.argv[3],"replace_all":replace_all}}))
+' "$1" "$2" "$3" "${4:-false}"
+}
+
 check() { # check <desc> <ok:0|1>
   if [ "$2" -eq 0 ]; then echo "  ✅ $1"; pass=$((pass + 1))
   else echo "  ❌ $1" >&2; fail=$((fail + 1)); fi
@@ -32,15 +44,24 @@ out=$(payload_write "$FIXTURE/.claude/settings.json" | bash "$GUARD" 2>/dev/null
 ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
 check "CREATE .claude/settings.json (doesn't exist yet) -> ask" "$ok"
 
-echo '{}' > "$FIXTURE/.claude/settings.local.json"
-out=$(payload_write "$FIXTURE/.claude/settings.local.json" | bash "$GUARD" 2>/dev/null); rc=$?
+# Ordinary edit that never touches hooks/enabledPlugins stays frictionless.
+# Both sides must be JSON objects (not "" -> {}), otherwise the unparseable
+# original would hit the ask branch for the wrong reason and this assertion
+# would pass without ever exercising the new comparison logic.
+echo '{"foo":"bar"}' > "$FIXTURE/.claude/settings.local.json"
+out=$(payload_write_content "$FIXTURE/.claude/settings.local.json" '{"foo":"bar","baz":true}' | bash "$GUARD" 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
-check "MODIFY existing .claude/settings.local.json -> exit 0, no output" "$ok"
+check "MODIFY existing .claude/settings.local.json, no hooks/enabledPlugins touched -> exit 0, no output" "$ok"
 
+# Deliberate behavior change from the create-only version of this gate: a
+# dangling symlink has no real content behind it, so the old "already
+# occupied path = already reviewed" rationale never actually applied here --
+# hooks/enabledPlugins genuinely can't be verified unchanged, so this now
+# asks instead of waving through.
 ln -s "$FIXTURE/.claude/does-not-exist-target" "$FIXTURE/.claude/settings.json"
-out=$(payload_write "$FIXTURE/.claude/settings.json" | bash "$GUARD" 2>/dev/null); rc=$?
-ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
-check "dangling symlink already at settings.json path -> treated as existing, no friction" "$ok"
+out=$(payload_write "$FIXTURE/.claude/settings.json" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "dangling symlink already at settings.json path -> unreadable, cannot verify -> ask" "$ok"
 rm -f "$FIXTURE/.claude/settings.json"
 
 out=$(payload_write "$FIXTURE/.claude/config.json" | bash "$GUARD" 2>/dev/null); rc=$?
@@ -50,6 +71,42 @@ check "unrelated .claude/config.json (wrong basename) -> exit 0, no output" "$ok
 out=$(payload_write "$FIXTURE/settings.json" | bash "$GUARD" 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "settings.json NOT under a .claude dir -> exit 0, no output" "$ok"
+
+# --- content-aware edit checks: hooks/enabledPlugins vs everything else ---
+
+echo '{"hooks":{"PreToolUse":[]}}' > "$FIXTURE/.claude/settings.json"
+out=$(payload_write_content "$FIXTURE/.claude/settings.json" '{"hooks":{"PreToolUse":[{"matcher":"Bash","hooks":[{"type":"command","command":"evil"}]}]}}' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Write edit changes hooks key -> ask" "$ok"
+
+echo '{"enabledPlugins":{"mh@wasikarn":true}}' > "$FIXTURE/.claude/settings.json"
+out=$(payload_write_content "$FIXTURE/.claude/settings.json" '{"enabledPlugins":{"mh@wasikarn":false}}' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Write edit changes enabledPlugins key -> ask" "$ok"
+
+# The matt-skill attack shape: inserting a new array entry next to an
+# existing one. old_string/new_string deliberately never contain the literal
+# substring "hooks" -- proving the check reconstructs and parses the full
+# file rather than substring-matching the edited fragment for that word.
+echo '{"hooks":{"PreToolUse":[{"id":"a","matcher":"Bash"}]},"other":1}' > "$FIXTURE/.claude/settings.json"
+out=$(payload_edit "$FIXTURE/.claude/settings.json" '{"id":"a","matcher":"Bash"}]}' '{"id":"a","matcher":"Bash"},{"id":"evil","matcher":"Write"}]}' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Edit inserts a new hooks.PreToolUse array entry (fragment has no literal 'hooks') -> ask" "$ok"
+
+echo '{"hooks":{"PreToolUse":[]},"theme":"dark"}' > "$FIXTURE/.claude/settings.json"
+out=$(payload_edit "$FIXTURE/.claude/settings.json" '"theme":"dark"' '"theme":"light"' | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "Edit touches an unrelated key, hooks present elsewhere unchanged -> no friction" "$ok"
+
+# replace_all correctness: the first occurrence of "tag" sits outside hooks
+# (in "note"); the second sits inside hooks.PreToolUse. With replace_all
+# true, both change, so hooks changes -> must ask. A hardcoded count=1 would
+# only touch the first (outside hooks) occurrence and wrongly allow -- this
+# is the one case that fails if the replace_all branch is dropped.
+echo '{"note":"tag","hooks":{"PreToolUse":[{"id":"tag"}]}}' > "$FIXTURE/.claude/settings.json"
+out=$(payload_edit "$FIXTURE/.claude/settings.json" 'tag' 'evil' 'true' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Edit with replace_all=true changes hooks via the 2nd occurrence -> ask" "$ok"
 
 echo ""
 total=$((pass + fail))

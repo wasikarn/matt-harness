@@ -12,7 +12,7 @@
 #
 #   1. Leading word — coined term in the first 10 words of description.
 #      Matt vocabulary: grill, seam, vertical slice, premature completion,
-#      two-cut, no-op, recursion-ceiling, cage, deep-fake, unfake, ratchet.
+#      no-op, sediment, sprawl, legwork, co-location, context-pointer, cache.
 #   2. Description ≤ 25 words (CLAUDE.md cap; check #20 measures chars).
 #   3. One trigger per branch — ≥ 2 "Use when / Trigger when / Trigger on /
 #      Invoke when / ALWAYS" clauses smells like synonym-rewriting.
@@ -66,10 +66,17 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
   first_word=$(printf '%s' "$desc" | awk '{print tolower($1); exit}' | tr -d ':,;')
   case "$first_word" in
     # matt canonical vocabulary — anchored in `writing-for-agents/SKILL.md`
-    # (renamed from writing-great-skills in matt v1.2.0; v1.2 additions:
-    # sediment, sprawl, legwork, co-location, context-pointer — except
-    # frontier, whose anchor is `grilling/SKILL.md`'s rounds mechanic).
-    grill|grill-me|seam|vertical-slice|vertical_slice|premature-completion|premature_completion|two-cut|two_cut|no-op|no_op|recursion-ceiling|recursion_ceiling|cage|deep-fake|deep_fake|unfake|ratchet|seam-cut|seam_cut|sediment|sprawl|legwork|frontier|co-location|context-pointer) : ;;  # silent
+    # (renamed from writing-great-skills in matt v1.2.0). sediment, sprawl,
+    # legwork, and context-pointer predate v1.2 (confirmed against matt's
+    # day-one GLOSSARY.md, commit bc4cf90); co-location and cache are the
+    # real v1.2 additions (co-location confirmed via `git log -S`; cache
+    # named in matt's own CHANGELOG.md for 1.2.0) — except frontier, whose
+    # anchor is `grilling/SKILL.md`'s rounds mechanic. `two-cut`,
+    # `recursion-ceiling`, `cage`, `deep-fake`, `unfake`, and `ratchet` were
+    # removed 2026-08-30: none ever appeared in matt's git history (checked
+    # via `git log --all -i -S"<term>"` across every branch plus the
+    # original GLOSSARY.md) — fabricated vocabulary, not a stale rename.
+    grill|grill-me|seam|vertical-slice|vertical_slice|premature-completion|premature_completion|no-op|no_op|sediment|sprawl|legwork|frontier|co-location|context-pointer|cache) : ;;  # silent
     # kbg-native coined compounds — high-signal terms already used across
     # kbg skill descriptions. Adding to the vocabulary is a one-line edit
     # here; extending further belongs in a dedicated audit-policy pass.
