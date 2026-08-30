@@ -184,6 +184,26 @@ else
   bad "check-64 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
 fi
 
+# Check 65 — meta-completeness WARN: a new disable-model-invocation carrier
+# with no dedicated CRIT-guard check file (no matching _f= line anywhere
+# under checks/) must WARN, not CRIT (it's a coverage gap, not proof the flag
+# is currently missing); an already-guarded carrier stays silent. The bad
+# fixture also proves the check doesn't abort under set -euo pipefail when
+# its own scaffolded checks/ dir is absent (2026-08-30 deep-audit finding —
+# same pipefail-glob regression class check 25 already guards against).
+run_check 65 "$FIX/check-65-bad"
+if [ "$WARN_FOUND" -ge 1 ] && [ "$CRIT_FOUND" -eq 0 ]; then
+  ok "check-65 bad fixture fires WARN, no abort (warn=$WARN_FOUND)"
+else
+  bad "check-65 bad fixture did NOT fire WARN as expected (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 65 "$FIX/check-65-good"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-65 good fixture silent"
+else
+  bad "check-65 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
 # Regression test — a `compliance-audit` adversarial pass (2026-07-23) found
 # the raw `head -20 | grep -qF` form (checks 36/45's original shape)
 # false-negatives when the literal flag string appears only in prose (e.g.

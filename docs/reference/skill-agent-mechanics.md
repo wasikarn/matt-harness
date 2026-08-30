@@ -55,7 +55,15 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
   checks 58-64 above; the backstop is no longer load-bearing for these 10 surfaces, but the
   finding stands as a real, verified interim result — checks 05/47 still provide the same
   incidental signal for any *future* `disable-model-invocation` carrier that hasn't yet
-  gotten its own dedicated CRIT check.
+  gotten its own dedicated CRIT check. **Two follow-ups from the same-day deep-audit on this
+  commit:** checks 36 and 45 were missing the `else` branch (fires CRIT if the SKILL.md itself
+  is missing/renamed) that checks 40/58-64 all carry — fixed, verified live by renaming both
+  files in a scratch copy and confirming CRIT fires. And check 65 (new) closes the structural
+  gap the hardcoded-per-skill pattern otherwise reopens on its own: an 11th
+  `disable-model-invocation: true` carrier added after this doc was written gets no dedicated
+  guard until a human notices — check 65 WARNs whenever a carrier's path has no matching `_f=`
+  line anywhere under `checks/`, so that gap surfaces instead of silently recurring. WARN, not
+  CRIT: it flags a coverage gap in the audit system, not proof the flag is currently absent.
 - **Description shape for these 10 carriers.** All 10 descriptions were rewritten 2026-08-30 to a
   one-line summary — the "Use when X. Don't use for Y (Z instead)" trigger clauses moved into a
   `**When to use / not:**` body line each (`recursive-improve` already had one; the other 9 got new

@@ -20,8 +20,17 @@
 # e.g. inside `description:` prose — even when the real frontmatter key was
 # actually stripped. fm_get only matches `^key:` inside the real `---...---`
 # block, closing that gap.
+#
+# else branch added 2026-08-30 (deep-audit adversarial pass on the checks
+# 58-64 commit): this check and #45 were the only 2 of the fleet's 10
+# dedicated CRIT guards with no `else` — a moved/renamed SKILL.md silently
+# passed instead of firing CRIT, on the two skills this file's own header
+# calls "safety-load-bearing." checks 40/58-64 already had this branch;
+# this brings 36/45 in line.
 _f="$CLAUDE_DIR/skills/meta/recursive-improve/SKILL.md"
 if [ -f "$_f" ]; then
   [ "$(fm_get "$_f" disable-model-invocation)" = "true" ] || \
     crit "'recursive-improve/SKILL.md': missing 'disable-model-invocation: true' — this is the one safety-load-bearing instance of the flag (no-model-self-start invariant); its absence means the CLAUDE.md selection criterion could route unattended dispatch to this skill"
+else
+  crit "recursive-improve skill not found at skills/meta/recursive-improve/SKILL.md — cannot verify the disable-model-invocation flag that is the one safety-load-bearing instance of the flag (no-model-self-start invariant)"
 fi
