@@ -119,6 +119,30 @@ out=$(payload_edit "$FIXTURE/.claude/settings.json" 'tag' 'evil' 'true' | bash "
 ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
 check "Edit with replace_all=true changes hooks via the 2nd occurrence -> ask" "$ok"
 
+# Regression: macOS/APFS is case-insensitive but case-preserving, so
+# .claude/SETTINGS.JSON resolves to the same on-disk file as
+# .claude/settings.json -- a case-sensitive basename/parent compare let a
+# one-character-case edit skip this gate entirely. Found by deep-audit
+# adversarial verification 2026-08-30.
+echo '{"hooks":{"PreToolUse":[]}}' > "$FIXTURE/.claude/settings.json"
+out=$(payload_write_content "$FIXTURE/.claude/SETTINGS.JSON" '{"hooks":{"PreToolUse":[{"id":"evil"}]}}' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "uppercase .claude/SETTINGS.JSON resolves to the real file on a case-insensitive FS -> ask" "$ok"
+rm -f "$FIXTURE/.claude/settings.json"
+
+# Regression: SECURITY_KEYS originally covered only hooks/enabledPlugins.
+# Claude Code's settings `env` block is injected into hook subprocess
+# environments too (docs/reference/env-vars.md), and this repo's own gates
+# already honor escape-hatch env vars (MH_ALLOW_MAIN_EDIT,
+# MH_ALLOW_DIRECT_ATLASSIAN_MCP) -- a frictionless env-key edit could flip
+# one of those without ever touching hooks/enabledPlugins. Found by
+# deep-audit adversarial verification 2026-08-30.
+echo '{"env":{"FOO":"bar"}}' > "$FIXTURE/.claude/settings.json"
+out=$(payload_write_content "$FIXTURE/.claude/settings.json" '{"env":{"FOO":"bar","MH_ALLOW_MAIN_EDIT":"1"}}' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Write edit changes env key -> ask" "$ok"
+rm -f "$FIXTURE/.claude/settings.json"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="

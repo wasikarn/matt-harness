@@ -13,19 +13,30 @@
 # ASK, not DENY: creating a new settings file is reversible (it can be
 # deleted), so this isn't the "irrecoverable set" DENY gates exist for.
 #
-# EDITING an existing settings file is also checked, but only for the two
+# EDITING an existing settings file is also checked, but only for three
 # security-relevant keys: `hooks` (a matt-side skill like
 # git-guardrails-claude-code can instruct the model to merge a new entry into
 # hooks.PreToolUse -- installing a hook this repo's own tamper-resistance
-# gates never review) and `enabledPlugins` (can flip this plugin's own enabled
-# flag off). Every other key -- statusLine, permissions, env, theme, etc. --
-# stays frictionless, matching this gate's own "an already-reviewed file needs
-# no friction" philosophy for the ordinary case. The edit is reconstructed
-# from the on-disk content plus the tool's own Write/Edit payload and compared
-# key-by-key against the original; a change to either key, or content on
-# either side that can't be parsed as JSON, asks. Fail-toward-ask on the
-# unverifiable case, same invariant verifier-protect.sh states explicitly for
-# its own scope.
+# gates never review), `enabledPlugins` (can flip this plugin's own enabled
+# flag off), and `env` -- Claude Code injects a settings file's `env` block
+# into the session AND the subprocesses it spawns (docs/reference/env-vars.md),
+# so an edit to that key could silently set an escape-hatch var this repo's
+# own gates already honor (MH_ALLOW_MAIN_EDIT, MH_ALLOW_DIRECT_ATLASSIAN_MCP)
+# without ever touching hooks/enabledPlugins directly. Every other key --
+# statusLine, permissions, theme, etc. -- stays frictionless, matching this
+# gate's own "an already-reviewed file needs no friction" philosophy for the
+# ordinary case. The edit is reconstructed from the on-disk content plus the
+# tool's own Write/Edit payload and compared key-by-key against the original;
+# a change to any of the three keys, or content on either side that cannot be
+# parsed as JSON, asks. Fail-toward-ask on the unverifiable case -- but this
+# scope is narrower than verifier-protect.sh's own invariant: verifier-protect
+# also asks on a malformed top-level payload it cannot parse at all, while
+# this gate's outer exception handler still allows on that specific failure
+# (an intentionally unchanged, pre-existing safety net for genuinely
+# unexpected errors, not touched by this security check -- see the try/except
+# structure below). The "same invariant" claim below is scoped to the
+# hooks/enabledPlugins/env comparison itself, not this file's entire error
+# handling.
 #
 # Scope: Write and Edit tools only. MultiEdit is out of scope, same
 # pre-existing gap verifier-protect.sh already has for that tool. A
@@ -49,7 +60,7 @@ import sys, json, os
 sys.path.insert(0, sys.argv[1])
 from _hook_output import emit_ask
 
-SECURITY_KEYS = ("hooks", "enabledPlugins")
+SECURITY_KEYS = ("hooks", "enabledPlugins", "env")
 
 def reconstruct(tool, ti, old_raw):
     # Returns the new file content the tool call would produce, or None if
@@ -69,7 +80,7 @@ def reconstruct(tool, ti, old_raw):
     return None
 
 def security_keys(raw):
-    # Returns the (hooks, enabledPlugins) tuple, or None if raw cannot be
+    # Returns the SECURITY_KEYS tuple of values, or None if raw cannot be
     # parsed as a JSON object -- "unverifiable," handled the same as a
     # genuine mismatch by the caller.
     try:
@@ -96,9 +107,17 @@ try:
     # as absent. lexists() below is the actual existence check.
     path = os.path.normpath(os.path.expanduser(fp))
     parent, base = os.path.split(path)
-    if base not in ("settings.json", "settings.local.json"):
+    # Case-INsensitive basename/parent match, same reasoning as
+    # _protected_paths.py/verifier-protect.sh: macOS/APFS is case-insensitive
+    # but case-preserving, so ".claude/SETTINGS.JSON" resolves to the same
+    # on-disk file as ".claude/settings.json" while a case-sensitive string
+    # compare treats them as unrelated -- a one-character-case Write/Edit
+    # would otherwise skip this gate entirely on this exact filesystem.
+    # Lowercasing only widens the match (more asks, never fewer), so this is
+    # safe on case-sensitive filesystems too.
+    if base.lower() not in ("settings.json", "settings.local.json"):
         sys.exit(0)
-    if os.path.basename(parent) != ".claude":
+    if os.path.basename(parent).lower() != ".claude":
         sys.exit(0)
 
     if not os.path.lexists(path):
@@ -109,7 +128,7 @@ try:
         sys.exit(0)
 
     # MODIFY of an existing file (or a symlink already there). Frictionless
-    # unless the edit touches hooks/enabledPlugins -- read the current
+    # unless the edit touches a SECURITY_KEYS entry -- read the current
     # content and compare against what the edit would produce.
     try:
         with open(path, "r") as f:
@@ -121,7 +140,7 @@ try:
         # invalid byte anywhere in the file (from prior corruption or an
         # unrelated Bash-mediated write) would fall through to the outer
         # bare except and silently allow every subsequent Write/Edit against
-        # this file, including one that rewrites hooks/enabledPlugins --
+        # this file, including one that rewrites a SECURITY_KEYS entry --
         # defeating the exact path this gate exists to cover. Cannot verify
         # either way, so treat it the same as unreadable.
         old_raw = None
@@ -135,9 +154,9 @@ try:
 
     emit_ask(
         "config-write-guard: this edit to " + path +
-        " could not be verified to leave hooks/enabledPlugins unchanged " +
+        " could not be verified to leave hooks/enabledPlugins/env unchanged " +
         "(unreadable original, unparseable content, or a real change to " +
-        "either key). Confirm this is intentional."
+        "one of those keys). Confirm this is intentional."
     )
 except Exception:
     sys.exit(0)

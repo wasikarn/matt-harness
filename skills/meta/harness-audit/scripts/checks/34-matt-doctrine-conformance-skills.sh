@@ -71,11 +71,16 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
     # day-one GLOSSARY.md, commit bc4cf90); co-location and cache are the
     # real v1.2 additions (co-location confirmed via `git log -S`; cache
     # named in matt's own CHANGELOG.md for 1.2.0) — except frontier, whose
-    # anchor is `grilling/SKILL.md`'s rounds mechanic. `two-cut`,
-    # `recursion-ceiling`, `cage`, `deep-fake`, `unfake`, and `ratchet` were
+    # anchor is `grilling/SKILL.md`'s rounds mechanic. `two-cut`, `two_cut`,
+    # `recursion-ceiling`, `recursion_ceiling`, `cage`, `deep-fake`,
+    # `deep_fake`, `unfake`, `ratchet`, `seam-cut`, and `seam_cut` were
     # removed 2026-08-30: none ever appeared in matt's git history (checked
     # via `git log --all -i -S"<term>"` across every branch plus the
     # original GLOSSARY.md) — fabricated vocabulary, not a stale rename.
+    # `cage` moved to the kbg-native list below the same day (M15) rather
+    # than dropped outright — recursive-improve's description genuinely
+    # needed it and it is a real, self-consistent kbg coined term for that
+    # skill's own mechanism, just never matt's.
     grill|grill-me|seam|vertical-slice|vertical_slice|premature-completion|premature_completion|no-op|no_op|sediment|sprawl|legwork|frontier|co-location|context-pointer|cache) : ;;  # silent
     # kbg-native coined compounds — high-signal terms already used across
     # kbg skill descriptions. Adding to the vocabulary is a one-line edit
@@ -99,7 +104,7 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
     # entries kept as historical allowlist), same class as the
     # already-accepted score/triage. pre-flight is
     # a real, specific engineering idiom (a gate-before-launch check), not a
-    # generic noun — same bar as no-op/two-cut. next.js and
+    # generic noun — same bar as no-op. next.js and
     # frontend-design-direction follow M12's framework-proper-noun and the
     # humanize skill-name-derived-lead precedents respectively.
     # M14 additions (2026-08-28, "fix all WARN/INFO" pass): cost-report,
@@ -111,7 +116,15 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
     # class as tier/finish). summarize is tech-humanize's own precedent
     # applied literally: the skill's own name used as its own leading verb.
     # ingest is wiki-ingest's own name fragment, same class as sweep/scan.
-    synthesise-seam|slice|doctrine|doctrine-backed|triage|mental-model|catalogue|catalog|test-driven|deep-module|diagnosis|build|compact|scan|teach|adonisjs|backend|frontend|drizzle|effect-ts|fastapi|grpc|hono|langchain|tauri|mysql/mariadb|pythonic|score|incident|router|eval-driven|dart/flutter|humanize|prep-map|pr|typescript|db/sql|fix-authenticity|requirement-coverage|wcag|fowler|tier|pre-flight|finish|next.js|frontend-design-direction|cost-report|frame|ideate-search|sweep|complexity-check|compliance-audit|deep-audit|review-fixtures|risk-check|test-coverage|post-mortem|refactor-clean|ship|summarize|tiered|ingest) : ;;  # silent
+    # M15 addition (2026-08-30, deep-audit pass): cage moved here from the
+    # matt-vocabulary case above — it was never matt's, but it is a real,
+    # specific kbg coined term for recursive-improve's own safety mechanism
+    # (a human-gated container around an otherwise-autonomous loop; the
+    # skill is disable-model-invocation, gated on AskUserQuestion before
+    # every mutation — confirmed by reading recursive-improve/SKILL.md
+    # directly, not asserted), same class as pre-flight: a specific idiom
+    # naming a real property, not a generic noun.
+    synthesise-seam|slice|doctrine|doctrine-backed|triage|mental-model|catalogue|catalog|test-driven|deep-module|diagnosis|build|compact|scan|teach|adonisjs|backend|frontend|drizzle|effect-ts|fastapi|grpc|hono|langchain|tauri|mysql/mariadb|pythonic|score|incident|router|eval-driven|dart/flutter|humanize|prep-map|pr|typescript|db/sql|fix-authenticity|requirement-coverage|wcag|fowler|tier|pre-flight|finish|next.js|frontend-design-direction|cost-report|frame|ideate-search|sweep|complexity-check|compliance-audit|deep-audit|review-fixtures|risk-check|test-coverage|post-mortem|refactor-clean|ship|summarize|tiered|ingest|cage) : ;;  # silent
     *) info "$name: description does not open with a matt-style coined term (first word: '$first_word') — leading word recruits a pretrained prior, not a generic noun" ;;
   esac
 
