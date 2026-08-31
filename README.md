@@ -86,24 +86,20 @@ and that is the most common way work here looks done without being done.
 
 ## Architecture
 
-"Compose, don't create" is the reason this repo exists, and only four mechanisms carry the real
-weight of it: a hook that emits a chain into every session, a preflight that checks the companion
-plugin is even installed, a mechanical audit that keeps a ledger honest, and one sparse prose
-boundary. Everything else — the ~25 places mh's surfaces merely *name* a matt skill in passing —
-is routing pointers, not wired relationships.
-Click the diagram to open the interactive HTML version.
+One request, six deterministic hops to a pushed commit — that's the whole runtime path. Every
+tool call and every push crosses exactly two gates that can't be talked out of denying:
+`PreToolUse` and `git-hooks`. Click the diagram to open the interactive HTML version.
 
-[![mh@wasikarn composing with mattpocock-skills across four typed edges: routes-to, depends-on, verifies, hands-off-to.](docs/diagrams/mh-composition.png)](docs/diagrams/mh-composition.html)
+[![matt-harness runtime architecture: the session-to-push path through doctrine injection, the deterministic gate boundary, and the auxiliary systems — plugin cache, advisory sensors, harness-audit, memory store, qmd/llm-wiki.](docs/diagrams/archify/matt-harness-runtime-architecture.png)](docs/diagrams/archify/matt-harness-runtime-architecture.html)
 
-- **`routes-to`** — `hooks/advisory/flow-nudge.sh` emits the spec chain (`grilling` → `/to-spec` → `/to-tickets` → `/implement`) into session context on `UserPromptSubmit`. `grilling` fires bare (`model`-tier); the other three carry the leading slash and are user-invoked only.
-- **`depends-on`**, the required one — Quick start step 4 installs `mattpocock-skills@mattpocock` as a separate plugin; mh's own surfaces are unresolvable without it. `hooks/session/doctrine-bootstrap.sh` preflights the plugin's presence at every `SessionStart` and warns if it's missing or disabled.
-- **`verifies`** — harness-audit check 50 (4 sub-checks A-D; A-C are WARN, D is INFO) keeps `docs/reference/mattpocock-integration-map.md`'s 25-row ledger in sync with the installed plugin's own `plugin.json`.
-- **`hands-off-to`** — `skills/workflow/orchestrate/reference.md`'s boundary with `mattpocock-skills:wayfinder` (user-typed: `/mattpocock-skills:wayfinder`), one of only two such prose boundaries in the whole fleet.
-- **`ask-matt` is the actual routing layer** (`CLAUDE.md`'s "Finding a surface" section), even though no hook wires to it — it owns the routing map for 10 skills mh deliberately doesn't duplicate.
-- **Two matt skills are drawn as adopted, not routed** — `code-review` and `writing-for-agents` *are* mh's own review and authoring surfaces now (the native kbg equivalents were retired), which is a node label, not a relationship to draw an arrow for.
+- **The primary path** — Developer → Claude Code → `doctrine-bootstrap.sh` injects doctrine at session start → the Skills & Agents Fleet receives it → a tool call crosses `PreToolUse Gates` → an allowed call reaches `git-hooks`' commit/push gauntlet → a passed gauntlet reaches GitHub.
+- **The deterministic gate boundary** — `PreToolUse Gates` and `git-hooks` are the only two components nothing can skip: no tool call or push reaches GitHub without clearing both, independently.
+- **Auxiliary systems** (dashed edges, off the primary path) — Claude Code loads the versioned `Plugin Cache`; the Skills & Agents Fleet journals to `Advisory Sensors` (never gates) and can look up `qmd`/`llm-wiki` (optional — surfaces must degrade gracefully without it); `git-hooks` feeds `harness-audit`'s numbered self-audit; Claude Code reads/writes the `Auto-Memory Store` directly.
 
-See `docs/reference/mattpocock-integration-map.md` and `docs/reference/graph-model.md` (the four
-typed edges this diagram reuses) for the full ledger and edge definitions.
+See [How it runs](#how-it-runs) for the same path in prose. mh's composition with
+mattpocock-skills — the narrower relationship a prior version of this diagram illustrated — is
+still tracked in `docs/reference/mattpocock-integration-map.md` (the 4 typed edges from
+`docs/reference/graph-model.md`: `routes-to`, `depends-on`, `verifies`, `hands-off-to`).
 
 ---
 
