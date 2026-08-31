@@ -30,17 +30,23 @@ trap 'trash "$TMP" 2>/dev/null || true' EXIT
 bash_payload() { python3 -c 'import json, sys; print(json.dumps({"tool_name": "Bash", "tool_input": {"command": sys.argv[1]}}))' "$1"; }
 write_payload() { python3 -c 'import json, sys; print(json.dumps({"tool_name": "Write", "tool_input": {"file_path": sys.argv[1], "content": sys.argv[2]}}))' "$1" "$2"; }
 taskupdate_payload() {
+  # $3=agent_id (omit to mirror $2 -- the realistic "actual subagent" shape,
+  # since a real subagent always carries both fields; task-complete-separation.sh
+  # keys on agent_id, not agent_type, as of 2026-08-31 -- see that gate's own
+  # header for why agent_type alone over-blocks a top-level --agent session).
   python3 -c '
 import json, sys
-status, agent = sys.argv[1], sys.argv[2]
+status, agent, agent_id = sys.argv[1], sys.argv[2], sys.argv[3]
 ti = {"taskId": "T1"}
 if status:
     ti["status"] = status
 d = {"tool_name": "TaskUpdate", "tool_input": ti}
 if agent:
     d["agent_type"] = agent
+if agent_id:
+    d["agent_id"] = agent_id
 print(json.dumps(d))
-' "$1" "$2"
+' "$1" "$2" "${3-$2}"
 }
 read_payload() { python3 -c 'import json, sys; print(json.dumps({"tool_name": "Read", "tool_input": {"file_path": sys.argv[1]}}))' "$1"; }
 

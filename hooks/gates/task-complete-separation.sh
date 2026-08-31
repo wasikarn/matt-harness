@@ -7,16 +7,21 @@
 # addBlockedBy gates *ordering*, but nothing computationally stopped the maker
 # from marking its own task `completed` without the validator's pass. That is
 # the maker-grading-its-own-work circularity the harness exists to forbid.
-# Native CC (v2.1.142+) fires PreToolUse inside subagents with `agent_type`
-# present (docs-confirmed), so the gate can tell a subagent from the main
-# session without an artifact file or an agent_type allowlist.
+# Native CC (v2.1.142+) fires PreToolUse inside subagents with `agent_id`
+# present (docs-confirmed against code.claude.com/docs/en/hooks, corrected
+# 2026-08-31: an earlier version of this gate keyed on `agent_type`, which is
+# ALSO set for a top-level `claude --agent <name>` main session — a real
+# security-review finding on the sibling agent-recursion-guard.sh gate,
+# same root cause here), so the gate can tell an actual subagent from the
+# main session without an artifact file or an allowlist.
 #
-# Rule: deny TaskUpdate(status="completed") whenever `agent_type` is present
-# (any subagent). The main session (no `agent_type`) owns completion — it is
-# the operator proxy and the trusted verifier of last resort. Validator
-# subagents return verdicts to the main session; the main session marks
-# completed. A subagent's agent_type is fixed at spawn and cannot be mutated,
-# so a maker literally cannot call TaskUpdate(completed).
+# Rule: deny TaskUpdate(status="completed") whenever `agent_id` is present
+# (any subagent). The main session (no `agent_id`, whether or not it was
+# started with --agent) owns completion — it is the operator proxy and the
+# trusted verifier of last resort. Validator subagents return verdicts to
+# the main session; the main session marks completed. A subagent's agent_id
+# is fixed at spawn and cannot be mutated, so a maker literally cannot call
+# TaskUpdate(completed).
 set -uo pipefail
 
 # Portability guard (#93): announced fail-open when python3 is missing;
@@ -60,12 +65,17 @@ status = ti.get("status")
 if status != "completed":
     sys.exit(0)
 
-# agent_type is present only when the hook fires inside a subagent (or a
-# --agent session). Absent => main session => allowed.
-agent_type = d.get("agent_type")
-if not agent_type:
+# agent_id is present ONLY when the hook fires inside an actual subagent
+# call (code.claude.com/docs/en/hooks, confirmed 2026-08-31). agent_type is
+# a broader field -- it is ALSO set for a top-level `claude --agent <name>`
+# MAIN session, which legitimately owns completion, so keying on agent_type
+# alone over-blocked that case (found by security review of the sibling
+# agent-recursion-guard.sh gate, 2026-08-31 -- same bug, same fix, here).
+agent_id = d.get("agent_id")
+if not agent_id:
     sys.exit(0)
 
+agent_type = d.get("agent_type") or "unknown"
 print(f"[mh:gate] BLOCKED: subagent ({agent_type}) may not mark its own task completed — "
       f"return to main session for completion (maker≠checker)", file=sys.stderr)
 sys.exit(2)

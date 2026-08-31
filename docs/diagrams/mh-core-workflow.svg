@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg class="diagram" viewBox="0 0 1440 720" role="img" aria-labelledby="mh-core-title mh-core-desc" xmlns="http://www.w3.org/2000/svg">
     <title id="mh-core-title">mh@wasikarn runtime workflow: user prompt flows through five lanes — user, model, hooks, catalog, verify — with the PreToolUse dispatcher as the irreversible boundary.</title>
-    <desc id="mh-core-desc">A five-lane swimlane showing one happy-path session. The user sends a prompt. The model — a single Claude model by default, or the separate opt-in mh:tiered-pipeline skill — invokes skills or agents and is bound by the PreToolUse dispatcher, which is one registration that fans out to thirteen gate rules in a table and merges strictest-wins. Seven advisory sensors journal after each tool call. The catalog lane holds 17 agents, 60 skills, and the workflow/hook scripts that back them. On commit, a pre-commit gate runs fast checks before pre-push gauntlet runs six validation layers. A callout notes that compliance-audit and deep-audit run on fresh context and are not auto-fired in the runtime loop.</desc>
+    <desc id="mh-core-desc">A five-lane swimlane showing one happy-path session. The user sends a prompt. The model — a single Claude model by default, or the separate opt-in mh:tiered-pipeline skill — invokes skills or agents and is bound by the PreToolUse dispatcher, which is one registration that fans out to fourteen gate rules in a table and merges strictest-wins. Seven advisory sensors journal after each tool call. The catalog lane holds 17 agents, 60 skills, and the workflow/hook scripts that back them. On commit, a pre-commit gate runs fast checks before pre-push gauntlet runs six validation layers. A callout notes that compliance-audit and deep-audit run on fresh context and are not auto-fired in the runtime loop.</desc>
 
     <defs>
-      <style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
+<style>@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Geist:wght@400;500;600&amp;family=Geist+Mono:wght@400;500;600&amp;display=swap');</style>
       <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
         <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
       </marker>
@@ -114,7 +114,7 @@
       <text x="548" y="295" fill="rgba(235,108,54,0.95)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">PRETOOLUSE · FOCAL</text>
       <text x="596" y="316" fill="#2d3142" font-size="13" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Dispatcher</text>
       <text x="596" y="334" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">1 dispatcher hook</text>
-      <text x="596" y="348" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">fans out to 13 gate rules</text>
+      <text x="596" y="348" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">fans out to 14 gate rules</text>
       <text x="596" y="364" fill="#7a8399" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle">allow · ask · deny</text>
     </g>
 

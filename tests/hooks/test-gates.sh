@@ -10,6 +10,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 IRRECOVERABLE="$ROOT/hooks/gates/irrecoverable.sh"
 VERIFIER_PROTECT="$ROOT/hooks/gates/verifier-protect.sh"
 TASK_COMPLETE="$ROOT/hooks/gates/task-complete-separation.sh"
+AGENT_RECURSION_GUARD="$ROOT/hooks/gates/agent-recursion-guard.sh"
 DB_WRITE_GATE="$ROOT/hooks/gates/db-write-gate.sh"
 
 pass=0
@@ -38,13 +39,54 @@ edit_payload() {
 taskupdate_payload() {
   python3 -c '
 import json, sys
-status, agent = sys.argv[1], sys.argv[2]
+status, agent, agent_id = sys.argv[1], sys.argv[2], sys.argv[3]
 ti = {"taskId": "T1"}
 if status:
     ti["status"] = status
 d = {"tool_name": "TaskUpdate", "tool_input": ti}
 if agent:
     d["agent_type"] = agent
+if agent_id:
+    d["agent_id"] = agent_id
+print(json.dumps(d))
+' "$1" "$2" "${3-$2}"
+}
+
+# Build an Agent tool-call payload. $1=requested subagent_type (or empty to
+# omit the field, matching a Named-Model dispatch with no subagent_type),
+# $2=agent_type of the CALLER (or empty = main session, field omitted),
+# $3=agent_id of the CALLER (omit the arg entirely to mirror $2 — the
+# realistic shape for an actual subagent, which always carries both fields;
+# pass '' explicitly to simulate a --agent MAIN session, which carries
+# agent_type but never agent_id — code.claude.com/docs/en/hooks.md,
+# confirmed 2026-08-31: agent_id is present "only when the hook fires inside
+# a subagent call", agent_type is present for --agent sessions too).
+agent_payload() {
+  python3 -c '
+import json, sys
+subtype, agent, agent_id = sys.argv[1], sys.argv[2], sys.argv[3]
+ti = {}
+if subtype:
+    ti["subagent_type"] = subtype
+d = {"tool_name": "Agent", "tool_input": ti}
+if agent:
+    d["agent_type"] = agent
+if agent_id:
+    d["agent_id"] = agent_id
+print(json.dumps(d))
+' "$1" "$2" "${3-$2}"
+}
+
+# Build a Bash tool-call payload carrying agent_id (or empty = main
+# session). Separate from bash_payload() (used by many pre-existing tests
+# with no agent fields at all) to avoid touching that signature.
+bash_agent_payload() {
+  python3 -c '
+import json, sys
+cmd, agent_id = sys.argv[1], sys.argv[2]
+d = {"tool_name": "Bash", "tool_input": {"command": cmd}}
+if agent_id:
+    d["agent_id"] = agent_id
 print(json.dumps(d))
 ' "$1" "$2"
 }
@@ -477,6 +519,65 @@ test_allow "$TASK_COMPLETE" "subagent subject/desc update (no status field)" \
   "$(taskupdate_payload '' mh:build-error-resolver)"
 test_allow "$TASK_COMPLETE" "malformed stdin (fail-safe allow)" \
   '{not valid json'
+# Security-review finding (2026-08-31): agent_type is also present for a
+# top-level `claude --agent <name>` MAIN session (not a subagent) — keying on
+# it over-blocks that legitimate case. agent_id is the correct discriminant
+# (present only for an actual subagent). Passing '' for $3 here means "no
+# agent_id" — the exact --agent-main-session shape.
+test_allow "$TASK_COMPLETE" "--agent main session (agent_type set, no agent_id) may still complete" \
+  "$(taskupdate_payload completed some-agent-name '')"
+
+echo ""
+echo "=== agent-recursion-guard gate (only the main session may dispatch an agent) ==="
+# The exact evasion found 2026-08-31: a rogue fork hit the host's own
+# fork->fork block, then switched subagent_type to general-purpose instead —
+# which the host allowed. This gate closes that regardless of which
+# subagent_type is requested, keyed only on whether the CALLER is itself a
+# subagent (agent_type present).
+test_deny  "$AGENT_RECURSION_GUARD" "subagent (fork) tries fork->fork (the exact rogue-fork scenario)" \
+  "$(agent_payload fork fork)"
+test_deny  "$AGENT_RECURSION_GUARD" "subagent (fork) evades via general-purpose instead" \
+  "$(agent_payload general-purpose fork)"
+test_deny  "$AGENT_RECURSION_GUARD" "subagent (general-purpose) tries to dispatch another" \
+  "$(agent_payload general-purpose general-purpose)"
+test_deny  "$AGENT_RECURSION_GUARD" "subagent (named agent) tries to dispatch" \
+  "$(agent_payload general-purpose mh:build-error-resolver)"
+test_deny  "$AGENT_RECURSION_GUARD" "subagent dispatches with no subagent_type specified" \
+  "$(agent_payload '' fork)"
+test_allow "$AGENT_RECURSION_GUARD" "main session dispatches a fork (no agent_type)" \
+  "$(agent_payload fork '')"
+test_allow "$AGENT_RECURSION_GUARD" "main session dispatches general-purpose (no agent_type)" \
+  "$(agent_payload general-purpose '')"
+test_allow "$AGENT_RECURSION_GUARD" "unrelated tool (Bash, no agent_id) passes through untouched" \
+  "$(bash_payload 'echo hi')"
+test_allow "$AGENT_RECURSION_GUARD" "malformed stdin (fail-safe allow)" \
+  '{not valid json'
+# Security-review finding: agent_type over-blocks a top-level --agent
+# session (see the identical TASK_COMPLETE case above for the doc citation).
+test_allow "$AGENT_RECURSION_GUARD" "--agent main session (agent_type set, no agent_id) may still dispatch" \
+  "$(agent_payload fork some-agent-name '')"
+
+echo ""
+echo "=== agent-recursion-guard gate, Bash leg (nested claude spawn evades the Agent-tool matcher) ==="
+# Security-review finding: a subagent retains Bash access, so `claude -p`
+# from Bash spawns a nested session that never routes through the Agent
+# tool -- and that nested session is a FRESH main session (no agent_id of
+# its own), free to dispatch further agents. This leg denies the nested-
+# spawn invocation itself, before it can ever run.
+test_deny  "$AGENT_RECURSION_GUARD" "subagent runs 'claude -p' via Bash (the nested-spawn evasion)" \
+  "$(bash_agent_payload 'claude -p "do something"' fork)"
+test_deny  "$AGENT_RECURSION_GUARD" "subagent runs 'claude --agent X --print' via Bash" \
+  "$(bash_agent_payload 'claude --agent reviewer --print "check this"' fork)"
+test_deny  "$AGENT_RECURSION_GUARD" "subagent hides the spawn after a semicolon" \
+  "$(bash_agent_payload 'echo hi; claude -p "sneaky"' fork)"
+test_allow "$AGENT_RECURSION_GUARD" "subagent runs an unrelated claude invocation (no spawn flag)" \
+  "$(bash_agent_payload 'claude --version' fork)"
+test_allow "$AGENT_RECURSION_GUARD" "subagent runs an unrelated Bash command" \
+  "$(bash_agent_payload 'ls -la' fork)"
+test_allow "$AGENT_RECURSION_GUARD" "main session runs 'claude -p' via Bash (no agent_id — always allowed)" \
+  "$(bash_agent_payload 'claude -p "do something"' '')"
+test_allow "$AGENT_RECURSION_GUARD" "malformed stdin on the Bash leg (fail-safe allow)" \
+  '{not valid json'
 test_allow "$TASK_COMPLETE" "non-TaskUpdate tool with agent_type (out of scope)" \
   "$(python3 -c 'import json; print(json.dumps({"tool_name":"Bash","tool_input":{"command":"ls"},"agent_type":"mh:build-error-resolver"}))')"
 
@@ -733,6 +834,8 @@ test_nopython_allow "$DB_WRITE_GATE" "db-write: SQL write passes with note" \
   "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'DELETE FROM users')"
 test_nopython_allow "$TASK_COMPLETE" "task-complete-separation: subagent completion passes with note" \
   "$(taskupdate_payload 'completed' 'refactor-cleaner')"
+test_nopython_allow "$AGENT_RECURSION_GUARD" "agent-recursion-guard: subagent dispatch passes with note" \
+  "$(agent_payload 'general-purpose' 'refactor-cleaner')"
 test_nopython_allow "$ATLASSIAN_GATE" "atlassian gate: cold Atlassian call passes with note (jira-acli present in fixture HOME)" \
   "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__createJiraIssue' 'nopy-session')" \
   "HOME=$NOPY_AG_HOME"

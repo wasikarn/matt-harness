@@ -33,7 +33,19 @@
     "id": "gate:task:complete-separation",
     "matcher": "TaskUpdate",
     "script": "hooks/gates/task-complete-separation.sh",
-    "description": "Gate: a subagent may not mark its own task completed (maker≠checker). Only the main session completes tasks; validator subagents return verdicts to main. Denies TaskUpdate(status=completed) when agent_type is present (subagent). Exit 2 + stderr; fail-safe allow on parse error."
+    "description": "Gate: a subagent may not mark its own task completed (maker≠checker). Only the main session completes tasks; validator subagents return verdicts to main. Denies TaskUpdate(status=completed) when agent_id is present (subagent) — corrected 2026-08-31 from agent_type, which also fires for a top-level --agent session. Exit 2 + stderr; fail-safe allow on parse error."
+  },
+  {
+    "id": "gate:agent:recursion-guard",
+    "matcher": "Agent",
+    "script": "hooks/gates/agent-recursion-guard.sh",
+    "description": "Gate: a subagent may not spawn another agent — only the main session dispatches (CLAUDE.md 'Task Dispatch'). Denies Agent(...) when agent_id is present (subagent), regardless of the requested subagent_type. Closes the gap found 2026-08-31: the host's fork->fork block doesn't cover fork/general-purpose/claude spawning a DIFFERENT subagent_type. Exit 2 + stderr; fail-safe allow on parse error; no env-var bypass. Companion Bash-leg entry below covers the same script's other matcher."
+  },
+  {
+    "id": "gate:bash:agent-recursion-guard",
+    "matcher": "Bash",
+    "script": "hooks/gates/agent-recursion-guard.sh",
+    "description": "Gate: the Bash leg of agent-recursion-guard — a subagent (agent_id present) may not spawn a nested `claude -p`/`--print`/`--agent`/`--bg` session via Bash, which would bypass the Agent-tool leg entirely and run as a fresh, unrestricted main session. Coarse command-pattern match, not an adversarial sandbox (same non-goal as irrecoverable.sh). Exit 2 + stderr; fail-safe allow on parse error; no env-var bypass."
   },
   {
     "id": "gate:skill:jira-acli-engage",
