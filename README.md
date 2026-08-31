@@ -72,9 +72,23 @@ matt-harness's own source instead? See [Development](#development).)
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed, v2.1.154+
   (earlier versions auto-enable on install and can skip step 3 below)
 - A terminal, for the `claude plugin` commands outside a session
-- Nothing else — the plugin has no other host dependency. `mattpocock-skills` (step 4)
-  installs as its own plugin the same way; `graphify`/`qmd`/`gh` are optional extras some
-  skills reach for, never required to install or enable
+- `mattpocock-skills` (step 4 below) — the one hard dependency; installs as its own
+  plugin the same way
+
+Nothing else is required to install or enable mh@wasikarn. A few skills reach for tools
+that aren't bundled and degrade gracefully without them — worth having if you want the
+full experience, never a blocker if you don't:
+
+| Tool | Used by | Get it |
+|---|---|---|
+| [`gh` CLI](https://cli.github.com/) | `mh:pr`, `mh:ship-merge`, PR/issue-review skills | `brew install gh && gh auth login` |
+| `qmd` | Research-flavored skills (`mh:idea-scan`, `mh:wiki-scan`, ...) — CLAUDE.md's "check qmd before web search" rule | A local MCP semantic-search server over your own markdown; not part of matt-harness, see its own setup |
+| [`graphify`](https://github.com/Graphify-Labs/graphify) | Optional codebase knowledge graph — see [Exploring the codebase](#exploring-the-codebase-optional) | `uv tool install graphifyy` |
+
+> Not on this list: `rtk`, a personal shell-alias proxy some contributors run on their
+> own machine. It has zero call sites in matt-harness's own code (confirmed via
+> `docs/reference/hook-lifecycle-contracts.md`) — it's someone's local environment
+> detail, not a dependency of this plugin.
 
 Run these commands inside Claude Code:
 
