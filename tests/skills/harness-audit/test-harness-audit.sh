@@ -459,6 +459,29 @@ else
   bad "check-04 good-bucket-trailing-whitespace fixture not silent — untrimmed whitespace false positive (crit=$CRIT_FOUND warn=$WARN_FOUND)"
 fi
 
+# Check 04 — completeness gap closed (2026-08-31 deep-audit): these 3 branches
+# were only spot-checked manually during the audit, never locked in as
+# fixtures. Without them, a future edit to this check's trim/enum logic could
+# silently reintroduce the exact bugs just fixed above with nothing to catch it.
+run_check 04 "$FIX/check-04-good-bucket-quoted"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-04 good-bucket-quoted fixture silent (YAML-quoted value still recognized)"
+else
+  bad "check-04 good-bucket-quoted fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 04 "$FIX/check-04-bad-bucket-missing"
+if [ "$WARN_FOUND" -ge 1 ]; then
+  ok "check-04 bad-bucket-missing fixture fires WARN (warn=$WARN_FOUND)"
+else
+  bad "check-04 bad-bucket-missing fixture did NOT fire WARN (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 04 "$FIX/check-04-bad-bucket-whitespace-only"
+if [ "$WARN_FOUND" -eq 1 ]; then
+  ok "check-04 bad-bucket-whitespace-only fixture fires exactly 1 WARN (missing, not unrecognized)"
+else
+  bad "check-04 bad-bucket-whitespace-only fixture fired warn=$WARN_FOUND (want exactly 1 — either silent, or both missing+unrecognized fired)"
+fi
+
 echo ""
 echo "self-test: $pass passed, $fail failed"
 if [ "$fail" -ne 0 ]; then
