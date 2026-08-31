@@ -378,6 +378,17 @@ version:
    `bash skills/inventory/scripts/sync-fleet-counts.sh`.
 4. `claude plugin update mh@wasikarn`, commit, push, restart Claude Code.
 
+### Exploring the codebase (optional)
+
+[graphify](https://github.com/Graphify-Labs/graphify) is a separate, personally-installed
+tool — not bundled with this plugin — that turns a corpus into a queryable knowledge graph.
+Run `/graphify .` to build one for this repo; `graphify query "<question>"` /
+`graphify path "A" "B"` / `graphify explain "X"` then answer structural questions (who calls
+what, what enforces a given doctrine) that complement, rather than replace, this repo's own
+`qmd`-based research flow (CLAUDE.md's "graphify" section has the full division of labor).
+`graphify-out/` is gitignored: the graph goes stale within hours of any commit, so regenerate
+it on demand instead of trusting a checked-in snapshot.
+
 ---
 
 ## Documentation

@@ -33,7 +33,7 @@ scripts/l4/.window-state.json
 # state, and `git add -A` never stages a local settings file.
 .claude/settings.local.json
 
-# graphify: local extraction cache + machine-specific interpreter/root paths
-graphify-out/cache/
-graphify-out/.graphify_python
-graphify-out/.graphify_root
+# graphify: generated architecture-graph snapshot. Goes stale within hours of any
+# commit (nothing auto-rebuilds it) — regenerate on demand with `/graphify .`
+# rather than trusting a checked-in copy. See CLAUDE.md's "graphify" section.
+graphify-out/
