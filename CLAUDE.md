@@ -13,11 +13,10 @@ in parallel: plugin-validate, full shell-lint, JSON lint, harness-audit, and the
 test suite. Shell tests run via a for-loop; 2 Python files (memory-lint, compress-docs
 verify-preserved) and 1 node file (tiered-pipeline) run via separate `if` blocks. The
 script's `run_hook_tests()` is the authoritative file list — counts drift, so none is stated
-here. The old 204-test critical-hooks suite and eval dataset gate were deleted, not rebuilt:
+here. The old 204-test critical-hooks suite and eval dataset gate were deleted, not rebuilt, in
+the 2026-06-27 owner-authorized reset (`c452102`; recovery anchor if ever wanted: `24d7663`):
 most of what they tested was L3/L4/L5 autonomy machinery retired by ADR 0006, and current
 coverage already exceeds them.
-
-<!-- Deleted in the 2026-06-27 owner-authorized reset (`c452102`). Recovery anchor if ever wanted: `24d7663`. -->
 
 ## Adding or removing a surface
 
@@ -34,22 +33,11 @@ no awareness of this repo's own manifest/version-bump/BOUNDARY.md ritual. The st
 (inlined from the removed `add-surface` skill, 2026-08-24 #80):
 
 1. Create/remove the file(s), following the pattern of an existing component in the same
-   directory. **Skills and agents bucket differently — don't apply one rule to both.**
-   A new **skill** buckets by folder placement (`skills/<bucket>/<name>/SKILL.md`), not
-   frontmatter — the old `bucket:` frontmatter check on skills was retired in the
-   2026-08-25 folder migration; harness-audit check 05 now derives the bucket from the
-   path itself, CRITs on an unrecognized bucket dir name, and WARNs (degraded
-   `BOUNDARY.md` grouping only, still loads) on a flat `skills/<name>/SKILL.md` with no
-   bucket dir at all. A new **agent** still needs `bucket:` frontmatter (top-level key,
-   right after `description:`) — `agents/*.md` stays flat, not folder-bucketed, and check
-   04 WARNs if it's missing. Skill buckets: `meta`/`review`/`patterns`/`agent-support`/
-   `design`/`workflow`. Agent buckets: `design`/`review`/`build`/`analysis`/`utility`.
-   Both group the `BOUNDARY.md` tables. **A brand-new top-level `skills/` bucket** (a 7th
-   folder alongside the 6 above) additionally needs its path added to
-   `.claude-plugin/plugin.json`'s own `skills` array — that array, once declared, *replaces*
-   the default `skills/` directory scan rather than adding to it (an official-docs-confirmed
-   marketplace-root exception, 2026-08-29), so an undeclared bucket is silently invisible to
-   skill discovery even though the files exist on disk.
+   directory. **Skills and agents bucket differently — don't apply one rule to both.** A
+   **skill** buckets by folder placement (`skills/<bucket>/<name>/SKILL.md`); an **agent** needs
+   `bucket:` frontmatter instead (`agents/*.md` stays flat). Full bucket lists, the harness-audit
+   checks that enforce each (check 05 for skills, check 04 for agents), and the brand-new-
+   top-level-bucket `plugin.json` gotcha: `docs/reference/surface-buckets.md`.
 2. Hooks: register/deregister in `hooks/hooks.json`; add tests for any gate. After removing
    a hook's test section, grep the ENTIRE test file (not just the deleted section) for every
    shared helper function's name and remove any with zero remaining callers.
@@ -120,41 +108,28 @@ Before writing a new skill, command, or agent from scratch, check sources in thi
    `oh-my-claudecode`; ask if unsure which qualify).
 
 Cherry-pick and adapt from whichever source fits; create kbg-native surfaces only when none
-do. Skipping straight to (2) or (3) risks colliding with a skill matt already built. Paths
-are the stable anchor, not pinned hashes — run `git rev-parse HEAD` there when you need the
-current commit. None of these clones is bundled with the plugin. On a machine without them,
-(1)'s installed plugin is the only available source; build kbg-native only after checking
-what it already offers.
+do. Skipping straight to (2) or (3) risks colliding with a skill matt already built — confirmed
+2026-07-17, when `code-implementer`/`/implement` were built checking only (2) and (3), skipping
+(1), and collided with matt's own `engineering/implement` skill (caught by the user, not by this
+checklist). Paths are the stable anchor, not pinned hashes — run `git rev-parse HEAD` there when
+you need the current commit. None of these clones is bundled with the plugin. On a machine
+without them, (1)'s installed plugin is the only available source; build kbg-native only after
+checking what it already offers.
 
 **A clone reached via `claude --add-dir` instead of `cd` loads none of its own CLAUDE.md
 instructions by default** — `--add-dir` grants file access only. Set
 `CLAUDE_CODE_ADDITIONAL_DIRECTORIES_CLAUDE_MD=1` before the command if you need that clone's
 own CLAUDE.md/rules read into context, not just its files.
 
-<!-- The clone silently lagged origin/main by a full minor release before being caught. Confirmed
-gap (2026-07-17): `code-implementer`/`/implement` were built checking only (2), skipping (1) —
-collided with matt's own `engineering/implement` skill, caught by the user, not by this checklist. -->
-
 ### Vetting a new third-party plugin/skill before relying on it
 
-Distinct concern from the sourcing-priority list above (that's about where to *look* when
-*authoring*; this is about *trusting* something already installed). Anthropic's own Agent
-Skills security guidance says treat installing a skill like installing software — a skill
-gives Claude new capabilities through instructions and code, so a malicious or careless one can
-direct tool/Bash use that doesn't match its stated purpose (confirmed against
-`platform.claude.com/.../agent-skills/overview.md`, 2026-08-29). Before relying on a **new**
-third-party plugin, MCP server, or skill for real work: read its SKILL.md/scripts once for what
-network calls, file writes, or Bash commands it can actually trigger, especially anything with
-credential or payment-data access; skills that fetch external URLs carry particular risk, since
-fetched content can itself carry instructions. This is a forward practice, applied at the point
-of adding something new — not a standing retroactive-audit schedule. A one-time retroactive
-pass over every plugin installed at the time (`diagram-design`, `eli5`, `mattpocock-skills`,
-`plannotator-effective-html`, `ponytail`, `qmd`, `superset` — Anthropic's own first-party bundle
-excluded as lower-risk) ran 2026-08-29: all 7 came back clean (no unexpected network calls, exec,
-or credential handling beyond stated purpose), with two named limits (qmd's compiled binary and
-the standalone `superset` app itself couldn't be inspected, only their skill-layer wrappers).
-Full method and per-plugin findings: the `third-party-plugin-vetting-pass-2026-08-29` memory.
-Applies to any plugin added **after** that date going forward.
+Treat installing a skill like installing software — a skill gives Claude new capabilities
+through instructions and code, so a malicious or careless one can direct tool/Bash use that
+doesn't match its stated purpose (Anthropic's own Agent Skills security guidance). Before
+relying on a **new** third-party plugin, MCP server, or skill for real work: read its
+SKILL.md/scripts once for what network calls, file writes, or Bash commands it can actually
+trigger. Full practice, scope, and the 2026-08-29 retroactive pass's findings:
+`docs/reference/third-party-vetting.md`.
 
 ## Agent skills
 
@@ -198,10 +173,9 @@ research-shaped task.
 own `~/.claude/CLAUDE.md` (dotfiles-owned, not shipped with this plugin) carries a thinner
 mirror of the `llm-wiki` half. `/mh:wiki-ingest` (user-invoked write path,
 `disable-model-invocation`) and `mh:wiki-scan` (read-only health check) are the
-vault-touching surfaces; doctrine reasoning lives in their own files.
-
-<!-- Added v0.68.106. Live-fire confirmed 2026-07-30: a foreign-project session reached for `qmd`
-scoped to `llm-wiki` unprompted — the one part of the design no grep or script could verify. -->
+vault-touching surfaces; doctrine reasoning lives in their own files. Live-fire confirmed
+2026-07-30: a foreign-project session reached for `qmd` scoped to `llm-wiki` unprompted — the
+one part of this design no grep or script could verify on its own.
 
 **Verify technical claims before shipping them into agent/skill content, not just when asked
 to "research."** A confidently-worded complexity, security-mechanism, or framework-behavior
@@ -209,12 +183,11 @@ claim can read as correct and still be wrong — plausibility isn't verification
 treating that kind of addition as done: deep-read the relevant `qmd`/`llm-wiki` content
 first if either is configured on this machine, then `WebSearch` (or the `deep-research`
 workflow for a claim worth a multi-source adversarial pass). Claims that look obviously
-correct on read have shipped wrong before; each needed an actual source check to catch it.
-
-<!-- Confirmed load-bearing 2026-08-05 — caught 3 shipped, plausible-reading errors:
-`performance-optimizer.md`'s two-pointer "O(n) 3-sum" (it's O(n²)), `drizzle-patterns`' "one query
-per relation depth" for Drizzle's nested `with` (always exactly one query total), and a
-CWE-1333/CWE-400 pairing contradicting MITRE's own page. -->
+correct on read have shipped wrong before, confirmed load-bearing 2026-08-05 by 3 caught
+errors: `performance-optimizer.md`'s two-pointer "O(n) 3-sum" (it's O(n²)), `drizzle-patterns`'
+"one query per relation depth" for Drizzle's nested `with` (always exactly one query total), and
+a CWE-1333/CWE-400 pairing contradicting MITRE's own page. Each needed an actual source check
+to catch it.
 
 ## graphify: architecture/relationship questions, not a qmd replacement
 
@@ -244,49 +217,31 @@ The plugin ships as `mh@wasikarn` from the `wasikarn/matt-harness` GitHub repo. 
 loads all surfaces from `~/.claude/plugins/cache/wasikarn/mh/<version>/` at startup. Nothing is
 symlinked.
 
-**On a dev machine the marketplace is usually registered as a local directory, not that GitHub
-repo.** Check `~/.claude/plugins/known_marketplaces.json`: a `"source": "directory"` entry
-pointing at the clone means `claude plugin update` copies the **working tree**, not a git
-checkout, so gitignored files travel into the cache along with the shipped surfaces. Two
-consequences worth knowing before reading a cache directory as if it were the repo:
+**On a dev machine, the marketplace is often registered as a local directory, not the GitHub
+repo** — which means `claude plugin update` can copy gitignored files (fixture workspaces,
+`.DS_Store`) into the cache alongside shipped surfaces, and makes the cache look git-derived even
+when it isn't. Full mechanics, the two consequences worth knowing, and why this never reaches
+anyone installing from GitHub: `docs/reference/plugin-cache-mechanics.md`.
 
-- `installed_plugins.json` still records a `gitCommitSha`, which makes the cache look
-  git-derived when it is not. Untracked and gitignored content sits there anyway.
-- Eval fixture workspaces (`*-workspace/`, gitignored) get copied on every version bump. One
-  `node_modules` tree under `deep-audit-workspace/` put 116 MB into each cached version
-  before anyone noticed, because nothing reports cache size. Prune `node_modules` out of
-  fixture workspaces rather than deleting the workspaces themselves; the eval artifacts are
-  small and worth keeping, the deps regenerate from their own `package.json`.
-- **This is a different mechanism from `marketplace.json`'s own per-plugin `source` field**
-  (confirmed against `code.claude.com/docs/en/plugin-marketplaces.md`, 2026-08-29, and
-  re-verified empirically against this machine's live cache the same day —
-  `*-workspace/`, `.DS_Store`, `__pycache__/` are all present in
-  `~/.claude/plugins/cache/wasikarn/mh/<version>/` right now). That doc states a plugin
-  entry's own `"source": "./relative/path"` (or `github`/`git`/`npm`/`archive`) *does* filter
-  gitignored content when a marketplace is fetched normally — this repo's own
-  `.claude-plugin/marketplace.json` uses exactly that field type (`"source": "."`) and would
-  behave that way if fetched over git or npm. The gitignored-content leak described above is
-  specific to `known_marketplaces.json`'s *marketplace-level* `"source": "directory"`
-  registration (how the whole marketplace repo itself got onto this machine, via
-  `claude plugin marketplace add <local-path>`) — a separate, undocumented-by-that-page code
-  path with no such filtering, because it's a plain local mirror, not a fetch.
+**Operating model:** deny the irrecoverable set computationally (gates in `hooks/gates/`),
+advise on the rest (sensors in `hooks/advisory/`) — no autonomy flag, no maker-checker ship-gate,
+no model self-start (the **no-model-self-start rule**).
 
-None of this reaches anyone installing from GitHub. Their copy is the git tree, where those
-paths do not exist.
+**Why — the unifying crux:** the gate is a *verifier*, the model is the *maker*, and the maker
+can never grade its own work — an LLM judging its own output is circular. **Score, not feel**:
+every loop's stop condition must be a number a deterministic gate can branch on, never a vibe the
+model rationalizes.
 
-The doctrine paragraphs below ("Doctrine injection" through "When hooks are wired") are also copied verbatim into `docs/reference/operating-model.md` — a self-contained, operator-path-free excerpt that runtime surfaces (`recursive-improve`, `orchestrate/reference.md`, `reasoning-models.md`) `cat` instead of this whole file (ticket 94, spec 75). No machine check enforces the two staying identical — keep them in sync by hand if either changes.
+**Same crux, N-worker fan-in:** the same problem applies when parallel subagent outputs feed one
+synthesis call — dropping malformed entries and surfacing agreement/conflict is deterministic
+code's job, never the synthesizing model's.
 
-**Doctrine injection:** `hooks/session/doctrine-bootstrap.sh` fires on SessionStart and injects `docs/METHODOLOGY.md` (decision-sizing triad + reasoning scaffold) into session context via `$CLAUDE_PLUGIN_ROOT` (the plugin install dir; the older `$CLAUDE_PLUGIN_DIR` name is not a real CC variable and expands empty).
-
-**Operating model:** deny the irrecoverable set computationally (gates in `hooks/gates/`), advise on the rest (sensors in `hooks/advisory/`). Advisory sensors never emit `permissionDecision`. The L2–L5 autonomy ladder is retired. Anthropic states this same deny-vs-advise split as platform guidance, not just kbg's own doctrine: *"To block an action regardless of what Claude decides, use a PreToolUse hook instead"* (`code.claude.com/docs/en/memory.md`, confirmed 2026-08-20) — CLAUDE.md/memory are context the model can weigh; a hook is the only layer that can't be argued with.
-
-**Why — the unifying crux:** the gate is a *verifier* (deterministic shell returning a branchable **score**), the model is the *maker*, and the maker can never grade its own work — an LLM judging its own output is circular ("two optimists agreeing"). So advisory sensors journal but never gate, and the autonomy ladder had to retire: a model-as-gate is the maker appointing its own verifier. **Score, not feel** — every loop's stop condition must be a number a deterministic gate can branch on, never a vibe the model rationalizes. (This is the agent-loop verifier-separation principle; see `docs/research/` + the retired L2–L5 build for the proven failure it prevents.)
-
-**Same crux, N-worker fan-in:** when parallel subagent outputs feed one synthesis/judge call, the merge is the same problem — dropping malformed entries and surfacing agreement/conflict is deterministic code's job, not the synthesizing model's. A fixed instruction is a fallback only where no code layer exists to hold a real reducer (a markdown-only skill like `bug-sweep`/`ideate` has no backing script — the dispatching model's own step-by-step discipline is the only mechanism available there); it is not an equivalent-strength substitute for code where a script already exists, and doctrine text should say plainly which one a given fix actually is. Default: never silently blend or drop overlap. `memory-lint`'s pattern-cluster mode and `deep-research.js`'s claim-dedup step (both pure code, zero LLM calls inside the reduction itself) are the real reference implementations. `skills/workflow/orchestrate/reference.md`'s `fan-out-and-synthesize` row enforces the same discipline via prompt instruction instead — real and load-bearing, but a weaker mechanism than code, and should be named as such rather than blurred together with it. The context-economy cost of a synthesis call reading unfiltered fan-out output is covered by `docs/METHODOLOGY.md` Rule 13's context-economy block.
-
-<!-- Gap confirmed 2026-08-17: `bug-sweep`'s Consolidate step and `deep-research.js`'s Synthesize step
-both silently blended before the first fix; a follow-up audit found that fix was itself mostly
-prompt-only and had missed cutting what a downstream synthesis call has to read. -->
+`docs/reference/operating-model.md` is the canonical source for all three paragraphs above in
+full (doctrine injection, the complete reasoning, the code-vs-prompt reference implementations)
+— they used to be hand-copied here too with no machine check keeping the two in sync, and this
+consolidation removes that duplication. Runtime surfaces (`recursive-improve`,
+`orchestrate/reference.md`, `reasoning-models.md`) `cat` it directly via `${MH_PLUGIN_ROOT}`
+(ticket 94, spec 75).
 
 When hooks are wired: gates/ (deny), advisory/ (journal), session/ (inject), stop/ (cost tracking).
 
@@ -300,8 +255,6 @@ progressive disclosure across the two loads. Canonical source: the
 guard" labels no longer exist as named terms; their content dissolved into the rewrite's
 prose). The ≤25-word description cap is kbg's own token-budget rule ("Skill descriptions
 load on every Task spawn" below), not matt's.
-
-<!-- Misattributed to matt here until 2026-08-10. -->
 
 See `docs/skill-authoring-conventions.md` for the kbg-specific additions on top of that
 (harness-audit check 34's proxy coverage, Named Model footers, Suggested next step footers,
@@ -356,8 +309,6 @@ merging a new entry into `hooks.PreToolUse` — `config-write-guard.sh` (#98) no
 exactly that edit shape (any change to the `hooks` or `enabledPlugins` keys), so the mechanism
 has a backstop; the instruction itself still stands regardless — the gate covers this one edit
 shape, it doesn't make the workflow a fit for this repo's own hook architecture.
-
-<!-- Verified 2026-08-01. -->
 
 ### Concurrent sessions
 
@@ -444,25 +395,21 @@ Grouped by behavior area (not a flat bucket — find the group first, then the l
   runtime: **no shipped surface reads CLAUDE.md from the cache.** Verified 2026-08-26 by
   grepping every surface dir for a `${MH_PLUGIN_ROOT}`/cache path ending in `CLAUDE.md`;
   zero hits. `recursive-improve/SKILL.md` and `orchestrate/reference.md` cat
-  `docs/reference/operating-model.md`, which the excerpt exists for (see the Architecture
-  note above) and which `docs/reference/**` already puts inside the gate. This line
-  previously claimed those two skills cat CLAUDE.md itself and carried an accepted staleness
-  window for it; that was wrong, and it contradicted the Architecture note one section up.
-  `BOUNDARY.md` also has no cache-readers left (`kbg-help` and `inventory`'s wrapper docs
-  were removed 2026-08-24 #80). The one real staleness window is
+  `docs/reference/operating-model.md` directly (the canonical source per the Architecture
+  section's Operating model paragraph), and `docs/reference/**` already puts that file inside
+  the gate. `BOUNDARY.md` also has no cache-readers left (`kbg-help` and `inventory`'s wrapper
+  docs were removed 2026-08-24 #80). The one real staleness window is
   `docs/research/kbg-vs-adhd.md`, which `ideate/references/provenance.md` cats from the cache
   in three places while `docs/research/**` sits outside the gate. Known gap — widen the gate
   only as a deliberate policy change, not silently.
-
-<!-- Gate enforced since 2026-08-09. -->
 
 - **Re-verifying a same-session edit to any surface:** don't hand a re-verification agent a
   name-based reference — `Skill(<name>)`, `subagent_type: <name>`, or the slash command — to
   test an edit that hasn't been bumped/reinstalled yet. `agents/` and `skills/` all ship in
   the same versioned bundle, so any of those resolutions silently tests stale cached content
-  with no error. Instruct the agent to `Read` the repo path directly instead.
-
-<!-- Confirmed 2026-07-27 (tech-humanize v0.68.59: a false "fix confirmed" via `Skill(kbg:tech-humanize)`). -->
+  with no error. Instruct the agent to `Read` the repo path directly instead. Confirmed
+  2026-07-27: `tech-humanize` v0.68.59 got a false "fix confirmed" via
+  `Skill(kbg:tech-humanize)`, which silently re-ran the stale cached version.
 
 - **`BOUNDARY.md` regen:** `bash skills/inventory/scripts/inventory-witness.sh
   [<output-path>]` writes the snapshot directly to `<output-path>` (default

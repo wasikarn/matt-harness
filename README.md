@@ -55,8 +55,8 @@ here ever gates its own output. Veto power belongs to scripts alone, because a s
 talk itself into anything. Every loop in the harness ends at a score a deterministic check can
 branch on, not a feeling.
 
-Three named disciplines shaped the design — harness engineering, loop engineering, and graph
-engineering — and each was researched from primary sources before anything was adopted.
+Three named disciplines shaped the design: harness engineering, loop engineering, and graph
+engineering. Each was researched from primary sources before anything was adopted.
 [Engineering doctrine](#engineering-doctrine) spells out which parts are structural, which are
 only vocabulary, and which gaps stay open.
 
@@ -65,32 +65,57 @@ only vocabulary, and which gaps stay open.
 ## Quick start
 
 These steps install `mh@wasikarn` so you can **use** it in your own Claude Code
-projects — they don't touch or require a clone of this repo. (Want to work on
+projects. They don't touch or require a clone of this repo. (Want to work on
 matt-harness's own source instead? See [Development](#development).)
 
-**Before you start, you need:**
+**You need:**
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed, v2.1.154+
-  (earlier versions auto-enable on install and can skip step 3 below)
-- A terminal, for the `claude plugin` commands outside a session
-- `mattpocock-skills` (step 4 below) — the one hard dependency; installs as its own
-  plugin the same way
+  (earlier versions auto-enable on install and skip the enable step below)
+- A terminal, for the `claude plugin` commands that run outside a session
+- `mattpocock-skills`: the one hard dependency, installed as its own plugin right
+  alongside mh (both options below cover it, not a separate setup)
 
-Nothing else is required to install or enable mh@wasikarn. A few skills reach for tools
-that aren't bundled and degrade gracefully without them — worth having if you want the
-full experience, never a blocker if you don't:
+Nothing else is required. A few skills reach for tools that aren't bundled and degrade
+gracefully without them. Worth having for the full experience, never a blocker:
 
 | Tool | Used by | Get it |
 |---|---|---|
 | [`gh` CLI](https://cli.github.com/) | `mh:pr`, `mh:ship-merge`, PR/issue-review skills | `brew install gh && gh auth login` |
-| `qmd` | Research-flavored skills (`mh:idea-scan`, `mh:wiki-scan`, ...) — CLAUDE.md's "check qmd before web search" rule | A local MCP semantic-search server over your own markdown; not part of matt-harness, see its own setup |
-| [`graphify`](https://github.com/Graphify-Labs/graphify) | Optional codebase knowledge graph — see [Exploring the codebase](#exploring-the-codebase-optional) | `uv tool install graphifyy` |
+| `qmd` | Research-flavored skills (`mh:idea-scan`, `mh:wiki-scan`, ...), per CLAUDE.md's "check qmd before web search" rule | A local MCP semantic-search server over your own markdown; not part of matt-harness, see its own setup |
+| [`graphify`](https://github.com/Graphify-Labs/graphify) | Optional codebase knowledge graph: see [Exploring the codebase](#exploring-the-codebase-optional) | `uv tool install graphifyy` |
 
 > Not on this list: `rtk`, a personal shell-alias proxy some contributors run on their
 > own machine. It has zero call sites in matt-harness's own code (confirmed via
-> `docs/reference/hook-lifecycle-contracts.md`) — it's someone's local environment
+> `docs/reference/hook-lifecycle-contracts.md`). It's someone's local environment
 > detail, not a dependency of this plugin.
 
-Run these commands inside Claude Code:
+Pick one of the two install paths below. Same end state either way.
+
+### Option A: let Claude do it
+
+Paste this into a Claude Code session. It runs the marketplace/install/enable steps
+via Bash, then stops at the two checkpoints only a human can clear: a session restart,
+and the one setup skill that can't be model-invoked by design.
+
+```text
+Install the mh@wasikarn Claude Code plugin end to end, using Bash for every step:
+
+1. claude plugin marketplace add wasikarn/matt-harness
+2. claude plugin install mh@wasikarn
+3. claude plugin enable mh@wasikarn
+4. claude plugin marketplace add mattpocock/skills
+5. claude plugin install mattpocock-skills@mattpocock
+6. claude plugin list   (show me the result: confirm both plugins show "enabled")
+
+Then stop. Tell me to restart Claude Code, and that once I'm back I need to type
+/mattpocock-skills:setup-matt-pocock-skills myself. Don't try to run that skill
+for me: it can't be model-invoked.
+```
+
+After the restart: run the setup skill yourself, then `/mh:cost-report` as a smoke
+test, and `claude plugin details mh@wasikarn` to confirm the install.
+
+### Option B: step by step
 
 ```text
 # 1. Register the marketplace source (once per machine)
@@ -110,7 +135,7 @@ claude plugin enable mh@wasikarn
 /plugin install mattpocock-skills@mattpocock
 
 # 5. Run once in each of YOUR projects where you want the harness active
-#    (sets up that project's issue tracker, triage labels, doc layout) —
+#    (sets up that project's issue tracker, triage labels, doc layout),
 #    not matt-harness's own repo. The leading slash is required; this
 #    skill can't be model-invoked. If step 4's install summary said "Run
 #    /reload-plugins to activate", run that first, or this command won't
@@ -143,31 +168,6 @@ claude plugin details mh@wasikarn   # component inventory + token cost
 **Uninstall:** `/plugin uninstall mh@wasikarn`  
 **Disable but keep installed:** `claude plugin disable mh@wasikarn`
 
-### One-shot install (agent-assisted)
-
-Rather than typing each step yourself, paste the block below into a Claude Code
-session. It runs steps 1-4 above via Bash, then stops at the two checkpoints only a
-human can clear: a session restart, and the one setup skill that can't be
-model-invoked by design (see step 5's note above).
-
-```text
-Install the mh@wasikarn Claude Code plugin end to end, using Bash for every step:
-
-1. claude plugin marketplace add wasikarn/matt-harness
-2. claude plugin install mh@wasikarn
-3. claude plugin enable mh@wasikarn
-4. claude plugin marketplace add mattpocock/skills
-5. claude plugin install mattpocock-skills@mattpocock
-6. claude plugin list   (show me the result — confirm both plugins show "enabled")
-
-Then stop. Tell me to restart Claude Code, and that once I'm back I need to type
-/mattpocock-skills:setup-matt-pocock-skills myself — don't try to run that skill
-for me, it can't be model-invoked.
-```
-
-After the restart: run the setup skill yourself, then `/mh:cost-report` as a smoke
-test, and `claude plugin details mh@wasikarn` to confirm the install.
-
 ---
 
 ## What you get
@@ -194,17 +194,17 @@ Fleet size (real current fleet: 60 skills · 17 agents) is patched into this lin
 What the plugin does to a session, in the three moments it acts. Click the diagram to open
 the interactive HTML version.
 
-[![matt-harness runtime workflow: the session-to-push path through doctrine injection, the deterministic gate boundary, and the auxiliary systems — plugin cache, advisory sensors, harness-audit, memory store, qmd/llm-wiki.](docs/diagrams/archify/matt-harness-runtime-architecture.png)](docs/diagrams/archify/matt-harness-runtime-architecture.html)
+[![matt-harness runtime workflow: the session-to-push path through doctrine injection, the deterministic gate boundary, and the auxiliary systems: plugin cache, advisory sensors, harness-audit, memory store, qmd/llm-wiki.](docs/diagrams/archify/matt-harness-runtime-architecture.png)](docs/diagrams/archify/matt-harness-runtime-architecture.html)
 
-**1. Session starts.** `hooks/session/doctrine-bootstrap.sh` injects `docs/METHODOLOGY.md` —
-the decision-sizing triad, the reasoning scaffold — into every fresh session. Skills and
+**1. Session starts.** `hooks/session/doctrine-bootstrap.sh` injects `docs/METHODOLOGY.md`
+(the decision-sizing triad, the reasoning scaffold) into every fresh session. Skills and
 agents load from the versioned cache at `~/.claude/plugins/cache/wasikarn/mh/<version>/`,
 not the working tree.
 
 **2. The model acts.** Computational deny-gates in `hooks/gates/` stop the irrecoverable set
 (`rm -rf`, `git add -A`, `--no-verify`, hardcoded home paths, edits to the verifier code).
 Advisory sensors in `hooks/advisory/` journal and nudge but never block. A model grading its
-own output is a verdict the model shouldn't get to make — every box that can stop it is
+own output is a verdict the model shouldn't get to make. Every box that can stop it is
 deterministic shell.
 
 **3. Work ships.** `harness-audit` and the gauntlet run as deterministic verifiers. A
@@ -213,8 +213,8 @@ running on the old cached copy. Same-version edits to a cached plugin are silent
 and that is the most common way work here looks done without being done.
 
 Off the primary path (dashed edges in the diagram): Claude Code reads/writes the
-`Auto-Memory Store` directly, and skills can look up `qmd`/`llm-wiki` — optional, surfaces
-must degrade gracefully without it.
+`Auto-Memory Store` directly, and skills can look up `qmd`/`llm-wiki` (optional; surfaces
+must degrade gracefully without it).
 
 ---
 
@@ -276,10 +276,13 @@ Stack-specific pattern skills, harness-native.
 |---|---|
 | [`BOUNDARY.md`](BOUNDARY.md) | Generated index of every agent, skill, and hook, grouped by bucket |
 | [`docs/onboarding.md`](docs/onboarding.md) | 10-minute cold-start guide |
-| [`docs/reference/operating-model.md`](docs/reference/operating-model.md) | The gates-deny / sensors-advise doctrine as a self-contained excerpt |
+| [`docs/reference/operating-model.md`](docs/reference/operating-model.md) | Canonical source for the gates-deny / sensors-advise doctrine |
 | [`docs/reference/reasoning-models.md`](docs/reference/reasoning-models.md) | 39 named mental models (cc-thinking-skills), pointing upstream for full write-ups |
 | [`docs/reference/env-vars.md`](docs/reference/env-vars.md) | Operator-tunable environment variables |
 | [`docs/reference/graph-model.md`](docs/reference/graph-model.md) | The orchestration graph: nodes, typed edges, anchors (see [Engineering doctrine](#engineering-doctrine)) |
+| [`docs/reference/surface-buckets.md`](docs/reference/surface-buckets.md) | Skill vs. agent bucket-naming rules for adding/removing a surface |
+| [`docs/reference/third-party-vetting.md`](docs/reference/third-party-vetting.md) | How to vet a new third-party plugin/skill before relying on it |
+| [`docs/reference/plugin-cache-mechanics.md`](docs/reference/plugin-cache-mechanics.md) | Dev-machine directory registration vs. a GitHub fetch |
 | [`docs/research/harness-engineering-2026-04.md`](docs/research/harness-engineering-2026-04.md) | Primary-source grounding for the gates/advisory split |
 | [`docs/harness-decay-cadence.md`](docs/harness-decay-cadence.md) | The harness-engineering 2×2 applied to sensor staleness and decay |
 | [`CLAUDE.md`](CLAUDE.md) | Architecture and non-obvious gotchas for Claude Code instances |
@@ -287,28 +290,28 @@ Stack-specific pattern skills, harness-native.
 
 ---
 
-*Everything below this line is for people extending or auditing the plugin's own internals —
-skip it if you're just installing and using matt-harness.*
+*Everything below this line is for people extending or auditing the plugin's own internals.
+Skip it if you're just installing and using matt-harness.*
 
 ## Architecture
 
 "Compose, don't create" is the reason this repo exists, and only four mechanisms carry the real
 weight of it: a hook that emits a chain into every session, a preflight that checks the companion
 plugin is even installed, a mechanical audit that keeps a ledger honest, and one sparse prose
-boundary. Everything else — the ~25 places mh's surfaces merely *name* a matt skill in passing —
+boundary. Everything else (the ~25 places mh's surfaces merely *name* a matt skill in passing)
 is routing pointers, not wired relationships.
 Click the diagram to open the interactive HTML version.
 
 [![mh@wasikarn composing with mattpocock-skills across four typed edges: routes-to, depends-on, verifies, hands-off-to.](docs/diagrams/mh-composition.png)](docs/diagrams/mh-composition.html)
 
-- **`routes-to`** — `hooks/advisory/flow-nudge.sh` emits the spec chain (`grilling` → `/to-spec` → `/to-tickets` → `/implement`) into session context on `UserPromptSubmit`. `grilling` fires bare (`model`-tier); the other three carry the leading slash and are user-invoked only.
-- **`depends-on`**, the required one — Quick start step 4 installs `mattpocock-skills@mattpocock` as a separate plugin; mh's own surfaces are unresolvable without it. `hooks/session/doctrine-bootstrap.sh` preflights the plugin's presence at every `SessionStart` and warns if it's missing or disabled.
-- **`verifies`** — harness-audit check 50 (4 sub-checks A-D; A-C are WARN, D is INFO) keeps `docs/reference/mattpocock-integration-map.md`'s 25-row ledger in sync with the installed plugin's own `plugin.json`.
-- **`hands-off-to`** — `skills/workflow/orchestrate/reference.md`'s boundary with `mattpocock-skills:wayfinder` (user-typed: `/mattpocock-skills:wayfinder`), one of only two such prose boundaries in the whole fleet.
-- **`ask-matt` is the actual routing layer** (`CLAUDE.md`'s "Finding a surface" section), even though no hook wires to it — it owns the routing map for 10 skills mh deliberately doesn't duplicate.
-- **Two matt skills are drawn as adopted, not routed** — `code-review` and `writing-for-agents` *are* mh's own review and authoring surfaces now (the native kbg equivalents were retired), which is a node label, not a relationship to draw an arrow for.
+- **`routes-to`**: `hooks/advisory/flow-nudge.sh` emits the spec chain (`grilling` → `/to-spec` → `/to-tickets` → `/implement`) into session context on `UserPromptSubmit`. `grilling` fires bare (`model`-tier); the other three carry the leading slash and are user-invoked only.
+- **`depends-on`**, the required one: Quick start step 4 installs `mattpocock-skills@mattpocock` as a separate plugin; mh's own surfaces are unresolvable without it. `hooks/session/doctrine-bootstrap.sh` preflights the plugin's presence at every `SessionStart` and warns if it's missing or disabled.
+- **`verifies`**: harness-audit check 50 (4 sub-checks A-D; A-C are WARN, D is INFO) keeps `docs/reference/mattpocock-integration-map.md`'s 25-row ledger in sync with the installed plugin's own `plugin.json`.
+- **`hands-off-to`**: `skills/workflow/orchestrate/reference.md`'s boundary with `mattpocock-skills:wayfinder` (user-typed: `/mattpocock-skills:wayfinder`), one of only two such prose boundaries in the whole fleet.
+- **`ask-matt` is the actual routing layer** (`CLAUDE.md`'s "Finding a surface" section). Even though no hook wires to it, it owns the routing map for 10 skills mh deliberately doesn't duplicate.
+- **Two matt skills are drawn as adopted, not routed**: `code-review` and `writing-for-agents` *are* mh's own review and authoring surfaces now (the native kbg equivalents were retired), which is a node label, not a relationship to draw an arrow for.
 
-See [How it runs](#how-it-runs) for the session-to-push runtime path — a different diagram from
+See [How it runs](#how-it-runs) for the session-to-push runtime path, a different diagram from
 this one. `docs/reference/mattpocock-integration-map.md` and `docs/reference/graph-model.md` (the
 four typed edges this diagram reuses) hold the full ledger and edge definitions.
 
@@ -461,7 +464,7 @@ version:
 ### Exploring the codebase (optional)
 
 [graphify](https://github.com/Graphify-Labs/graphify) is a separate, personally-installed
-tool — not bundled with this plugin — that turns a corpus into a queryable knowledge graph.
+tool (not bundled with this plugin) that turns a corpus into a queryable knowledge graph.
 Run `/graphify .` to build one for this repo; `graphify query "<question>"` /
 `graphify path "A" "B"` / `graphify explain "X"` then answer structural questions (who calls
 what, what enforces a given doctrine) that complement, rather than replace, this repo's own
