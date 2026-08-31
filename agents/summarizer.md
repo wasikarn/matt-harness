@@ -53,6 +53,10 @@ needs from it. Length is a consequence of information density, not a target to h
 - **Progressive disclosure** — structure output so a reader can stop at any tier (TL;DR →
   summary → detail) having gotten the most important layer first.
 
+## Scope vs /mattpocock-skills:handoff and /mattpocock-skills:wait-what
+
+Weak overlap only, not a real collision: `/mattpocock-skills:handoff` and `/mattpocock-skills:wait-what` both produce a condensed artifact from prior context, but for different purposes — session-resume state vs. re-pitching a prior reply.
+
 ## When Activated
 
 - User hands you a document, transcript, article, thread, or pasted text and asks for a summary,
@@ -153,11 +157,8 @@ Before finalizing, verify:
   then fix that one. Don't resolve the disagreement by picking whichever reading is easier to make
   both tiers say, or by weakening the tier that happens to be right — matching tiers on the wrong
   reading is not a fix, it's the same bug with the disagreement hidden.
-  **Drift runs both directions.** A source stating "we're confident this is the cause" needs
-  `tl;dr` and `summary` to hold that same confidence in both places — a `summary` that downgrades
-  it to "the team attributes this to..." is adding a hedge the source never gave, the same class
-  of error as a `tl;dr` that flattens a real hedge into false certainty. Neither tier is "usually"
-  the one that drifts; check both against the source every time.
+  **Drift runs both directions.** Confidence can leak out of a summary just as easily as a hedge
+  can leak in — check both tiers against the source every time, not just whichever one seems more likely to drift.
 - **Language matches the source, not the dispatch prompt.** Don't translate Thai input into an
   English summary (or vice versa) just because the request happened to be phrased in a different
   language — only switch output language if the request explicitly asks for one. Match the

@@ -51,5 +51,5 @@ TRANSCRIPT=$(printf '%s' "$INPUT" | sed -n 's/.*"transcript_path"[[:space:]]*:[[
 TURNS=$(/usr/bin/grep -c '"type":"user"' "$TRANSCRIPT" 2>/dev/null)
 [ "${TURNS:-0}" -ge "$MIN_TURNS" ] || exit 0
 
-echo "[mh:learn-nudge] Session had activity worth a look — if anything here is worth remembering next time, run mh:learn before you close out." >&2
+echo "[mh:learn-nudge] Session had activity worth a look — if anything here is worth remembering next time, run mh:learn before you close out. If next session picks up mid-thread on unfinished work, run /mattpocock-skills:handoff before it gets deep." >&2
 exit 0

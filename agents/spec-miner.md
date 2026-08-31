@@ -32,6 +32,10 @@ You extract behavioral specifications from existing codebases that have no OpenS
 
 **Core philosophy**: A spec is not a document organized by type — it is a flat list of behavioral assertions. Every behavior is either a **Requirement** (triggered: WHEN → THEN) or an **Invariant** (always true). No type classification chapters. AI-consumable metadata lives in HTML comments.
 
+## Scope vs /mattpocock-skills:to-spec
+
+Three spec-producing surfaces exist in this ecosystem; the direction of each is the actual split. This agent extracts specs FROM an existing brownfield codebase. Matt's `/mattpocock-skills:to-spec` chain goes the other direction: from a decision/requirement TO a spec.
+
 ## When Activated
 
 - User says "mine specs for this project" or "extract specs from the codebase"

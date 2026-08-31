@@ -26,28 +26,28 @@ own lane, not a zero-mention guarantee: `build-error-resolver.md` carries one in
 | skill | invocation | kbg touchpoint / deferral |
 |---|---|---|
 | ask-matt | user | the actual routing layer — `CLAUDE.md`'s "Finding a surface" section sends routing questions to `/mattpocock-skills:ask-matt` directly (kbg's own routers, `ask-kbg` + `kbg-help`, removed 2026-08-24 #80) |
-| code-review | model | adopted — the review surface since the kbg review pipeline retired (2026-08-24 #82); shares its bare name with Claude Code's own first-party bundled skill (`/code-review`, alias `/review`) — namespacing means no real conflict, but bare `/code-review` typed from muscle memory resolves to Anthropic's skill, not matt's |
-| codebase-design | model | deferred — ask-matt's map owns it; kbg's native design agents are `mh:code-architect` / `mh:backend-architect` |
+| code-review | model | adopted — the review surface since the kbg review pipeline retired (2026-08-24 #82); shares its bare name with Claude Code's own first-party bundled skill (`/code-review`, alias `/review`) — namespacing means no real conflict, but bare `/code-review` typed from muscle memory resolves to Anthropic's skill, not matt's. Open question, not yet reproduced: `mattpocock-skills:code-review` fans out its own internal sub-reviews as parallel sub-agents, and whether `hooks/gates/agent-recursion-guard.sh` incorrectly denies that internal fan-out when this skill is Skill-called from inside an already-dispatched mh subagent is unconfirmed — see the tracked follow-up issue for this collision. Until reproduced, prefer calling `mattpocock-skills:code-review` from the main session rather than from inside a dispatched subagent |
+| codebase-design | model | routed — `docs/METHODOLOGY.md`'s plan-mode paragraph names it for deep-module vocabulary mid-blueprint; `agents/code-architect.md` and `agents/backend-architect.md` boundary lines point to it for the same reason; kbg's native design agents are `mh:code-architect` / `mh:backend-architect` for the blueprint itself |
 | diagnosing-bugs | model | `docs/agent-voice-extension.md`, `skills/workflow/post-mortem/SKILL.md` (input-contract source since `commands/fix-bug` retired, 2026-08-24 #86) |
 | domain-modeling | model | `docs/agents/domain.md`, `docs/reference/judgment-ladder.md`, `docs/reference/strategic-judgment.md` |
 | grill-with-docs | user | `docs/agents/domain.md` (path into domain-modeling) |
-| implement | user | `hooks/advisory/flow-nudge.sh` spec-flow chain (terminal step — `agents/code-implementer.md`, the kbg agent that implemented autonomously, was retired 2026-08-24 #86; the spec-to-ship path now ends at the user typing `/mattpocock-skills:implement`) |
-| improve-codebase-architecture | user | `docs/agents/domain.md` (path into domain-modeling) |
+| implement | user | `hooks/advisory/flow-nudge.sh` spec-flow chain (terminal step — `agents/code-implementer.md`, the kbg agent that implemented autonomously, was retired 2026-08-24 #86; the spec-to-ship path now ends at the user typing `/mattpocock-skills:implement`); see Reverse handoffs §4 |
+| improve-codebase-architecture | user | `docs/agents/domain.md` (path into domain-modeling); `docs/METHODOLOGY.md`'s plan-mode paragraph names it for a whole-repo architecture pass; see Reverse handoffs §3 |
 | prototype | model | deferred — no mh surface produces throwaway spikes; the build/don't-build call is Rule 2's territory instead |
-| research | model | `skills/workflow/orchestrate/reference.md`, `docs/reference/strategic-judgment.md` |
+| research | model | `skills/workflow/orchestrate/reference.md`, `docs/reference/strategic-judgment.md`, `contexts/research.md` ("not this frame's job" line, if the companion plugin is installed); see Reverse handoffs §2 |
 | resolving-merge-conflicts | model | deferred — `hooks/gates/merge-door.sh` / `mh:ship-merge` own the merge decision; this skill owns the conflict edit itself — adjacent, not overlapping, no route needed |
-| setup-matt-pocock-skills | user | `README.md` Quick Start step 4 |
+| setup-matt-pocock-skills | user | `README.md` Quick Start step 4. Durable generated output: `docs/agents/{issue-tracker,domain,triage-labels}.md` — re-running the skill regenerates these three files from scratch, wiping any mh customization (including their provenance header) each time; re-add it by hand after a re-run |
 | tdd | model | `skills/review/production-audit/SKILL.md` |
 | to-spec | user | `hooks/advisory/flow-nudge.sh` spec chain (user-typed step) |
 | to-tickets | user | `hooks/advisory/flow-nudge.sh` spec chain (user-typed step) |
-| triage | user | deferred — ask-matt's map owns it (user-typed issue router; former `kbg-help` touchpoint removed 2026-08-24 #80) |
+| triage | user | routed — `docs/agents/triage-labels.md`'s provenance header names `/mattpocock-skills:triage` as a runtime reader of that file; the `parked` label documented there is the actual cross-reference, see Reverse handoffs §1 (user-typed issue router; former `kbg-help` touchpoint removed 2026-08-24 #80) |
 | wayfinder | user | `skills/workflow/orchestrate/SKILL.md` (boundary: multi-session decision maps) |
-| wizard | model | deferred — ask-matt's map owns it (model-invoked deliberately, so the agent can reach for it mid-build the moment it hits a step only a human can perform — PR #680; the skill walks a human through that step, it isn't itself human-only) |
-| grill-me | user | deferred — ask-matt's map owns it (batched grilling interview) |
+| wizard | model | routed — `docs/METHODOLOGY.md`'s disable-model-invocation section names it for a human-only multi-step procedure the model would otherwise have to spell out by hand (model-invoked deliberately, so the agent can reach for it mid-build the moment it hits a step only a human can perform — PR #680; the skill walks a human through that step, it isn't itself human-only) |
+| grill-me | user | routed — `docs/METHODOLOGY.md` Rule 3 names it for a live batched interview; `agents/requirement-analyst.md`'s boundary line distinguishes it from analyzing an already-written requirement (batched grilling interview) |
 | grilling | model | `hooks/advisory/flow-nudge.sh` spec-chain entry + base plan-first route, `README.md` |
 | handoff | user | `BOUNDARY.md`'s generated route (`skills/inventory/scripts/inventory-boundary.sh`) |
-| teach | user | deferred — ask-matt's map owns it |
-| to-questionnaire | user | deferred — ask-matt's map owns it (decision → stakeholder questionnaire) |
+| teach | user | routed — `output-styles/crisp.md`'s "teach the durable frame" bullet names it as the on-demand tool for turning a one-off explanation into something durable and reusable |
+| to-questionnaire | user | routed — `docs/METHODOLOGY.md` Rule 3 names it for turning a settled decision into a written stakeholder questionnaire |
 | wait-what | user | `output-styles/crisp.md`'s repair bullet (re-pitch last reply) |
 | writing-for-agents | model | root `CLAUDE.md`'s Skill authoring doctrine section, `docs/skill-authoring-conventions.md` (canonical authoring doctrine; renamed from writing-great-skills in matt v1.2.0) |
 

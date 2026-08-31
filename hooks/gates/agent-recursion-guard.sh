@@ -55,6 +55,13 @@
 # catch. This anchor keeps that detection (`(` is itself an anchor char, so
 # `$(claude` still matches) while clearing the false positives above.
 #
+# Open question, not yet reproduced (2026-09-01): `mattpocock-skills:code-review` fans
+# out its own internal sub-reviews as parallel sub-agents (its own SKILL.md, around lines
+# 11 and 58). If an mh subagent Skill-calls `mattpocock-skills:code-review`, does this
+# gate's `agent_id` check incorrectly deny that internal fan-out too, since the calling
+# subagent already has `agent_id` set? Unconfirmed — nobody has reproduced this collision
+# yet. See the tracked follow-up issue for this collision.
+#
 # The flag search after the anchor is a quote-aware scan (deep-audit,
 # 2026-08-31, "fix it all" pass), not a flat char-class exclusion — a flat
 # `[^|;&]*` treated ANY `&`/`;`/`|` as end-of-invocation, including one

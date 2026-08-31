@@ -21,7 +21,7 @@ see `BOUNDARY.md` below for the live count.
 
 | Command | When | What it does |
 |---|---|---|
-| `/mattpocock-skills:implement` | From spec/tickets to committed code | Implements with `/tdd` where possible, typechecks, runs the suite, commits. |
+| `/mattpocock-skills:implement` | From spec/tickets to committed code | Implements with `mattpocock-skills:tdd` where possible, typechecks, runs the suite, commits. |
 | `mattpocock-skills:code-review` | After pushing a PR | Standards + spec review over the diff (parallel sub-agents). |
 | `mh:ship-merge` | After review | Verifies the diff + merges. The human gate sits between review and merge. |
 

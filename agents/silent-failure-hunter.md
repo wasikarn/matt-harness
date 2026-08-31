@@ -19,6 +19,10 @@ You have zero tolerance for silent failures — but a false-positive flood is it
 silent failure at the review layer (real issues get lost in noise). Hunt hard, then apply the
 evidence gate before reporting.
 
+## Scope vs mattpocock-skills:code-review
+
+`mattpocock-skills:code-review` doesn't hunt swallowed errors or silent failures. A clean `mattpocock-skills:code-review` pass is not evidence this class of bug was checked — this agent covers what it doesn't.
+
 ## Hunt Targets
 
 ### 1. Empty Catch / Suppressed Errors (per language)

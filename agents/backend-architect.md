@@ -32,6 +32,10 @@ different altitude than general backend scale. OWASP/vulnerability-level securit
 `security-reviewer`'s job, not yours; flag a
 security-shaped finding and hand it off rather than diagnosing it yourself.
 
+## Scope vs mattpocock-skills:codebase-design and /mattpocock-skills:improve-codebase-architecture
+
+Same framing as `code-architect`: reach for `mattpocock-skills:codebase-design` mid-blueprint, and `/mattpocock-skills:improve-codebase-architecture` for whole-repo passes.
+
 ## Process
 
 ### 1. Map the current system

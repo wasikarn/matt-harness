@@ -32,7 +32,11 @@ guess wearing a plan's shape. For a multi-file or architectural change, dispatch
 `mh:code-architect` for the blueprint (pattern analysis, layer-direction check,
 DI-style check, test-impact check) — it does that same reading systematically
 rather than ad hoc, and its output format (Design Decisions, Trade-offs, Build
-Sequence, Risks, Success Criteria) is the plan.
+Sequence, Risks, Success Criteria) is the plan. Two adjacent, narrower matt-skill
+tools are worth reaching for mid-blueprint without displacing `mh:code-architect`'s
+own role: `mattpocock-skills:codebase-design` when the vocabulary is deep-module
+design specifically, not the whole blueprint, and `/mattpocock-skills:improve-codebase-architecture`
+for a whole-repo architecture pass rather than one feature's blueprint.
 Call `advisor()` before presenting the plan, not only before implementing it — the
 plan is what the user spends their review cycle on.
 
@@ -46,6 +50,8 @@ For a genuinely hard or contested call where `advisor()`-level pressure-testing 
 
 A command or skill carrying `disable-model-invocation: true` cannot be invoked by the model, period — this covers both irreversible-external actions (merging a PR, transitioning a ticket) and actions gated purely for timing/user-control even when they're read-only (e.g. a memory search the user must explicitly ask for). A "go"/"yes" typed in chat is confirmation, not user-invocation — it does not clear the block, and attempting the call anyway just face-plants on the tool error. When one of these is the right next step, say so and stop: tell the user the literal string to type themselves — `/mh:<name>` or, for a DMI-gated matt skill (e.g. `/mattpocock-skills:ask-matt`, `/mattpocock-skills:to-spec`, `/mattpocock-skills:handoff`), the equivalent `/mattpocock-skills:<name>` form — plugin skills and plugin commands are namespaced the same way; verified against code.claude.com/docs/en/skills, 2026-08-31 — never imply you'll do it once they confirm.
 
+A human-only multi-step procedure that would otherwise require the user to type out each step by hand is a candidate for `mattpocock-skills:wizard`, which generates the walkthrough instead.
+
 This section is mirrored in the operator's global `~/.claude/CLAUDE.md` (kept self-contained here on purpose — this file ships inside the plugin and must read standalone for anyone who installs it, not just this operator). If you edit the rule here, the global copy needs the matching edit too.
 
 ## Rule 2 — Match surface area to proven need
@@ -56,7 +62,7 @@ Don't build it until there's a real failure that demands it. Three similar lines
 
 A requirement — or any incoming claim: a bug report, a spec, a task handoff — is a claim to test, not a truth to obey. It's optimized to sound right on the surface, not to survive an edge case.
 
-**Requirements (lead instance):** before code on any non-trivial task, read it critically — what's **ambiguous** (vague verbs, undefined roles, no actor), **missing** (error path, edge case, untestable acceptance criterion), **assumed** (riskiest assumption per Rule 1, unowned cross-boundary dependency). Surface gaps as explicit questions — never fill silently with "probably means X". For a deep structured pass, dispatch `mh:requirement-analyst`.
+**Requirements (lead instance):** before code on any non-trivial task, read it critically — what's **ambiguous** (vague verbs, undefined roles, no actor), **missing** (error path, edge case, untestable acceptance criterion), **assumed** (riskiest assumption per Rule 1, unowned cross-boundary dependency). Surface gaps as explicit questions — never fill silently with "probably means X". For a deep structured pass, dispatch `mh:requirement-analyst`; for a live batched interview with a stakeholder, `/mattpocock-skills:grill-me` runs it, and for turning a settled decision into a written stakeholder questionnaire, `/mattpocock-skills:to-questionnaire` does that.
 
 The same discipline applies to any incoming claim — a bug report before you fix it, an idea before you spec it, a diff before you merge it. See `docs/reference/decision-doctrine-map.md` for which surface owns each.
 
@@ -69,7 +75,7 @@ After acting: check against those terms. If not met, loop — don't declare done
 
 When Acceptance Criteria already exist for the task, they ARE the testable terms — verify the change against each one individually, not just against the overall goal.
 
-**Bug fixes: failing test first.** Before writing the fix, write (or run) a test that reproduces the bug and confirm it fails for the right reason. Only then write the fix, then re-run the same test and confirm it now passes. This is Rule 4's "testable terms," made concrete for the bug-fix case — a fix without a test proving it closes the reported failure isn't verified, it's assumed. Same ordering applies to implementation work where a test is practical: define the test before the code that satisfies it. If an automated test isn't practical (e.g. missing infra), the fallback is a minimal repro step shown to fail before the fix and pass after — never skipped silently. Match rigor to stakes per Rule 1: a one-line typo needs none of this; any bug with a reproducible failure mode does.
+**Bug fixes: failing test first.** Before writing the fix, write (or run) a test that reproduces the bug and confirm it fails for the right reason. Only then write the fix, then re-run the same test and confirm it now passes. This is Rule 4's "testable terms," made concrete for the bug-fix case — a fix without a test proving it closes the reported failure isn't verified, it's assumed. Same ordering applies to implementation work where a test is practical: define the test before the code that satisfies it. If an automated test isn't practical (e.g. missing infra), the fallback is a minimal repro step shown to fail before the fix and pass after — never skipped silently. Match rigor to stakes per Rule 1: a one-line typo needs none of this; any bug with a reproducible failure mode does. This red/green discipline mirrors `mattpocock-skills:tdd`'s own always-on-floor practice.
 
 ### Dispatched-agent claims need one checkable fact (prose-only — see Rule 13's citation convention)
 
@@ -105,6 +111,7 @@ window doesn't help — it just lets unused material pile higher before anyone n
   - `/btw` answers a side question without ever entering conversation history (confirmed against `code.claude.com/docs/en/best-practices.md`, 2026-08-20: "the answer never enters conversation history, so you can check a detail without growing context").
   - `/rewind` (or double-tap `Esc`) restores conversation/code to a checkpoint, or summarizes from/up-to a selected point, without a full compact — but only direct file edits made through Claude's own editing tools are tracked, so Bash-driven writes (`git commit`/`push`, `inventory-witness.sh`'s output redirect, `memory-lint.py --auto-archive`'s file moves) aren't; and of subagent work only a foreground `context: fork` skill (`background: false`, not the default) restores — `git grep "context: fork"` finds zero live carriers in this repo, so every `orchestrate`/`refactor-cleaner` dispatch that writes files is unrestorable by rewind. Use git for both (confirmed against `code.claude.com/docs/en/checkpointing.md`, 2026-08-20).
   - `/compact <instructions>` (e.g. `/compact Focus on the API changes`) steers what a compaction keeps instead of accepting the default squeeze.
+  - Ending a session mid-thread on unfinished work → `/mattpocock-skills:handoff` writes resumable state, so the next session (or `mh:learn`) doesn't start from zero.
 
 This is the point of subagents — not that they run in parallel, but that they keep
 disposable reasoning disposable. Parallelism is a side effect, not the objective.

@@ -17,6 +17,10 @@ effort: high
 
 You design feature architectures based on a deep understanding of the existing codebase.
 
+## Scope vs mattpocock-skills:codebase-design and /mattpocock-skills:improve-codebase-architecture
+
+Reach for `mattpocock-skills:codebase-design` mid-blueprint for deep-module design specifically, and `/mattpocock-skills:improve-codebase-architecture` for a whole-repo architecture pass rather than one feature's blueprint.
+
 ## Process
 
 ### 1. Pattern Analysis

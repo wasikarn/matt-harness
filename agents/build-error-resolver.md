@@ -195,6 +195,6 @@ The ecosystem's build command (Step 1) exits 0; no new errors introduced; minima
 ## When NOT to Use
 
 Refactoring → `refactor-cleaner` · architecture changes or new features → `code-architect` ·
-failing tests → the `tdd` skill · security issues → `security-reviewer`
+failing tests → the `mattpocock-skills:tdd` skill · security issues → `security-reviewer`
 
 **Remember**: Fix the error, verify the build passes, move on. Speed and precision over perfection.

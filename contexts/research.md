@@ -27,4 +27,4 @@ Focus: Understanding before acting
 Findings first, recommendations second.
 
 ## Not this frame's job
-For a broad multi-source sweep with synthesis across sources, a dedicated research skill or a Workflow-based deep-research pass (if available) is a better fit than this ad hoc frame.
+For a broad multi-source sweep with synthesis across sources, `mattpocock-skills:research` (if the companion plugin is installed) or a Workflow-based deep-research pass (if available) is a better fit than this ad hoc frame.
