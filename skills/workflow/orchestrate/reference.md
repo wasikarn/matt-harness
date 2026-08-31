@@ -429,7 +429,7 @@ After spawning Task 1, the lead verifies its done-when (`GET /health` returns 20
 
 The top rung: work that runs **unattended and recurring** — handed to `/schedule` (remote cron routine), `/loop` (in-session interval), or `CronCreate` — instead of you re-running it each cycle. L4 is unattended but one-shot; L5 is unattended **and** repeating.
 
-L5 applies to user-external tasks routed through vendor primitives (`/schedule`, `/loop`, `CronCreate`). The autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under the Architecture section — self-contained excerpt, read in Bash: `cat "${MH_PLUGIN_ROOT}/docs/reference/operating-model.md"`) governs the harness's *own* self-repair — that loop never enters L5; the `recursive-improve` skill is the only harness-internal loop primitive and stays at L2/L3 with a human gate per iteration.
+L5 applies to user-external tasks routed through vendor primitives (`/schedule`, `/loop`, `CronCreate`). The autonomy invariant (the no-model-self-start rule, CLAUDE.md's Operating model under the Architecture section — canonical source, read in Bash: `cat "${MH_PLUGIN_ROOT}/docs/reference/operating-model.md"`) governs the harness's *own* self-repair — that loop never enters L5; the `recursive-improve` skill is the only harness-internal loop primitive and stays at L2/L3 with a human gate per iteration.
 
 **Route here only when ALL hold:**
 

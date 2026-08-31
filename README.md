@@ -32,12 +32,12 @@ and only write new surfaces where the backend stack really needs them.
 - [How it runs](#how-it-runs)
 - [Spotlight](#spotlight)
 - [Documentation](#documentation)
+- [Attribution](#attribution)
+- [License](#license)
 - [Architecture](#architecture)
 - [Engineering doctrine](#engineering-doctrine)
 - [Repository layout](#repository-layout)
 - [Development](#development)
-- [Attribution](#attribution)
-- [License](#license)
 
 ---
 
@@ -89,7 +89,22 @@ gracefully without them. Worth having for the full experience, never a blocker:
 > `docs/reference/hook-lifecycle-contracts.md`). It's someone's local environment
 > detail, not a dependency of this plugin.
 
-Pick one of the two install paths below. Same end state either way.
+Pick one of the two install paths below. Same end state either way; step numbers 1-4
+line up across both.
+
+> **Note:** the plugin ships with `defaultEnabled: false`. Step 3 (enable) is required.
+>
+> **Note:** step 4 is required too. Several of mh's own skills and hooks call
+> matt-pocock's skills by namespaced name (`mattpocock-skills:<name>`), so a fresh install
+> doesn't work without them. Re-sync later with
+> `claude plugin update mattpocock-skills@mattpocock`.
+>
+> **Scope note:** step 2 installs user-wide by default (neither option below passes
+> `--scope`). That means the deny-gates (`hooks/gates/irrecoverable.sh`, which blocks
+> `rm -rf`, `git add -A`, `git add .`, `--no-verify`, and hardcoded `/Users/<name>` paths)
+> apply to every project you open in Claude Code, not just the one you're evaluating. To
+> try it on one project first, run Option B by hand with
+> `/plugin install mh@wasikarn --scope project` (or `--scope local`) at step 2.
 
 ### Option A: let Claude do it
 
@@ -113,7 +128,7 @@ for me: it can't be model-invoked.
 ```
 
 After the restart: run the setup skill yourself, then `/mh:cost-report` as a smoke
-test, and `claude plugin details mh@wasikarn` to confirm the install.
+test, and `claude plugin list` / `claude plugin details mh@wasikarn` to confirm the install.
 
 ### Option B: step by step
 
@@ -134,15 +149,14 @@ claude plugin enable mh@wasikarn
 /plugin marketplace add mattpocock/skills
 /plugin install mattpocock-skills@mattpocock
 
-# 5. Run once in each of YOUR projects where you want the harness active
+# 5. Restart Claude Code (the plugin cache loads on startup, so step 4's
+#    plugin isn't active in this session yet)
+
+# 6. Run once in each of YOUR projects where you want the harness active
 #    (sets up that project's issue tracker, triage labels, doc layout),
 #    not matt-harness's own repo. The leading slash is required; this
-#    skill can't be model-invoked. If step 4's install summary said "Run
-#    /reload-plugins to activate", run that first, or this command won't
-#    resolve in the same session.
+#    skill can't be model-invoked.
 /mattpocock-skills:setup-matt-pocock-skills
-
-# 6. Restart Claude Code (the plugin cache loads on startup)
 
 # 7. Smoke-test. Plugin skills are namespaced: /mh:<name>, not /<name>.
 /mh:cost-report
@@ -151,19 +165,6 @@ claude plugin enable mh@wasikarn
 claude plugin list                # both plugins "enabled"
 claude plugin details mh@wasikarn   # component inventory + token cost
 ```
-
-> **Note:** the plugin ships with `defaultEnabled: false`. Step 3 is required.
->
-> **Note:** step 4 is required too. Several of mh's own skills and hooks call
-> matt-pocock's skills by namespaced name (`mattpocock-skills:<name>`), so a fresh install
-> doesn't work without them. Re-sync later with
-> `claude plugin update mattpocock-skills@mattpocock`.
->
-> **Scope note:** step 2 without a `--scope` flag installs user-wide. That means the
-> deny-gates (`hooks/gates/irrecoverable.sh`, which blocks `rm -rf`, `git add -A`,
-> `git add .`, `--no-verify`, and hardcoded `/Users/<name>` paths) apply to every project
-> you open in Claude Code, not just the one you're evaluating. To try it on one project
-> first: `/plugin install mh@wasikarn --scope project` (or `--scope local`).
 
 **Uninstall:** `/plugin uninstall mh@wasikarn`  
 **Disable but keep installed:** `claude plugin disable mh@wasikarn`
@@ -287,6 +288,32 @@ Stack-specific pattern skills, harness-native.
 | [`docs/harness-decay-cadence.md`](docs/harness-decay-cadence.md) | The harness-engineering 2×2 applied to sensor staleness and decay |
 | [`CLAUDE.md`](CLAUDE.md) | Architecture and non-obvious gotchas for Claude Code instances |
 | [`CHANGELOG.md`](CHANGELOG.md) | Release notes |
+
+---
+
+## Attribution
+
+matt-harness aggregates components from these upstream projects under their respective
+licenses.
+
+> These counts are a hand-tallied snapshot from 2026-07-18. There is no `origin:`
+> frontmatter on surface files to regenerate the table from. The kbg-native row is the
+> exception: it is machine-synced to the live fleet count.
+
+| Source | License | Adopted |
+|---|---|---|
+| [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | Installed as the `mattpocock-skills` plugin (not vendored; see Quick start), 0 modified |
+| [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) | MIT | 85 skills · 48 agents · 64 commands · 3 contexts |
+| [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models cataloged by name in `docs/reference/reasoning-models.md`, pointing to the upstream repo for full write-ups (no local vendored copy since ticket 94) |
+| [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) | MIT | 3 voice rules folded into `output-styles/crisp.md` (v0.68.126, then named `staff-eng.md`) |
+| [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | MIT | Tokenizer-fact justification in `output-styles/crisp.md`, plus a terminal-token status-code convention in `docs/agent-authoring-conventions.md`'s Closed-vocabulary status codes section (v0.68.127); `compress-docs`' safety pattern (verify-before-overwrite, frontmatter handling, sensitive-file refusal) adapted from `caveman-compress` (v0.68.128); symlink guard on `hooks/stop/cost-tracker.sh`'s `costs.jsonl` append, adapted from `caveman-config.js`'s `safeWriteFlag` hardening (v0.68.129) |
+| [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | MIT | YAGNI ladder, the `ponytail:` shortcut-marker convention, and the root-cause-fix rule, revived into `contexts/dev.md` |
+| [thedotmack/claude-mem](https://github.com/thedotmack/claude-mem) | Apache-2.0 | `docs/merge-rubric.md`'s real-fix-vs-failure-tolerance rubric, adapted into a Fix-Authenticity Lens in `agents/code-reviewer.md` (v0.68.130; both retired 2026-08-24, #82, with the review pipeline; `mattpocock-skills:code-review` is now the review surface) |
+| kbg-native | MIT | 60 skills · 17 agents |
+
+## License
+
+MIT. See [`LICENSE`](LICENSE).
 
 ---
 
@@ -471,31 +498,3 @@ what, what enforces a given doctrine) that complement, rather than replace, this
 `qmd`-based research flow (CLAUDE.md's "graphify" section has the full division of labor).
 `graphify-out/` is gitignored: the graph goes stale within hours of any commit, so regenerate
 it on demand instead of trusting a checked-in snapshot.
-
----
-
-## Attribution
-
-matt-harness aggregates components from these upstream projects under their respective
-licenses.
-
-> These counts are a hand-tallied snapshot from 2026-07-18. There is no `origin:`
-> frontmatter on surface files to regenerate the table from. The kbg-native row is the
-> exception: it is machine-synced to the live fleet count.
-
-| Source | License | Adopted |
-|---|---|---|
-| [mattpocock/skills](https://github.com/mattpocock/skills) | MIT | Installed as the `mattpocock-skills` plugin (not vendored; see Quick start), 0 modified |
-| [affaan-m/everything-claude-code](https://github.com/affaan-m/everything-claude-code) | MIT | 85 skills · 48 agents · 64 commands · 3 contexts |
-| [TJBoudreaux/cc-thinking-skills](https://github.com/TJBoudreaux/cc-thinking-skills) | MIT | 39 mental models cataloged by name in `docs/reference/reasoning-models.md`, pointing to the upstream repo for full write-ups (no local vendored copy since ticket 94) |
-| [ayghri/i-have-adhd](https://github.com/ayghri/i-have-adhd) | MIT | 3 voice rules folded into `output-styles/crisp.md` (v0.68.126, then named `staff-eng.md`) |
-| [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | MIT | Tokenizer-fact justification in `output-styles/crisp.md`, plus a terminal-token status-code convention in `docs/agent-authoring-conventions.md`'s Closed-vocabulary status codes section (v0.68.127); `compress-docs`' safety pattern (verify-before-overwrite, frontmatter handling, sensitive-file refusal) adapted from `caveman-compress` (v0.68.128); symlink guard on `hooks/stop/cost-tracker.sh`'s `costs.jsonl` append, adapted from `caveman-config.js`'s `safeWriteFlag` hardening (v0.68.129) |
-| [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | MIT | YAGNI ladder, the `ponytail:` shortcut-marker convention, and the root-cause-fix rule, revived into `contexts/dev.md` |
-| [thedotmack/claude-mem](https://github.com/thedotmack/claude-mem) | Apache-2.0 | `docs/merge-rubric.md`'s real-fix-vs-failure-tolerance rubric, adapted into a Fix-Authenticity Lens in `agents/code-reviewer.md` (v0.68.130; both retired 2026-08-24, #82, with the review pipeline; `mattpocock-skills:code-review` is now the review surface) |
-| kbg-native | MIT | 60 skills · 17 agents |
-
----
-
-## License
-
-MIT. See [`LICENSE`](LICENSE).
