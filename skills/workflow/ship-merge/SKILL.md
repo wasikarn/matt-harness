@@ -1,7 +1,7 @@
 ---
 name: ship-merge
 description: "Ship a PR: validate, server-side merge, monitor CI."
-argument-hint: Optional PR number or branch name
+argument-hint: "[pr-number|branch]"
 disable-model-invocation: true
 disable-model-invocation-reason: external, irreversible action — executes a server-side PR merge on GitHub that cannot be undone; only a human-typed /mh:ship-merge, confirmed through Phase 2's explicit go/no-go, may trigger it
 model: inherit

@@ -4,7 +4,7 @@ description: "Compact a /goal completion condition: done-when check, one-way-doo
 metadata:
   origin: kbg-native
   adapted-from: "goal-spec (retired a518ad1, orphaned from c35afcc)"
-argument-hint: "The freeform task description to turn into a /goal condition"
+argument-hint: "[task-description]"
 model: inherit
 effort: high
 ---

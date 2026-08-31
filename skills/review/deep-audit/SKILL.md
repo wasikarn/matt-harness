@@ -55,13 +55,27 @@ Do not assume the current implementation is correct. Treat the entire session ou
     is a legitimate baseline. This doesn't relax the Critical Rule below — if the score genuinely
     doesn't improve, say so explicitly; it just means "nothing worth fixing" and "under-audited" are
     not the same finding, and only evidence tells them apart.
-5.  **Implement improvements**
+5.  **Confirm, then implement improvements**
+
+    Before editing any file, present the prioritized findings from step 4 and confirm with a
+    single **AskUserQuestion**:
+    - `Apply all fixes now (best when the findings are low-risk and match the session's scope)` — proceed
+    - `Apply only some (best when a finding is out of scope or needs a separate decision)` — ask which, then proceed with that subset
+    - `Skip fixes, report findings only (best when this is a review-only pass)` — stop here; Final Output's Changes Made section stays empty
+
+    **Self-consistency**: if applying fixes is the only way to satisfy an instruction already given
+    explicitly this same turn (e.g. the user said "audit and fix"), skip the ask — that instruction
+    already is the confirmation, and re-asking spends a turn on a question already settled. Never
+    skip toward "apply all" on an implied or carried-over authorization from earlier in the
+    session — only an explicit same-turn instruction is safe to auto-select on.
+
     Make the necessary changes to address the identified weaknesses.
 
     Do not make cosmetic changes just to increase the score. Every change must have a concrete quality rationale.
 
 6.  **Re-verify everything**
-    After making changes:
+    If step 5 ended on "skip fixes, report findings only," skip straight to Final Output with the
+    baseline score standing as both before and after score. Otherwise, after making changes:
     -   Re-run relevant tests and checks.
     -   Re-audit affected areas.
     -   Check for regressions — including ones the fix itself just introduced, not only

@@ -1,6 +1,7 @@
 ---
 name: security-reviewer-patterns
 description: Catalog of security-reviewer's BAD/GOOD examples (SQLi, IDOR, JWT, mass assignment, SSRF, ReDoS). Auto-loads when security-reviewer runs. Don't use for the deep-audit workflow (security-auditor).
+user-invocable: false
 metadata:
   origin: kbg
 model: inherit

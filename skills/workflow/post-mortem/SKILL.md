@@ -1,7 +1,7 @@
 ---
 name: post-mortem
 description: "Post-mortem: a writeup for a resolved bug (trigger/mechanism/patch/validation known)."
-argument-hint: Optional bug ID, Jira key, or summary
+argument-hint: "[bug-id|jira-key|summary]"
 disable-model-invocation: true
 disable-model-invocation-reason: writes a canonical doc (and optional tracker post) — user decides to record
 model: inherit

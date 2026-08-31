@@ -1,7 +1,7 @@
 ---
 name: ideate
 description: "Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Use when the question is open-ended. Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks."
-argument-hint: Problem statement to ideate on
+argument-hint: "[problem-statement]"
 disable-model-invocation: false
 disable-model-invocation-reason: Auto-fire on vague prompts is load-bearing (catches prompts the model would otherwise default on). Cost is bounded by the F8.5 cap (orchestrate SKILL's F8.5 section) and the 2-wave fan-out callout below — NOT by this flag.
 model: inherit

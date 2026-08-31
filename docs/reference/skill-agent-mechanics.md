@@ -73,10 +73,65 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
   states plainly that the flag "removes the skill from Claude's context entirely" — a gated
   skill's description is not in the model's context at all. The old trigger-list descriptions were
   therefore inert; the model was never reading the "Don't use for X" cross-references they carried.
-  This is also why mh built `hooks/advisory/compliance-audit-nudge.sh` and its sibling nudges — a
-  hook is the only layer that can surface a gated skill to the model, since the description can't.
+  This is also why mh built `hooks/advisory/compliance-audit-nudge.sh` — a hook is the only layer
+  that can surface a gated skill to the model, since the description can't. **Correction
+  2026-08-31:** this doc previously said "and its sibling nudges" — false. Verified: exactly one
+  such hook exists, hardcoded to `/mh:compliance-audit` only. The other 9 carriers (`ship-merge`,
+  `recursive-improve`, `ideate-search`, `score-decision`, `tiered-pipeline`, `wiki-ingest`,
+  `address-review`, `post-mortem`, `ship-release`) have zero nudge coverage — per the mechanism
+  above, the model has no path to ever proactively suggest them. Real gap, not (yet) fixed; note
+  it here so a future pass doesn't assume coverage exists because this doc once implied it did.
   Don't "fix" these 10 descriptions back to a trigger-list shape; that reverts a correctness fix,
   not a style preference.
+- **`user-invocable: false` — the documented pair to `disable-model-invocation`.** Official
+  semantics: only Claude can invoke the skill; Claude Code hides it from the `/` menu and won't
+  run it on `/name`, but its description stays in Claude's context and preload is unaffected
+  (`code.claude.com/docs/en/skills`, "Control who invokes a skill" + frontmatter reference,
+  verified 2026-08-31). The settings-only equivalent is `skillOverrides: {"<name>":
+  "user-invocable-only"}`, for gating a skill you don't want to edit (e.g. one checked into a
+  shared repo you don't own). Applied 2026-08-31 to this fleet's 8 pure agent-preload catalogs
+  (`performance-optimizer-algorithms`, `plan-reviewer-format`, `requirement-analyst-format`,
+  `spec-miner-anti-patterns`, `summarizer-format`, `blind-spot-hunter-shapes`,
+  `review-lens-nextjs-routing`, `security-reviewer-patterns`) — each one's own description already
+  read "Auto-loads when `<agent>` runs," the docs' exact stated use case for the field.
+  **Tamper-guard parity:** unlike `disable-model-invocation`'s 10 carriers (checks 30/36/40/45/58-65
+  above), these 8 had zero protection against a future edit silently dropping the flag until check
+  66 (`66-user-invocable-carrier-tamper-guard.sh`, added 2026-08-31, WARN tier — lower stakes than
+  the CRIT carriers since dropping this flag just un-hides a catalog skill, it doesn't remove a
+  safety block) closed the gap: one check covering all 8 known carriers plus a self-extending
+  second pass that flags any *new* `user-invocable: false` skill not yet in its known-carrier list.
+  **Historical note:** an earlier cleanup (`CHANGELOG.md:11447`) stripped `user-invocable: false`
+  from two now-deleted skills as an "unofficial frontmatter field... not in the vendor schema" —
+  it's actually official; that entry misclassified it alongside 4 other genuinely-official fields
+  (`context: fork`, `agent:`, `license:`, `compatibility:`). Don't repeat that mistake if any of
+  those five show up again.
+- **`disable-model-invocation: true` has two side effects beyond blocking the Skill-tool call**,
+  neither previously documented here: it also prevents the skill from being preloaded into
+  subagents via their `skills:` frontmatter, and (as of Claude Code v2.1.196) prevents it from
+  running when a scheduled task fires with the skill as its prompt. No agent in this fleet
+  currently lists a gated skill under `skills:` (verified 2026-08-31), so this is a
+  forward-looking constraint, not a live bug — check before ever adding one.
+- **`skills/review/pr` is a deliberate non-carrier of `disable-model-invocation`**, despite doing
+  a real `git push` + creating a GitHub PR. Its own body calls itself "an unflagged external-write
+  surface" and relies on the Phase-4 preview-confirm gate instead. Reasoned tradeoff, confirmed
+  2026-08-31: gating would strip its description from Claude's context entirely (per the flag's
+  actual mechanism, above), killing the "open a PR / เปิด PR" conversational trigger — for an
+  action that's reversible (an open PR can be closed) and already confirm-gated. Don't add the
+  flag here without re-litigating that tradeoff first.
+- **`skills/workflow/incident` and `skills/review/deep-audit`** follow the same unflagged-but-gated
+  pattern as `pr`, for the same reason (both are meant to trigger on natural-language phrasing —
+  "alerts fire", "audit what we just built" — so removing their description from context would
+  break that). `incident` already had its own AskUserQuestion confirm before irreversible
+  mitigation (step 3, self-consistency skip only for an already-confirmed-expanding blast radius);
+  `deep-audit` didn't — verified 2026-08-31 it applied fixes directly with zero confirm step
+  anywhere in 121 lines — so it got one added (step 5, mirrors `incident`'s skip-only-on-explicit-
+  same-turn-authorization shape) rather than gaining `disable-model-invocation`, consistent with
+  the `pr` precedent above.
+- **Agents have no frontmatter-level counterpart to `disable-model-invocation`/`user-invocable`.**
+  `agents/*.md`'s `tools:` field hard-restricts what a dispatched agent may call during its run —
+  it says nothing about whether the agent may be auto-dispatched in the first place. Nothing in
+  the Skills docs' invocation-control sections covers this, and no equivalent field exists on the
+  agents surface. Platform limitation, not a repo gap — recorded so it isn't re-discovered.
 
 <!-- The both-surface-types line caught 2026-07-22, not folded back here until 2026-08-04. -->
 - **`orchestrate` vs deciding:** orchestrate decides whether and how to spend effort on an
@@ -95,7 +150,8 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
   2026-08-29 from a prior mislabeling as kbg-native. What's actually unrecognized by the
   platform: the flat dotted-key form `metadata.origin:` (correct usage is a nested map,
   `metadata:` then an indented `origin:` — `skills/review/pr/SKILL.md` was the one skill using
-  the wrong flat form, fixed the same day) and `disable-model-invocation-reason`. Unrecognized
+  the wrong flat form, fixed the same day), `disable-model-invocation-reason`, and
+  `model_limitation` (used once, `tech-humanize/SKILL.md`). Unrecognized
   frontmatter keys inside Claude Code are silently tolerated (no confirmed warning, no error);
   a *separate* six-field portability allowlist (`name`, `description`, `license`,
   `compatibility`, `metadata`, `allowed-tools`) applies only when packaging a skill for the

@@ -136,7 +136,10 @@ unstamped. Scope facts: skill `effort:` applies only while the surface is active
 harness-audit check 21 accepts `inherit` as an agent model value. Drift backstop: check 54 WARNs on
 any surface missing either key, a non-tier `effort:` value, or a non-`inherit` skill
 `model:` (unless `context: fork`) — deliberately NOT the per-surface tier map, which stays a
-judgment call retiered via normal version-bumped edits.
+judgment call retiered via normal version-bumped edits. Official Claude Code also accepts a 5th
+tier, `effort: max` (`code.claude.com/docs/en/skills`, frontmatter reference, verified 2026-08-31)
+— check 54 accepts it too, but this fleet's four-tier semantic scheme above hasn't assigned it a
+meaning yet; treat an unassigned `max` as a deliberate one-off, not a convention to copy.
 
 **Reference-file conventions (Anthropic Agent Skills best-practices, verified 2026-08-29):**
 source: `platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices.md`. Three

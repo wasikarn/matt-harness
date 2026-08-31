@@ -1,7 +1,7 @@
 ---
 name: compliance-audit
 description: "Compliance-audit: verify a finished implementation against its plan via fresh-context verifiers."
-argument-hint: Optional path to the plan file, PR number, or commit range
+argument-hint: "[plan-path|pr-number|commit-range]"
 disable-model-invocation: true
 disable-model-invocation-reason: costly multi-agent fan-out that gates a done-declaration — user decides when the audit runs, not the model
 model: inherit

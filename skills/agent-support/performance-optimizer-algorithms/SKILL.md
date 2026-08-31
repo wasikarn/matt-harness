@@ -1,6 +1,7 @@
 ---
 name: performance-optimizer-algorithms
 description: Catalog of performance-optimizer's 14-row algorithmic-complexity pattern table. Auto-loads when performance-optimizer runs. Don't use for other agents.
+user-invocable: false
 metadata:
   origin: kbg
 model: inherit

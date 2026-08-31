@@ -1,6 +1,7 @@
 ---
 name: plan-reviewer-format
 description: Catalog of plan-reviewer's Output Format template and Anti-Patterns list. Auto-loads when plan-reviewer runs. Don't use for other agents or standalone review.
+user-invocable: false
 metadata:
   origin: kbg
 model: inherit

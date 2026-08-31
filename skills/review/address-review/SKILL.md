@@ -1,7 +1,7 @@
 ---
 name: address-review
 description: "Triage open PR review comments: fetch, classify, fix, reply."
-argument-hint: Optional PR number
+argument-hint: "[pr-number]"
 disable-model-invocation: true
 disable-model-invocation-reason: external write — posts replies to GitHub PR review threads
 model: inherit

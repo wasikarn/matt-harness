@@ -1,7 +1,7 @@
 ---
 name: wiki-ingest
 description: "Ingest a source document into the llm-wiki vault."
-argument-hint: <absolute/path/to/source.md> [topic]
+argument-hint: "[absolute/path/to/source.md] [topic]"
 disable-model-invocation: true
 disable-model-invocation-reason: mutates the operator's personal vault outside this repo — copies into raw/, creates a wiki/ page, and appends to log.md (and, when the guard allows it, hotcache.md). A human must type /mh:wiki-ingest themselves.
 model: inherit

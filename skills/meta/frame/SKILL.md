@@ -1,7 +1,7 @@
 ---
 name: frame
 description: "Frame: dev/review/research working-posture, not a workflow or voice change. Use when switching posture; say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /config's output-style picker."
-argument-hint: dev | review | research
+argument-hint: "[dev|review|research]"
 model: inherit
 effort: low
 ---
