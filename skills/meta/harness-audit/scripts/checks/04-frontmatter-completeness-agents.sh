@@ -16,6 +16,14 @@ for f in "$CLAUDE_DIR/agents"/*.md; do
   # Missing it degrades the index (falls into "unbucketed"), doesn't break
   # loading — WARN, not CRIT. Same convention as check 05's skill version.
   _bucket=$(fm_get "$f" "bucket")
+  # Trim surrounding whitespace before checking (2026-08-31 deep-audit: an
+  # untrimmed trailing space, e.g. from a copy-paste, made `fm_get` return
+  # "review " — non-empty, so it reached the enum check below and false-WARNed
+  # as "unrecognized". Trimming first also means a whitespace-only value
+  # ("bucket:   ") now correctly falls into the missing-bucket branch instead
+  # of reporting a bogus non-empty "unrecognized bucket: '   '").
+  _bucket="${_bucket#"${_bucket%%[![:space:]]*}"}"
+  _bucket="${_bucket%"${_bucket##*[![:space:]]}"}"
   if [ -z "$_bucket" ]; then
     warn "agent '$name' missing bucket: in frontmatter"
   else
@@ -25,7 +33,10 @@ for f in "$CLAUDE_DIR/agents"/*.md; do
     # warning at all. Same severity as missing (grouping-only impact; agents
     # stay flat/always-discoverable regardless of bucket value, unlike check
     # 05's skill folders where an unrecognized bucket dir is undiscoverable).
-    case "$_bucket" in
+    # Case-folded (2026-08-31 deep-audit: `bucket: Review` is an innocent case
+    # variant, not a typo, but false-WARNed before this fix) — the message
+    # still shows the original untouched value, only the comparison folds.
+    case "${_bucket,,}" in
       design|review|build|analysis|utility) : ;;
       *) warn "agent '$name' has unrecognized bucket: '$_bucket' (expected one of design/review/build/analysis/utility)" ;;
     esac

@@ -439,6 +439,26 @@ else
   bad "check-04 good-bucket-enum fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
 fi
 
+# Check 04 — self-inflicted regression guard (2026-08-31 deep-audit): the enum
+# check above compares the raw frontmatter value with no normalization, so a
+# case variant or incidental trailing whitespace — neither a real typo — false
+# positives as "unrecognized bucket". Empirically confirmed against a scratch
+# fixture before this test was written (bucket: Review and bucket: "review "
+# both fired a bogus WARN). These prove the fix trims whitespace and folds
+# case before comparing.
+run_check 04 "$FIX/check-04-good-bucket-case-insensitive"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-04 good-bucket-case-insensitive fixture silent (Review == review)"
+else
+  bad "check-04 good-bucket-case-insensitive fixture not silent — case-sensitivity false positive (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 04 "$FIX/check-04-good-bucket-trailing-whitespace"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-04 good-bucket-trailing-whitespace fixture silent"
+else
+  bad "check-04 good-bucket-trailing-whitespace fixture not silent — untrimmed whitespace false positive (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
 echo ""
 echo "self-test: $pass passed, $fail failed"
 if [ "$fail" -ne 0 ]; then
