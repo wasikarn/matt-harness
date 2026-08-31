@@ -578,6 +578,22 @@ test_allow "$AGENT_RECURSION_GUARD" "main session runs 'claude -p' via Bash (no 
   "$(bash_agent_payload 'claude -p "do something"' '')"
 test_allow "$AGENT_RECURSION_GUARD" "malformed stdin on the Bash leg (fail-safe allow)" \
   '{not valid json'
+test_deny  "$AGENT_RECURSION_GUARD" "subagent spawns via command substitution" \
+  "$(bash_agent_payload 'echo $(claude -p "evil")' fork)"
+test_deny  "$AGENT_RECURSION_GUARD" "subagent spawns with an env-var prefix before claude" \
+  "$(bash_agent_payload 'CLAUDE_API_KEY=x claude -p "do something"' fork)"
+# Deep-audit fresh adversarial pass, 2026-08-31: the un-anchored regex denied
+# these three real, harmless commands because they merely CONTAIN the
+# substring "claude -p" as prose/data, not as an invocation. A subagent
+# could not even document or grep this gate's own pattern without tripping
+# it. Fixed by anchoring the match on command position (see the gate's own
+# header comment for why a shlex-token rewrite was rejected instead).
+test_allow "$AGENT_RECURSION_GUARD" "subagent commits a message mentioning the flag (prose, not invocation)" \
+  "$(bash_agent_payload 'git commit -m "mention claude -p in docs"' fork)"
+test_allow "$AGENT_RECURSION_GUARD" "subagent echoes the pattern as a string, not a real invocation" \
+  "$(bash_agent_payload 'echo "claude -p"' fork)"
+test_allow "$AGENT_RECURSION_GUARD" "subagent greps for the pattern (auditing this gate itself)" \
+  "$(bash_agent_payload 'grep -r "claude -p" docs/' fork)"
 test_allow "$TASK_COMPLETE" "non-TaskUpdate tool with agent_type (out of scope)" \
   "$(python3 -c 'import json; print(json.dumps({"tool_name":"Bash","tool_input":{"command":"ls"},"agent_type":"mh:build-error-resolver"}))')"
 

@@ -40,7 +40,22 @@
 # by case. The Bash-command pattern is a coarse habit-guard, not an
 # adversarial sandbox — same accepted scope as irrecoverable.sh's own
 # command-substitution/eval non-goal; it does not attempt to defeat
-# deliberate obfuscation (quote-splitting, variable indirection).
+# deliberate obfuscation (quote-splitting, variable indirection, or planting
+# a literal `&`/`;`/`|` inside a quoted prompt argument specifically to
+# split the flag out of the exclusion-class window below).
+#
+# Anchored on command position (a fresh adversarial pass, 2026-08-31,
+# reproduced the un-anchored version denying `git commit -m "mention claude
+# -p in docs"`, `echo "claude -p"`, and `grep -r "claude -p" docs/` — real,
+# concrete false positives; a subagent could not even document or grep this
+# gate's own regex without tripping it). Requires "claude" to sit right
+# after a command-start position (string start, `|`/`;`/`&`/`(`, `&&`, `||`)
+# or a `VAR=val` prefix chain, which is what a real invocation always looks
+# like and what plain prose almost never does. A shlex-token rewrite was
+# tried and rejected: tokenizing swallows `$(claude -p evil)` into one opaque
+# token (`$(claude`), silently defeating the ONE thing this leg exists to
+# catch. This anchor keeps that detection (`(` is itself an anchor char, so
+# `$(claude` still matches) while clearing the false positives above.
 set -uo pipefail
 
 # Portability guard (#93): announced fail-open when python3 is missing.
@@ -78,11 +93,15 @@ if not agent_id:
 def clip(s):
     # Log-injection guard (security review, 2026-08-31): both agent_type and
     # tool_input values below can originate from a subagent'"'"'s own tool call —
-    # model-influenceable, unlike the host-supplied agent_id. Strip newlines
-    # so a crafted value cannot forge an extra "[mh:gate] ..." line in the
-    # merged multi-gate stderr the model reads back as its rejection reason,
-    # and cap length so a denial cannot be used to burn arbitrary context.
-    return str(s).replace("\n", " ").replace("\r", " ")[:80]
+    # model-influenceable, unlike the host-supplied agent_id. Strip control
+    # chars (not just \n/\r — a fresh adversarial pass, 2026-08-31, confirmed
+    # ANSI cursor codes and U+2028/U+0085 line separators survive a
+    # newline-only strip, letting a crafted subagent_type overwrite a
+    # preceding terminal line) so a crafted value cannot forge an extra
+    # "[mh:gate] ..." line or erase this one, and cap length so a denial
+    # cannot be used to burn arbitrary context.
+    s = re.sub(r"[^\x20-\x7e]", "?", str(s))
+    return s[:80]
 
 agent_type = clip(d.get("agent_type") or "unknown")
 
@@ -104,7 +123,11 @@ cmd = ti.get("command") if isinstance(ti, dict) else None
 if not isinstance(cmd, str):
     sys.exit(0)
 
-if re.search(r"\bclaude\b[^|;&]*(-p\b|--print\b|--agent\b|--bg\b)", cmd):
+if re.search(
+    r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*"
+    r"(?:\S*/)?claude\b[^|;&]*(-p\b|--print\b|--agent\b|--bg\b)",
+    cmd,
+):
     print(f"[mh:gate] BLOCKED: subagent ({agent_type}) may not spawn a nested Claude Code "
           f"session via Bash (command: {clip(cmd)!r}) — same rule as the Agent-tool leg: "
           f"only the main session dispatches (CLAUDE.md \"Task Dispatch\")", file=sys.stderr)
