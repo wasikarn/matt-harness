@@ -420,6 +420,25 @@ if [ "$_geomcount_regression_ok" -eq 1 ]; then
 fi
 unset _msg _want _got _geomcount_regression_ok
 
+# Check 04 — agent bucket enum validation (2026-08-31 drill-down finding: a
+# typo like `bucket: reveiw` passed the old non-empty-only check silently,
+# degrading BOUNDARY.md's grouping with zero warning — same "magic string
+# typo-checks clean" shape as the Vercel Workflow SDK community critique this
+# fix was prompted by). WARN, not CRIT — matches the existing missing-bucket
+# severity (grouping-only impact, doesn't break agent loading).
+run_check 04 "$FIX/check-04-bad-bucket-enum"
+if [ "$WARN_FOUND" -ge 1 ] && [ "$CRIT_FOUND" -eq 0 ]; then
+  ok "check-04 bad-bucket-enum fixture fires WARN (warn=$WARN_FOUND)"
+else
+  bad "check-04 bad-bucket-enum fixture did NOT fire WARN as expected (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 04 "$FIX/check-04-good-bucket-enum"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-04 good-bucket-enum fixture silent"
+else
+  bad "check-04 good-bucket-enum fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
 echo ""
 echo "self-test: $pass passed, $fail failed"
 if [ "$fail" -ne 0 ]; then
