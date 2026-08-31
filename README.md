@@ -129,6 +129,31 @@ claude plugin details mh@wasikarn   # component inventory + token cost
 **Uninstall:** `/plugin uninstall mh@wasikarn`  
 **Disable but keep installed:** `claude plugin disable mh@wasikarn`
 
+### One-shot install (agent-assisted)
+
+Rather than typing each step yourself, paste the block below into a Claude Code
+session. It runs steps 1-4 above via Bash, then stops at the two checkpoints only a
+human can clear: a session restart, and the one setup skill that can't be
+model-invoked by design (see step 5's note above).
+
+```text
+Install the mh@wasikarn Claude Code plugin end to end, using Bash for every step:
+
+1. claude plugin marketplace add wasikarn/matt-harness
+2. claude plugin install mh@wasikarn
+3. claude plugin enable mh@wasikarn
+4. claude plugin marketplace add mattpocock/skills
+5. claude plugin install mattpocock-skills@mattpocock
+6. claude plugin list   (show me the result — confirm both plugins show "enabled")
+
+Then stop. Tell me to restart Claude Code, and that once I'm back I need to type
+/mattpocock-skills:setup-matt-pocock-skills myself — don't try to run that skill
+for me, it can't be model-invoked.
+```
+
+After the restart: run the setup skill yourself, then `/mh:cost-report` as a smoke
+test, and `claude plugin details mh@wasikarn` to confirm the install.
+
 ---
 
 ## What you get
