@@ -17,6 +17,12 @@ user-only" section (lines 45-47).
 owned by `/mattpocock-skills:ask-matt`, and kbg doesn't duplicate it — a row goes from deferred to
 routed only when a kbg surface has a concrete reason to name the skill.
 
+**No-counterpart agents, verified 2026-08-31:** `agents/a11y-architect.md`,
+`agents/performance-optimizer.md`, and `agents/build-error-resolver.md` have no matt-skill
+counterpart for their own lane — deliberately unrouted, not a gap. This describes each agent's
+own lane, not a zero-mention guarantee: `build-error-resolver.md` carries one incidental
+`mattpocock-skills:tdd` cross-reference (see Phase 1.9b of the redesign that added this note).
+
 | skill | invocation | kbg touchpoint / deferral |
 |---|---|---|
 | ask-matt | user | the actual routing layer — `CLAUDE.md`'s "Finding a surface" section sends routing questions to `/mattpocock-skills:ask-matt` directly (kbg's own routers, `ask-kbg` + `kbg-help`, removed 2026-08-24 #80) |
@@ -27,9 +33,9 @@ routed only when a kbg surface has a concrete reason to name the skill.
 | grill-with-docs | user | `docs/agents/domain.md` (path into domain-modeling) |
 | implement | user | `hooks/advisory/flow-nudge.sh` spec-flow chain (terminal step — `agents/code-implementer.md`, the kbg agent that implemented autonomously, was retired 2026-08-24 #86; the spec-to-ship path now ends at the user typing `/mattpocock-skills:implement`) |
 | improve-codebase-architecture | user | `docs/agents/domain.md` (path into domain-modeling) |
-| prototype | model | deferred — ask-matt's map owns it |
+| prototype | model | deferred — no mh surface produces throwaway spikes; the build/don't-build call is Rule 2's territory instead |
 | research | model | `skills/workflow/orchestrate/reference.md`, `docs/reference/strategic-judgment.md` |
-| resolving-merge-conflicts | model | deferred — ask-matt's map owns it |
+| resolving-merge-conflicts | model | deferred — `hooks/gates/merge-door.sh` / `mh:ship-merge` own the merge decision; this skill owns the conflict edit itself — adjacent, not overlapping, no route needed |
 | setup-matt-pocock-skills | user | `README.md` Quick Start step 4 |
 | tdd | model | `skills/review/production-audit/SKILL.md` |
 | to-spec | user | `hooks/advisory/flow-nudge.sh` spec chain (user-typed step) |
@@ -39,10 +45,10 @@ routed only when a kbg surface has a concrete reason to name the skill.
 | wizard | model | deferred — ask-matt's map owns it (model-invoked deliberately, so the agent can reach for it mid-build the moment it hits a step only a human can perform — PR #680; the skill walks a human through that step, it isn't itself human-only) |
 | grill-me | user | deferred — ask-matt's map owns it (batched grilling interview) |
 | grilling | model | `hooks/advisory/flow-nudge.sh` spec-chain entry + base plan-first route, `README.md` |
-| handoff | user | deferred — ask-matt's map owns it (no kbg equivalent) |
+| handoff | user | `BOUNDARY.md`'s generated route (`skills/inventory/scripts/inventory-boundary.sh`) |
 | teach | user | deferred — ask-matt's map owns it |
 | to-questionnaire | user | deferred — ask-matt's map owns it (decision → stakeholder questionnaire) |
-| wait-what | user | deferred — ask-matt's map owns it (re-pitch last reply) |
+| wait-what | user | `output-styles/crisp.md`'s repair bullet (re-pitch last reply) |
 | writing-for-agents | model | root `CLAUDE.md`'s Skill authoring doctrine section, `docs/skill-authoring-conventions.md` (canonical authoring doctrine; renamed from writing-great-skills in matt v1.2.0) |
 
 ## Reverse handoffs
@@ -84,3 +90,22 @@ the caveat stated plainly — a partial answer written up as partial, not as a c
    rules the whole worktree approach a partial answer, *"note that `refs/stash` is shared across
    worktrees too, so worktrees alone do not fix the stash case."* mh's answer is worktree-based, so
    it inherits that limit unchanged.
+
+## Upstream watch list
+
+Unregistered in matt's own `plugin.json` — local-clone-only (`~/Codes/Personals/mattpocock-skills`
+`skills/in-progress/*`, `skills/misc/*`), matt's own stated policy that these can vanish or reshape
+without warning before graduating. Not in the ledger table above because they aren't installed
+skills yet; tracked here so a future integration pass doesn't start from zero.
+
+- **`implement-spec`, `retro`** — both are themselves delegation-pattern designs; worth adopting
+  their stated principle regardless of graduation status: coding standards belong to the
+  reviewer, not the implementer, because the implementer already carries the most context
+  pressure.
+- **`claude-handoff`** — session state capture, predecessor shape to the now-graduated
+  `/mattpocock-skills:handoff`.
+- **`setup-ts-deep-modules`** — transferable pattern regardless of TS-specificity: prove the
+  rules bite, don't just document them.
+- **`git-guardrails-claude-code`** — study-only. Root `CLAUDE.md` already forbids running its
+  setup in this repo (its unconditional `git push` block conflicts with this repo's own
+  push-confirmation workflow).

@@ -165,7 +165,7 @@ searching all of them blind.
 **Why this rule lives here, not in a skill:** kbg built exactly this qmd-first behavior
 once already, vendored into a `research` skill — and two unrelated namespace-collision
 migrations silently deleted it with nobody catching it, most recently the swap to
-`mattpocock-skills:engineering/research`, which carries no qmd/context7 awareness. A skill
+`mattpocock-skills:research`, which carries no qmd/context7 awareness. A skill
 file is exactly the kind of surface an upstream resync can overwrite out from under you;
 `CLAUDE.md` isn't. The rule lives here so it survives the next resync and applies to every
 research-shaped task.

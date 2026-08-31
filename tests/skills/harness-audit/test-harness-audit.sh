@@ -263,6 +263,25 @@ if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ] && [ "$INFO_FOUND" -eq 0 ]
 else
   bad "check-50 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
 fi
+# Sub-check E (2026-08-31) — bare backtick + bare slash matt-skill names with
+# no mattpocock-skills: prefix must fire INFO; the correctly-namespaced forms
+# on the same fixture's adversarial-clean line must not add extra findings.
+export MH_MATT_CACHE="$FIX/check-50-bad-bare-token/fake-matt-cache"
+run_check 50 "$FIX/check-50-bad-bare-token"
+if [ "$INFO_FOUND" -ge 2 ] && [ "$CRIT_FOUND" -eq 0 ]; then
+  ok "check-50 sub-check E fires on bare backtick + bare slash matt-skill names (info=$INFO_FOUND)"
+else
+  bad "check-50 sub-check E did not fire as expected (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND; need info>=2)"
+fi
+# Sub-check F (2026-08-31) — a ledger row still marked "deferred" while a live
+# surface already references that skill must WARN (ledger prose drift).
+export MH_MATT_CACHE="$FIX/check-50-bad-ledger-drift/fake-matt-cache"
+run_check 50 "$FIX/check-50-bad-ledger-drift"
+if [ "$WARN_FOUND" -ge 1 ] && [ "$CRIT_FOUND" -eq 0 ]; then
+  ok "check-50 sub-check F fires on deferred-but-referenced ledger row (warn=$WARN_FOUND)"
+else
+  bad "check-50 sub-check F did not fire on ledger prose drift (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND; need warn>=1)"
+fi
 # Graceful skip: no mattpocock cache at all → INFO note only, never WARN/CRIT,
 # and the run completes (same class of guard as the check-25 nullglob test).
 export MH_MATT_CACHE="$FIX/check-50-good/no-such-cache"

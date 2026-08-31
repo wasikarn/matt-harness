@@ -412,7 +412,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `skills/` and
 ### Research & analysis
 | User says | Dispatch | Why |
 |---|---|---|
-| "research this", "deep dive on X", "how does Y work" | `research` | Brain dump + Q&A + plan |
+| "research this", "deep dive on X", "how does Y work" | `mattpocock-skills:research` | Brain dump + Q&A + plan |
 | "review this PR", "check this code" | `mattpocock-skills:code-review` skill | Standards + spec review since the kbg review pipeline retired (2026-08-24 #82) |
 | "audit the harness", "check health" | `mh:harness-audit` skill | Self-audit |
 
@@ -421,7 +421,7 @@ Map user intent → harness dispatch. Use these trigger phrases in `skills/` and
 |---|---|---|
 | "incident", "alerts firing", "monitors red" | `mh:incident` skill | Live incident response |
 | "post-mortem", "writeup after incident" | `mh:post-mortem` | Incident documentation |
-| "save my session", "hand off" | `handoff` | Session state capture |
+| "save my session", "hand off" | `/mattpocock-skills:handoff` | Session state capture |
 
 XREF4
 
