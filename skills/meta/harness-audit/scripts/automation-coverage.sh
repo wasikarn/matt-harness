@@ -49,7 +49,7 @@ if [ -f "$CLAUDE_DIR/skills/workflow/ship-merge/SKILL.md" ]; then
   _h=$((_h + 1))
 fi
 # (ship-release, post-mortem, recursive-improve, address-review,
-#  ideate-search, wiki-ingest, tiered-pipeline, score-decision, compliance-audit
+#  tiered-pipeline, score-decision, compliance-audit
 #  — all H by doctrine; listed compactly, not exhaustively grepped to keep the script readable.)
 
 # 2. X: one-way doors (external/irreversible writes) — correctly human.

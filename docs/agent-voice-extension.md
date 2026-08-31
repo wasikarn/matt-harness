@@ -1,7 +1,7 @@
 # Agent voice extensions: when (and when not) to wrap a personality in a command
 
 **Status:** Convention reference. Owned by the harness. Sibling of [`agent-tool-patterns.md`](./agent-tool-patterns.md).
-**Origin:** F5 voice blocks shipped in Phase 3 (commit `4d2ad91`) against the fleet at the time. Of the current 17-agent fleet, `ideate-critic` is the one agent that carries a `## Voice` section with `senior-eng` personality (uncertainty, tradeoff, reasoning, pattern recognition) inline. Phase 4 D6 (deferred from the 2026-06-12 audit spec) considered wrapping those personalities in `/debug`, `/architect`, `/perspectives` commands. Owner chose to **fold into this doc** rather than ship commands — F5 stays the single source of truth for "what does this agent sound like."
+**Origin:** F5 voice blocks shipped in Phase 3 (commit `4d2ad91`) against the fleet at the time. Of the current 13-agent fleet, `ideate-critic` is the one agent that carries a `## Voice` section with `senior-eng` personality (uncertainty, tradeoff, reasoning, pattern recognition) inline. Phase 4 D6 (deferred from the 2026-06-12 audit spec) considered wrapping those personalities in `/debug`, `/architect`, `/perspectives` commands. Owner chose to **fold into this doc** rather than ship commands — F5 stays the single source of truth for "what does this agent sound like."
 
 The question this doc answers: **when a user types `/<personality>`, what should happen, and what shouldn't we build?**
 

@@ -18,7 +18,7 @@ check 67 flags on the very next audit run.
 (nothing else); column 3 = free prose — the kbg surface(s) that route/name it, or an explicit
 deferral with a reason. Gated (`user`) skills are cited in kbg surfaces as the literal slash form
 `/mattpocock-skills:<name>` per `docs/METHODOLOGY.md`'s "disable-model-invocation surfaces are
-user-only" section (lines 45-47).
+user-only" section (lines 49-55).
 
 "Deferred" rows follow the standing v0.46.0 separate-fleet design: matt's internal chaining map is
 owned by `/mattpocock-skills:ask-matt`, and kbg doesn't duplicate it — a row goes from deferred to
@@ -41,8 +41,8 @@ own lane, not a zero-mention guarantee: `build-error-resolver.md` carries one in
 | implement | user | `hooks/advisory/flow-nudge.sh` spec-flow chain (terminal step — `agents/code-implementer.md`, the kbg agent that implemented autonomously, was retired 2026-08-24 #86; the spec-to-ship path now ends at the user typing `/mattpocock-skills:implement`); see Reverse handoffs §4 |
 | improve-codebase-architecture | user | `docs/agents/domain.md` (path into domain-modeling); `docs/METHODOLOGY.md`'s plan-mode paragraph names it for a whole-repo architecture pass; see Reverse handoffs §3 |
 | prototype | model | deferred — no mh surface produces throwaway spikes; the build/don't-build call is Rule 2's territory instead |
-| research | model | `skills/workflow/orchestrate/reference.md`, `docs/reference/strategic-judgment.md`, `contexts/research.md` ("not this frame's job" line, if the companion plugin is installed); see Reverse handoffs §2 |
-| resolving-merge-conflicts | model | deferred — `hooks/gates/merge-door.sh` / `mh:ship-merge` own the merge decision; this skill owns the conflict edit itself — adjacent, not overlapping, no route needed |
+| research | model | `skills/workflow/orchestrate/reference.md`, `docs/reference/strategic-judgment.md`, `contexts/research.md` ("not this frame's job" line, if the companion plugin is installed); see Reverse handoffs §2. Same main-session-only rule as `code-review` (#118): this skill spins up its own background agent, which `agent-recursion-guard.sh` denies from inside a dispatched subagent |
+| resolving-merge-conflicts | model | deferred — `hooks/gates/merge-door.sh` / `mh:ship-merge` own the merge decision; this skill owns the conflict edit itself — adjacent, with one known runtime friction: its step 5 "stage everything" hits `gate:bash:irrecoverable`'s `git add -A` deny (mh doctrine deliberately wins; stage by name per the deny message's own hint) |
 | setup-matt-pocock-skills | user | `README.md` Quick Start step 4. Durable generated output: `docs/agents/{issue-tracker,domain,triage-labels}.md` — re-running the skill regenerates these three files from scratch, wiping any mh customization (including their provenance header) each time; re-add it by hand after a re-run |
 | tdd | model | `skills/review/production-audit/SKILL.md` |
 | to-spec | user | `hooks/advisory/flow-nudge.sh` spec chain (user-typed step) |
@@ -51,7 +51,7 @@ own lane, not a zero-mention guarantee: `build-error-resolver.md` carries one in
 | wayfinder | user | `skills/workflow/orchestrate/SKILL.md` (boundary: multi-session decision maps) |
 | wizard | model | routed — `docs/METHODOLOGY.md`'s disable-model-invocation section names it for a human-only multi-step procedure the model would otherwise have to spell out by hand (model-invoked deliberately, so the agent can reach for it mid-build the moment it hits a step only a human can perform — PR #680; the skill walks a human through that step, it isn't itself human-only) |
 | grill-me | user | routed — `docs/METHODOLOGY.md` Rule 3 names it for a live batched interview; `agents/requirement-analyst.md`'s boundary line distinguishes it from analyzing an already-written requirement (batched grilling interview) |
-| grilling | model | `hooks/advisory/flow-nudge.sh` spec-chain entry + base plan-first route, `README.md` |
+| grilling | model | `hooks/advisory/flow-nudge.sh` spec-chain entry + base plan-first route, `README.md`. Same main-session-only rule as `code-review` (#118): its research step dispatches a sub-agent, which `agent-recursion-guard.sh` denies from inside a dispatched subagent |
 | handoff | user | `BOUNDARY.md`'s generated route (`skills/inventory/scripts/inventory-boundary.sh`) |
 | teach | user | routed — `output-styles/crisp.md`'s "teach the durable frame" bullet names it as the on-demand tool for turning a one-off explanation into something durable and reusable |
 | to-questionnaire | user | routed — `docs/METHODOLOGY.md` Rule 3 names it for turning a settled decision into a written stakeholder questionnaire |

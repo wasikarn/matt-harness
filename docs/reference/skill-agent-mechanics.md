@@ -23,9 +23,11 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
   reference surface); the harness-audit check that guarded against re-vendoring it into
   `skills/` (formerly check 41) was deleted 2026-08-25 in ticket 87's ghost-check cleanup,
   since there's no local tree left to promote from.
-- **`disable-model-invocation: true`:** carried by 10 skills (`recursive-improve`,
-  `score-decision`, `ship-merge`, `ideate-search`, `tiered-pipeline`, `wiki-ingest`,
-  `address-review`, `post-mortem`, `ship-release`, `compliance-audit`); no commands carry it
+- **`disable-model-invocation: true`:** carried by 8 skills (`recursive-improve`,
+  `score-decision`, `ship-merge`, `tiered-pipeline`,
+  `address-review`, `post-mortem`, `ship-release`, `compliance-audit`) — `ideate-search` and
+  `wiki-ingest` left the plugin in the 2026-09-01 dead-weight sweep (deleted / relocated to
+  user scope, checks 58/60 retired with them); no commands carry it
   any more (the command surface type is retired, its carriers converted to skills or deleted
   across #79-#112; `/mattpocock-skills:implement` covers what `ship/COMMAND.md` did).
   `compliance-audit` was deleted 2026-08-24 (#80) and restored 2026-08-25 as a skill
@@ -35,11 +37,11 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
   and why they don't). Re-check carriers via the frontmatter-scoped sweep (a bare
   `grep -rl` misreports: surfaces that only *mention* another one's flag in prose also
   match): `for f in skills/*/*/SKILL.md; do [ -f "$f" ] && [ "$(fm_get "$f"
-  disable-model-invocation)" = true ] && echo "$f"; done`. **All 10 carriers are now
+  disable-model-invocation)" = true ] && echo "$f"; done`. **All 8 carriers are now
   CRIT-guarded** against a rewrite silently dropping the flag, one check per skill (verified
   2026-08-30): `recursive-improve/SKILL.md` (check 36), `score-decision/SKILL.md` (check 45),
-  `ship-merge/SKILL.md` (check 40), `ideate-search/SKILL.md` (check 58),
-  `tiered-pipeline/SKILL.md` (check 59), `wiki-ingest/SKILL.md` (check 60),
+  `ship-merge/SKILL.md` (check 40),
+  `tiered-pipeline/SKILL.md` (check 59),
   `address-review/SKILL.md` (check 61), `post-mortem/SKILL.md` (check 62),
   `ship-release/SKILL.md` (check 63), `compliance-audit/SKILL.md` (check 64). Check 30 only
   WARNs that a `-reason` field exists — it's the presence-of-reason check, not the
@@ -80,8 +82,8 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
   `hooks/advisory/`. Actual coverage, swept across all of `hooks/`: **two** proactive nudges —
   this one (`/mh:compliance-audit`) and `flow-nudge.sh`'s reply-to-PR-review branch
   (`/mh:address-review`) — plus one reactive mention, `merge-door.sh`'s ask message naming
-  `mh:ship-merge` when a raw `gh pr merge` is attempted. The remaining 7 carriers
-  (`recursive-improve`, `ideate-search`, `score-decision`, `tiered-pipeline`, `wiki-ingest`,
+  `mh:ship-merge` when a raw `gh pr merge` is attempted. The remaining 5 carriers
+  (`recursive-improve`, `score-decision`, `tiered-pipeline`,
   `post-mortem`, `ship-release`) have zero hook coverage — via the description mechanism above the
   model has no route to proactively suggest them; only a doctrine file that happens to name one
   (e.g. the operator CLAUDE.md's `ship-merge` example) can. Real gap, not (yet) fixed; note
@@ -94,10 +96,11 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
   (`code.claude.com/docs/en/skills`, "Control who invokes a skill" + frontmatter reference,
   verified 2026-08-31). The settings-only equivalent is `skillOverrides: {"<name>":
   "user-invocable-only"}`, for gating a skill you don't want to edit (e.g. one checked into a
-  shared repo you don't own). Applied 2026-08-31 to this fleet's 8 pure agent-preload catalogs
-  (`performance-optimizer-algorithms`, `plan-reviewer-format`, `requirement-analyst-format`,
-  `spec-miner-anti-patterns`, `summarizer-format`, `blind-spot-hunter-shapes`,
-  `review-lens-nextjs-routing`, `security-reviewer-patterns`) — each one's own description already
+  shared repo you don't own). Applied 2026-08-31 to this fleet's pure agent-preload catalogs
+  (now 7: `performance-optimizer-algorithms`, `plan-reviewer-format`, `requirement-analyst-format`,
+  `summarizer-format`, `blind-spot-hunter-shapes`,
+  `review-lens-nextjs-routing`, `security-reviewer-patterns`; `spec-miner-anti-patterns` deleted
+  with its agent 2026-09-01) — each one's own description already
   read "Auto-loads when `<agent>` runs," the docs' exact stated use case for the field.
   **Tamper-guard parity:** unlike `disable-model-invocation`'s 10 carriers (checks 30/36/40/45/58-65
   above), these 8 had zero protection against a future edit silently dropping the flag until check

@@ -123,7 +123,7 @@ way to lose control than oscillation, and just as real.
 | 2 | "Verification" written as "check if it looks ok" → **agent confidently says fine and stops** | Is the judge the defendant itself? | Reconcile + exit code rules + independent judge |
 | 3 | (worst) Only gates on "all tests pass" → **agent deletes the tests** | Is there a boundary ("what it must NOT do")? | Done-criterion **+ boundary** together (the Goodhart antibody) |
 | 4 | Counts on the agent asking mid-run → **it runs the wrong answer to the end** | Is there any "clarify only at runtime" point? | **Front-load every clarification**; settle it once before launch |
-| 5 | Bloated CLAUDE.md + stale memory → **the faster it loops, the more it errs** | Are the docs/memory it depends on fresh? | Layered memory + periodic lint — this repo's own antibodies: `mh:memory-lint`, `mh:context-budget`, `mh:harness-audit` |
+| 5 | Bloated CLAUDE.md + stale memory → **the faster it loops, the more it errs** | Are the docs/memory it depends on fresh? | Layered memory + periodic lint — this repo's own antibodies: `mh:memory-lint`, native `/context`, `mh:harness-audit` |
 
 Rows 2–3 are the same discipline as `CLAUDE.md`'s verifier-separation crux — a loop's judge role should never be filled by the agent under review, in this repo or anywhere else.
 

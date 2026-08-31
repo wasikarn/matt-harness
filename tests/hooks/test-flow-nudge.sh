@@ -121,10 +121,15 @@ test_nudge  "rewrite the audit pipeline" \
   "rewrite the audit pipeline to use the shared library"
 test_nudge  "new command for X" \
   "new command for exporting audit results to CSV"
-test_nudge  "to-prd this idea" \
+# to-prd/to-issues removed from IMPL 2026-09-01 (dead pre-rename matt names;
+# to-spec/to-tickets removed the same day as a mid-flow conflict carve-out) —
+# these now assert the dead tokens stay dead, so a regex revert re-fails here.
+test_silent "to-prd (dead token — must stay silent)" \
   "to-prd this idea about a usage metering feature"
-test_nudge  "to-issues this PRD" \
+test_silent "to-issues (dead token — must stay silent)" \
   "to-issues this PRD into grabbable tickets"
+test_silent "to-spec mid-flow (carve-out — must stay silent)" \
+  "to-spec the payments feature we just grilled"
 test_nudge  "ship this" \
   "ship this rate-limiter change"
 test_silent "long doc reorg w/ no flow verb (must stay silent — length alone must not fire)" \

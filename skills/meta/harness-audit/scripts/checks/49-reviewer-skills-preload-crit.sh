@@ -60,7 +60,7 @@
 # companion skill existed, so this preload is the only lawful extraction path
 # and carries the 14-row Algorithmic Analysis pattern table this agent has no
 # other way to reach.
-for _pair in "typescript-reviewer|mh:typescript-patterns" "nextjs-reviewer|mh:frontend-patterns" "nextjs-reviewer|mh:review-lens-nextjs-routing" "requirement-analyst|mh:requirement-analyst-format" "blind-spot-hunter|mh:blind-spot-hunter-shapes" "summarizer|mh:summarizer-format" "security-reviewer|mh:security-reviewer-patterns" "spec-miner|mh:spec-miner-anti-patterns" "performance-optimizer|mh:performance-optimizer-algorithms" "plan-reviewer|mh:plan-reviewer-format"; do
+for _pair in "typescript-reviewer|mh:typescript-patterns" "nextjs-reviewer|mh:frontend-patterns" "nextjs-reviewer|mh:review-lens-nextjs-routing" "requirement-analyst|mh:requirement-analyst-format" "blind-spot-hunter|mh:blind-spot-hunter-shapes" "summarizer|mh:summarizer-format" "security-reviewer|mh:security-reviewer-patterns" "performance-optimizer|mh:performance-optimizer-algorithms" "plan-reviewer|mh:plan-reviewer-format"; do
   _agent="${_pair%%|*}"
   _skill="${_pair#*|}"
   _f="$CLAUDE_DIR/agents/$_agent.md"

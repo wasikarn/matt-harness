@@ -90,7 +90,7 @@ disallowedTools: Write, Edit, NotebookEdit
 
 | Agent | `tools:` | Why this set |
 |-------|----------|--------------|
-| `build-error-resolver` | `Read, Write, Edit, Bash, Grep, Glob` | Implementation role — reads existing code + writes minimal fixes + runs the build. |
+| `performance-optimizer` | `Read, Write, Edit, Bash, Grep, Glob` | Implementation role — reads existing code + writes targeted fixes + runs measurements. |
 | `security-reviewer` | `Read, Bash, Grep, Glob` | Read-only audit + Bash for `git log`/manifest probes. No `Write` — review is observational. |
 
 ## 5. Cross-references

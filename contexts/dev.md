@@ -37,8 +37,8 @@ loss, security, or accessibility — laziness stops there.
 
 ## Route to a specialist agent when the work fits one
 - A feature that needs a design pass first → `code-architect` for the blueprint, then `/mattpocock-skills:implement` to write it
-- Build/compile failure → `build-error-resolver`
-- Dead code, unused exports, duplication → `refactor-cleaner`
+- Build/compile failure → `mattpocock-skills:diagnosing-bugs`, or fix inline
+- Dead code, unused exports, duplication → `/mattpocock-skills:improve-codebase-architecture` findings + inline deletion
 - Bottleneck, bundle size, render/memory issue → `performance-optimizer`
 
 ## Tools to favor

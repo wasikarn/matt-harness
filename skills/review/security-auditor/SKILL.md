@@ -1,6 +1,6 @@
 ---
 name: security-auditor
-description: "Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review."
+description: "At-rest security audit: threat-model + remediation + re-verify (auth, secrets, injection, XSS, traversal). Use when auditing standing code or on an explicit audit ask. Don't use for a pending-changes diff (native security-review) or code review."
 model: inherit
 effort: xhigh
 ---
@@ -9,9 +9,9 @@ effort: xhigh
 
 Security review is not a checkbox — it's threat modeling. Every line of code is a potential attack surface. Assume breach.
 
-**When to use:** Auth flows, API endpoints, dependency updates, security-boundary changes.
+**When to use:** At-rest audits of standing code (auth flows, API endpoints, payment surfaces, admin panels, file uploads, dependency manifests), or an explicit "audit" / threat-model request.
 
-**When NOT to use:** General code review, live incident response, infrastructure/policy topics.
+**When NOT to use:** A diff-shaped review of pending branch changes — Claude Code's native `security-review` skill owns that lane first-party. Also not for general code review, live incident response, or infrastructure/policy topics.
 
 **`security-reviewer` agent vs this skill (canonical):** the `security-reviewer` agent is a *flagging* pass — it serves as orchestrate's pre-write gate on any auth/secrets change. This skill is the *dedicated, comprehensive* audit (threat model → remediation plan → re-audit). Reach for the skill on high-stakes surfaces (auth flows, payment, admin panels, file uploads, dependency manifests) or an explicit "audit" request; for a routine auth/secrets-touching diff, a `security-reviewer` agent pass is enough — don't run both.
 

@@ -26,10 +26,10 @@ rationale). Grant only what the role needs:
 - **Read-only reviewers/analysts** (`security-reviewer`,
   `python-reviewer`, `typescript-reviewer`, `nextjs-reviewer`,
   `backend-architect`, `code-architect`, `blind-spot-hunter`, `silent-failure-hunter`,
-  `requirement-analyst`, `spec-miner`, `summarizer`): `Read`, `Grep`,
+  `requirement-analyst`, `summarizer`): `Read`, `Grep`,
   `Glob`, sometimes `Bash` for inspection (`git log`, `git diff`). Never `Write`/`Edit`.
-- **Mutating implementers** (`build-error-resolver`, `refactor-cleaner`,
-  `performance-optimizer`): add `Write`/`Edit` on top of the read-only set.
+- **Mutating implementers** (`performance-optimizer`): add `Write`/`Edit` on top of the
+  read-only set.
 - **`Agent` is never granted.** No agent in this fleet re-orchestrates (Rule 13,
   CLAUDE.md's Staff-Engineer Thinking Loop) — a dispatched subagent returns scoped output to
   its caller, it doesn't spawn its own. `harness-audit` check 09 (CRIT) catches a missing

@@ -32,8 +32,8 @@ calls, caching), and memory management (leak detection, cleanup).
 
 Only run an `npx`-based command — every one below, bundle-analysis tools and Lighthouse
 alike — when it's already an installed dependency (check `package.json`/`node_modules`
-first). Verified live on `refactor-cleaner`'s, `security-reviewer`'s, and
-`build-error-resolver`'s equivalent `npx` steps: on an uninstalled package, `npx` silently
+first). Verified live on `security-reviewer`'s and two since-deleted agents' equivalent
+`npx` steps: on an uninstalled package, `npx` silently
 fetches it from the registry into the npm cache before running — a real network fetch and
 disk write nobody asked for, and this agent also holds `Write`/`Edit`. "Conventionally run
 via `npx` without a local install" doesn't change that — the fetch-before-fail happens
@@ -157,6 +157,14 @@ Alternative" than what you shipped, or another viable fix existed, state which o
 lost (complexity, diff size, risk); if truly only one fix was viable, say so. Lead with a
 summary line (overall score, critical-issue count) and an estimated-impact line (bundle KB
 saved, LCP/TTI ms improved).
+
+## Scope vs mattpocock-skills:diagnosing-bugs
+
+A reported performance *regression* ("this got slow", with a before/after) is
+`mattpocock-skills:diagnosing-bugs`' literal trigger — its loop owns root-causing a specific
+slowdown, and it diagnoses without patching. This agent owns the proactive half —
+bundle/Lighthouse/Web-Vitals audits, bottleneck hunting with no regression reported — and
+applies the fixes (holds Write/Edit). "Audit performance" / "optimize this" → here.
 
 ## When to Run
 

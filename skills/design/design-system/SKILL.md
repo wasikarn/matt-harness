@@ -66,9 +66,10 @@ of real breakpoints and confirm they actually render as scored before calling th
 
 ## Related
 
-- Skill: `mh:frontend-design-direction` — the design-judgment layer this skill's tokens and
-  audit scores get measured against; run that first when there's no direction yet to audit
-  against.
+- Design direction: the former `mh:frontend-design-direction` skill was deleted 2026-09-01
+  (self-declared salvage; the HTML-artifact lane is owned by the installed
+  plannotator/artifact-design skills). When there's no direction yet to audit against, set one
+  with those or plain design judgment first.
 - Skill: `mh:make-interfaces-feel-better` — concrete polish fixes for dimension 10 (Polish)
   findings.
 - Skill: `firecrawl-website-design-clone` — extracting a *different* site's design system from

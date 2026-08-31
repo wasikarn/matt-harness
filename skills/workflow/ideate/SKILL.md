@@ -55,9 +55,10 @@ A SessionStart hook may inject `<ideate-rotation index="N">` with 5 frame names 
 those (already covers the 1-wild minimum, rotated vs. prior sessions). If absent, fall back
 to [Picking frames](#picking-frames). Step 0's convergence capture side (SessionEnd embedding
 hook + `convergence.sh`) is **not currently wired** (removed in the reset) — treat
-convergence as advisory-only until rebuilt. Past runs are searchable via
-`mh:ideate-search <query>` (Thai OK; `ideate-memory` qmd collection) — its capture hook is also
-not wired. Mechanics: `references/provenance.md`'s "Advisory hooks — full mechanics" section.
+convergence as advisory-only until rebuilt. (The former `mh:ideate-search` companion skill was
+deleted 2026-09-01: its `ideate-memory` qmd collection and capture hook never existed on any
+machine, so it dead-ended every query.) Mechanics: `references/provenance.md`'s "Advisory
+hooks — full mechanics" section.
 
 ## 2-wave fan-out (load-bearing)
 

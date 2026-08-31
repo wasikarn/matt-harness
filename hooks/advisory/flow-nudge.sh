@@ -69,7 +69,12 @@ set -uo pipefail
 # such a prompt usually carries its own present/future verb anyway. Revisit
 # if a real missed past-tense-only prompt is observed, not from more testing
 # against self-authored fixtures.
-IMPL='implement(ing)?|build(ing)?|creat(e|ing)|add(ing)?|(set ?up|setting ?up)|wir(e|ing)|integrat(e|ing)|optimiz(e|ing)|refactor(ing)?|rewrit(e|ing)|redesign(ing)?|migrat(e|ing)|(re)?architect(ing|ure)?|split(ting)?|(swap(ping)? ?out)|restructur(e|ing)|mov(e|ing)|replac(e|ing)|consolidat(e|ing)|extract(ing)?|overhaul(ing)?|rework(ing)?|rethink(ing)?|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|to-prd|to-issues|to-spec|to-tickets|ship(ping)?'
+IMPL='implement(ing)?|build(ing)?|creat(e|ing)|add(ing)?|(set ?up|setting ?up)|wir(e|ing)|integrat(e|ing)|optimiz(e|ing)|refactor(ing)?|rewrit(e|ing)|redesign(ing)?|migrat(e|ing)|(re)?architect(ing|ure)?|split(ting)?|(swap(ping)? ?out)|restructur(e|ing)|mov(e|ing)|replac(e|ing)|consolidat(e|ing)|extract(ing)?|overhaul(ing)?|rework(ing)?|rethink(ing)?|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|ship(ping)?'
+# to-prd/to-issues dropped 2026-09-01: matt's pre-rename skill names, existing
+# nowhere in installed matt 1.2.3 — dead vocabulary. to-spec/to-tickets dropped
+# the same day as a conflict fix: a prompt naming them is already INSIDE matt's
+# spec chain (step 2/3), and nudging "grill-with-docs first" there contradicts
+# to-spec's own "Do NOT interview the user; just synthesize" contract.
 # IMPL without `build`/`building` — used by the carve-out to tell a
 # build-failure report (only `build` matched) from a real impl prompt
 # (another verb matched too). Derived from IMPL (not retyped) so the two

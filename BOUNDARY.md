@@ -9,14 +9,11 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | ideate-critic | Fresh-context critic for mh:ideate Phase 2. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (mattpocock-skills:code-review) or security audit (security-reviewer). | Read | no |
 | plan-reviewer | Reviews an implementation plan adversarially before code exists — requirement coverage, architecture fit, risks, failure modes, edge cases, execution order, testability, operability. Use before building. | [Read, Grep, Glob, Bash] | yes |
 | requirement-analyst | Senior-level, systematic requirement analysis from Jira tickets or other sources — ambiguities, missing acceptance criteria, edge cases, dependencies, risks, readiness verdict. Use before implementation starts. | ["Read", "Grep", "Glob"] | no |
-| spec-miner | Extracts behavioral specs from existing codebases. Produces Requirement and Invariant blocks with structured metadata. Use when onboarding a brownfield project to spec-driven development. | ["Read", "Grep", "Glob", "Bash", "Write"] | yes |
 
 ### build
 | Agent | Domain | Tools | Mutates |
 |---|---|---|---|
-| build-error-resolver | Build-error resolver across npm, Cargo, Maven, Gradle, Go, Python, and Dart/Flutter. Minimal diffs, no architecture changes. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 | performance-optimizer | Performance optimizer. Identifies bottlenecks, optimizes slow code, reduces bundle sizes, and fixes memory leaks and render issues. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
-| refactor-cleaner | Dead code cleanup specialist across JS/TS, Python, Go, and Rust. Identifies and removes unused code and duplicates. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 
 ### design
 | Agent | Domain | Tools | Mutates |
@@ -27,7 +24,6 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 ### review
 | Agent | Domain | Tools | Mutates |
 |---|---|---|---|
-| a11y-architect | Accessibility specialist, audits UI/design systems for WCAG 2.2 AA compliance. Use when building or reviewing web components. Not React architecture (mh:frontend-patterns). | ["Read", "Write", "Edit", "Grep", "Glob"] | yes |
 | blind-spot-hunter | Post-review adversarial hunter for emergent/interaction defects that survived normal review — cross-file, framework-behavior, data-flow-asymmetry blind spots. Traces each to an earned severity. Use after code review. | [Read, Grep, Glob, Bash] | yes |
 | nextjs-reviewer | Next.js App Router framework specialist: rendering/caching model, Server Actions, middleware, route handlers, metadata API, image/font optimization. Use for Next.js-specific changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
 | python-reviewer | Expert Python reviewer: PEP 8, Pythonic idioms, type hints, security, and performance. Use for all Python code changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
@@ -47,45 +43,37 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | performance-optimizer-algorithms | Catalog of performance-optimizer's 14-row algorithmic-complexity pattern table. Auto-loads when performance-optimizer runs. Don't use for other agents. | inline | auto |
 | plan-reviewer-format | Catalog of plan-reviewer's Output Format template and Anti-Patterns list. Auto-loads when plan-reviewer runs. Don't use for other agents or standalone review. | inline | auto |
 | requirement-analyst-format | Catalog of requirement-analyst's self-consistency checklist, Output Format template, and Anti-Patterns list. Auto-loads when requirement-analyst runs. Don't use for other reviewer agents or standalone requirement analysis. | inline | auto |
-| spec-miner-anti-patterns | Catalog of spec-miner's 10 Anti-Patterns FAIL list. Auto-loads when spec-miner runs. Don't use for other agents or standalone spec authoring. | inline | auto |
 | summarizer-format | Catalog of summarizer's Output Format templates, word-level compression BAD/GOOD table, and Anti-Patterns list. Auto-loads when summarizer runs. Don't use for other agents or standalone summarization. | inline | auto |
 
 ### design
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
 | design-system | Scan a design system for token/visual consistency and AI-slop detection, or generate one. Use when starting a project. Don't use for scraping other sites. | inline | auto |
-| frontend-design-direction | Frontend-design-direction: typography, layout, tone, and motion. Use when building or restyling UI. Don't use for React architecture (mh:frontend-patterns) or HTML artifacts (plannotator-effective-html). | inline | auto |
-| make-interfaces-feel-better | Catalog of UI-polish details — spacing, borders, shadows, motion, hit areas, text wrapping. Use when a UI feels flat. Don't use for direction choices (mh:frontend-design-direction). | inline | auto |
+| make-interfaces-feel-better | Catalog of UI-polish details — spacing, borders, shadows, motion, hit areas, text wrapping. Use when a UI feels flat. Don't use for overall direction choices. | inline | auto |
 | tech-humanize | Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing chat, standup/PR/commit, UI copy, or prose/ticket/spec/ADR, or say แก้ให้เป็นธรรมชาติ. Don't use for translation. | inline | auto |
 
 ### meta
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
 | compress-docs | Compact a bloated markdown doc for tokens; verify-before-overwrite, grammar stays full. Use when over harness-audit's 20K threshold. Don't use for content grading or suggest-only scans. | inline | auto |
-| context-budget | Scan context-window consumption across agents/skills/MCP/rules; flag bloat + top savings. Use when context feels full or costs climb. Don't use for one-off response trimming. | inline | auto |
 | cost-report | Cost-report: local Claude Code spend from the cost-tracker metrics log. Use when checking session spend. Don't use for scheduling or budget alerts (none exist). | inline | auto |
 | frame | Frame: dev/review/research working-posture, not a workflow or voice change. Use when switching posture; say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /config's output-style picker. | inline | auto |
 | goal-craft | Compact a /goal completion condition: done-when check, one-way-door screen, turn bound. Use when drafting a /goal condition. Don't use for single-turn tasks (do it directly). | inline | auto |
 | harness-audit | Harness-state surface, two modes: fleet/schema audit, --health for session token cost. Use for harness audits or cost checks. Don't use for repo lint/security (mh:security-auditor). | inline | auto |
-| idea-scan | Scan a personal ideas.db (SQLite: ideas/verdicts/events/FTS5), read-only, if present. Use when checking idea-backlog status. Don't use for mh's own memory (mh:memory-lint). | inline | auto |
-| ideate-search | Ideate-search: past mh:ideate runs via the qmd collection. | inline | manual |
 | learn | Scan a session transcript for cross-turn patterns ambient auto-memory misses. Use when wrapping up a session; batch-gate via AskUserQuestion. Don't use for single known memories. | inline | auto |
 | loop-design-check | Pre-flight gate + review checklist against loop failure modes — spinning, verifier-gaming, wrong-answer completion. Use when designing/reviewing an agent loop. Don't use for one-off tasks. | inline | auto |
 | memory-lint | Scan memory store for dangling [[links]], orphans, index drift; --trim archives bloat. Use when MEMORY.md over cap. Don't use for semantic review or harness health. | inline | auto |
 | recursive-improve | Cage: human-gated, anti-unattended harness loop. | inline | manual |
 | score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. | inline | manual |
-| wiki-scan | Scan llm-wiki vault health: orphans, frontmatter, citation integrity, stats. Use when checking vault integrity. Don't use for kbg's memory store (mh:memory-lint) or semantic search (qmd). | inline | auto |
 
 ### patterns
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
 | accessibility | WCAG 2.2 AA accessibility, ARIA patterns, React a11y fixes for forms/focus/keyboard nav. Use when building web UI. Don't use for React architecture (mh:frontend-patterns). | inline | auto |
 | backend-patterns | Backend architecture, API design, and DB optimization for Node.js/Next.js. Use when building a Node/TS backend. Don't use for Python/Go/Rust backends, or the client half (mh:frontend-patterns). | inline | auto |
-| cost-aware-llm-pipeline | Compact LLM-pipeline cost: model routing, prompt caching, retry. Use when designing a multi-model pipeline where cost/latency matter. Don't use for single calls or prompting tips. | inline | auto |
 | drizzle-patterns | Drizzle ORM patterns: schema, type inference, migrations, query builder, relations, transactions. Use when building Drizzle apps on PostgreSQL/SQLite. Don't use for Prisma or TypeORM. | inline | auto |
 | frontend-patterns | Frontend architecture, component design, and rendering optimization for React/TS. Use when building a React/TS frontend. Don't use for Vue/Svelte/Angular, backend (mh:backend-patterns), or WCAG/a11y audits (mh:accessibility). | inline | auto |
 | grpc-node-patterns | gRPC patterns for Node/Bun: proto, @grpc/grpc-js client/server, TypeScript codegen, streaming, deadlines/metadata. Use when building gRPC services in Node/Bun. Don't use for REST/HTTP or non-Node gRPC. | inline | auto |
-| latency-critical-systems | Diagnosis + design for latency-sensitive systems, realtime dashboards, market data, streaming, queues, caches, HFT-like infra. Use when designing/reviewing/debugging them. Don't use for batch or offline. | inline | auto |
 | mysql-patterns | MySQL/MariaDB schema, query, indexing, transaction, replication, and pool patterns. Use when designing or troubleshooting MySQL/MariaDB. Don't use for non-MySQL databases. | inline | auto |
 | typescript-patterns | TypeScript idioms: type-modeling and tsconfig choices, compatible across 5.9-7.x. Use when picking compiler options or type shapes. Don't use for routine edits or backend architecture. | inline | auto |
 
@@ -103,24 +91,19 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | review-fixtures | Review-fixtures: 2 agents review skill-creator fixture outputs before deciding a fix. Use when fixtures exist mid an improve loop. Don't use for PR review. | inline | auto |
 | review-lens-nextjs-routing | Next.js App Router file-convention (error.tsx/loading.tsx/route.ts/parallel routes) and Middleware checklist. Auto-loads when nextjs-reviewer runs. Don't use for caching/Server Actions or standalone review. | inline | auto |
 | risk-check | Risk-check: classify a PR LOW/MEDIUM/HIGH from diff size, sensitive-path, and hotspot signals. Use when scoping review effort. Don't use for the merge decision (mh:ship-merge). | inline | auto |
-| security-auditor | Scan security vulnerabilities, threat-model + remediation (auth, secrets, injection, XSS, traversal). Use when PRs touch auth/APIs/payments/deps. Don't use for quick branch checks or code review. | inline | auto |
+| security-auditor | At-rest security audit: threat-model + remediation + re-verify (auth, secrets, injection, XSS, traversal). Use when auditing standing code or on an explicit audit ask. Don't use for a pending-changes diff (native security-review) or code review. | inline | auto |
 | security-reviewer-patterns | Catalog of security-reviewer's BAD/GOOD examples (SQLi, IDOR, JWT, mass assignment, SSRF, ReDoS). Auto-loads when security-reviewer runs. Don't use for the deep-audit workflow (security-auditor). | inline | auto |
-| test-coverage | Test-coverage: generate missing tests toward the target threshold. Use when coverage is below target. Don't use for a single failing test (debug it directly). | inline | auto |
 
 ### workflow
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
-| build-fix | Build the fix: detect the build system and fix build/type errors minimally. Use when a build or type-check fails. Don't use for logic bugs (mattpocock-skills:diagnosing-bugs). | inline | auto |
 | ideate | Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Use when the question is open-ended. Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks. | inline | manual |
 | incident | Incident: run a production incident incl. hotfix. Use when alerts fire or user asks for hotfix. Thai: 'เหตุฉุกเฉิน'. Don't use for non-prod bugs or post-mortem. | inline | auto |
 | orchestrate | Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | inline | auto |
 | post-mortem | Post-mortem: a writeup for a resolved bug (trigger/mechanism/patch/validation known). | inline | manual |
-| refactor-clean | Refactor-clean: remove dead code (JS/TS, Python, Go, Rust), verifying tests after each change. Use when cleaning unused code. Don't use for logic refactors. | inline | auto |
 | ship-merge | Ship a PR: validate, server-side merge, monitor CI. | inline | manual |
 | ship-release | Ship a release: bump, changelog, review gate, tag, merge, monitor. | inline | manual |
-| summarize | Summarize a document, transcript, or pasted text into a BLUF-structured summary. Use when condensing long content. Don't use for data extraction or code review. | inline | auto |
 | tiered-pipeline | Tiered: run a task through the Fable→Sonnet→Opus maker/checker pipeline (fixes, bug-hunt, gated review). | inline | manual |
-| wiki-ingest | Ingest a source document into the llm-wiki vault. | inline | manual |
 
 ## Hooks — Repo
 | Hook | Purpose |
@@ -190,7 +173,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | crisp | Sole live-response register: concise, easy to read, human. Claude Code's Concise contract (result first, no preamble, full content for errors/security/destructive confirmations) as the base, with staff-engineer decision framing switched on only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-31T18:37:33Z_
+_Generated: 2026-08-31T19:17:42Z_
 
 ---
 
@@ -239,12 +222,8 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `python-reviewer` | `*.py`, `pyproject.toml` | yes | Read-only Python review *by intent* — PEP 8, idioms, type hints — `tools:` grants Bash (Bash can mutate) |
 | `security-reviewer` | `auth/`, `secrets/`, `config/`, `security/`, `iam/`, `crypto/` | yes | Vulnerability detection — `tools:` Read/Bash/Grep/Glob (Bash can mutate; no Edit/Write) |
 | `silent-failure-hunter` | any file | yes | Read-only error-handling audit *by intent* — `tools:` grants Bash (Bash can mutate) |
-| `spec-miner` | any file → `.scratch/specs/` | yes | Extracts behavioral specs (Write + Bash) |
-| `refactor-cleaner` | any file | yes | Dead-code removal / deprecation scope (Edit/Bash) |
-| `build-error-resolver` | any file with build/type errors | yes | Minimal-diff build/type fixes (Edit/Bash) |
 | `performance-optimizer` | any file | yes | Bottleneck + bundle + memory fixes (Edit/Bash) |
 | `ideate-critic` | none (read-only) | no | Fresh-context critic for `mh:ideate` Phase 2 (Read only — no Bash) |
-| `a11y-architect` | components / design-system files (WCAG-relevant) | yes | Accessibility audits — `tools:` grants Write/Edit directly (no Bash) |
 | `backend-architect` | `api/`, `services/` (design docs) | yes | API contracts, service boundaries — design-first — `tools:` grants Bash (Bash can mutate) |
 | `blind-spot-hunter` | any file | yes | Read-only adversarial hunt for emergent defects *by intent*, post-review — `tools:` grants Bash (Bash can mutate) |
 | `nextjs-reviewer` | Next.js App Router files (`app/`, `pages/`, middleware, route handlers) | yes | Read-only framework review *by intent* — `tools:` grants Bash (Bash can mutate) |

@@ -24,9 +24,9 @@
 #
 # Scope: skills/*/SKILL.md and skills/*/*/SKILL.md only — deliberately
 # narrower than 37/46's scan list. agents/*.md is excluded on purpose:
-# agents/build-error-resolver.md:193's "Suggested next steps for unresolved
-# issues" is a pluralized report-content instruction, not a footer, and
-# would false-positive under this rule. docs/reference/*.md and
+# a since-deleted agent file's "Suggested next steps for unresolved
+# issues" (a pluralized report-content instruction, not a footer) proved
+# agent files false-positive under this rule. docs/reference/*.md and
 # skills/*/references/*.md are excluded too — the convention is scoped to a
 # skill's own Output/Summary phase, not to prose that merely discusses the
 # convention (this check's own presence in

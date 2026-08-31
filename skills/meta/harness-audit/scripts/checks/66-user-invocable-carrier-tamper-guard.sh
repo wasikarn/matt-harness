@@ -21,7 +21,6 @@ _known_carriers=(
   "skills/agent-support/performance-optimizer-algorithms/SKILL.md"
   "skills/agent-support/plan-reviewer-format/SKILL.md"
   "skills/agent-support/requirement-analyst-format/SKILL.md"
-  "skills/agent-support/spec-miner-anti-patterns/SKILL.md"
   "skills/agent-support/summarizer-format/SKILL.md"
   "skills/review/blind-spot-hunter-shapes/SKILL.md"
   "skills/review/review-lens-nextjs-routing/SKILL.md"

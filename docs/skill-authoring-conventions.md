@@ -78,7 +78,7 @@ prose like "a suggested next step per issue").
 An mh-owned skill is cited `mh:<name>` (this repo's own surface type — commands/ retired
 2026-08-25, #112). A **matt-owned** skill is cited `mattpocock-skills:<name>` the same way — the
 "ALWAYS `mh:`-form" framing this section used to carry was narrower than shipped practice
-(`bug-sweep`, `refactor-clean`, and `complexity-check` all correctly cite
+(`bug-sweep` and `complexity-check` both correctly cite
 `mattpocock-skills:code-review`/`diagnosing-bugs`). Either namespace, model-invocable, cite bare;
 `disable-model-invocation: true` on either side means the footer prints the literal slash string
 the user types themselves — `` `/mh:<name>` `` or `` `/mattpocock-skills:<name>` `` — never

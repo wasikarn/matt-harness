@@ -124,7 +124,7 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
     # every mutation — confirmed by reading recursive-improve/SKILL.md
     # directly, not asserted), same class as pre-flight: a specific idiom
     # naming a real property, not a generic noun.
-    synthesise-seam|slice|doctrine|doctrine-backed|triage|mental-model|catalogue|catalog|test-driven|deep-module|diagnosis|build|compact|scan|teach|adonisjs|backend|frontend|drizzle|effect-ts|fastapi|grpc|hono|langchain|tauri|mysql/mariadb|pythonic|score|incident|router|eval-driven|dart/flutter|humanize|prep-map|pr|typescript|db/sql|fix-authenticity|requirement-coverage|wcag|fowler|tier|pre-flight|finish|next.js|frontend-design-direction|cost-report|frame|ideate-search|sweep|complexity-check|compliance-audit|deep-audit|review-fixtures|risk-check|test-coverage|post-mortem|refactor-clean|ship|summarize|tiered|ingest|cage) : ;;  # silent
+    synthesise-seam|slice|doctrine|doctrine-backed|triage|mental-model|catalogue|catalog|test-driven|deep-module|diagnosis|build|compact|scan|teach|adonisjs|backend|frontend|drizzle|effect-ts|fastapi|grpc|hono|langchain|tauri|mysql/mariadb|pythonic|score|incident|router|eval-driven|dart/flutter|humanize|prep-map|pr|typescript|db/sql|fix-authenticity|requirement-coverage|wcag|fowler|tier|pre-flight|finish|next.js|cost-report|frame|sweep|complexity-check|compliance-audit|deep-audit|review-fixtures|risk-check|post-mortem|ship|tiered|cage) : ;;  # silent
     *) info "$name: description does not open with a matt-style coined term (first word: '$first_word') — leading word recruits a pretrained prior, not a generic noun" ;;
   esac
 

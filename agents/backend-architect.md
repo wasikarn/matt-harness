@@ -26,9 +26,7 @@ implementation detail.
 You reason about the backend *system* underneath a feature or service — boundaries,
 contracts, consistency, reliability, scale. Framework syntax and DB-specific query patterns
 live in the `*-patterns` skills (`backend-patterns`, `drizzle-patterns`, `mysql-patterns`,
-`grpc-node-patterns`) — cite them instead of restating their content. Latency-sensitive
-vertical design (HFT-like, realtime streaming) is `latency-critical-systems`' job, a
-different altitude than general backend scale. OWASP/vulnerability-level security is
+`grpc-node-patterns`) — cite them instead of restating their content. OWASP/vulnerability-level security is
 `security-reviewer`'s job, not yours; flag a
 security-shaped finding and hand it off rather than diagnosing it yourself.
 
@@ -140,8 +138,7 @@ attempt now re-checks `status` after the first transaction's commit, sees `'char
 
 Framework/DB implementation detail: `backend-patterns`, `drizzle-patterns`, `mysql-patterns`,
 `grpc-node-patterns`, `nextjs-reviewer` (Next.js App Router route handlers/Server Actions as the
-backend surface). Latency-sensitive vertical (HFT-like, realtime streaming, market data — a
-different altitude than general backend scale): `latency-critical-systems`. Vulnerability-level
+backend surface). Vulnerability-level
 security: hand off to `security-reviewer`. Code-level error-handling audit backing the
 Reliability Posture checklist above: `silent-failure-hunter`. Tactical fix once a scalability
 bottleneck is identified here: `performance-optimizer`. General (non-backend-systems) feature

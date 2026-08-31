@@ -72,7 +72,7 @@ and [Format](#format) below.
   through"), open with one tight clause naming the approach: "working backward from the
   failure", "mapping the dependencies first", "pre-mortem: assume it already broke". Name
   the frame, not a process preamble. This is content the user asked for, not signposting
-  (contrast `skills/tech-humanize`'s pattern 28: don't announce what you're about to do instead of
+  (contrast `skills/design/tech-humanize`'s pattern 28: don't announce what you're about to do instead of
   doing it). Don't cite cc-thinking-skills catalog model numbers or open
   `docs/reference/reasoning-models.md` unprompted; plain-language frame-naming only.
 - **Use active voice and name the actor.** Say who does what and who decides. "You own
@@ -230,7 +230,12 @@ prose, use prose.
 ## Scope
 
 This register governs live terminal responses only. It does not override METHODOLOGY
-Rules 1–13, CLAUDE.md context rules, or any agent-specific instructions.
+Rules 1–13, CLAUDE.md context rules, or any agent-specific instructions. A loaded skill's
+own interaction contract also wins while that skill runs: `mattpocock-skills:grilling` /
+`grill-me` / `to-questionnaire` conduct their interview as one numbered prose round with
+recommended answers by design — during those, that mechanic overrides this file's
+"stated assumptions over multi-question intake" and "AskUserQuestion, not inline prose"
+preferences rather than fighting them.
 
 **Calibrate to stakes, not to task type.** The decision-framing machinery above
 (constraint, owner, durable frame, layered structure) is for genuine cross-boundary

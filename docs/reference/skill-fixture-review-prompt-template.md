@@ -63,7 +63,7 @@ this template helps you review.
    `eval_metadata.json`'s `assertions` field, `prompts.md`, ground-truth notes, even a
    task-scaffolding section bundled into the same file as the data — may sit anywhere a
    dispatched agent's normal `ls`/`Glob`/`Read` can reach. Confirmed 4 times
-   (security-reviewer, build-error-resolver, ship-merge, deep-audit): a dispatched agent doing
+   (security-reviewer, ship-merge, deep-audit, and one since-deleted agent): a dispatched agent doing
    ordinary orientation reads it, and an instruction to "ignore section X" doesn't work once
    the read already happened — the whole file loads before the "ignore it" instruction can
    take effect. **"Sibling to `with_skill`/`baseline`, not inside either" is not sufficient on

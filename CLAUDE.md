@@ -172,8 +172,10 @@ research-shaped task.
 
 **Cross-project reach:** this file only loads when cwd is `kbg-harness`, so the operator's
 own `~/.claude/CLAUDE.md` (dotfiles-owned, not shipped with this plugin) carries a thinner
-mirror of the `llm-wiki` half. `/mh:wiki-ingest` (user-invoked write path,
-`disable-model-invocation`) and `mh:wiki-scan` (read-only health check) are the
+mirror of the `llm-wiki` half. `/wiki-ingest` (user-invoked write path,
+`disable-model-invocation`) and `wiki-scan` (read-only health check) — both relocated from
+this plugin to user-scope `~/.claude/skills/` 2026-09-01, since they are one-machine vault
+infrastructure a public plugin shouldn't ship — are the
 vault-touching surfaces; doctrine reasoning lives in their own files. Live-fire confirmed
 2026-07-30: a foreign-project session reached for `qmd` scoped to `llm-wiki` unprompted — the
 one part of this design no grep or script could verify on its own.

@@ -95,15 +95,10 @@ memory search" section.
 
 If present, prefer these 5 frames for the next ideate run.
 
-**Ideate memory search.** Past `mh:ideate` runs are saved as markdown under
-the ideate-memory location and indexed by the `ideate-memory` qmd
-collection; `mh:ideate-search` queries that collection directly via the qmd
-MCP tool:
-
-```
-mh:ideate-search caching
-mh:ideate-search หาไอเดียที่เคยคิดเรื่อง caching
-```
+**Ideate memory search.** Historical design only — the former ideate-search companion skill
+was deleted 2026-09-01 (its `ideate-memory` qmd collection and capture hook never existed on
+any machine, so every query dead-ended). If past-run search is ever wanted, wire the capture
+hook first and query the collection via the qmd MCP directly.
 
 ## Cross-references
 

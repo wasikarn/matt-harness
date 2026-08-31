@@ -63,7 +63,10 @@
 # Deliberately NOT carved out — the gate cannot distinguish a skill's documented internal
 # fan-out from rogue re-orchestration (same agent_id, same Agent(...) shape), and any
 # discriminant would be forgeable by model output. Standing rule: invoke
-# mattpocock-skills:code-review from the main session only.
+# mattpocock-skills:code-review from the main session only. Same rule covers
+# mattpocock-skills:research and :grilling (2026-09-01 sweep finding) — both
+# also document internal sub-agent dispatch, so both hit this same denial
+# from inside a dispatched subagent.
 #
 # The flag search after the anchor is a quote-aware scan (deep-audit,
 # 2026-08-31, "fix it all" pass), not a flat char-class exclusion — a flat

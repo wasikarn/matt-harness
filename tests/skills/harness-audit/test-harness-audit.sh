@@ -90,22 +90,12 @@ else
   bad "check-45 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
 fi
 
-# Checks 58-64 — CRIT guards for the 7 disable-model-invocation carriers that
+# Checks 59-64 — CRIT guards for the disable-model-invocation carriers that
 # previously had no equivalent to checks 36/40/45 (2026-08-30 deep-audit
 # finding). Same bad/good pattern as check 36 above, one pair per skill.
-run_check 58 "$FIX/check-58-bad"
-if [ "$CRIT_FOUND" -ge 1 ]; then
-  ok "check-58 bad fixture fires CRIT (crit=$CRIT_FOUND)"
-else
-  bad "check-58 bad fixture did NOT fire CRIT (crit=$CRIT_FOUND warn=$WARN_FOUND)"
-fi
-run_check 58 "$FIX/check-58-good"
-if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
-  ok "check-58 good fixture silent"
-else
-  bad "check-58 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
-fi
-
+# Checks 58 (ideate-search) and 60 (wiki-ingest) were retired 2026-09-01 in
+# the dead-weight sweep — their carrier skills left the plugin, so both the
+# check files and these test sections went with them.
 run_check 59 "$FIX/check-59-bad"
 if [ "$CRIT_FOUND" -ge 1 ]; then
   ok "check-59 bad fixture fires CRIT (crit=$CRIT_FOUND)"
@@ -117,19 +107,6 @@ if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
   ok "check-59 good fixture silent"
 else
   bad "check-59 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
-fi
-
-run_check 60 "$FIX/check-60-bad"
-if [ "$CRIT_FOUND" -ge 1 ]; then
-  ok "check-60 bad fixture fires CRIT (crit=$CRIT_FOUND)"
-else
-  bad "check-60 bad fixture did NOT fire CRIT (crit=$CRIT_FOUND warn=$WARN_FOUND)"
-fi
-run_check 60 "$FIX/check-60-good"
-if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
-  ok "check-60 good fixture silent"
-else
-  bad "check-60 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
 fi
 
 run_check 61 "$FIX/check-61-bad"

@@ -256,9 +256,8 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
   # harness-audit check — adding one would hit audit.sh's fail-closed
   # contiguous check-numbering guard, out of scope for this fix).
   _xref3_table_agents=(code-architect typescript-reviewer python-reviewer
-    security-reviewer silent-failure-hunter spec-miner refactor-cleaner
-    build-error-resolver performance-optimizer ideate-critic
-    a11y-architect backend-architect blind-spot-hunter
+    security-reviewer silent-failure-hunter performance-optimizer ideate-critic
+    backend-architect blind-spot-hunter
     nextjs-reviewer requirement-analyst summarizer plan-reviewer)
   if [ -d "$_boundary_base/agents" ]; then
     for _af in "$_boundary_base/agents"/*.md; do
@@ -321,12 +320,8 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 | `python-reviewer` | `*.py`, `pyproject.toml` | yes | Read-only Python review *by intent* — PEP 8, idioms, type hints — `tools:` grants Bash (Bash can mutate) |
 | `security-reviewer` | `auth/`, `secrets/`, `config/`, `security/`, `iam/`, `crypto/` | yes | Vulnerability detection — `tools:` Read/Bash/Grep/Glob (Bash can mutate; no Edit/Write) |
 | `silent-failure-hunter` | any file | yes | Read-only error-handling audit *by intent* — `tools:` grants Bash (Bash can mutate) |
-| `spec-miner` | any file → `.scratch/specs/` | yes | Extracts behavioral specs (Write + Bash) |
-| `refactor-cleaner` | any file | yes | Dead-code removal / deprecation scope (Edit/Bash) |
-| `build-error-resolver` | any file with build/type errors | yes | Minimal-diff build/type fixes (Edit/Bash) |
 | `performance-optimizer` | any file | yes | Bottleneck + bundle + memory fixes (Edit/Bash) |
 | `ideate-critic` | none (read-only) | no | Fresh-context critic for `mh:ideate` Phase 2 (Read only — no Bash) |
-| `a11y-architect` | components / design-system files (WCAG-relevant) | yes | Accessibility audits — `tools:` grants Write/Edit directly (no Bash) |
 | `backend-architect` | `api/`, `services/` (design docs) | yes | API contracts, service boundaries — design-first — `tools:` grants Bash (Bash can mutate) |
 | `blind-spot-hunter` | any file | yes | Read-only adversarial hunt for emergent defects *by intent*, post-review — `tools:` grants Bash (Bash can mutate) |
 | `nextjs-reviewer` | Next.js App Router files (`app/`, `pages/`, middleware, route handlers) | yes | Read-only framework review *by intent* — `tools:` grants Bash (Bash can mutate) |
