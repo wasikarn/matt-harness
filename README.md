@@ -27,15 +27,15 @@ and only write new surfaces where the backend stack really needs them.
 ## Table of contents
 
 - [Why it's built this way](#why-its-built-this-way)
-- [How it runs](#how-it-runs)
-- [Architecture](#architecture)
 - [Quick start](#quick-start)
 - [What you get](#what-you-get)
-- [Engineering doctrine](#engineering-doctrine)
+- [How it runs](#how-it-runs)
 - [Spotlight](#spotlight)
+- [Documentation](#documentation)
+- [Architecture](#architecture)
+- [Engineering doctrine](#engineering-doctrine)
 - [Repository layout](#repository-layout)
 - [Development](#development)
-- [Documentation](#documentation)
 - [Attribution](#attribution)
 - [License](#license)
 
@@ -59,47 +59,6 @@ Three named disciplines shaped the design — harness engineering, loop engineer
 engineering — and each was researched from primary sources before anything was adopted.
 [Engineering doctrine](#engineering-doctrine) spells out which parts are structural, which are
 only vocabulary, and which gaps stay open.
-
----
-
-## How it runs
-
-What the plugin does to a session, in the three moments it acts.
-
-**1. Session starts.** `hooks/session/doctrine-bootstrap.sh` injects `docs/METHODOLOGY.md` —
-the decision-sizing triad, the reasoning scaffold — into every fresh session. Skills and
-agents load from the versioned cache at `~/.claude/plugins/cache/wasikarn/mh/<version>/`,
-not the working tree.
-
-**2. The model acts.** Computational deny-gates in `hooks/gates/` stop the irrecoverable set
-(`rm -rf`, `git add -A`, `--no-verify`, hardcoded home paths, edits to the verifier code).
-Advisory sensors in `hooks/advisory/` journal and nudge but never block. A model grading its
-own output is a verdict the model shouldn't get to make — every box that can stop it is
-deterministic shell.
-
-**3. Work ships.** `harness-audit` and the gauntlet run as deterministic verifiers. A
-change to a shipped surface reaches the next session while the session that made it keeps
-running on the old cached copy. Same-version edits to a cached plugin are silent no-ops,
-and that is the most common way work here looks done without being done.
-
----
-
-## Architecture
-
-One request, six deterministic hops to a pushed commit — that's the whole runtime path. Every
-tool call and every push crosses exactly two gates that can't be talked out of denying:
-`PreToolUse` and `git-hooks`. Click the diagram to open the interactive HTML version.
-
-[![matt-harness runtime architecture: the session-to-push path through doctrine injection, the deterministic gate boundary, and the auxiliary systems — plugin cache, advisory sensors, harness-audit, memory store, qmd/llm-wiki.](docs/diagrams/archify/matt-harness-runtime-architecture.png)](docs/diagrams/archify/matt-harness-runtime-architecture.html)
-
-- **The primary path** — Developer → Claude Code → `doctrine-bootstrap.sh` injects doctrine at session start → the Skills & Agents Fleet receives it → a tool call crosses `PreToolUse Gates` → an allowed call reaches `git-hooks`' commit/push gauntlet → a passed gauntlet reaches GitHub.
-- **The deterministic gate boundary** — `PreToolUse Gates` and `git-hooks` are the only two components nothing can skip: no tool call or push reaches GitHub without clearing both, independently.
-- **Auxiliary systems** (dashed edges, off the primary path) — Claude Code loads the versioned `Plugin Cache`; the Skills & Agents Fleet journals to `Advisory Sensors` (never gates) and can look up `qmd`/`llm-wiki` (optional — surfaces must degrade gracefully without it); `git-hooks` feeds `harness-audit`'s numbered self-audit; Claude Code reads/writes the `Auto-Memory Store` directly.
-
-See [How it runs](#how-it-runs) for the same path in prose. mh's composition with
-mattpocock-skills — the narrower relationship a prior version of this diagram illustrated — is
-still tracked in `docs/reference/mattpocock-integration-map.md` (the 4 typed edges from
-`docs/reference/graph-model.md`: `routes-to`, `depends-on`, `verifies`, `hands-off-to`).
 
 ---
 
@@ -175,6 +134,131 @@ Fleet size (real current fleet: 60 skills · 17 agents) is patched into this lin
 > Hooks: SessionStart doctrine injection (METHODOLOGY.md), PreToolUse gates in
 > `hooks/gates/`, advisory sensors in `hooks/advisory/`, cost tracking in `hooks/stop/`.
 > Gates deny the irrecoverable set; sensors journal but never gate.
+
+---
+
+## How it runs
+
+What the plugin does to a session, in the three moments it acts. Click the diagram to open
+the interactive HTML version.
+
+[![matt-harness runtime workflow: the session-to-push path through doctrine injection, the deterministic gate boundary, and the auxiliary systems — plugin cache, advisory sensors, harness-audit, memory store, qmd/llm-wiki.](docs/diagrams/archify/matt-harness-runtime-architecture.png)](docs/diagrams/archify/matt-harness-runtime-architecture.html)
+
+**1. Session starts.** `hooks/session/doctrine-bootstrap.sh` injects `docs/METHODOLOGY.md` —
+the decision-sizing triad, the reasoning scaffold — into every fresh session. Skills and
+agents load from the versioned cache at `~/.claude/plugins/cache/wasikarn/mh/<version>/`,
+not the working tree.
+
+**2. The model acts.** Computational deny-gates in `hooks/gates/` stop the irrecoverable set
+(`rm -rf`, `git add -A`, `--no-verify`, hardcoded home paths, edits to the verifier code).
+Advisory sensors in `hooks/advisory/` journal and nudge but never block. A model grading its
+own output is a verdict the model shouldn't get to make — every box that can stop it is
+deterministic shell.
+
+**3. Work ships.** `harness-audit` and the gauntlet run as deterministic verifiers. A
+change to a shipped surface reaches the next session while the session that made it keeps
+running on the old cached copy. Same-version edits to a cached plugin are silent no-ops,
+and that is the most common way work here looks done without being done.
+
+Off the primary path (dashed edges in the diagram): Claude Code reads/writes the
+`Auto-Memory Store` directly, and skills can look up `qmd`/`llm-wiki` — optional, surfaces
+must degrade gracefully without it.
+
+---
+
+## Spotlight
+
+### Skills
+
+| Skill | When to reach for it |
+|---|---|
+| `mh:pr` | Create a GitHub PR. Templated body, previewed for confirmation before creation. |
+| `mh:security-scan` | AgentShield scan of harness surfaces via the `security-reviewer` agent. |
+| `mh:ship-merge` · `mh:ship-release` | Pre-merge gate · end-to-end release ceremony. |
+| `mh:score-decision` | Weighted numeric verdict for a decision: pass/fail, confidence, trace. |
+| `mattpocock-skills:grilling` | Relentless interview to stress-test a plan before building. |
+| `mh:orchestrate` | Triage competing tasks and route each to inline / parallel / sequential / drop. |
+| `mh:agent-architecture-audit` | 12-layer diagnostic for wrapper regression, memory pollution, repair loops. |
+| `mh:context-budget` | Token usage audit. Finds bloat and produces prioritized savings. |
+| `mh:security-auditor` | OWASP Top 10, secrets scanning, threat model plus remediation. |
+| `mh:production-audit` | Production readiness check from local evidence. No external service required. |
+| `mh:harness-audit` | Deterministic fleet/schema/structural audit of this plugin. |
+
+### Agents
+
+Agents run in a delegated sub-task context. Claude spawns them on its own, or you can
+request one via the `Task` tool.
+
+| Agent | Role |
+|---|---|
+| `mh:code-architect` | System design, module boundaries, and dependency decisions. |
+| `mh:backend-architect` | API contracts, service boundaries, data ownership, caching, reliability. The systems-design layer above the framework-narrow `*-patterns` skills. |
+| `mh:security-reviewer` | OWASP Top 10, secrets detection, auth flows, and injection risks. |
+| `mh:blind-spot-hunter` | Post-review adversarial hunter for cross-file, framework-behavior, and data-flow blind spots normal review misses. |
+| `mh:plan-reviewer` | Adversarial review of an implementation plan before code exists. |
+| `mh:performance-optimizer` | Bottleneck analysis, profiling strategy, and optimization trade-offs. |
+| `mh:refactor-cleaner` | Dead code removal, simplification, and naming cleanup. |
+| `mh:silent-failure-hunter` | Finds errors swallowed by catch-all handlers or missing error returns. |
+| `mh:spec-miner` | Extracts implicit requirements from code when no spec doc exists. |
+| `mh:requirement-analyst` | Requirement analysis of a ticket/spec/PRD: ambiguities, missing acceptance criteria, edge cases, readiness verdict. |
+| `mh:typescript-reviewer` · `mh:python-reviewer` · `mh:nextjs-reviewer` | Language- and framework-specific review: type safety, idioms, async correctness, Next.js App Router rendering and caching. |
+| `mh:build-error-resolver` | Fixes build and type errors with minimal diffs. |
+| `mh:summarizer` | Condenses long content into filler-free output for any audience. |
+| `mh:ideate-critic` | Fresh-context critic for `mh:ideate` Phase 2. Scores, clusters, and deepens divergent ideas. |
+
+### Backend stack patterns
+
+Stack-specific pattern skills, harness-native.
+
+| Skill | When to reach for it |
+|---|---|
+| `mh:drizzle-patterns` | Drizzle ORM schema, migrations, relations, and query patterns for PostgreSQL / SQLite. |
+| `mh:grpc-node-patterns` | gRPC client/server with `@grpc/grpc-js`, TypeScript codegen, streaming, and error codes. |
+| `mh:mysql-patterns` | MySQL / MariaDB schema, indexing, transactions, replication, and pool patterns. |
+
+---
+
+## Documentation
+
+| File | What's in it |
+|---|---|
+| [`BOUNDARY.md`](BOUNDARY.md) | Generated index of every agent, skill, and hook, grouped by bucket |
+| [`docs/onboarding.md`](docs/onboarding.md) | 10-minute cold-start guide |
+| [`docs/reference/operating-model.md`](docs/reference/operating-model.md) | The gates-deny / sensors-advise doctrine as a self-contained excerpt |
+| [`docs/reference/reasoning-models.md`](docs/reference/reasoning-models.md) | 39 named mental models (cc-thinking-skills), pointing upstream for full write-ups |
+| [`docs/reference/env-vars.md`](docs/reference/env-vars.md) | Operator-tunable environment variables |
+| [`docs/reference/graph-model.md`](docs/reference/graph-model.md) | The orchestration graph: nodes, typed edges, anchors (see [Engineering doctrine](#engineering-doctrine)) |
+| [`docs/research/harness-engineering-2026-04.md`](docs/research/harness-engineering-2026-04.md) | Primary-source grounding for the gates/advisory split |
+| [`docs/harness-decay-cadence.md`](docs/harness-decay-cadence.md) | The harness-engineering 2×2 applied to sensor staleness and decay |
+| [`CLAUDE.md`](CLAUDE.md) | Architecture and non-obvious gotchas for Claude Code instances |
+| [`CHANGELOG.md`](CHANGELOG.md) | Release notes |
+
+---
+
+*Everything below this line is for people extending or auditing the plugin's own internals —
+skip it if you're just installing and using matt-harness.*
+
+## Architecture
+
+"Compose, don't create" is the reason this repo exists, and only four mechanisms carry the real
+weight of it: a hook that emits a chain into every session, a preflight that checks the companion
+plugin is even installed, a mechanical audit that keeps a ledger honest, and one sparse prose
+boundary. Everything else — the ~25 places mh's surfaces merely *name* a matt skill in passing —
+is routing pointers, not wired relationships.
+Click the diagram to open the interactive HTML version.
+
+[![mh@wasikarn composing with mattpocock-skills across four typed edges: routes-to, depends-on, verifies, hands-off-to.](docs/diagrams/mh-composition.png)](docs/diagrams/mh-composition.html)
+
+- **`routes-to`** — `hooks/advisory/flow-nudge.sh` emits the spec chain (`grilling` → `/to-spec` → `/to-tickets` → `/implement`) into session context on `UserPromptSubmit`. `grilling` fires bare (`model`-tier); the other three carry the leading slash and are user-invoked only.
+- **`depends-on`**, the required one — Quick start step 4 installs `mattpocock-skills@mattpocock` as a separate plugin; mh's own surfaces are unresolvable without it. `hooks/session/doctrine-bootstrap.sh` preflights the plugin's presence at every `SessionStart` and warns if it's missing or disabled.
+- **`verifies`** — harness-audit check 50 (4 sub-checks A-D; A-C are WARN, D is INFO) keeps `docs/reference/mattpocock-integration-map.md`'s 25-row ledger in sync with the installed plugin's own `plugin.json`.
+- **`hands-off-to`** — `skills/workflow/orchestrate/reference.md`'s boundary with `mattpocock-skills:wayfinder` (user-typed: `/mattpocock-skills:wayfinder`), one of only two such prose boundaries in the whole fleet.
+- **`ask-matt` is the actual routing layer** (`CLAUDE.md`'s "Finding a surface" section), even though no hook wires to it — it owns the routing map for 10 skills mh deliberately doesn't duplicate.
+- **Two matt skills are drawn as adopted, not routed** — `code-review` and `writing-for-agents` *are* mh's own review and authoring surfaces now (the native kbg equivalents were retired), which is a node label, not a relationship to draw an arrow for.
+
+See [How it runs](#how-it-runs) for the session-to-push runtime path — a different diagram from
+this one. `docs/reference/mattpocock-integration-map.md` and `docs/reference/graph-model.md` (the
+four typed edges this diagram reuses) hold the full ledger and edge definitions.
 
 ---
 
@@ -259,58 +343,6 @@ predates the term.
 
 ---
 
-## Spotlight
-
-### Skills
-
-| Skill | When to reach for it |
-|---|---|
-| `mh:pr` | Create a GitHub PR. Templated body, previewed for confirmation before creation. |
-| `mh:security-scan` | AgentShield scan of harness surfaces via the `security-reviewer` agent. |
-| `mh:ship-merge` · `mh:ship-release` | Pre-merge gate · end-to-end release ceremony. |
-| `mh:score-decision` | Weighted numeric verdict for a decision: pass/fail, confidence, trace. |
-| `mattpocock-skills:grilling` | Relentless interview to stress-test a plan before building. |
-| `mh:orchestrate` | Triage competing tasks and route each to inline / parallel / sequential / drop. |
-| `mh:agent-architecture-audit` | 12-layer diagnostic for wrapper regression, memory pollution, repair loops. |
-| `mh:context-budget` | Token usage audit. Finds bloat and produces prioritized savings. |
-| `mh:security-auditor` | OWASP Top 10, secrets scanning, threat model plus remediation. |
-| `mh:production-audit` | Production readiness check from local evidence. No external service required. |
-| `mh:harness-audit` | Deterministic fleet/schema/structural audit of this plugin. |
-
-### Agents
-
-Agents run in a delegated sub-task context. Claude spawns them on its own, or you can
-request one via the `Task` tool.
-
-| Agent | Role |
-|---|---|
-| `mh:code-architect` | System design, module boundaries, and dependency decisions. |
-| `mh:backend-architect` | API contracts, service boundaries, data ownership, caching, reliability. The systems-design layer above the framework-narrow `*-patterns` skills. |
-| `mh:security-reviewer` | OWASP Top 10, secrets detection, auth flows, and injection risks. |
-| `mh:blind-spot-hunter` | Post-review adversarial hunter for cross-file, framework-behavior, and data-flow blind spots normal review misses. |
-| `mh:plan-reviewer` | Adversarial review of an implementation plan before code exists. |
-| `mh:performance-optimizer` | Bottleneck analysis, profiling strategy, and optimization trade-offs. |
-| `mh:refactor-cleaner` | Dead code removal, simplification, and naming cleanup. |
-| `mh:silent-failure-hunter` | Finds errors swallowed by catch-all handlers or missing error returns. |
-| `mh:spec-miner` | Extracts implicit requirements from code when no spec doc exists. |
-| `mh:requirement-analyst` | Requirement analysis of a ticket/spec/PRD: ambiguities, missing acceptance criteria, edge cases, readiness verdict. |
-| `mh:typescript-reviewer` · `mh:python-reviewer` · `mh:nextjs-reviewer` | Language- and framework-specific review: type safety, idioms, async correctness, Next.js App Router rendering and caching. |
-| `mh:build-error-resolver` | Fixes build and type errors with minimal diffs. |
-| `mh:summarizer` | Condenses long content into filler-free output for any audience. |
-| `mh:ideate-critic` | Fresh-context critic for `mh:ideate` Phase 2. Scores, clusters, and deepens divergent ideas. |
-
-### Backend stack patterns
-
-Stack-specific pattern skills, harness-native.
-
-| Skill | When to reach for it |
-|---|---|
-| `mh:drizzle-patterns` | Drizzle ORM schema, migrations, relations, and query patterns for PostgreSQL / SQLite. |
-| `mh:grpc-node-patterns` | gRPC client/server with `@grpc/grpc-js`, TypeScript codegen, streaming, and error codes. |
-| `mh:mysql-patterns` | MySQL / MariaDB schema, indexing, transactions, replication, and pool patterns. |
-
----
-
 ## Repository layout
 
 ```text
@@ -384,23 +416,6 @@ what, what enforces a given doctrine) that complement, rather than replace, this
 `qmd`-based research flow (CLAUDE.md's "graphify" section has the full division of labor).
 `graphify-out/` is gitignored: the graph goes stale within hours of any commit, so regenerate
 it on demand instead of trusting a checked-in snapshot.
-
----
-
-## Documentation
-
-| File | What's in it |
-|---|---|
-| [`BOUNDARY.md`](BOUNDARY.md) | Generated index of every agent, skill, and hook, grouped by bucket |
-| [`docs/onboarding.md`](docs/onboarding.md) | 10-minute cold-start guide |
-| [`docs/reference/operating-model.md`](docs/reference/operating-model.md) | The gates-deny / sensors-advise doctrine as a self-contained excerpt |
-| [`docs/reference/reasoning-models.md`](docs/reference/reasoning-models.md) | 39 named mental models (cc-thinking-skills), pointing upstream for full write-ups |
-| [`docs/reference/env-vars.md`](docs/reference/env-vars.md) | Operator-tunable environment variables |
-| [`docs/reference/graph-model.md`](docs/reference/graph-model.md) | The orchestration graph: nodes, typed edges, anchors (see [Engineering doctrine](#engineering-doctrine)) |
-| [`docs/research/harness-engineering-2026-04.md`](docs/research/harness-engineering-2026-04.md) | Primary-source grounding for the gates/advisory split |
-| [`docs/harness-decay-cadence.md`](docs/harness-decay-cadence.md) | The harness-engineering 2×2 applied to sensor staleness and decay |
-| [`CLAUDE.md`](CLAUDE.md) | Architecture and non-obvious gotchas for Claude Code instances |
-| [`CHANGELOG.md`](CHANGELOG.md) | Release notes |
 
 ---
 
