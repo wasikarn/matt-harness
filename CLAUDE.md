@@ -100,8 +100,9 @@ Before writing a new skill, command, or agent from scratch, check sources in thi
    a **Matt-Pocock-first harness**; checking ECC/superpowers before matt's own repo gets the
    priority backwards. If the clone exists, `git fetch` it before trusting it: the installed
    plugin can be *newer* than the clone, inverting the "upstream but not yet installed"
-   framing. On a machine without these clones, the installed plugin alone is the available
-   source — skip straight to it.
+   framing — confirmed the hard way once, when the clone silently lagged `origin/main` by a
+   full minor release before anyone caught it. On a machine without these clones, the
+   installed plugin alone is the available source — skip straight to it.
 2. If present on this machine: the upstream ECC repo at `~/Codes/Personals/ECC` and the
    vendored superpowers checkout at `~/Codes/Personals/superpowers`.
 3. If present: sibling harnesses under `~/Codes/Personals/` for structural patterns (e.g.
