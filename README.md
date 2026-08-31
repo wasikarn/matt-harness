@@ -64,6 +64,18 @@ only vocabulary, and which gaps stay open.
 
 ## Quick start
 
+These steps install `mh@wasikarn` so you can **use** it in your own Claude Code
+projects — they don't touch or require a clone of this repo. (Want to work on
+matt-harness's own source instead? See [Development](#development).)
+
+**Before you start, you need:**
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) installed, v2.1.154+
+  (earlier versions auto-enable on install and can skip step 3 below)
+- A terminal, for the `claude plugin` commands outside a session
+- Nothing else — the plugin has no other host dependency. `mattpocock-skills` (step 4)
+  installs as its own plugin the same way; `graphify`/`qmd`/`gh` are optional extras some
+  skills reach for, never required to install or enable
+
 Run these commands inside Claude Code:
 
 ```text
@@ -71,11 +83,10 @@ Run these commands inside Claude Code:
 /plugin marketplace add wasikarn/matt-harness
 
 # 2. Install. Default scope is user-wide; read the scope note below
-#    if you want to try it on one repo first.
+#    if you want to try it on one project first.
 /plugin install mh@wasikarn
 
-# 3. Enable, from a terminal. Needs Claude Code v2.1.154+; earlier
-#    versions auto-enable on install and can skip this step.
+# 3. Enable, from a terminal.
 claude plugin enable mh@wasikarn
 
 # 4. Required: install matt-pocock's skills as their own plugin. mh's
@@ -84,10 +95,12 @@ claude plugin enable mh@wasikarn
 /plugin marketplace add mattpocock/skills
 /plugin install mattpocock-skills@mattpocock
 
-# 5. Run once per repo (issue tracker, triage labels, doc layout). The
-#    leading slash is required; this skill can't be model-invoked. If
-#    step 4's install summary said "Run /reload-plugins to activate",
-#    run that first, or this command won't resolve in the same session.
+# 5. Run once in each of YOUR projects where you want the harness active
+#    (sets up that project's issue tracker, triage labels, doc layout) —
+#    not matt-harness's own repo. The leading slash is required; this
+#    skill can't be model-invoked. If step 4's install summary said "Run
+#    /reload-plugins to activate", run that first, or this command won't
+#    resolve in the same session.
 /mattpocock-skills:setup-matt-pocock-skills
 
 # 6. Restart Claude Code (the plugin cache loads on startup)
@@ -110,7 +123,7 @@ claude plugin details mh@wasikarn   # component inventory + token cost
 > **Scope note:** step 2 without a `--scope` flag installs user-wide. That means the
 > deny-gates (`hooks/gates/irrecoverable.sh`, which blocks `rm -rf`, `git add -A`,
 > `git add .`, `--no-verify`, and hardcoded `/Users/<name>` paths) apply to every project
-> you open in Claude Code, not just the one you're evaluating. To try it on one repo
+> you open in Claude Code, not just the one you're evaluating. To try it on one project
 > first: `/plugin install mh@wasikarn --scope project` (or `--scope local`).
 
 **Uninstall:** `/plugin uninstall mh@wasikarn`  
