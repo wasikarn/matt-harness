@@ -594,6 +594,22 @@ test_allow "$AGENT_RECURSION_GUARD" "subagent echoes the pattern as a string, no
   "$(bash_agent_payload 'echo "claude -p"' fork)"
 test_allow "$AGENT_RECURSION_GUARD" "subagent greps for the pattern (auditing this gate itself)" \
   "$(bash_agent_payload 'grep -r "claude -p" docs/' fork)"
+# Deep-audit "fix it all" pass, 2026-08-31: the flat [^|;&]* exclusion after
+# the anchor treated any &/;/| as end-of-invocation even inside a quoted
+# prompt argument, so these three real nested-spawn attempts evaded
+# detection entirely (a false negative -- the dangerous direction). Fixed
+# with a quote-aware scan; these must now deny.
+test_deny  "$AGENT_RECURSION_GUARD" "spawn hidden behind an ampersand inside a quoted prompt" \
+  "$(bash_agent_payload 'claude "fix A & B" -p' fork)"
+test_deny  "$AGENT_RECURSION_GUARD" "spawn hidden behind a semicolon inside a quoted prompt" \
+  "$(bash_agent_payload 'claude "note; then" --print x' fork)"
+test_deny  "$AGENT_RECURSION_GUARD" "spawn hidden behind a pipe inside a single-quoted prompt" \
+  "$(bash_agent_payload "claude 'use A | B' --agent x" fork)"
+# Cross-segment separation must survive the quote-aware rewrite: a LATER,
+# unrelated command's flag must never get credited to an earlier claude
+# invocation that itself carries no spawn flag.
+test_allow "$AGENT_RECURSION_GUARD" "unrelated later command's flag does not leak back to claude" \
+  "$(bash_agent_payload 'claude --version ; othertool -p' fork)"
 test_allow "$TASK_COMPLETE" "non-TaskUpdate tool with agent_type (out of scope)" \
   "$(python3 -c 'import json; print(json.dumps({"tool_name":"Bash","tool_input":{"command":"ls"},"agent_type":"mh:build-error-resolver"}))')"
 

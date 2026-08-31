@@ -40,9 +40,7 @@
 # by case. The Bash-command pattern is a coarse habit-guard, not an
 # adversarial sandbox — same accepted scope as irrecoverable.sh's own
 # command-substitution/eval non-goal; it does not attempt to defeat
-# deliberate obfuscation (quote-splitting, variable indirection, or planting
-# a literal `&`/`;`/`|` inside a quoted prompt argument specifically to
-# split the flag out of the exclusion-class window below).
+# deliberate obfuscation (quote-splitting, variable indirection).
 #
 # Anchored on command position (a fresh adversarial pass, 2026-08-31,
 # reproduced the un-anchored version denying `git commit -m "mention claude
@@ -56,6 +54,18 @@
 # token (`$(claude`), silently defeating the ONE thing this leg exists to
 # catch. This anchor keeps that detection (`(` is itself an anchor char, so
 # `$(claude` still matches) while clearing the false positives above.
+#
+# The flag search after the anchor is a quote-aware scan (deep-audit,
+# 2026-08-31, "fix it all" pass), not a flat char-class exclusion — a flat
+# `[^|;&]*` treated ANY `&`/`;`/`|` as end-of-invocation, including one
+# sitting inside a quoted prompt argument (`claude "fix A & B" -p`), which
+# silently defeated detection: a false NEGATIVE, the dangerous direction. A
+# whole quoted span is consumed as one token so an in-quote separator is
+# never mistaken for a real one, while a bare (unquoted) separator still
+# correctly ends the scan at the next real command — verified against both
+# directions (the quoted-separator evasions now deny; the commit-message/
+# echo/grep false positives above still allow; cross-segment separation
+# still holds, e.g. `claude --version ; othertool -p` does not match).
 set -uo pipefail
 
 # Portability guard (#93): announced fail-open when python3 is missing.
@@ -123,11 +133,42 @@ cmd = ti.get("command") if isinstance(ti, dict) else None
 if not isinstance(cmd, str):
     sys.exit(0)
 
-if re.search(
-    r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*"
-    r"(?:\S*/)?claude\b[^|;&]*(-p\b|--print\b|--agent\b|--bg\b)",
-    cmd,
-):
+_ANCHOR_RE = re.compile(
+    r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(?:\S*/)?claude\b"
+)
+_FLAG_RE = re.compile(r"-p\b|--print\b|--agent\b|--bg\b")
+# Quote-aware tail scan (deep-audit, 2026-08-31): a flat char-class exclusion
+# treats ANY &/;/| as end-of-invocation, including one sitting inside a
+# quoted prompt argument (claude "fix A & B" -p) -- a false NEGATIVE, the
+# dangerous direction, since that argument is ordinary prompt text, not a
+# real shell separator. Built with chr() below instead of literal quote
+# characters, since this whole block already sits inside a bash single-
+# quoted `python3 -c` wrapper.
+_DQ = chr(34)
+_SQ = chr(39)
+_TOKEN_RE = re.compile(
+    _DQ + r"(?:[^" + _DQ + r"\\]|\\.)*" + _DQ + "|" + _SQ + "[^" + _SQ + "]*" + _SQ + "|.",
+    re.DOTALL,
+)
+
+def _nested_spawn(cmd):
+    # A whole quoted span is consumed as ONE token, so an in-quote &/;/|
+    # never reaches the bare-separator check below; only an UNQUOTED one
+    # ends the scan, which keeps real command boundaries intact (does not
+    # let a later, unrelated command'"'"'s flag get credited to this claude
+    # invocation).
+    for m in _ANCHOR_RE.finditer(cmd):
+        buf = []
+        for tok in _TOKEN_RE.finditer(cmd[m.end():]):
+            t = tok.group()
+            if len(t) == 1 and t in "&;|":
+                break
+            buf.append(t)
+        if _FLAG_RE.search("".join(buf)):
+            return True
+    return False
+
+if _nested_spawn(cmd):
     print(f"[mh:gate] BLOCKED: subagent ({agent_type}) may not spawn a nested Claude Code "
           f"session via Bash (command: {clip(cmd)!r}) — same rule as the Agent-tool leg: "
           f"only the main session dispatches (CLAUDE.md \"Task Dispatch\")", file=sys.stderr)
