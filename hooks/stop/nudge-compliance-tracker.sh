@@ -18,6 +18,12 @@
 # an untested assumption would have silently zeroed this metric forever, the same
 # check62 silent-clean-on-crash class this repo's own post-mortems warn about):
 #   - EnterPlanMode: {type:"assistant", message.content[]: {type:"tool_use", name:"EnterPlanMode"}}
+#   - Agent:         {type:"assistant", message.content[]: {type:"tool_use", name:"Agent"}}
+#     (added 2026-09-01, Part B of the mattpocock-compat + delegation-discipline redesign --
+#     a turn that correctly delegated via the Agent tool used to score non-compliant, the
+#     exact hoarding-vs-delegating gap this hook exists to measure. "Agent" verified as the
+#     live tool_use name against sampled transcripts and agent-recursion-guard.sh's own
+#     matcher, not "Task".)
 #   - advisor():     {type:"assistant", message.usage.iterations[]: {type:"advisor_message"}}
 #     (iterations, not a top-level tool_use -- advisor runs as a distinct consultation
 #     turn, not an ordinary tool call; the same logical call can appear on more than one
@@ -88,7 +94,7 @@ row=$(jq -nRc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg sid "$session_id" 
       | .key ] as $fires
   | [ $idx[] | select(.value.type == "assistant"
                        and (any((.value.message.content // [])[]?;
-                                .type == "tool_use" and .name == "EnterPlanMode")
+                                .type == "tool_use" and (.name == "EnterPlanMode" or .name == "Agent"))
                             or any((.value.message.usage.iterations // [])[]?;
                                    .type == "advisor_message")))
       | .key ] as $responses
