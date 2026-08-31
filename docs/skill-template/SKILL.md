@@ -26,8 +26,9 @@ Run before publishing. Each item must be checkable. See CLAUDE.md's "Skill autho
   should handle (what's asked, what files/context it needs, what correct behavior looks like)
   and check whether Claude already handles them acceptably WITHOUT the skill. If it does, the
   skill may not need to exist; only write instructions that close the gaps the baseline
-  actually showed. Not a formal eval harness (`mh:eval-harness` covers that for downstream
-  products) — a lighter authoring-time discipline. See `docs/skill-authoring-conventions.md`.
+  actually showed. Not a formal eval harness (native `claude plugin eval` covers that for
+  downstream products) — a lighter authoring-time discipline. See
+  `docs/skill-authoring-conventions.md`.
 - [ ] **Degrees of freedom** — match instruction specificity to how much a wrong deviation
   costs: prose heuristics for a genuinely open judgment call with several valid approaches, a
   parameterized script/pseudocode for a semi-structured task, an exact script with no deviation

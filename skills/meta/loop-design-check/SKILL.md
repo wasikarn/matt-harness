@@ -11,7 +11,7 @@ effort: high
 
 > **Premise.** An LLM is a feed-forward system: prompt in → tokens out, with no built-in "steer toward the goal" across turns. To make it *behave* like a goal-oriented system, you wrap a feedback loop around it. This skill helps you **write** that loop correctly and **review** it so it won't run away.
 
-> **Status: advisory checklist, not gated.** No hook or CI job enforces any row below — it's guidance you apply by hand before wiring a new loop, or when reviewing one that already exists. (Honest-status marker pattern — see `eval-harness/SKILL.md`.)
+> **Status: advisory checklist, not gated.** No hook or CI job enforces any row below — it's guidance you apply by hand before wiring a new loop, or when reviewing one that already exists.
 
 ## When to use / not
 

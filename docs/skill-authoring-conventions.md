@@ -174,9 +174,11 @@ sentences; this applies it pre-hoc to the whole skill). Then write only the inst
 close the gaps the baseline run actually showed — not instructions for a failure mode you
 imagined but never observed. Deliberately lighter than the official doc's full 5-step
 eval-driven-development process (a JSON `{query, files, expected_behavior}` schema, a
-build-your-own-harness step) — `mh:eval-harness` exists for exactly that scale, aimed at
-downstream product quality, not per-skill authoring. This is the proportionate version for a
-personal harness: 3 real examples and an honest baseline check, not a formal suite.
+build-your-own-harness step) — native `claude plugin eval` covers that scale, aimed at
+downstream product quality, not per-skill authoring (the former `mh:eval-harness` prose skill
+was deleted 2026-09-01; its enforcement layer had already gone in the June reset). This is the
+proportionate version for a personal harness: 3 real examples and an honest baseline check,
+not a formal suite.
 
 **Degrees of freedom (same source, adopted 2026-08-29):** match how tightly a step is specified
 to how expensive a wrong deviation would be — not a uniform level of detail across the whole

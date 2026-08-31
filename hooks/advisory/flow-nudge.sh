@@ -124,6 +124,63 @@ EOF
   exit 0
 }
 
+# delegation_ratio_line <session_id>
+# GH #120: derives this session's orchestrator-vs-subagent token share from
+# hooks/stop/cost-tracker.sh's costs.jsonl. Token share (not turn share) —
+# all 4 billed fields (input+output+cache_write+cache_read), the same basis
+# cost-tracker.sh uses for estimated_cost_usd — so the number reads as "share
+# of this session's spend delegated so far", consistent with what
+# mh:cost-report already reports "by stream".
+# Dedup mirrors scripts/workflows/cost-report-dedup.js's rule: costs.jsonl
+# rows are cumulative-to-date snapshots re-derived every Stop, not deltas —
+# summing every row for a session double/triple counts, so this takes the
+# latest row per (stream, model, agent_type) key before summing.
+# MH_COST_METRICS_FILE overrides the metrics path for tests; unset in
+# production, where it falls back to the real path.
+delegation_ratio_line() {
+  local sid="$1"
+  local mfile="${MH_COST_METRICS_FILE:-$HOME/.local/share/kbg/metrics/costs.jsonl}"
+  if [[ -z "$sid" || ! -f "$mfile" ]]; then
+    echo "no delegation data yet this session"
+    return
+  fi
+  local totals orch sub total pct
+  totals=$(jq -nRc --arg sid "$sid" '
+    [ inputs | try (fromjson | select(.model_scoped == true and .session_id == $sid)) ]
+    | group_by([.stream, .model, .agent_type])
+    | map(max_by(.timestamp))
+    | { orch: ([.[] | select(.stream=="orchestrator") | (.input_tokens+.output_tokens+.cache_write_tokens+.cache_read_tokens)] | add // 0),
+        sub:  ([.[] | select(.stream=="subagent")     | (.input_tokens+.output_tokens+.cache_write_tokens+.cache_read_tokens)] | add // 0) }
+  ' "$mfile" 2>/dev/null)
+  orch=$(jq -r '.orch // 0' <<< "$totals" 2>/dev/null)
+  sub=$(jq -r '.sub // 0' <<< "$totals" 2>/dev/null)
+  [[ "$orch" =~ ^[0-9]+$ ]] || orch=0
+  [[ "$sub" =~ ^[0-9]+$ ]] || sub=0
+  total=$(( orch + sub ))
+  if (( total == 0 )); then
+    echo "no delegation data yet this session"
+    return
+  fi
+  pct=$(( sub * 100 / total ))
+  echo "this session's delegation ratio so far: ${pct}% of tokens went to subagents (${sub} subagent / ${orch} orchestrator, of ${total} total)"
+}
+
+# emit_delegation_nudge — the independent trigger's payload (GH #120). Does
+# NOT exit — callers decide whether to keep going (main heredoc path) or
+# exit 0 right after (the no-IMPL-verb silent-exit path).
+emit_delegation_nudge() {
+  local ratio_line
+  ratio_line=$(delegation_ratio_line "$SESSION_ID")
+  cat <<EOF
+
+[mh:flow-nudge] Broad/multi-file scope detected (>~3 files — METHODOLOGY Rule 13) — $ratio_line.
+  Bounded, independently-verifiable slices? → delegate via the Agent tool, spawn prompt built
+  from the F9 template (skills/workflow/orchestrate/reference.md, "Spawn-prompt template (F9)").
+Rate without scoping quality makes things worse, not better (Claude Code issue #40339) — use
+the template, don't just delegate more. The nudge is advisory; the model judges.
+EOF
+}
+
 # Read stdin ONCE into a variable, then extract just the prompt text via jq.
 # The greps below all read from $INPUT/$INPUT_TH; if they shared the live
 # pipe, the first grep would consume it and the rest would see EOF and never
@@ -137,7 +194,11 @@ EOF
 # the extraction below yields empty and every branch silently misses anyway;
 # make the skip explicit instead of incidental.
 command -v jq >/dev/null 2>&1 || exit 0
-INPUT=$(printf '%s' "$(cat)" | jq -r '.prompt // empty' 2>/dev/null)
+PAYLOAD=$(cat)
+INPUT=$(printf '%s' "$PAYLOAD" | jq -r '.prompt // empty' 2>/dev/null)
+# session_id, for the delegation-ratio lookup below (GH #120) — read from the
+# same captured $PAYLOAD, not a second stdin read (see the ONCE comment above).
+SESSION_ID=$(printf '%s' "$PAYLOAD" | jq -r '.session_id // empty' 2>/dev/null)
 # เพิ่มเติม ("additionally" / "more") is a bare superstring of the THAI_IMPL
 # verb เพิ่ม ("add") — POSIX ERE has no lookahead to exclude it inline, so it
 # is stripped from a separate copy of the input before any THAI_IMPL match.
@@ -146,6 +207,39 @@ INPUT=$(printf '%s' "$(cat)" | jq -r '.prompt // empty' 2>/dev/null)
 # would also miss a real "เพิ่ม X" co-occurring with "เพิ่มเติม" in the same
 # prompt. Only used for Thai matching — English checks stay on raw $INPUT.
 INPUT_TH="${INPUT//เพิ่มเติม/}"
+
+# Delegation-ratio trigger (GH #120) — independent of the IMPL gate below.
+# docs/METHODOLOGY.md Rule 13's own ">~3 files" condition is the anchor: a
+# prompt naming more than 3 files, or a files-plural noun co-occurring with a
+# breadth word, is exactly the shape Rule 13 already names ("over ~3 files —
+# reading or editing — send the work out"), whether or not the prompt also
+# carries an IMPL verb. Root cause this closes: before this trigger, the
+# delegation-nudge line lived ONLY inside the IMPL-gated heredoc below, so a
+# read/research-heavy prompt ("review these 5 files...", "go through every
+# module...") with no IMPL verb never saw it — exactly the shape where
+# hoarding happens, per the issue. SCOPE_SIGNAL is shared with the
+# BUG_SIGNAL_WEAK co-occurrence gate further down this file — defined once,
+# here, not duplicated there.
+# English-only for now, same as this file's other new-signal precedent (see
+# the BUG_SIGNAL carve-in comment below) — no held-out Thai evidence gathered
+# for this trigger yet.
+SCOPE_SIGNAL='\b(across|throughout|every|all|whole|entire|multiple|several|many)\b'
+FILES_NOUN='\b(files?|modules?|scripts?|components?)\b'
+# Optional single adjective between the count and the noun ("5 config files",
+# "4 test scripts") -- a held-out eval (24 fresh prompts, not the tests below;
+# persisted at scripts/research/delegation-nudge-eval-2026-09-01.py) measured
+# the bare-adjacency form missing this shape; TP=7 FP=0 TN=15 FN=2
+# before the fix (recall 0.778), one of the 2 misses was exactly this gap.
+# Other code-artifact nouns (controller/service/route/handler) are a known,
+# deliberately unfixed gap from the same eval -- see FILES_NOUN's own scope
+# note above; not chased here for the same "don't overfit to one eval's
+# fixtures" discipline as docs/research/plan-mode-nudge-audit-2026-08-05.md.
+FILES_COUNT='\b([4-9]|[1-9][0-9]+)\s+([a-z]+\s+)?(files?|modules?|scripts?|components?)\b'
+DELEGATION_TRIGGER=0
+if /usr/bin/grep -qiE "$FILES_COUNT" <<< "$INPUT" \
+   || ( /usr/bin/grep -qiE "$FILES_NOUN" <<< "$INPUT" && /usr/bin/grep -qiE "$SCOPE_SIGNAL" <<< "$INPUT" ); then
+  DELEGATION_TRIGGER=1
+fi
 
 # PR-creation intent → route to mh:pr and skip the generic plan-first nudge
 # (which is the wrong advice for a discrete "create a PR" action). Placed BEFORE
@@ -262,7 +356,9 @@ fi
 #     is exactly that kind of ordinary, possibly-trivial report.
 BUG_SIGNAL_STRONG='(race condition|deadlock|memory leak)'
 BUG_SIGNAL_WEAK='(\bbug\b|\bleaks?\b|intermittent|flak(y|iness)|silently (drops?|fails?)|\bregression\b|corrupt(s|ed|ing)?)'
-SCOPE_SIGNAL='\b(across|throughout|every|all|whole|entire|multiple|several|many)\b'
+# SCOPE_SIGNAL is defined once, earlier in this file (Delegation-ratio
+# trigger section, GH #120) — shared by that trigger and this co-occurrence
+# gate, not redeclared here.
 BUG_COMPLEX=0
 if /usr/bin/grep -qiE "$BUG_SIGNAL_STRONG" <<< "$INPUT"; then
   BUG_COMPLEX=1
@@ -272,6 +368,11 @@ fi
 
 if ! /usr/bin/grep -qiE "\b($IMPL)\b" <<< "$INPUT" && ! /usr/bin/grep -qE "$THAI_IMPL" <<< "$INPUT_TH" \
    && [[ "$BUG_COMPLEX" -eq 0 ]]; then
+  # No IMPL/THAI_IMPL/complex-bug signal -- exactly the read/research-heavy
+  # shape the old delegation line never reached (GH #120), since it used to
+  # live only inside the heredoc below this gate. Fire it on its own if the
+  # file-breadth trigger matched; otherwise stay silent, unchanged.
+  [[ "$DELEGATION_TRIGGER" -eq 1 ]] && emit_delegation_nudge
   exit 0
 fi
 # CI-failure carve-out: "build failed, help me debug the CI" is a DEBUG task,
@@ -292,10 +393,14 @@ cat <<'EOF'
   Multi-file / unfamiliar / architectural / hard-to-reverse?
     → enter plan mode (Shift+Tab, or EnterPlanMode) first, or stress-test the ask with mattpocock-skills:grilling.
   A new feature to spec out? → the user types /mattpocock-skills:grill-with-docs first (stateful, writes CONTEXT.md/ADRs), then /mattpocock-skills:to-spec → /mattpocock-skills:to-tickets → /mattpocock-skills:implement (all four are user-invoked only — never Skill-call them)
-  Bounded, independently-verifiable slices? → consider delegating via the Agent tool (see mh:orchestrate).
 Skip if the work shape is already known (typo / doc-tweak / known small fix).
 The nudge is advisory; the model judges.
 EOF
+
+# Delegation-ratio trigger (GH #120) fires independently of the gate above —
+# this prompt also carried an IMPL/bug-complex signal, so the plan-first
+# heredoc and the delegation nudge both print when both conditions hold.
+[[ "$DELEGATION_TRIGGER" -eq 1 ]] && emit_delegation_nudge
 
 # Ticket + implementation-intent combo -> requirement-grounding reminder.
 # TICKET_KEY is a deliberate, labeled duplicate of jira-route-nudge.sh's TP-*

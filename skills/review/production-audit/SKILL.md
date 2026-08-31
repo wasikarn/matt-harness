@@ -197,4 +197,3 @@ Worked ship-readiness example (68/100 verdict with blockers/fixes/evidence lists
 - Skill: `mh:security-auditor` (comprehensive audit) / `security-reviewer` agent (line-level, mid-implementation)
 - Agent: `performance-optimizer` (algorithmic/complexity fixes) — Skill: `mh:latency-critical-systems` (system-level latency diagnosis)
 - Skill: `mattpocock-skills:tdd`
-- Skill: `mh:eval-harness`

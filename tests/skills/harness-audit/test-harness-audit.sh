@@ -204,6 +204,25 @@ else
   bad "check-65 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
 fi
 
+# Check 67 — composer-not-creator sourcing (GH #119): a new surface whose
+# name/description resembles a mattpocock-skills ledger entry must WARN
+# unless it carries the literal `composer-not-creator: checked, genuinely
+# new` marker. Bad fixture collides twice (name: code-implementer vs
+# implement; description: domain-modeling); good fixture is the same
+# content plus the marker.
+run_check 67 "$FIX/check-67-bad"
+if [ "$WARN_FOUND" -ge 2 ] && [ "$CRIT_FOUND" -eq 0 ]; then
+  ok "check-67 bad fixture fires both WARNs (warn=$WARN_FOUND)"
+else
+  bad "check-67 bad fixture did NOT fire 2 WARNs as expected (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 67 "$FIX/check-67-good"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-67 good fixture (marker present) silent"
+else
+  bad "check-67 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
 # Regression test — a `compliance-audit` adversarial pass (2026-07-23) found
 # the raw `head -20 | grep -qF` form (checks 36/45's original shape)
 # false-negatives when the literal flag string appears only in prose (e.g.

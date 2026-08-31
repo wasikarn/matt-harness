@@ -7,6 +7,13 @@ true`, else `model`). Upstream adds/renames a skill → check 50 WARNs until thi
 records why not. Re-verify whenever the `mattpocock-skills` cache version changes (same habit as
 the third-party same-version stale trap in root `CLAUDE.md`).
 
+Harness-audit check 67 (GH #119) reads this same table's column 1 for a second purpose: computing
+the "composer-not-creator" doctrine (root `CLAUDE.md`) at creation time — WARN when a new
+skill/agent's own name or description looks like it might duplicate one of these skill names, unless
+the file carries the literal marker `composer-not-creator: checked, genuinely new`. Purely a static
+read of this checked-in table, not the live plugin cache — a row added or renamed here changes what
+check 67 flags on the very next audit run.
+
 **Format contract:** column 1 = skill name exactly as installed; column 2 = `model` or `user`
 (nothing else); column 3 = free prose — the kbg surface(s) that route/name it, or an explicit
 deferral with a reason. Gated (`user`) skills are cited in kbg surfaces as the literal slash form
@@ -26,7 +33,7 @@ own lane, not a zero-mention guarantee: `build-error-resolver.md` carries one in
 | skill | invocation | kbg touchpoint / deferral |
 |---|---|---|
 | ask-matt | user | the actual routing layer — `CLAUDE.md`'s "Finding a surface" section sends routing questions to `/mattpocock-skills:ask-matt` directly (kbg's own routers, `ask-kbg` + `kbg-help`, removed 2026-08-24 #80) |
-| code-review | model | adopted — the review surface since the kbg review pipeline retired (2026-08-24 #82); shares its bare name with Claude Code's own first-party bundled skill (`/code-review`, alias `/review`) — namespacing means no real conflict, but bare `/code-review` typed from muscle memory resolves to Anthropic's skill, not matt's. Open question, not yet reproduced: `mattpocock-skills:code-review` fans out its own internal sub-reviews as parallel sub-agents, and whether `hooks/gates/agent-recursion-guard.sh` incorrectly denies that internal fan-out when this skill is Skill-called from inside an already-dispatched mh subagent is unconfirmed — see the tracked follow-up issue for this collision. Until reproduced, prefer calling `mattpocock-skills:code-review` from the main session rather than from inside a dispatched subagent |
+| code-review | model | adopted — the review surface since the kbg review pipeline retired (2026-08-24 #82); shares its bare name with Claude Code's own first-party bundled skill (`/code-review`, alias `/review`) — namespacing means no real conflict, but bare `/code-review` typed from muscle memory resolves to Anthropic's skill, not matt's. Confirmed collision, resolved as by-design (2026-09-01, #118): reproduced live — Skill-calling this from inside a dispatched subagent has BOTH its internal Standards/Spec dispatches denied by `hooks/gates/agent-recursion-guard.sh` (caller carries `agent_id`), producing no report at all. Deliberately not carved out (the gate can't distinguish documented internal fan-out from rogue re-orchestration, and any discriminant would be forgeable). Hard rule: invoke `mattpocock-skills:code-review` from the main session only, never from inside a dispatched subagent |
 | codebase-design | model | routed — `docs/METHODOLOGY.md`'s plan-mode paragraph names it for deep-module vocabulary mid-blueprint; `agents/code-architect.md` and `agents/backend-architect.md` boundary lines point to it for the same reason; kbg's native design agents are `mh:code-architect` / `mh:backend-architect` for the blueprint itself |
 | diagnosing-bugs | model | `docs/agent-voice-extension.md`, `skills/workflow/post-mortem/SKILL.md` (input-contract source since `commands/fix-bug` retired, 2026-08-24 #86) |
 | domain-modeling | model | `docs/agents/domain.md`, `docs/reference/judgment-ladder.md`, `docs/reference/strategic-judgment.md` |

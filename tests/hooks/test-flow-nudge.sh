@@ -467,6 +467,78 @@ else
 fi
 
 echo ""
+echo "--- delegation-ratio trigger, independent of the IMPL gate (GH #120) ---"
+# Root cause GH #120 fixed: the delegation-nudge line used to live ONLY inside
+# the IMPL-gated heredoc, so it never fired on a read/research-heavy prompt
+# with no IMPL verb -- exactly the shape where hoarding happens. This prompt
+# has no IMPL verb ("go through"/"tell" aren't in IMPL) and no bug-complex
+# signal, so under the OLD code the hook would have gone fully silent. Under
+# the new independent trigger (FILES_COUNT: "5 files" > 3, METHODOLOGY Rule
+# 13's anchor), it must fire the delegation nudge -- and must NOT also print
+# the "Non-trivial work detected" plan-mode heredoc, proving the two triggers
+# are now independent, not the same gate.
+files_no_impl_out=$(echo "$(user_prompt_payload "can you go through these 5 files and tell me what each one does")" | bash "$HOOK" 2>/dev/null)
+if printf '%s' "$files_no_impl_out" | /usr/bin/grep -qi "delegat" \
+   && printf '%s' "$files_no_impl_out" | /usr/bin/grep -qi "F9" \
+   && ! printf '%s' "$files_no_impl_out" | /usr/bin/grep -qi "Non-trivial work detected"; then
+  echo "  ✅ CONTENT: read/research prompt with no IMPL verb fires delegation nudge alone (names F9), independent of the plan-mode heredoc"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT MISMATCH (expected delegation+F9, no plan-mode heredoc): <$(printf '%s' "$files_no_impl_out" | head -c 200)>" >&2
+  fail=$((fail + 1))
+fi
+# Files-plural noun + breadth word co-occurrence (no explicit count), still no
+# IMPL verb ("look through" isn't IMPL) -- second, independent path to the
+# same trigger.
+files_breadth_out=$(echo "$(user_prompt_payload "can you look through every module in the payments directory and summarize what you find")" | bash "$HOOK" 2>/dev/null)
+if printf '%s' "$files_breadth_out" | /usr/bin/grep -qi "delegat" \
+   && ! printf '%s' "$files_breadth_out" | /usr/bin/grep -qi "Non-trivial work detected"; then
+  echo "  ✅ CONTENT: files-noun + breadth-word co-occurrence (no explicit count) also fires the independent trigger"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT MISMATCH: <$(printf '%s' "$files_breadth_out" | head -c 200)>" >&2
+  fail=$((fail + 1))
+fi
+# Regression guard: a breadth word with NO files-ish noun must still stay
+# fully silent -- this is the exact prompt the pre-existing bug-carve-in test
+# above already locks as silent; re-asserted here so a future widening of the
+# delegation trigger can't quietly break it by treating any breadth word as
+# sufficient on its own.
+test_silent "breadth word alone, no files-noun (delegation trigger must NOT fire on breadth alone)" \
+  "this happens across every environment"
+# Ratio computed from real costs.jsonl data (not hardcoded): seed a scratch
+# metrics file via MH_COST_METRICS_FILE (flow-nudge.sh's test-only override),
+# dedup'd latest-per-(stream,model,agent_type) rows summing to orchestrator
+# total tokens 900, subagent total tokens 300 -- 300/1200 = 25%. A prior/
+# earlier row per key is included on purpose to prove dedup (take-latest, not
+# sum-all) actually runs, not just that a single row is read.
+ratio_fixture=$(mktemp)
+cat > "$ratio_fixture" <<'JSONL'
+{"timestamp":"2026-09-01T00:00:00Z","session_id":"gh120-test","model":"claude-sonnet-5","model_scoped":true,"stream":"orchestrator","agent_type":null,"turns":5,"input_tokens":999,"output_tokens":999,"cache_write_tokens":999,"cache_read_tokens":999}
+{"timestamp":"2026-09-01T00:05:00Z","session_id":"gh120-test","model":"claude-sonnet-5","model_scoped":true,"stream":"subagent","agent_type":"general-purpose","turns":2,"input_tokens":50,"output_tokens":150,"cache_write_tokens":50,"cache_read_tokens":50}
+{"timestamp":"2026-09-01T00:10:00Z","session_id":"gh120-test","model":"claude-sonnet-5","model_scoped":true,"stream":"orchestrator","agent_type":null,"turns":8,"input_tokens":150,"output_tokens":250,"cache_write_tokens":100,"cache_read_tokens":400}
+JSONL
+ratio_out=$(echo "{\"session_id\":\"gh120-test\",\"hook_event_name\":\"UserPromptSubmit\",\"prompt\":\"review these 4 files for correctness\"}" | MH_COST_METRICS_FILE="$ratio_fixture" bash "$HOOK" 2>/dev/null)
+python3 -c "import os; os.unlink('$ratio_fixture')" 2>/dev/null
+if printf '%s' "$ratio_out" | /usr/bin/grep -qE "25% of tokens went to subagents \(300 subagent / 900 orchestrator"; then
+  echo "  ✅ CONTENT: delegation ratio computed from real costs.jsonl fixture (dedup'd latest-per-key, 300/1200=25%)"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT EXPECTED computed 25% ratio: <$(printf '%s' "$ratio_out" | head -c 200)>" >&2
+  fail=$((fail + 1))
+fi
+# No session_id / no metrics file yet -- graceful "no data" text, not a
+# hardcoded number and not a crash.
+no_data_out=$(echo "$(user_prompt_payload "go through these 5 files and tell me what they do")" | bash "$HOOK" 2>/dev/null)
+if printf '%s' "$no_data_out" | /usr/bin/grep -qi "no delegation data yet"; then
+  echo "  ✅ CONTENT: no session_id/data yet -> graceful fallback text, not a fabricated ratio"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT EXPECTED 'no delegation data yet' fallback: <$(printf '%s' "$no_data_out" | head -c 200)>" >&2
+  fail=$((fail + 1))
+fi
+
+echo ""
 echo "--- empty / malformed input (must stay silent + exit 0) ---"
 # Empty stdin (no JSON) → silent. Test by piping empty input directly.
 empty_out=$(echo "" | bash "$HOOK" 2>/dev/null)

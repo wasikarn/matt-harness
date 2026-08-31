@@ -64,17 +64,21 @@ Bounded fan-out — cap history & rationale section):
 
 **Cross-references:** this contract is enforced at your dispatch boundary — clamp the work-list to the cap before spawning, and pre-trim oversized lists at plan time.
 
-## Guardrails are brakes, not an accelerator (prose-only)
+## Guardrails are brakes; GH #120 added the accelerator
 
 Every mechanism this fleet has for delegation — the fan-out cap above, `AskUserQuestion`
 friction on a write-capable dispatch, `agent-recursion-guard.sh` — stops over-delegation. None
 of them push the orchestrator to delegate more when it's hoarding work inline instead. That
-asymmetry is a real, named gap (docs/METHODOLOGY.md Rule 13's own note on this), not something
-this skill's existing brakes address — no check in this repo currently nudges toward more
-delegation, only away from too much of it. Filed as a scoped follow-up (delegation-ratio metric
-+ an independently-triggered nudge) rather than fixed here, because raising delegation *rate*
-without raising delegation *scoping quality* has made results worse elsewhere (Claude Code issue
-#40339) — any fix has to ship paired with the F9 spawn-prompt discipline above, not instead of it.
+asymmetry was a real, named gap (docs/METHODOLOGY.md Rule 13's own note on this) until GH #120
+shipped `hooks/advisory/flow-nudge.sh`'s independent delegation-ratio trigger: a prompt naming
+>~3 files, or a files-plural noun co-occurring with a breadth word, fires it whether or not an
+IMPL verb is also present — closing the exact gap where the line used to live only inside the
+IMPL-gated plan-mode heredoc and so never fired on read/research-heavy hoarding. The nudge names
+the session's actual orchestrator:subagent token ratio (from `hooks/stop/cost-tracker.sh`'s
+`costs.jsonl`) and points at the F9 spawn-prompt template above, not a bare "delegate more" line
+— raising delegation *rate* without raising delegation *scoping quality* has made results worse
+elsewhere (Claude Code issue #40339). Still advisory, not a gate: the hook is enforced to fire,
+whether the model acts on it stays prose-only, same as the plan-mode nudge it lives beside.
 
 ## Agent tool vs Workflow tool
 

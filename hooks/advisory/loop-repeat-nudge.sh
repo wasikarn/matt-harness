@@ -3,12 +3,11 @@
 # signal, no model judgment -- ADR 0006 line: this counts identical
 # {tool, params} pairs, it never judges "is this spinning" or "is this
 # productive". Matches kbg's advisory-sensor contract (compute a number,
-# journal/nudge, never gate) -- see docs/reference/hook-lifecycle-contracts.md's
-# "no PostToolUse hook is currently live" note: the two prior PostToolUse
-# advisories (plan-review-nudge, compliance-audit-nudge) were retired along
-# with the downstream feature each one nudged toward, not because
-# PostToolUse itself was judged the wrong event -- this is a different,
-# independently-motivated signal.
+# journal/nudge, never gate). Runs alongside the two other live PostToolUse
+# advisories (plan-review-nudge, compliance-audit-nudge -- both registered in
+# hooks.json; an earlier version of this header wrongly claimed they were
+# retired, corrected 2026-09-01) -- this is a different, independently-
+# motivated signal from either.
 #
 # Design source: ECC's ecc-context-monitor.js (cited on #99) field-tested a
 # "3 identical calls in last 5" threshold and a message-content dedupe (not

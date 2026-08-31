@@ -55,12 +55,15 @@
 # catch. This anchor keeps that detection (`(` is itself an anchor char, so
 # `$(claude` still matches) while clearing the false positives above.
 #
-# Open question, not yet reproduced (2026-09-01): `mattpocock-skills:code-review` fans
-# out its own internal sub-reviews as parallel sub-agents (its own SKILL.md, around lines
-# 11 and 58). If an mh subagent Skill-calls `mattpocock-skills:code-review`, does this
-# gate's `agent_id` check incorrectly deny that internal fan-out too, since the calling
-# subagent already has `agent_id` set? Unconfirmed — nobody has reproduced this collision
-# yet. See the tracked follow-up issue for this collision.
+# Confirmed collision, resolved as by-design (2026-09-01, issue #118):
+# `mattpocock-skills:code-review` fans out its own internal sub-reviews as parallel
+# sub-agents (its own SKILL.md, around lines 11 and 58). Reproduced live: Skill-calling
+# it from inside a dispatched subagent has BOTH internal dispatches denied by this gate
+# (caller carries agent_id), so the skill produces no report from a subagent context.
+# Deliberately NOT carved out — the gate cannot distinguish a skill's documented internal
+# fan-out from rogue re-orchestration (same agent_id, same Agent(...) shape), and any
+# discriminant would be forgeable by model output. Standing rule: invoke
+# mattpocock-skills:code-review from the main session only.
 #
 # The flag search after the anchor is a quote-aware scan (deep-audit,
 # 2026-08-31, "fix it all" pass), not a flat char-class exclusion — a flat

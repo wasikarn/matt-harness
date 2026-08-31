@@ -173,7 +173,7 @@ claude plugin details mh@wasikarn   # component inventory + token cost
 
 ## What you get
 
-Fleet size (real current fleet: 60 skills · 17 agents) is patched into this line by
+Fleet size (real current fleet: 57 skills · 17 agents) is patched into this line by
 `skills/inventory/scripts/sync-fleet-counts.sh`, so it can't go stale by hand.
 
 | Component | How to invoke |
@@ -226,12 +226,10 @@ must degrade gracefully without it).
 | Skill | When to reach for it |
 |---|---|
 | `mh:pr` | Create a GitHub PR. Templated body, previewed for confirmation before creation. |
-| `mh:security-scan` | AgentShield scan of harness surfaces via the `security-reviewer` agent. |
 | `mh:ship-merge` · `mh:ship-release` | Pre-merge gate · end-to-end release ceremony. |
 | `mh:score-decision` | Weighted numeric verdict for a decision: pass/fail, confidence, trace. |
 | `mattpocock-skills:grilling` | Relentless interview to stress-test a plan before building. |
 | `mh:orchestrate` | Triage competing tasks and route each to inline / parallel / sequential / drop. |
-| `mh:agent-architecture-audit` | 12-layer diagnostic for wrapper regression, memory pollution, repair loops. |
 | `mh:context-budget` | Token usage audit. Finds bloat and produces prioritized savings. |
 | `mh:security-auditor` | OWASP Top 10, secrets scanning, threat model plus remediation. |
 | `mh:production-audit` | Production readiness check from local evidence. No external service required. |
@@ -309,7 +307,7 @@ licenses.
 | [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) | MIT | Tokenizer-fact justification in `output-styles/crisp.md`, plus a terminal-token status-code convention in `docs/agent-authoring-conventions.md`'s Closed-vocabulary status codes section (v0.68.127); `compress-docs`' safety pattern (verify-before-overwrite, frontmatter handling, sensitive-file refusal) adapted from `caveman-compress` (v0.68.128); symlink guard on `hooks/stop/cost-tracker.sh`'s `costs.jsonl` append, adapted from `caveman-config.js`'s `safeWriteFlag` hardening (v0.68.129) |
 | [DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail) | MIT | YAGNI ladder, the `ponytail:` shortcut-marker convention, and the root-cause-fix rule, revived into `contexts/dev.md` |
 | [thedotmack/claude-mem](https://github.com/thedotmack/claude-mem) | Apache-2.0 | `docs/merge-rubric.md`'s real-fix-vs-failure-tolerance rubric, adapted into a Fix-Authenticity Lens in `agents/code-reviewer.md` (v0.68.130; both retired 2026-08-24, #82, with the review pipeline; `mattpocock-skills:code-review` is now the review surface) |
-| kbg-native | MIT | 60 skills · 17 agents |
+| kbg-native | MIT | 57 skills · 17 agents |
 
 ## License
 
