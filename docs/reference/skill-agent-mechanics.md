@@ -75,11 +75,16 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
   therefore inert; the model was never reading the "Don't use for X" cross-references they carried.
   This is also why mh built `hooks/advisory/compliance-audit-nudge.sh` — a hook is the only layer
   that can surface a gated skill to the model, since the description can't. **Correction
-  2026-08-31:** this doc previously said "and its sibling nudges" — false. Verified: exactly one
-  such hook exists, hardcoded to `/mh:compliance-audit` only. The other 9 carriers (`ship-merge`,
-  `recursive-improve`, `ideate-search`, `score-decision`, `tiered-pipeline`, `wiki-ingest`,
-  `address-review`, `post-mortem`, `ship-release`) have zero nudge coverage — per the mechanism
-  above, the model has no path to ever proactively suggest them. Real gap, not (yet) fixed; note
+  2026-08-31, re-corrected same day:** this doc previously said "and its sibling nudges" —
+  overcounted; the first correction then undercounted ("exactly one such hook"), having swept only
+  `hooks/advisory/`. Actual coverage, swept across all of `hooks/`: **two** proactive nudges —
+  this one (`/mh:compliance-audit`) and `flow-nudge.sh`'s reply-to-PR-review branch
+  (`/mh:address-review`) — plus one reactive mention, `merge-door.sh`'s ask message naming
+  `mh:ship-merge` when a raw `gh pr merge` is attempted. The remaining 7 carriers
+  (`recursive-improve`, `ideate-search`, `score-decision`, `tiered-pipeline`, `wiki-ingest`,
+  `post-mortem`, `ship-release`) have zero hook coverage — via the description mechanism above the
+  model has no route to proactively suggest them; only a doctrine file that happens to name one
+  (e.g. the operator CLAUDE.md's `ship-merge` example) can. Real gap, not (yet) fixed; note
   it here so a future pass doesn't assume coverage exists because this doc once implied it did.
   Don't "fix" these 10 descriptions back to a trigger-list shape; that reverts a correctness fix,
   not a style preference.

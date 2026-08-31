@@ -1,7 +1,7 @@
 ---
 name: review-fixtures
 description: "Review-fixtures: 2 agents review skill-creator fixture outputs before deciding a fix. Use when fixtures exist mid an improve loop. Don't use for PR review."
-argument-hint: <skill/agent/command-name> [iteration-path]
+argument-hint: "[skill/agent/command-name] [iteration-path]"
 model: inherit
 effort: high
 ---

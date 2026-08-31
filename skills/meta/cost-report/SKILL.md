@@ -1,7 +1,7 @@
 ---
 description: "Cost-report: local Claude Code spend from the cost-tracker metrics log. Use when checking session spend. Don't use for scheduling or budget alerts (none exist)."
 name: cost-report
-argument-hint: [csv]
+argument-hint: "[csv]"
 model: inherit
 effort: low
 ---

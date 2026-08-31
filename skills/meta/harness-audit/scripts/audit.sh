@@ -300,9 +300,10 @@ safe_count() {
 echo "=== Skill Audit Report ==="
 echo "Root: $REPO_ROOT"
 
-# ── checks (sourced in filename-glob order; fragments are numbered 1..65 with
-# filename prefix == '# N.' header, so glob-sorting by 01..65 sources them in
-# numeric order). Sourced via the script dir (not CWD) so the audit
+# ── checks (sourced in filename-glob order; fragments are numbered 1..N —
+# exact N lives in the split-integrity guard below, the one spot that hardcodes
+# it — with filename prefix == '# N.' header, so glob-sorting by zero-padded
+# number sources them in numeric order). Sourced via the script dir (not CWD) so the audit
 # runs correctly from any CWD, matching the _lib sourcing above. Fail-closed
 # guard below catches any lost/dup fragment BEFORE the summary prints a
 # false-clean result. ─────────────────────────────────────────────────────
@@ -317,7 +318,7 @@ shopt -u nullglob
 [ "${#_checks[@]}" -gt 0 ] || err_die "audit: no check fragments in $_AUDIT_DIR/checks/ — split is broken (fail-closed, not fail-open)"
 
 # --only <id>: source exactly ONE check fragment against the resolved scope
-# and exit (skipping the full loop + the 65-fragment integrity guard, which
+# and exit (skipping the full loop + the split-integrity guard, which
 # only applies to a full run). err_die on no/ambiguous match.
 if [ -n "$ONLY_ID" ]; then
   _padded=$(printf '%02d' "$ONLY_ID" 2>/dev/null || printf '%s' "$ONLY_ID")
