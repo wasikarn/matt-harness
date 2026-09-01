@@ -4,7 +4,7 @@
 # before editing, with the heavyweight spec flow (the user types
 # /mattpocock-skills:grill-with-docs first, then /mattpocock-skills:to-spec
 # → /mattpocock-skills:to-tickets → /mattpocock-skills:implement;
-# grill-with-docs/to-spec/to-tickets/implement are all
+# grill-with-docs, to-spec, to-tickets, and implement are all
 # disable-model-invocation upstream — never point the model at grill-with-docs
 # as something IT can call, only bare grilling on the multi-file/one-way-door
 # line below is model-invocable) as the
@@ -71,7 +71,7 @@ set -uo pipefail
 # against self-authored fixtures.
 IMPL='implement(ing)?|build(ing)?|creat(e|ing)|add(ing)?|(set ?up|setting ?up)|wir(e|ing)|integrat(e|ing)|optimiz(e|ing)|refactor(ing)?|rewrit(e|ing)|redesign(ing)?|migrat(e|ing)|(re)?architect(ing|ure)?|split(ting)?|(swap(ping)? ?out)|restructur(e|ing)|mov(e|ing)|replac(e|ing)|consolidat(e|ing)|extract(ing)?|overhaul(ing)?|rework(ing)?|rethink(ing)?|new (endpoint|command|skill|surface|hook|agent)|grill[- ]|ship(ping)?'
 # to-prd/to-issues dropped 2026-09-01: matt's pre-rename skill names, existing
-# nowhere in installed matt 1.2.3 — dead vocabulary. to-spec/to-tickets dropped
+# nowhere in installed matt 1.2.3 — dead vocabulary. to-spec and to-tickets dropped
 # the same day as a conflict fix: a prompt naming them is already INSIDE matt's
 # spec chain (step 2/3), and nudging "grill-with-docs first" there contradicts
 # to-spec's own "Do NOT interview the user; just synthesize" contract.

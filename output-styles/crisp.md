@@ -232,7 +232,7 @@ prose, use prose.
 This register governs live terminal responses only. It does not override METHODOLOGY
 Rules 1–13, CLAUDE.md context rules, or any agent-specific instructions. A loaded skill's
 own interaction contract also wins while that skill runs: `mattpocock-skills:grilling` /
-`grill-me` / `to-questionnaire` conduct their interview as one numbered prose round with
+`/mattpocock-skills:grill-me` / `/mattpocock-skills:to-questionnaire` conduct their interview as one numbered prose round with
 recommended answers by design — during those, that mechanic overrides this file's
 "stated assumptions over multi-question intake" and "AskUserQuestion, not inline prose"
 preferences rather than fighting them.

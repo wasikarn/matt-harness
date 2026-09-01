@@ -110,9 +110,10 @@ Before writing a new skill, command, or agent from scratch, check sources in thi
 
 Cherry-pick and adapt from whichever source fits; create kbg-native surfaces only when none
 do. Skipping straight to (2) or (3) risks colliding with a skill matt already built — confirmed
-2026-07-17, when `code-implementer`/`/implement` were built checking only (2) and (3), skipping
-(1), and collided with matt's own `engineering/implement` skill (caught by the user, not by this
-checklist). Paths are the stable anchor, not pinned hashes — run `git rev-parse HEAD` there when
+2026-07-17, when the `code-implementer` agent and its implement slash command were built
+checking only (2) and (3), skipping (1), and collided with matt's own `/mattpocock-skills:implement`
+skill (caught by the user, not by this checklist). Paths are the stable anchor, not pinned
+hashes — run `git rev-parse HEAD` there when
 you need the current commit. None of these clones is bundled with the plugin. On a machine
 without them, (1)'s installed plugin is the only available source; build kbg-native only after
 checking what it already offers.
@@ -163,7 +164,7 @@ tool) for the full current list; scope a query to the relevant collections rathe
 searching all of them blind.
 
 **Why this rule lives here, not in a skill:** kbg built exactly this qmd-first behavior
-once already, vendored into a `research` skill — and two unrelated namespace-collision
+once already, vendored into a research skill — and two unrelated namespace-collision
 migrations silently deleted it with nobody catching it, most recently the swap to
 `mattpocock-skills:research`, which carries no qmd/context7 awareness. A skill
 file is exactly the kind of surface an upstream resync can overwrite out from under you;
@@ -250,7 +251,7 @@ When hooks are wired: gates/ (deny), advisory/ (journal), session/ (inject), sto
 
 ## Skill authoring doctrine (matt-pocock)
 
-When creating or editing a skill under `skills/`, follow matt-pocock's `writing-for-agents`
+When creating or editing a skill under `skills/`, follow matt-pocock's `mattpocock-skills:writing-for-agents`
 doctrine: leading words, one trigger per branch, completion criterion + demand, no-op test,
 progressive disclosure across the two loads. Canonical source: the
 `mattpocock-skills:writing-for-agents` skill (model-invocable; renamed from

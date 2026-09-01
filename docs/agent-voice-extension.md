@@ -24,9 +24,9 @@ There are three situations where a command wrapper earns its place over direct a
 The command's value is a **procedure** the agent doesn't carry in its own body.
 
 **Example: a hypothetical `/debug` command.**
-- **What it would do:** invoke `diagnosing-bugs` (the disciplined-diagnosis skill) — reproduce → minimise → hypothesise → instrument → fix → regression-test.
-- **Why a command is justified:** the user wants a 6-step **procedure**, not a 10-year-context senior-debugger voice. The skill `diagnosing-bugs` carries the procedure. A `/debug` command would be the entry point that triggers the skill, then routes the output to whichever engineer is appropriate.
-- **Without the command:** the user types "debug this", the orchestrator routes to a generic agent, the procedure has to be invoked explicitly via `diagnosing-bugs` or remembered by the user.
+- **What it would do:** invoke `mattpocock-skills:diagnosing-bugs` (the disciplined-diagnosis skill) — reproduce → minimise → hypothesise → instrument → fix → regression-test.
+- **Why a command is justified:** the user wants a 6-step **procedure**, not a 10-year-context senior-debugger voice. The skill `mattpocock-skills:diagnosing-bugs` carries the procedure. A `/debug` command would be the entry point that triggers the skill, then routes the output to whichever engineer is appropriate.
+- **Without the command:** the user types "debug this", the orchestrator routes to a generic agent, the procedure has to be invoked explicitly via `mattpocock-skills:diagnosing-bugs` or remembered by the user.
 
 **This is the strongest case for a personality command** — the personality (patient, evidence-driven) is in the agent, but the ritual lives in the command.
 
@@ -124,7 +124,7 @@ allowed-tools: Read, Grep, Glob
 ---
 ```
 
-The command's value is the **output shape** (ADR-shaped critique), not a new capability — `mattpocock-skills:grilling` already stress-tests reasoning adversarially (this hypothetical isn't an `agent:`, since `critical-eval` was never a standalone agent). The risk: this overlaps with the existing `domain-modeling` ADR ritual, which is the right skill for "draft an ADR." If you find yourself wanting `/perspectives`, the right move is usually `mattpocock-skills:grilling` or `domain-modeling` instead.
+The command's value is the **output shape** (ADR-shaped critique), not a new capability — `mattpocock-skills:grilling` already stress-tests reasoning adversarially (this hypothetical isn't an `agent:`, since `critical-eval` was never a standalone agent). The risk: this overlaps with the existing `mattpocock-skills:domain-modeling` ADR ritual, which is the right skill for "draft an ADR." If you find yourself wanting `/perspectives`, the right move is usually `mattpocock-skills:grilling` or `mattpocock-skills:domain-modeling` instead.
 
 ## 5. Cross-references
 

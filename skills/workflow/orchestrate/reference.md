@@ -42,7 +42,7 @@ the Gated agent-name list — that list only covers Agent-tool dispatches.
 | Urgent + important, tightly coupled / needs back-and-forth | — | L2 | **inline** (do now, with user) |
 | Urgent + important, specialized + time-critical | — | L3 | **dispatch immediately**, tight done-when |
 | Specialized work (matches an agent's domain) | — | L3 | **dispatch** to that agent ↓ |
-| Important, not urgent | — | L3 | **schedule** — or dispatch `code-architect` (or run `research`) for deep prep |
+| Important, not urgent | — | L3 | **schedule** — or dispatch `code-architect` (or run `mattpocock-skills:research`) for deep prep |
 | Urgent, not important, bounded + verifiable | — | **L4** | **scripted execution** — pipeline/batch via bash runner |
 | Urgent, not important, trivial | — | L2 | **inline** — orchestrating costs more (guardrail) |
 | Neither | — | — | **drop** — mark `wontfix` |
@@ -52,7 +52,7 @@ the Gated agent-name list — that list only covers Agent-tool dispatches.
 | Item shape | Security? | Level | Path |
 |---|---|---|---|
 | High impact + low effort | — | L2 | **inline** — quick wins, do now |
-| High impact + high effort | — | L3 | **schedule** — dispatch `code-architect` (or run `research`) for deep prep before build |
+| High impact + high effort | — | L3 | **schedule** — dispatch `code-architect` (or run `mattpocock-skills:research`) for deep prep before build |
 | Low impact + low effort | — | L3 | **delegate** to the right agent, or **inline** if trivial — batch similar items |
 | Low impact + high effort | — | — | **drop** — thankless task / money pit; mark `wontfix` unless user insists |
 
@@ -61,7 +61,7 @@ the Gated agent-name list — that list only covers Agent-tool dispatches.
 | Item shape | Security? | Level | Path |
 |---|---|---|---|
 | High value + low risk | — | L3 | **do first** — dispatch `code-architect` for design, then build |
-| High value + high risk | — | L3 | **mitigate then do** — run `research` to de-risk, prototype, or ADR before committing |
+| High value + high risk | — | L3 | **mitigate then do** — run `mattpocock-skills:research` to de-risk, prototype, or ADR before committing |
 | Low value + low risk | — | L3 | **do last** — batch with similar items; delegate if bounded |
 | Low value + high risk | — | — | **avoid** — mark `wontfix` unless forced by external constraint |
 
@@ -69,7 +69,7 @@ the Gated agent-name list — that list only covers Agent-tool dispatches.
 
 **No numeric scoring.** Value×Risk is intentionally a binary classifier (high/low), not a weighted decision matrix with 1–5 scores. Numeric scores introduce false precision and weight-manipulation risk here. If N≥3 alternatives need ranking, apply `mh:score-decision`'s Ranking mode (weighted-sum + per-option fatal-weakness floor, METHODOLOGY Rule 14) inline rather than scoring this binary matrix numerically — the skill itself is `disable-model-invocation: true`, so a formal artifact needs the operator to run `/mh:score-decision` directly.
 
-**Insufficient-data fallback.** A binary high/low call still needs enough signal to call it — if there's no basis to place value or risk at all (novel domain, zero comparable precedent), say so explicitly rather than forcing a bucket to get a routing answer, and route through `research` or `code-architect` to generate the missing signal first, then re-classify. This is narrower than a merely contested estimate — a disputed-but-real signal still has a low/high position on the binary scale and should be classified there, not routed around; `score-decision`'s `ข้อมูลไม่เพียงพอ` block-condition draws the same line (reserved for zero basis, not disagreement over a real one) even though its remedy differs (it blocks the score outright; this table routes to generate the missing signal instead).
+**Insufficient-data fallback.** A binary high/low call still needs enough signal to call it — if there's no basis to place value or risk at all (novel domain, zero comparable precedent), say so explicitly rather than forcing a bucket to get a routing answer, and route through `mattpocock-skills:research` or `code-architect` to generate the missing signal first, then re-classify. This is narrower than a merely contested estimate — a disputed-but-real signal still has a low/high position on the binary scale and should be classified there, not routed around; `score-decision`'s `ข้อมูลไม่เพียงพอ` block-condition draws the same line (reserved for zero basis, not disagreement over a real one) even though its remedy differs (it blocks the score outright; this table routes to generate the missing signal instead).
 
 **"Schedule" in the matrices above = temporal deferral** (do later, human-led) — *not* autonomous execution. Recurrence is an orthogonal axis: if an item is **recurring + unattended-safe** (any quadrant), route it to **L5 (Autonomous / Recurring Execution)** below instead of redoing it by hand each cycle.
 
@@ -102,7 +102,7 @@ Input: "prod /orders is 500ing; refactor auth for readability; a reviewer wants 
 - **prod 500s** — Evidence: the 500 error rate is the urgency signal itself (paged, not merely observed). Alternative rejected: inline-only, no dispatch — root-causing a prod incident under load is the "specialized + time-critical" case L3 exists for, not L2's tightly-coupled back-and-forth. Falsifying fact: if the 500s stop before dispatch completes, this drops to Q3/inline — confirm still-failing before dispatching, don't dispatch on a stale symptom.
 - **auth refactor** — Evidence: "for readability" names no incident or deadline — Important-not-urgent by elimination, nothing marks it urgent. Alternative rejected: routing straight to a write-capable agent without `security-reviewer` first — rejected because it touches auth (Security override, above). Revisit trigger: re-triage at the next security sprint even if nothing new has surfaced — a deferred security-adjacent item doesn't get to age out silently. Falsifying fact: a live auth vulnerability report un-defers this into Q1 immediately, no sprint wait needed.
 - **signups CSV** — Evidence: "a reviewer wants" is a one-off ask, not a recurring need. Alternative rejected: dispatching an agent for it — the query itself is the whole task, so orchestrating costs more than doing it (the L2 guardrail row). Falsifying fact: if this recurs weekly, it reclassifies to L5 (Autonomous/Recurring, below) instead of a one-off inline pick each time.
-- **pnpm move** — Evidence: no deadline stated, but "should we" is a genuine open decision, not busywork. Alternative rejected: making the build/adopt call now — the trade-off data doesn't exist yet, so `research` has to generate it first. Revisit trigger: once the research brief lands, the call is made under METHODOLOGY Rule 1 (triad + `advisor()`), not back through this matrix. Falsifying fact: a stated deadline this blocks would promote it out of "not urgent."
+- **pnpm move** — Evidence: no deadline stated, but "should we" is a genuine open decision, not busywork. Alternative rejected: making the build/adopt call now — the trade-off data doesn't exist yet, so `mattpocock-skills:research` has to generate it first. Revisit trigger: once the research brief lands, the call is made under METHODOLOGY Rule 1 (triad + `advisor()`), not back through this matrix. Falsifying fact: a stated deadline this blocks would promote it out of "not urgent."
 - **dark-mode toggle** — Evidence: "no rush" plus a non-team requester (contractor) — neither important (not on the roadmap) nor urgent. Alternative rejected: scheduling it (L3) — a low-value item still costs a future triage pass, so drop beats defer here. Falsifying fact: the toggle entering the actual roadmap would flip this from drop to a real Important/Impact quadrant — this drop isn't a standing "no," it's a verdict on today's roadmap only.
 
 Every *write-capable* leg dispatched here (Builder/Fixer roles — holds Bash or Edit/Write) needs the single AskUserQuestion gate before the batch goes out; prod-500s' Validator confirm step (the per-language reviewer) is ungated per SKILL.md's Gating rules table and doesn't need a separate ask. CSV inline. Dark-mode dropped.
@@ -117,8 +117,8 @@ Rule 1.
 
 **Boundary with `/mattpocock-skills:wayfinder` (user-invoked):** orchestrate resolves a flat, in-session task list
 in one pass, with no cross-session persistence. If a triaged item needs multi-session tracking
-(can't close today), that's `wayfinder`'s job — it charts a persistent map of decision tickets on
-an external tracker. Name it as the next step and stop there — `wayfinder` carries
+(can't close today), that's `/mattpocock-skills:wayfinder`'s job — it charts a persistent map of decision tickets on
+an external tracker. Name it as the next step and stop there — `/mattpocock-skills:wayfinder` carries
 `disable-model-invocation: true`, so only the user can start it (type `/mattpocock-skills:wayfinder`).
 
 ## Bounded fan-out — cap history & rationale
@@ -454,7 +454,7 @@ The guardrail bounds **cost**; the Step 4 confirm gate bounds **authorization**.
 
 **Action class (authorization axis)** — mutation-capable dispatch (any agent holding `Edit`, `Write`, or `Bash`) is privileged: it needs the Step 4 go-ahead, a higher bar than the no-tool read-only agents.
 
-Default: inline unless an item clears a delegate criterion. If it clears one but no agent matches its domain, run `research` for context-heavy research, else inline.
+Default: inline unless an item clears a delegate criterion. If it clears one but no agent matches its domain, run `mattpocock-skills:research` for context-heavy research, else inline.
 
 ## Inline-wins checklist — 9 conditions where top-level execution is correct (prose-only)
 

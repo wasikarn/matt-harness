@@ -8,7 +8,7 @@ deleted 2026-08-25, #112 — its whole subject, the commands/ vs skills/ distinc
 exists once commands/ retired as a surface type.)
 
 **Core doctrine:** when creating or editing a skill under `skills/`, follow matt-pocock's
-`writing-for-agents` doctrine — canonical: the `mattpocock-skills:writing-for-agents` skill
+`mattpocock-skills:writing-for-agents` doctrine — canonical: the `mattpocock-skills:writing-for-agents` skill
 (installed as the `mattpocock-skills` plugin, not vendored in this repo since v0.46.0 — see
 README.md Quick Start). Renamed from `writing-great-skills` in matt v1.2.0 (no alias) and
 restructured: the live elements are leading words, one trigger per branch, completion criterion +
@@ -79,7 +79,7 @@ An mh-owned skill is cited `mh:<name>` (this repo's own surface type — command
 2026-08-25, #112). A **matt-owned** skill is cited `mattpocock-skills:<name>` the same way — the
 "ALWAYS `mh:`-form" framing this section used to carry was narrower than shipped practice
 (`bug-sweep` and `complexity-check` both correctly cite
-`mattpocock-skills:code-review`/`diagnosing-bugs`). Either namespace, model-invocable, cite bare;
+`mattpocock-skills:code-review`/`mattpocock-skills:diagnosing-bugs`). Either namespace, model-invocable, cite bare;
 `disable-model-invocation: true` on either side means the footer prints the literal slash string
 the user types themselves — `` `/mh:<name>` `` or `` `/mattpocock-skills:<name>` `` — never
 "invoke X now" in either case. Verified 2026-08-30: a namespaced slash citation like

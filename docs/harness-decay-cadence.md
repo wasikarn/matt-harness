@@ -360,7 +360,7 @@ cost — do not conflate them.
 
 - **Tier A — trigger health (cheap, tool-run; the default action).**
   Re-run `python3 scripts/measure-autotrigger.py`. Look for the
-  *suppressed-demand* pattern on `decide`, `grilling`, `orchestrate`:
+  *suppressed-demand* pattern on `decide`, grilling, `orchestrate`:
   **0-or-low `auto_fire` + nonzero `manual`/`slash_exec`** — the fingerprint
   of a skill the model wants but whose description no longer matches (the
   exact v0.43.5 failure: commit `fdee904` silently stripped `decide`'s
@@ -383,7 +383,7 @@ cost — do not conflate them.
 **Current status (2026-07-10):**
 
 - `decide` — trigger phrases restored in v0.43.5; watch next quarterly pass.
-- `grilling`, `orchestrate`, `score-decision` — measured healthy or
+- grilling, `orchestrate`, `score-decision` — measured healthy or
   intentionally silent at last check; no edit made, by design. This
   Tier-A check is *when* to re-examine them, not a signal to touch them now.
 

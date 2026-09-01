@@ -1,6 +1,6 @@
 ---
 name: security-auditor
-description: "At-rest security audit: threat-model + remediation + re-verify (auth, secrets, injection, XSS, traversal). Use when auditing standing code or on an explicit audit ask. Don't use for a pending-changes diff (native security-review) or code review."
+description: "Scan standing code for at-rest security issues (auth, secrets, injection, XSS, traversal). Use when auditing existing code. Don't use for a pending-changes diff (native security-review)."
 model: inherit
 effort: xhigh
 ---
