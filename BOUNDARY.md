@@ -61,7 +61,6 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | goal-craft | Compact a /goal completion condition: done-when check, one-way-door screen, turn bound. Use when drafting a /goal condition. Don't use for single-turn tasks (do it directly). | inline | auto |
 | harness-audit | Harness-state surface, two modes: fleet/schema audit, --health for session token cost. Use for harness audits or cost checks. Don't use for repo lint/security (mh:security-auditor). | inline | auto |
 | learn | Scan a session transcript for cross-turn patterns ambient auto-memory misses. Use when wrapping up a session; batch-gate via AskUserQuestion. Don't use for single known memories. | inline | auto |
-| loop-design-check | Pre-flight gate + review checklist against loop failure modes — spinning, verifier-gaming, wrong-answer completion. Use when designing/reviewing an agent loop. Don't use for one-off tasks. | inline | auto |
 | memory-lint | Scan memory store for dangling [[links]], orphans, index drift; --trim archives bloat. Use when MEMORY.md over cap. Don't use for semantic review or harness health. | inline | auto |
 | recursive-improve | Cage: human-gated, anti-unattended harness loop. | inline | manual |
 | score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. | inline | manual |
@@ -171,7 +170,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | crisp | Sole live-response register: concise, easy to read, human. Claude Code's Concise contract (result first, no preamble, full content for errors/security/destructive confirmations) as the base, with staff-engineer decision framing switched on only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-09-01T02:33:06Z_
+_Generated: 2026-09-01T02:43:28Z_
 
 ---
 

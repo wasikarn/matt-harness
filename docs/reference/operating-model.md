@@ -50,3 +50,34 @@ context-economy cost of a synthesis call reading unfiltered fan-out output is co
 `docs/METHODOLOGY.md` Rule 13's context-economy block.
 
 When hooks are wired: gates/ (deny), advisory/ (journal), session/ (inject), stop/ (cost tracking).
+
+## Loop design essentials (folded from the retired `loop-design-check` skill, 2026-09-01)
+
+Any agent loop this repo builds (write→test, test→fix, retry-on-failure) needs the same three
+guardrails, condensed here since the standalone authoring/review skill was deleted as dead weight
+(zero lifetime dispatches):
+
+**Damping.** Negative feedback with no damping oscillates — spinning in place, burning tokens.
+Damping = a retry cap, a hard stop, and a human flipping the last switch. For a periodic/regulator
+loop, damping also covers overlapping invocations (a lock or a skip-if-already-running check) —
+a cron interval shorter than one run's duration is a different way to lose control than
+oscillation, and just as real.
+
+**Retry cap: 3, then escalate.** 3 fix attempts on the same finding set; the 4th is an escalation
+to a human, not a round. This is the one retry-cap number this repo's loop doctrine has ever
+written down — don't invent a different one per loop without a stated reason. (A recurring,
+unattended loop where a human is unreachable by definition is the one carve-out: retry cap 1,
+exhaustion degrades to log-and-continue instead of escalating.)
+
+**Five failure modes to check before trusting any loop:**
+
+| # | Failure mode | Red flag | Antibody |
+|---|---|---|---|
+| 1 | Goal is a correct platitude → spins, burns money | Can the exit condition be machine-judged yes/no? | Replace with a decidable result condition |
+| 2 | "Verification" is "check if it looks ok" → agent confidently says fine and stops | Is the judge the defendant itself? | Reconcile + exit-code rules + independent judge |
+| 3 | (worst) Only gates on "all tests pass" → agent deletes the tests | Is there a boundary ("what it must NOT do")? | Done-criterion **+ boundary** together (the Goodhart antibody) |
+| 4 | Counts on the agent asking mid-run → runs the wrong answer to the end | Any "clarify only at runtime" point? | Front-load every clarification before launch |
+| 5 | Bloated CLAUDE.md + stale memory → the faster it loops, the more it errs | Are the docs/memory it depends on fresh? | Layered memory + periodic lint (`mh:memory-lint`, `/context`, `mh:harness-audit`) |
+
+Rows 2-3 are the same verifier-separation crux as this file's own "unifying crux" above, applied
+to a loop specifically: the judge role must never be filled by the agent under review.
