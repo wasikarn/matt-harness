@@ -80,7 +80,12 @@ Action mode (--auto-archive) — applies the A3 trim rubric (memory/project_memo
                          lines by topic-file mtime, any type, until back under 65% of cap. Not
                          type-restricted — project-only would have covered ~half the bytes a
                          real fold needed; the existing dry-run/--yes confirm gate is the review
-                         point, not a type filter.
+                         point, not a type filter. Reachability-guarded (2026-09-01): a candidate
+                         is skipped, never proposed, if deindexing it would drop it (or anything
+                         only reachable through it) out of the store's reachable set — i.e. it
+                         has no alternate [[link]] path back to the index. mtime alone can't tell
+                         that apart from a file with none; 17/24 real candidates on this store
+                         had none before this guard existed.
 
 All mutations use `mv` (never `rm`) or deindex-only (Class D); confirm prompt is shown by
 default; --yes skips confirm.
@@ -247,6 +252,31 @@ def md_link_target(raw):
 
 # ── Detector mode ─────────────────────────────────────────────────────────
 
+def compute_reachable(files, slugs, links_out, referenced):
+    """Stems reachable from `referenced` roots via outbound [[links]]/pointers —
+    the same BFS detector_findings' UNINDEXED check uses, factored out so
+    class_d_count_fold can reuse it as a safety filter (2026-09-01 deep-audit:
+    the original Class D picked deindex candidates by mtime alone with no
+    reachability check, so on the real store it proposed 17/24 candidates that
+    would have recreated the exact UNINDEXED finding this whole tool exists to
+    relieve pressure on)."""
+    target_stem = {f[:-3]: f[:-3] for f in files}
+    for f in files:
+        s = slugs[f]
+        if s and s not in target_stem:
+            target_stem[s] = f[:-3]
+    reachable = {ref[:-3] for ref in referenced if ref in files}
+    frontier = list(reachable)
+    while frontier:
+        cur = frontier.pop()
+        for t in links_out.get(cur + ".md", []):
+            r = target_stem.get(t)
+            if r is not None and r not in reachable:
+                reachable.add(r)
+                frontier.append(r)
+    return reachable
+
+
 def collect_state(d):
     """Build the shared data structures used by both detector and action modes."""
     files = [f for f in os.listdir(d) if f.endswith(".md") and f != "MEMORY.md"]
@@ -321,20 +351,7 @@ def detector_findings(state):
         # Context → Detail, per MEMORY.md's own header), not rot — counted
         # as context_layer (advisory), never a finding. Only a file that is
         # unindexed AND unreachable from the index fires.
-        target_stem = {f[:-3]: f[:-3] for f in files}
-        for f in files:
-            s = slugs[f]
-            if s and s not in target_stem:
-                target_stem[s] = f[:-3]
-        reachable = {ref[:-3] for ref in referenced if ref in files}
-        frontier = list(reachable)
-        while frontier:
-            cur = frontier.pop()
-            for t in links_out.get(cur + ".md", []):
-                r = target_stem.get(t)
-                if r is not None and r not in reachable:
-                    reachable.add(r)
-                    frontier.append(r)
+        reachable = compute_reachable(files, slugs, links_out, referenced)
         for f in files:
             if f not in referenced:
                 if f[:-3] in reachable:
@@ -1176,11 +1193,18 @@ def class_d_count_fold(state, exclude_files):
     index is still >= FOLD_TRIGGER_PCT of cap — A/B/C's per-entry heuristics don't
     catch pure entry-count accumulation (many small terse pointer lines, no single
     verbose outlier to collapse). Deindexes (never deletes) the OLDEST pointer
-    lines by topic-file mtime, any type, until back under FOLD_TARGET_PCT of cap.
-    exclude_files = filenames already claimed by plan A/B, so nothing double-counts.
-    Self-contained byte accounting — does not participate in the shared
-    estimated_impact sum used by A/B/C, which mixes savings-sign conventions
-    across classes; D reports its own delta separately."""
+    lines by topic-file mtime, any type, until back under FOLD_TARGET_PCT of cap —
+    but only candidates that stay reachable afterward (compute_reachable, same BFS
+    the UNINDEXED detector uses): a candidate whose deindex would drop it, or
+    anything only reachable through it, out of the reachable set is skipped, not
+    proposed. Without this guard the mtime-only pick has no way to tell a file with
+    an alternate [[link]] path back to the index apart from one with none — found
+    2026-09-01 via deep-audit: 17 of 24 real candidates on this store had zero
+    alternate path and would have recreated the exact UNINDEXED finding this valve
+    exists to relieve pressure on. exclude_files = filenames already claimed by
+    plan A/B, so nothing double-counts. Self-contained byte accounting — does not
+    participate in the shared estimated_impact sum used by A/B/C, which mixes
+    savings-sign conventions across classes; D reports its own delta separately."""
     plan = []
     idx_bytes, idx_lines = measured_index(state["idx"])
     pct = max(idx_lines / LINE_CAP, idx_bytes / BYTE_CAP)
@@ -1205,11 +1229,24 @@ def class_d_count_fold(state, exclude_files):
         candidates.append((mtime, fname, full_line))
     candidates.sort(key=lambda c: c[0])  # oldest first
 
+    # Safety invariant: nothing reachable today may become unreachable. Checked
+    # cumulatively against the ORIGINAL full baseline as each candidate is
+    # tentatively accepted, so an interaction between two accepted candidates
+    # (one only reachable through the other) is caught too, not just each in
+    # isolation.
+    still_referenced = set(state["referenced"])
+    baseline_reachable = compute_reachable(state["files"], state["slugs"], state["links_out"], still_referenced)
+
     remaining_bytes = idx_bytes
     remaining_lines = idx_lines
     for _mtime, fname, full_line in candidates:
         if remaining_bytes <= target_bytes and remaining_lines <= target_lines:
             break
+        trial_referenced = still_referenced - {fname}
+        trial_reachable = compute_reachable(state["files"], state["slugs"], state["links_out"], trial_referenced)
+        if trial_reachable != baseline_reachable:
+            continue  # would orphan fname (or something only reachable through it) — skip, don't propose
+        still_referenced = trial_referenced
         remaining_bytes -= len(full_line.encode("utf-8")) + 1  # +1 for the newline
         remaining_lines -= 1
         plan.append({"action": "deindex", "file": fname, "old_pointer_line": full_line})

@@ -119,6 +119,14 @@ def test_class_d_count_fold_fires_over_trigger_and_reaches_target():
     # cap with 0 candidates from either class — confirmed live against the
     # real pre-trim MEMORY.md (21,632B/84%, A and B both found 0). Class D is
     # the fallback valve for exactly that shape.
+    #
+    # topic-5's body links [[topic-0]] through [[topic-4]] (2026-09-01: the
+    # reachability guard added that day means a candidate with zero alternate
+    # [[link]] path is never proposed — see
+    # test_class_d_count_fold_never_orphans_a_deindex_candidate for that
+    # property itself; this fixture only needs SOME safe candidates to still
+    # exercise "fires and reaches target", so topic-5 supplies that on
+    # everyone's behalf rather than testing the guard here too).
     orig_line_cap, orig_byte_cap = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
     try:
         memory_lint.LINE_CAP = 10_000  # keep line-cap out of the way; test byte-cap only
@@ -128,8 +136,10 @@ def test_class_d_count_fold_fires_over_trigger_and_reaches_target():
             now = 2_000_000_000
             for i in range(6):
                 stem = f"topic-{i}"
+                body = ("links to [[topic-0]] [[topic-1]] [[topic-2]] [[topic-3]] [[topic-4]]\n"
+                        if i == 5 else f"some memory content about topic {i}\n")
                 with open(os.path.join(d, f"{stem}.md"), "w") as f:
-                    f.write(f"---\nname: {stem}\n---\nsome memory content about topic {i}\n")
+                    f.write(f"---\nname: {stem}\n---\n{body}")
                 os.utime(os.path.join(d, f"{stem}.md"), (now + i * 100, now + i * 100))
                 idx_lines.append(f"- [{stem}]({stem}.md) — a short pointer hook for topic {i} here")
             with open(os.path.join(d, "MEMORY.md"), "w") as f:
@@ -169,6 +179,65 @@ def test_class_d_count_fold_returns_nothing_under_trigger():
             assert plan == [], f"expected no Class D candidates well under trigger, got {plan}"
     finally:
         memory_lint.BYTE_CAP = orig_byte_cap
+
+
+def test_class_d_count_fold_never_orphans_a_deindex_candidate():
+    # 2026-09-01 deep-audit: mtime-only picking had no reachability check, so on
+    # the real store it proposed 17/24 candidates that would have recreated the
+    # exact UNINDEXED finding this valve exists to relieve pressure on. Reproduces
+    # that shape: topic-0 (oldest, zero alternate [[link]] path) must NEVER be
+    # proposed; topic-1 (2nd-oldest) has an inbound [[link]] from topic-5 (which
+    # stays referenced throughout), so it's safe and must still be proposed.
+    # topic-2/3/4 are unsafe fillers just like topic-0 (no inbound link either) —
+    # padding to cross the byte trigger without being candidates worth asserting on.
+    orig_line_cap, orig_byte_cap = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
+    try:
+        memory_lint.LINE_CAP = 10_000
+        memory_lint.BYTE_CAP = 480
+        with tempfile.TemporaryDirectory() as d:
+            now = 2_000_000_000
+            bodies = {
+                "topic-0": "no inbound link to this one",
+                "topic-1": "no inbound link of its own -- topic-5 supplies one below",
+                "topic-2": "no inbound link either",
+                "topic-3": "no inbound link either",
+                "topic-4": "no inbound link either",
+                "topic-5": "links to [[topic-1]] so topic-1 stays reachable if deindexed",
+            }
+            idx_lines = []
+            for i in range(6):
+                stem = f"topic-{i}"
+                with open(os.path.join(d, f"{stem}.md"), "w") as f:
+                    f.write(f"---\nname: {stem}\n---\n{bodies[stem]}\n")
+                os.utime(os.path.join(d, f"{stem}.md"), (now + i * 100, now + i * 100))
+                idx_lines.append(f"- [{stem}]({stem}.md) — a short pointer hook for topic {i} here")
+            with open(os.path.join(d, "MEMORY.md"), "w") as f:
+                f.write("\n".join(idx_lines) + "\n")
+            state = memory_lint.collect_state(d)
+            idx_bytes = len(state["idx"].encode("utf-8"))
+            assert idx_bytes / memory_lint.BYTE_CAP >= 0.80, "fixture must actually cross the trigger"
+
+            plan = memory_lint.class_d_count_fold(state, exclude_files=set())
+            folded = [e["file"] for e in plan]
+            assert "topic-0.md" not in folded, (
+                f"topic-0 has zero alternate reachability -- deindexing it would recreate "
+                f"UNINDEXED; must never be proposed even though it's oldest: {folded}")
+            assert "topic-1.md" in folded, (
+                f"topic-1 has an inbound [[link]] from topic-5 (stays referenced), so "
+                f"deindexing it is safe and must still be proposed: {folded}")
+
+            # Reachability must actually hold after applying the plan, not just by
+            # assertion above -- recompute from the post-plan referenced set directly.
+            post_referenced = state["referenced"] - {e["file"] for e in plan}
+            baseline_reachable = memory_lint.compute_reachable(
+                state["files"], state["slugs"], state["links_out"], state["referenced"])
+            post_reachable = memory_lint.compute_reachable(
+                state["files"], state["slugs"], state["links_out"], post_referenced)
+            assert post_reachable == baseline_reachable, (
+                f"plan must never shrink the reachable set: before={baseline_reachable} "
+                f"after={post_reachable}")
+    finally:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = orig_line_cap, orig_byte_cap
 
 
 def _write_memory(d, filename, type_, description, body):
@@ -943,6 +1012,11 @@ def test_class_d_count_fold_skips_files_named_in_exclude_files():
     # claimed by plan A/B (exclude_files) must be skipped. The missing-file half is
     # masked by the getmtime OSError guard, so only a nonempty exclude_files naming
     # an EXISTING file discriminates the `or`->`and` flip.
+    #
+    # topic-5 links [[topic-0]]..[[topic-4]] so those stay safe under the
+    # 2026-09-01 reachability guard — this test isn't about that guard, it just
+    # needs real fold candidates to exist (see
+    # test_class_d_count_fold_never_orphans_a_deindex_candidate for the guard itself).
     orig_line, orig_byte = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
     try:
         memory_lint.LINE_CAP = 10_000
@@ -952,8 +1026,10 @@ def test_class_d_count_fold_skips_files_named_in_exclude_files():
             idx_lines = []
             for i in range(6):
                 stem = f"topic-{i}"
+                body = ("links to [[topic-0]] [[topic-1]] [[topic-2]] [[topic-3]] [[topic-4]]\n"
+                        if i == 5 else f"some memory content about topic {i}\n")
                 with open(os.path.join(d, f"{stem}.md"), "w") as f:
-                    f.write(f"---\nname: {stem}\n---\nsome memory content about topic {i}\n")
+                    f.write(f"---\nname: {stem}\n---\n{body}")
                 os.utime(os.path.join(d, f"{stem}.md"), (now + i * 100, now + i * 100))
                 idx_lines.append(f"- [{stem}]({stem}.md) — a short pointer hook for topic {i} here")
             with open(os.path.join(d, "MEMORY.md"), "w") as f:
@@ -973,16 +1049,28 @@ def test_class_d_break_is_inclusive_at_exact_byte_target():
     # BYTE_CAP=154 -> target_bytes=int(154*0.65)==100; index==200B in 24B lines,
     # 25B freed/fold: 200->175->150->125->100, break at 100<=100 after 4 folds.
     # Mutated (<): folds a 5th. Lines never bind (LINE_CAP huge).
+    #
+    # t0 is newest (mtime, folded last if at all) and links [[t1]]..[[t7]], so the
+    # 2026-09-01 reachability guard sees all 7 as safe -- this test isn't about
+    # that guard, it just needs real fold candidates (see
+    # test_class_d_count_fold_never_orphans_a_deindex_candidate for the guard
+    # itself). Body content doesn't affect the byte math below (only the
+    # MEMORY.md pointer lines do), so this doesn't disturb the exact-count fixture.
     orig_line, orig_byte = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
     try:
         memory_lint.LINE_CAP = 10_000_000
         memory_lint.BYTE_CAP = 154
         with tempfile.TemporaryDirectory() as d:
             lines = []
+            now = 2_000_000_000
             for i in range(8):
                 stem = f"t{i}"
+                body = ("links to [[t1]] [[t2]] [[t3]] [[t4]] [[t5]] [[t6]] [[t7]]\n"
+                        if i == 0 else "content\n")
                 with open(os.path.join(d, f"{stem}.md"), "w") as f:
-                    f.write(f"---\nname: {stem}\n---\ncontent\n")
+                    f.write(f"---\nname: {stem}\n---\n{body}")
+                os.utime(os.path.join(d, f"{stem}.md"),
+                         (now + 1000, now + 1000) if i == 0 else (now + i * 10, now + i * 10))
                 lines.append(f"- [{stem}]({stem}.md)" + "x" * 11)   # 13 + 11 == 24 bytes
             with open(os.path.join(d, "MEMORY.md"), "w") as f:
                 f.write("\n".join(lines) + "\n")   # 8*24 + 8 newlines == 200 bytes
@@ -1001,16 +1089,24 @@ def test_class_d_break_is_inclusive_at_exact_line_target():
     # because only one cap binds at a time). LINE_CAP=10 -> target_lines==6; index
     # is 9 lines, 1 dropped/fold: 9->8->7->6, break at 6<=6 after 3 folds.
     # Mutated (<): folds a 4th. Bytes never bind (BYTE_CAP huge).
+    #
+    # t0 is newest (folded last if at all) and links [[t1]]..[[t7]] -- same
+    # reachability-guard accommodation as the byte-target sibling test above.
     orig_line, orig_byte = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
     try:
         memory_lint.LINE_CAP = 10
         memory_lint.BYTE_CAP = 10_000_000
         with tempfile.TemporaryDirectory() as d:
             lines = []
+            now = 2_000_000_000
             for i in range(8):
                 stem = f"t{i}"
+                body = ("links to [[t1]] [[t2]] [[t3]] [[t4]] [[t5]] [[t6]] [[t7]]\n"
+                        if i == 0 else "content\n")
                 with open(os.path.join(d, f"{stem}.md"), "w") as f:
-                    f.write(f"---\nname: {stem}\n---\ncontent\n")
+                    f.write(f"---\nname: {stem}\n---\n{body}")
+                os.utime(os.path.join(d, f"{stem}.md"),
+                         (now + 1000, now + 1000) if i == 0 else (now + i * 10, now + i * 10))
                 lines.append(f"- [{stem}]({stem}.md) — a pointer hook for topic {i}")
             with open(os.path.join(d, "MEMORY.md"), "w") as f:
                 f.write("\n".join(lines) + "\n")   # 8 pointer lines -> 9 logical lines
@@ -1465,6 +1561,9 @@ def test_auto_archive_json_impact_includes_class_b_term():
 
 def test_auto_archive_json_reports_class_d_savings():
     # L1405: d_count_fold_bytes_saved = sum(len(old_pointer_line.encode())+1 for plan_d).
+    #
+    # topic-5 links [[topic-0]]..[[topic-4]] -- same reachability-guard
+    # accommodation as test_class_d_count_fold_fires_over_trigger_and_reaches_target.
     orig_line, orig_byte = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
     try:
         memory_lint.LINE_CAP, memory_lint.BYTE_CAP = 10_000, 480
@@ -1473,8 +1572,10 @@ def test_auto_archive_json_reports_class_d_savings():
             lines = []
             for i in range(6):
                 stem = f"topic-{i}"
+                body = ("links to [[topic-0]] [[topic-1]] [[topic-2]] [[topic-3]] [[topic-4]]\n"
+                        if i == 5 else f"content about topic {i}\n")
                 with open(os.path.join(d, f"{stem}.md"), "w") as f:
-                    f.write(f"---\nname: {stem}\n---\ncontent about topic {i}\n")
+                    f.write(f"---\nname: {stem}\n---\n{body}")
                 os.utime(os.path.join(d, f"{stem}.md"), (now + i * 100, now + i * 100))
                 lines.append(f"- [{stem}]({stem}.md) — a short pointer hook for topic {i} here")
             with open(os.path.join(d, "MEMORY.md"), "w") as f:
@@ -1553,6 +1654,7 @@ if __name__ == "__main__":
     test_markdown_style_link_to_real_memory_resolves_and_avoids_false_orphan()
     test_class_d_count_fold_fires_over_trigger_and_reaches_target()
     test_class_d_count_fold_returns_nothing_under_trigger()
+    test_class_d_count_fold_never_orphans_a_deindex_candidate()
     test_template_compliance_flags_feedback_memory_missing_both_fields()
     test_contradiction_candidates_requires_matching_type()
     test_contradiction_candidates_pairs_high_overlap_same_type()
