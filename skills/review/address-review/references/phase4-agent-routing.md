@@ -4,4 +4,4 @@ Conditional agent routing (SKILL.md Phase 4, action 2), **launched in parallel**
    - Reviewer flagged performance/algorithm (a complexity suggestion, not observable wrong
      behavior — that shape stays `bug-shaped` and routes via `mattpocock-skills:diagnosing-bugs` instead) →
      `performance-optimizer` agent on the fix
-   - Reviewer flagged general correctness → the matching per-language reviewer agent (`typescript-reviewer`/`python-reviewer`) on the fix
+   - Reviewer flagged general correctness → the matching per-language reviewer agent (`typescript-reviewer`) on the fix

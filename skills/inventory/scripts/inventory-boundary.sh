@@ -255,7 +255,7 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
   # only, not part of the generated BOUNDARY.md content, and not a numbered
   # harness-audit check — adding one would hit audit.sh's fail-closed
   # contiguous check-numbering guard, out of scope for this fix).
-  _xref3_table_agents=(code-architect typescript-reviewer python-reviewer
+  _xref3_table_agents=(code-architect typescript-reviewer
     security-reviewer silent-failure-hunter performance-optimizer ideate-critic
     backend-architect blind-spot-hunter
     nextjs-reviewer requirement-analyst summarizer plan-reviewer)
@@ -317,7 +317,6 @@ Canonical file patterns per agent. Assign each file to exactly one agent in an `
 |---|---|---|---|
 | `code-architect` | `architecture/`, `*.md` (design docs) | yes | Blueprints, not implementation — but `tools:` grants Bash (Bash can mutate) |
 | `typescript-reviewer` | `*.ts`, `*.tsx`, `*.js`, `*.jsx` | yes | Read-only TS/JS review *by intent* — type safety, async correctness — `tools:` grants Bash (Bash can mutate) |
-| `python-reviewer` | `*.py`, `pyproject.toml` | yes | Read-only Python review *by intent* — PEP 8, idioms, type hints — `tools:` grants Bash (Bash can mutate) |
 | `security-reviewer` | `auth/`, `secrets/`, `config/`, `security/`, `iam/`, `crypto/` | yes | Vulnerability detection — `tools:` Read/Bash/Grep/Glob (Bash can mutate; no Edit/Write) |
 | `silent-failure-hunter` | any file | yes | Read-only error-handling audit *by intent* — `tools:` grants Bash (Bash can mutate) |
 | `performance-optimizer` | any file | yes | Bottleneck + bundle + memory fixes (Edit/Bash) |

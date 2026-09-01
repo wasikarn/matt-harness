@@ -24,7 +24,7 @@ Every agent declares `tools:` as an explicit allowlist (see
 rationale). Grant only what the role needs:
 
 - **Read-only reviewers/analysts** (`security-reviewer`,
-  `python-reviewer`, `typescript-reviewer`, `nextjs-reviewer`,
+  `typescript-reviewer`, `nextjs-reviewer`,
   `backend-architect`, `code-architect`, `blind-spot-hunter`, `silent-failure-hunter`,
   `requirement-analyst`, `summarizer`): `Read`, `Grep`,
   `Glob`, sometimes `Bash` for inspection (`git log`, `git diff`). Never `Write`/`Edit`.

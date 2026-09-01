@@ -65,7 +65,7 @@ If the grep finds a command or agent whose description overlaps with an existing
 
 **Harness fix:** Two layers:
 
-1. **Allowlist frontmatter.** Every validator-class agent uses `tools:` (allowlist), not `disallowedTools:` (denylist). The read-only validator agents in the current fleet — `code-architect`, `python-reviewer`, `typescript-reviewer`, `silent-failure-hunter`, `ideate-critic` — list `Read, Grep, Glob, Bash` at most (or just `Read`), never `Edit` or `Write`. See `docs/agent-tool-patterns.md`'s item 1 for the convention.
+1. **Allowlist frontmatter.** Every validator-class agent uses `tools:` (allowlist), not `disallowedTools:` (denylist). The read-only validator agents in the current fleet — `code-architect`, `typescript-reviewer`, `silent-failure-hunter`, `ideate-critic` — list `Read, Grep, Glob, Bash` at most (or just `Read`), never `Edit` or `Write`. See `docs/agent-tool-patterns.md`'s item 1 for the convention.
 
 2. **No runtime Bash guard today.** There is currently no `PreToolUse` hook that intercepts a validator's Bash commands and blocks mutation patterns at runtime — the allowlist frontmatter above is the only gate, and it is doctrine, not runtime-enforced. A validator that reformats code, runs `git commit`, or otherwise mutates state during review is a bug to file (fix the frontmatter or the prompt), not something a live hook currently catches.
 
@@ -75,7 +75,7 @@ If the grep finds a command or agent whose description overlaps with an existing
 
 ```bash
 grep -l "tools:.*Edit\|tools:.*Write" \
-  "${MH_PLUGIN_ROOT}/agents"/{code-architect,python-reviewer,typescript-reviewer,silent-failure-hunter,ideate-critic}.md 2>/dev/null
+  "${MH_PLUGIN_ROOT}/agents"/{code-architect,typescript-reviewer,silent-failure-hunter,ideate-critic}.md 2>/dev/null
 ```
 
 The grep should return no files — if it does, a validator-class agent picked up a mutation tool and the frontmatter needs fixing.
