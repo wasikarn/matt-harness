@@ -88,6 +88,9 @@ def fleet_files():
         ("skills", "*", "SKILL.md"),
         ("skills", "*", "reference.md"),
         ("skills", "*", "references", "*.md"),
+        ("skills", "*", "*", "SKILL.md"),
+        ("skills", "*", "*", "reference.md"),
+        ("skills", "*", "*", "references", "*.md"),
     ]
     out = set()
     for p in pats:
@@ -167,7 +170,7 @@ for lst in idx.values():
 # means a whitespace/punctuation-only reflow keeps the suppression quiet while
 # an actual wording/meaning change correctly re-fires.
 allow = set()
-allow_path = os.path.join(root, "skills", "harness-audit", "accepted-duplication.tsv")
+allow_path = os.path.join(root, "skills", "meta", "harness-audit", "accepted-duplication.tsv")
 if os.path.isfile(allow_path):
     try:
         with open(allow_path, encoding="utf-8", errors="replace") as fh:

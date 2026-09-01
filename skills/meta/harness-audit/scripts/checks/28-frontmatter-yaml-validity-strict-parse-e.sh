@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# 28. Frontmatter YAML validity — strict-parse every agent/skill/command
-# frontmatter. The grep-based fm_get reads `name:` even out of a malformed
+# 28. Frontmatter YAML validity — strict-parse every agent/skill frontmatter
+# (commands/ retired as a surface type 2026-08-25, #112 — no commands/*.md leg).
+# The grep-based fm_get reads `name:` even out of a malformed
 # block, so a broken double-quoted description (a stray `"` mid-string) or an
 # unquoted `Key: value` colon passes every other check here yet makes Claude
 # Code silently DROP the agent/skill from the runtime registry ("agent type
@@ -26,8 +27,8 @@ def frontmatter(path):
     end = t.find('\n---', 3)
     return t[3:end] if end != -1 else None
 files = (sorted(glob.glob(os.path.join(root, 'agents', '*.md')))
-         + sorted(glob.glob(os.path.join(root, 'commands', '*.md')))
-         + sorted(glob.glob(os.path.join(root, 'skills', '*', 'SKILL.md'))))
+         + sorted(glob.glob(os.path.join(root, 'skills', '*', 'SKILL.md')))
+         + sorted(glob.glob(os.path.join(root, 'skills', '*', '*', 'SKILL.md'))))
 for f in files:
     # skip _-prefixed scaffolds (e.g. skills/_template) — not real fleet
     if os.path.basename(f).startswith('_') or os.path.basename(os.path.dirname(f)).startswith('_'):
