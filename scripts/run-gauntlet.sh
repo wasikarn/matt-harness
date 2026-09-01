@@ -195,9 +195,6 @@ run_hook_tests() {
   if [ -f "$ROOT/tests/scripts/test_autotrigger_events.py" ]; then
     python3 "$ROOT/tests/scripts/test_autotrigger_events.py" 2>&1 || rc=1
   fi
-  if [ -f "$ROOT/scripts/workflows/tiered-pipeline.test.js" ]; then
-    node "$ROOT/scripts/workflows/tiered-pipeline.test.js" 2>&1 || rc=1
-  fi
   return "$rc"
 }
 

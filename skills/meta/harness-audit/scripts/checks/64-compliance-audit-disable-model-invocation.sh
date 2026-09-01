@@ -3,8 +3,10 @@
 # `skills/review/compliance-audit/SKILL.md`'s own reason: costly multi-agent
 # fan-out that gates a done-declaration — user decides when the audit runs,
 # not the model. #36/#40/#45 established the CRIT-guard pattern for 3 of the
-# fleet's 10 disable-model-invocation carriers; this is one of 7 (checks
-# 58-64) closing the gap for the rest, per the 2026-08-30 deep-audit finding.
+# fleet's 10-at-the-time disable-model-invocation carriers; this was one of 7
+# (checks 58-64) closing the gap for the rest, per the 2026-08-30 deep-audit
+# finding. Fleet is 6 carriers now — checks 58-60/63 retired with their
+# carrier skills, 2026-09-01.
 # CRIT (not WARN, unlike #30's reason-presence check): a silently-dropped
 # flag here means the model could self-trigger a costly multi-agent fan-out
 # that gates a done-declaration.

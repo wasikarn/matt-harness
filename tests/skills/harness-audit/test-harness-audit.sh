@@ -90,25 +90,12 @@ else
   bad "check-45 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
 fi
 
-# Checks 59-64 — CRIT guards for the disable-model-invocation carriers that
-# previously had no equivalent to checks 36/40/45 (2026-08-30 deep-audit
+# Checks 61/62/64 — CRIT guards for the disable-model-invocation carriers
+# that previously had no equivalent to checks 36/40/45 (2026-08-30 deep-audit
 # finding). Same bad/good pattern as check 36 above, one pair per skill.
-# Checks 58 (ideate-search) and 60 (wiki-ingest) were retired 2026-09-01 in
-# the dead-weight sweep — their carrier skills left the plugin, so both the
-# check files and these test sections went with them.
-run_check 59 "$FIX/check-59-bad"
-if [ "$CRIT_FOUND" -ge 1 ]; then
-  ok "check-59 bad fixture fires CRIT (crit=$CRIT_FOUND)"
-else
-  bad "check-59 bad fixture did NOT fire CRIT (crit=$CRIT_FOUND warn=$WARN_FOUND)"
-fi
-run_check 59 "$FIX/check-59-good"
-if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
-  ok "check-59 good fixture silent"
-else
-  bad "check-59 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
-fi
-
+# Checks 58 (ideate-search), 59 (tiered-pipeline), 60 (wiki-ingest), and 63
+# (ship-release) were retired 2026-09-01 as their carrier skills left the
+# plugin — both the check files and these test sections went with them.
 run_check 61 "$FIX/check-61-bad"
 if [ "$CRIT_FOUND" -ge 1 ]; then
   ok "check-61 bad fixture fires CRIT (crit=$CRIT_FOUND)"
@@ -133,19 +120,6 @@ if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
   ok "check-62 good fixture silent"
 else
   bad "check-62 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
-fi
-
-run_check 63 "$FIX/check-63-bad"
-if [ "$CRIT_FOUND" -ge 1 ]; then
-  ok "check-63 bad fixture fires CRIT (crit=$CRIT_FOUND)"
-else
-  bad "check-63 bad fixture did NOT fire CRIT (crit=$CRIT_FOUND warn=$WARN_FOUND)"
-fi
-run_check 63 "$FIX/check-63-good"
-if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
-  ok "check-63 good fixture silent"
-else
-  bad "check-63 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
 fi
 
 run_check 64 "$FIX/check-64-bad"

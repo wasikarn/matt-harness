@@ -102,8 +102,6 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | orchestrate | Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | inline | auto |
 | post-mortem | Post-mortem: a writeup for a resolved bug (trigger/mechanism/patch/validation known). | inline | manual |
 | ship-merge | Ship a PR: validate, server-side merge, monitor CI. | inline | manual |
-| ship-release | Ship a release: bump, changelog, review gate, tag, merge, monitor. | inline | manual |
-| tiered-pipeline | Tiered: run a task through the Fable→Sonnet→Opus maker/checker pipeline (fixes, bug-hunt, gated review). | inline | manual |
 
 ## Hooks — Repo
 | Hook | Purpose |
@@ -173,7 +171,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | crisp | Sole live-response register: concise, easy to read, human. Claude Code's Concise contract (result first, no preamble, full content for errors/security/destructive confirmations) as the base, with staff-engineer decision framing switched on only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-08-31T19:17:42Z_
+_Generated: 2026-09-01T02:33:06Z_
 
 ---
 
@@ -284,7 +282,6 @@ Map user intent → harness dispatch. Use these trigger phrases in `skills/` and
 | "fix this bug", "debug this" | `mattpocock-skills:diagnosing-bugs` | Feedback loop → hypothesize → instrument → fix + regression test |
 | "address review feedback" | `mh:address-review` | PR review response |
 | "ship it", "merge this" | `mh:ship-merge` | Pre-merge gate |
-| "release now", "cut a release" | `mh:ship-release` | Release ceremony |
 
 ### Research & analysis
 | User says | Dispatch | Why |

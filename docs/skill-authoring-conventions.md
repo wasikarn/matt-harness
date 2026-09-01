@@ -101,7 +101,7 @@ unaffected.
 
 Skip self-contained reference/pattern/catalog surfaces (a forced
 footer there is the retired canonical-sections ceremony, 2026-06-16) and terminal workflows
-(post-mortem, ship-release terminus). No `PostToolUse (Skill)` hook exists for this and none is
+(post-mortem's terminus). No `PostToolUse (Skill)` hook exists for this and none is
 planned: that event fires when a skill's instructions *load*, not when its work finishes, so a
 completion-time nudge there would fire at the wrong moment — the footer text embedded in the
 skill's own Output phase is the only mechanism.

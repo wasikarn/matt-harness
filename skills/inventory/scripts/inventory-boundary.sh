@@ -402,7 +402,6 @@ Map user intent → harness dispatch. Use these trigger phrases in `skills/` and
 | "fix this bug", "debug this" | `mattpocock-skills:diagnosing-bugs` | Feedback loop → hypothesize → instrument → fix + regression test |
 | "address review feedback" | `mh:address-review` | PR review response |
 | "ship it", "merge this" | `mh:ship-merge` | Pre-merge gate |
-| "release now", "cut a release" | `mh:ship-release` | Release ceremony |
 
 ### Research & analysis
 | User says | Dispatch | Why |

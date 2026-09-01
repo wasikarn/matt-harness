@@ -22,11 +22,12 @@
 # this one mirrors) in the same pass.
 #
 # else branch added 2026-08-30 (deep-audit adversarial pass on the checks
-# 58-64 commit): this check and #36 were the only 2 of the fleet's 10
-# dedicated CRIT guards with no `else` — a moved/renamed SKILL.md silently
+# 58-64 commit): this check and #36 were the only 2 of the fleet's 10-at-the-
+# time dedicated CRIT guards with no `else` — a moved/renamed SKILL.md silently
 # passed instead of firing CRIT, on the two skills whose own comments call
-# them "safety-load-bearing." checks 40/58-64 already had this branch;
-# this brings 36/45 in line.
+# them "safety-load-bearing." checks 40/61/62/64 already had this branch;
+# this brings 36/45 in line. (Fleet is 6 carriers now — checks 58-60/63 retired
+# with their carrier skills, 2026-09-01.)
 _f="$CLAUDE_DIR/skills/meta/score-decision/SKILL.md"
 if [ -f "$_f" ]; then
   [ "$(fm_get "$_f" disable-model-invocation)" = "true" ] || \

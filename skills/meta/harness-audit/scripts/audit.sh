@@ -377,9 +377,10 @@ for _cf in "${_checks[@]}"; do
 done
 unset _cf
 
-# Split-integrity guard: exactly 65 fragments, each carrying one '# N.' header,
-# expected set = 1..67 minus {58, 60} (both retired 2026-09-01 with their
-# carrier skills — ideate-search deleted, wiki-ingest relocated to user scope;
+# Split-integrity guard: exactly 63 fragments, each carrying one '# N.' header,
+# expected set = 1..67 minus {58, 59, 60, 63} (all four retired with their
+# carrier skills — ideate-search deleted, wiki-ingest relocated to user scope
+# 2026-09-01; tiered-pipeline and ship-release deleted 2026-09-01, sweep #3;
 # numbers stay retired, never reused, so the explicit set below IS the
 # manifest a deliberate retirement must edit). Source scope == count scope ==
 # the SAME glob (checks/[0-9][0-9]-*.sh), so an unnumbered extra is neither
@@ -392,7 +393,7 @@ _n_files=${#_checks[@]}
 _n_total=$(printf '%s\n' "$_all_ids" | grep -c .)
 _n_uniq=$(printf '%s\n' "$_all_ids" | sort -u | grep -c .)
 _uniq_ids=$(printf '%s\n' "$_all_ids" | uniq | tr '\n' ' ')
-_exp_ids=$({ seq 1 57; echo 59; seq 61 67; } | tr '\n' ' ')
+_exp_ids=$({ seq 1 57; seq 61 62; seq 64 67; } | tr '\n' ' ')
 [ "$_n_files" = "$_n_total" ] || err_die "audit: check-fragment header mismatch — $_n_files files sourced but $_n_total '# N.' headers (a fragment lacks a header or carries >1) — fail-closed"
 [ "$_n_total" = "$_n_uniq" ] || err_die "audit: duplicate check-fragment number (total=$_n_total unique=$_n_uniq) — a number is duplicated, not exactly-once — fail-closed"
 [ "$_uniq_ids" = "$_exp_ids" ] || err_die "audit: check-fragment integrity broken — set [$_uniq_ids] != expected [$_exp_ids]; a fragment was lost or a gap appeared — fail-closed"

@@ -23,11 +23,12 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
   reference surface); the harness-audit check that guarded against re-vendoring it into
   `skills/` (formerly check 41) was deleted 2026-08-25 in ticket 87's ghost-check cleanup,
   since there's no local tree left to promote from.
-- **`disable-model-invocation: true`:** carried by 8 skills (`recursive-improve`,
-  `score-decision`, `ship-merge`, `tiered-pipeline`,
-  `address-review`, `post-mortem`, `ship-release`, `compliance-audit`) — `ideate-search` and
+- **`disable-model-invocation: true`:** carried by 6 skills (`recursive-improve`,
+  `score-decision`, `ship-merge`,
+  `address-review`, `post-mortem`, `compliance-audit`) — `ideate-search` and
   `wiki-ingest` left the plugin in the 2026-09-01 dead-weight sweep (deleted / relocated to
-  user scope, checks 58/60 retired with them); no commands carry it
+  user scope, checks 58/60 retired with them); `tiered-pipeline` and `ship-release` were
+  deleted 2026-09-01 in sweep #3 (checks 59/63 retired with them); no commands carry it
   any more (the command surface type is retired, its carriers converted to skills or deleted
   across #79-#112; `/mattpocock-skills:implement` covers what `ship/COMMAND.md` did).
   `compliance-audit` was deleted 2026-08-24 (#80) and restored 2026-08-25 as a skill
@@ -37,15 +38,14 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
   and why they don't). Re-check carriers via the frontmatter-scoped sweep (a bare
   `grep -rl` misreports: surfaces that only *mention* another one's flag in prose also
   match): `for f in skills/*/*/SKILL.md; do [ -f "$f" ] && [ "$(fm_get "$f"
-  disable-model-invocation)" = true ] && echo "$f"; done`. **All 8 carriers are now
+  disable-model-invocation)" = true ] && echo "$f"; done`. **All 6 carriers are now
   CRIT-guarded** against a rewrite silently dropping the flag, one check per skill (verified
   2026-08-30): `recursive-improve/SKILL.md` (check 36), `score-decision/SKILL.md` (check 45),
   `ship-merge/SKILL.md` (check 40),
-  `tiered-pipeline/SKILL.md` (check 59),
   `address-review/SKILL.md` (check 61), `post-mortem/SKILL.md` (check 62),
-  `ship-release/SKILL.md` (check 63), `compliance-audit/SKILL.md` (check 64). Check 30 only
+  `compliance-audit/SKILL.md` (check 64). Check 30 only
   WARNs that a `-reason` field exists — it's the presence-of-reason check, not the
-  flag-survives-a-rewrite check; the ten CRIT checks are what close that gap. Check 30's own
+  flag-survives-a-rewrite check; the six CRIT checks are what close that gap. Check 30's own
   gate idiom was also switched from `head -20 | grep -qF` to frontmatter-scoped `fm_get` in
   the same pass, closing a latent (never live on this tree) false-negative: a stripped flag
   whose description prose still happened to contain the literal string would otherwise have
@@ -54,19 +54,19 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
   same day) had documented a partial, incidental WARN/INFO backstop for the then-7 unguarded
   carriers (checks 05/47 firing if the flag was stripped without also restoring the
   description) as a stopgap ahead of building real CRIT guards. That gap is now closed by
-  checks 58-64 above; the backstop is no longer load-bearing for these 10 surfaces, but the
+  checks 36/40/45/61/62/64 above; the backstop is no longer load-bearing for these 6 surfaces, but the
   finding stands as a real, verified interim result — checks 05/47 still provide the same
   incidental signal for any *future* `disable-model-invocation` carrier that hasn't yet
   gotten its own dedicated CRIT check. **Two follow-ups from the same-day deep-audit on this
   commit:** checks 36 and 45 were missing the `else` branch (fires CRIT if the SKILL.md itself
-  is missing/renamed) that checks 40/58-64 all carry — fixed, verified live by renaming both
+  is missing/renamed) that checks 40/61/62/64 all carry — fixed, verified live by renaming both
   files in a scratch copy and confirming CRIT fires. And check 65 (new) closes the structural
-  gap the hardcoded-per-skill pattern otherwise reopens on its own: an 11th
+  gap the hardcoded-per-skill pattern otherwise reopens on its own: a 7th
   `disable-model-invocation: true` carrier added after this doc was written gets no dedicated
   guard until a human notices — check 65 WARNs whenever a carrier's path has no matching `_f=`
   line anywhere under `checks/`, so that gap surfaces instead of silently recurring. WARN, not
   CRIT: it flags a coverage gap in the audit system, not proof the flag is currently absent.
-- **Description shape for these 10 carriers.** All 10 descriptions were rewritten 2026-08-30 to a
+- **Description shape for these 6 carriers.** All 6 descriptions were rewritten 2026-08-30 to a
   one-line summary — the "Use when X. Don't use for Y (Z instead)" trigger clauses moved into a
   `**When to use / not:**` body line each (`recursive-improve` already had one; the other 9 got new
   ones). This follows matt's own `writing-for-agents/SKILL-MECHANICS.md` rule that a
@@ -82,13 +82,13 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
   `hooks/advisory/`. Actual coverage, swept across all of `hooks/`: **two** proactive nudges —
   this one (`/mh:compliance-audit`) and `flow-nudge.sh`'s reply-to-PR-review branch
   (`/mh:address-review`) — plus one reactive mention, `merge-door.sh`'s ask message naming
-  `mh:ship-merge` when a raw `gh pr merge` is attempted. The remaining 5 carriers
-  (`recursive-improve`, `score-decision`, `tiered-pipeline`,
-  `post-mortem`, `ship-release`) have zero hook coverage — via the description mechanism above the
+  `mh:ship-merge` when a raw `gh pr merge` is attempted. The remaining 3 carriers
+  (`recursive-improve`, `score-decision`,
+  `post-mortem`) have zero hook coverage — via the description mechanism above the
   model has no route to proactively suggest them; only a doctrine file that happens to name one
   (e.g. the operator CLAUDE.md's `ship-merge` example) can. Real gap, not (yet) fixed; note
   it here so a future pass doesn't assume coverage exists because this doc once implied it did.
-  Don't "fix" these 10 descriptions back to a trigger-list shape; that reverts a correctness fix,
+  Don't "fix" these 6 descriptions back to a trigger-list shape; that reverts a correctness fix,
   not a style preference.
 - **`user-invocable: false` — the documented pair to `disable-model-invocation`.** Official
   semantics: only Claude can invoke the skill; Claude Code hides it from the `/` menu and won't
@@ -102,8 +102,8 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
   `review-lens-nextjs-routing`, `security-reviewer-patterns`; `spec-miner-anti-patterns` deleted
   with its agent 2026-09-01) — each one's own description already
   read "Auto-loads when `<agent>` runs," the docs' exact stated use case for the field.
-  **Tamper-guard parity:** unlike `disable-model-invocation`'s 10 carriers (checks 30/36/40/45/58-65
-  above), these 8 had zero protection against a future edit silently dropping the flag until check
+  **Tamper-guard parity:** unlike `disable-model-invocation`'s 6 carriers (checks 30/36/40/45/61/62/64/65
+  above), these 7 had zero protection against a future edit silently dropping the flag until check
   66 (`66-user-invocable-carrier-tamper-guard.sh`, added 2026-08-31, WARN tier — lower stakes than
   the CRIT carriers since dropping this flag just un-hides a catalog skill, it doesn't remove a
   safety block) closed the gap: one check covering all 8 known carriers plus a self-extending

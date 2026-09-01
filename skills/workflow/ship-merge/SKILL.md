@@ -104,10 +104,9 @@ hotfixes (`mh:incident`).
 2. Failures post-merge → be ready to revert or invoke `mh:incident` (hotfix path).
 3. Summarize: PR number, squash merge, commit sha, branch auto-deleted, CI status (or "N/A — no CI configured"). Keep the merge/release note factual, free of AI-flavor tells (no self-congratulation, no hedging).
 4. **Suggested next step:**
-   - Fix worth recording        → `mh:post-mortem` while context is warm
-   - Last change before release → `mh:ship-release`
-   - Base-branch CI red         → `mh:incident` (per step 2)
-   - Otherwise                  → done; pick up the next task
+   - Fix worth recording → `mh:post-mortem` while context is warm
+   - Base-branch CI red  → `mh:incident` (per step 2)
+   - Otherwise           → done; pick up the next task
 
 **Done.**
 

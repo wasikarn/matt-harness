@@ -112,8 +112,9 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
     # review-fixtures, risk-check, test-coverage, post-mortem, refactor-clean,
     # tiered are skill-name-derived leads, same class as incident/triage/
     # humanize. sweep is bug-sweep's own name, same class as scan. ship
-    # covers both ship-merge/ship-release (a coined pipeline-stage verb, same
-    # class as tier/finish). summarize is tech-humanize's own precedent
+    # covers ship-merge (ship-release deleted 2026-09-01, sweep #3 — token
+    # still needed) — a coined pipeline-stage verb, same class as tier/finish.
+    # summarize is tech-humanize's own precedent
     # applied literally: the skill's own name used as its own leading verb.
     # ingest is wiki-ingest's own name fragment, same class as sweep/scan.
     # M15 addition (2026-08-30, deep-audit pass): cage moved here from the

@@ -10,8 +10,8 @@ claude plugin validate . --strict
 
 The plugin manifest is the primary validation gate. `scripts/run-gauntlet.sh` runs everything
 in parallel: plugin-validate, full shell-lint, JSON lint, harness-audit, and the behavioral
-test suite. Shell tests run via a for-loop; 2 Python files (memory-lint, compress-docs
-verify-preserved) and 1 node file (tiered-pipeline) run via separate `if` blocks. The
+test suite. Shell tests run via a for-loop; a handful of Python files (memory-lint,
+compress-docs verify-preserved, autotrigger events) run via separate `if` blocks. The
 script's `run_hook_tests()` is the authoritative file list — counts drift, so none is stated
 here. The old 204-test critical-hooks suite and eval dataset gate were deleted, not rebuilt, in
 the 2026-06-27 owner-authorized reset (`c452102`; recovery anchor if ever wanted: `24d7663`):
