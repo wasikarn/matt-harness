@@ -10,9 +10,11 @@
 # which matched zero real flagged surfaces (a Rule-9 test that could not fail).
 # Appropriateness stays semantic + advisory (human review of the reasons); this
 # check only enforces that the reason EXISTS, which is deterministic. WARN (not
-# CRIT): a missing reason is a doc gap, not a safety regression — all 10
-# disable-model-invocation carriers are CRIT-guarded against the flag itself
-# disappearing by checks #36, #40, #45, #58-64.
+# CRIT): a missing reason is a doc gap, not a safety regression — all 6
+# disable-model-invocation carriers (10 at write-time; 58/59/60/63 retired
+# 2026-08-25 to 2026-09-01 alongside their own carrier's deletion) are
+# CRIT-guarded against the flag itself disappearing by checks #36, #40, #45,
+# #61, #62, #64.
 #
 # Frontmatter-scoped (fm_get), not a raw substring grep over the first 20
 # lines — same hardening #36/#40/#45/#58-64 carry: `head -20 | grep -qF`

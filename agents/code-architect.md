@@ -60,14 +60,12 @@ Reach for `mattpocock-skills:codebase-design` mid-blueprint for deep-module desi
 - choose the simplest architecture that meets the requirement
 - avoid speculative abstractions unless the repo already uses them
 
-**When to introduce an abstraction (rule of three, not rule of one):** propose an interface,
-base class, or plugin point only when the design already needs ≥2 concrete implementations
-*today* — not "might need a second one later." A single implementation behind an interface is
-YAGNI wearing a design-pattern's clothes: it adds an indirection layer with nothing on the
-other side of it yet. If the blueprint calls for exactly one concrete case, ship the concrete
-case; add the seam when (and if) a second real case shows up. Named exception: a seam placed
-at a boundary the repo already treats as swappable (e.g. it already has 2+ payment providers,
-2+ notification channels) — matching an existing pattern is not speculative.
+**When to introduce an abstraction:** `mattpocock-skills:codebase-design`'s seam principle
+governs this — "one adapter means a hypothetical seam, two adapters means a real one." Propose an
+interface, base class, or plugin point only when the design already needs ≥2 concrete
+implementations *today*, not "might need a second one later." Named exception (mh-specific): a
+seam at a boundary the repo already treats as swappable (e.g. it already has 2+ payment
+providers, 2+ notification channels) — matching an existing pattern is not speculative.
 
 **Signs an abstraction is premature** (flag these if the design draft includes them):
 - An interface with exactly one implementer and no second one in the requirement.

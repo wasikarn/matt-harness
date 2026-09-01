@@ -24,11 +24,11 @@ user-only" section (lines 49-55).
 owned by `/mattpocock-skills:ask-matt`, and kbg doesn't duplicate it — a row goes from deferred to
 routed only when a kbg surface has a concrete reason to name the skill.
 
-**No-counterpart agents, verified 2026-08-31:** `agents/a11y-architect.md`,
-`agents/performance-optimizer.md`, and `agents/build-error-resolver.md` have no matt-skill
-counterpart for their own lane — deliberately unrouted, not a gap. This describes each agent's
-own lane, not a zero-mention guarantee: `build-error-resolver.md` carries one incidental
-`mattpocock-skills:tdd` cross-reference (see Phase 1.9b of the redesign that added this note).
+**No-counterpart agents, re-verified 2026-09-01:** `agents/performance-optimizer.md` has no
+matt-skill counterpart for its own lane — deliberately unrouted, not a gap. (`a11y-architect.md`
+and `build-error-resolver.md`, the other two agents this paragraph originally named, 2026-08-31,
+were themselves deleted in an earlier sweep — dropped from this list rather than left as dead
+citations.)
 
 | skill | invocation | kbg touchpoint / deferral |
 |---|---|---|
