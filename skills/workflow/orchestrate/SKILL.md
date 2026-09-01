@@ -80,6 +80,9 @@ the session's actual orchestrator:subagent token ratio (from `hooks/stop/cost-tr
 elsewhere (Claude Code issue #40339). Still advisory, not a gate: the hook is enforced to fire,
 whether the model acts on it stays prose-only, same as the plan-mode nudge it lives beside.
 
+**The other direction has its own checklist.** Not delegating is correct under 9 specific
+conditions, not a lapse — `reference.md`'s Inline-wins checklist — 9 conditions where top-level execution is correct section.
+
 ## Agent tool vs Workflow tool
 
 This skill routes dispatch through the **`Agent` tool** — every pattern above (spawn-prompt template, validation chain, fan-out cap) assumes that primitive. The **`Workflow` tool** (scripted `pipeline()`/`parallel()`/`agent()`) is a separate, host-level primitive needing explicit user opt-in (the "ultracode" keyword, standing ultracode-session mode, or the user's own words asking for a workflow/multi-agent run) — this skill never invokes it, and no agent in this fleet is granted it. If the user has opted in, treat `Workflow` as parallel infrastructure available to the session, not a routing target this skill assigns.
