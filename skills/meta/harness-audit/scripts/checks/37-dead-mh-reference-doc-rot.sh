@@ -41,7 +41,7 @@ while IFS= read -r _k; do [ -n "$_k" ] && _known_mh["$_k"]=1; done < <({
   if [ -d "$CLAUDE_DIR/skills" ]; then
     for d in "$CLAUDE_DIR/skills"/[!_]*/ "$CLAUDE_DIR/skills"/[!_]*/[!_]*/; do
       [ -d "$d" ] || continue
-      case "$(basename "$d")" in *-workspace) continue ;; esac  # gitignored skill-workspace scratch dirs (skill-creator eval workspaces, review-fixtures's working dir) -- never real skills
+      case "$(basename "$d")" in *-workspace) continue ;; esac  # gitignored skill-workspace scratch dirs (skill-creator eval workspaces) -- never real skills
       [ -f "${d}SKILL.md" ] && basename "$d"
     done
   fi

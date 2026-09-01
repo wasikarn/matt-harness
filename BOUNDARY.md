@@ -48,7 +48,6 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 ### design
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
-| design-system | Scan a design system for token/visual consistency and AI-slop detection, or generate one. Use when starting a project. Don't use for scraping other sites. | inline | auto |
 | make-interfaces-feel-better | Catalog of UI-polish details — spacing, borders, shadows, motion, hit areas, text wrapping. Use when a UI feels flat. Don't use for overall direction choices. | inline | auto |
 | tech-humanize | Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing chat, standup/PR/commit, UI copy, or prose/ticket/spec/ADR, or say แก้ให้เป็นธรรมชาติ. Don't use for translation. | inline | auto |
 
@@ -87,9 +86,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | deep-audit | Deep-audit: post-implementation audit — verify every claim, score before/after, fix evidence-backed gaps, re-score. Use after an implementation pass. Don't use for a first-pass review (mattpocock-skills:code-review). | inline | auto |
 | pr | PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`mh:ship-merge`) or review replies (`mh:address-review`). | inline | auto |
 | production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /mattpocock-skills:implement). | inline | auto |
-| review-fixtures | Review-fixtures: 2 agents review skill-creator fixture outputs before deciding a fix. Use when fixtures exist mid an improve loop. Don't use for PR review. | inline | auto |
 | review-lens-nextjs-routing | Next.js App Router file-convention (error.tsx/loading.tsx/route.ts/parallel routes) and Middleware checklist. Auto-loads when nextjs-reviewer runs. Don't use for caching/Server Actions or standalone review. | inline | auto |
-| risk-check | Risk-check: classify a PR LOW/MEDIUM/HIGH from diff size, sensitive-path, and hotspot signals. Use when scoping review effort. Don't use for the merge decision (mh:ship-merge). | inline | auto |
 | security-auditor | At-rest security audit: threat-model + remediation + re-verify (auth, secrets, injection, XSS, traversal). Use when auditing standing code or on an explicit audit ask. Don't use for a pending-changes diff (native security-review) or code review. | inline | auto |
 | security-reviewer-patterns | Catalog of security-reviewer's BAD/GOOD examples (SQLi, IDOR, JWT, mass assignment, SSRF, ReDoS). Auto-loads when security-reviewer runs. Don't use for the deep-audit workflow (security-auditor). | inline | auto |
 
@@ -123,7 +120,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | irrecoverable.sh | Gate: block irrecoverable Bash patterns before they execute. Reads the PreToolUse JSON payload from stdin; exits 2 to block. |
 | _codeowners_match.py | Shared CODEOWNERS discovery + matching logic, used by skills/workflow/ship-merge/SKILL.md's step 7 (CLI wrapper below, argv/stdout contract unchanged from the original embedded block). Its second caller, hooks/gates/convergence-merge-gate.sh, was retired 2026-08-24 (#82). |
 | _hook_output.py | Shared hook-output JSON primitive. Used by hooks/gates/db-write-gate.sh and hooks/gates/verifier-protect.sh's embedded python3 -c blocks, both of which defined an identical emit_ask() before this extraction (2026-08-15) -- each gate still builds its own reason message inline (that part is legitimately gate-specific), only the JSON-shape emission is shared here. |
-| _protected_paths.py | Shared gate/verifier-governance path classifier. Ported near-verbatim (2026-08-15) from hooks/gates/verifier-protect.sh's own is_verifier_path() -- the more complete of two prior copies. skills/review/risk-check/SKILL.md's embedded is_gate_path() was the other, missing hooks/advisory/ coverage; both now call this one instead, closing that gap. |
+| _protected_paths.py | Shared gate/verifier-governance path classifier. Ported near-verbatim (2026-08-15) from hooks/gates/verifier-protect.sh's own is_verifier_path() -- the more complete of two prior copies. skills/review/risk-check/SKILL.md's embedded is_gate_path() was the other, missing hooks/advisory/ coverage; verifier-protect.sh calls this shared one (risk-check itself deleted 2026-09-01, sweep #3 — zero lifetime dispatches). |
 | merge-door.sh | Gate: ask before a raw `gh pr merge` runs outside the `ship-merge` skill flow. `convergence-merge-gate.sh` used to cover this and was retired 2026-08-24 with the review pipeline (#82) — ship-merge/SKILL.md's own text admits its in-flow gates are "now the only merge-door protection", but those only fire when the model goes through the Skill call; a raw Bash `gh pr merge` had zero hook coverage until this file. Reads the PreToolUse JSON payload from stdin; emits `permissionDecision: ask` (exit 0) on a match, never a hard deny — a human can still approve a legitimate emergency merge in the moment, same tier `verifier-protect.sh` uses for tamper-sensitive edits. |
 | task-complete-separation.sh | Gate: a subagent may not mark its own task completed (maker≠checker). Reads the PreToolUse JSON payload from stdin; exits 2 to block. |
 | test-integrity.sh | Gate: ask when an edit to an existing test file removes an assertion- shaped line, or adds a skip/disable marker that wasn't there before. METHODOLOGY.md Rule 4 ("write the failing test first, don't weaken it while fixing") had no backing mechanism anywhere — pure prose, the exact same-role-grades-its-own-work case CLAUDE.md's maker≠checker doctrine argues against trusting. |
@@ -170,7 +167,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | crisp | Sole live-response register: concise, easy to read, human. Claude Code's Concise contract (result first, no preamble, full content for errors/security/destructive confirmations) as the base, with staff-engineer decision framing switched on only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-09-01T02:43:28Z_
+_Generated: 2026-09-01T09:37:47Z_
 
 ---
 

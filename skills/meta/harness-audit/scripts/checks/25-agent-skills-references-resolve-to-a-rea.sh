@@ -13,7 +13,7 @@ _known_skills=$(mktemp)
     for d in "$CLAUDE_DIR/skills"/[!_]*/ "$CLAUDE_DIR/skills"/[!_]*/[!_]*/; do
       [ -d "$d" ] || continue
       n=$(basename "$d")
-      case "$n" in *-workspace) continue ;; esac  # gitignored skill-workspace scratch dirs (skill-creator eval workspaces, review-fixtures's working dir) -- never real skills
+      case "$n" in *-workspace) continue ;; esac  # gitignored skill-workspace scratch dirs (skill-creator eval workspaces) -- never real skills
       [ -f "${d}SKILL.md" ] && echo "$n"
     done
   fi

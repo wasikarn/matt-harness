@@ -3,7 +3,8 @@
 # (2026-08-15) from hooks/gates/verifier-protect.sh's own is_verifier_path()
 # -- the more complete of two prior copies. skills/review/risk-check/SKILL.md's
 # embedded is_gate_path() was the other, missing hooks/advisory/ coverage;
-# both now call this one instead, closing that gap.
+# verifier-protect.sh calls this shared one (risk-check itself deleted
+# 2026-09-01, sweep #3 — zero lifetime dispatches).
 #
 # Covers: hooks/gates/**, hooks/advisory/**, hooks/hooks.json, the
 # non-model audit verifier (skills/meta/harness-audit/scripts/audit.sh +

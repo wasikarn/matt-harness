@@ -86,11 +86,11 @@ in practice if `aria-live` timing or focus order doesn't match what the markup i
 - Skill: `mh:frontend-patterns` — already covers the keyboard-nav combobox
   (`mh:frontend-patterns/reference.md#keyboard-navigation`) and modal focus-restoration
   (`mh:frontend-patterns/reference.md#focus-management`) examples; this skill doesn't duplicate those.
-- Skill: `mh:design-system` — dimension 8 (Accessibility) of its visual audit reads on this
-  skill's checklist.
 - This skill IS the fleet's accessibility audit surface — the former `a11y-architect` agent
-  (deleted 2026-09-01, near-verbatim overdub of this checklist) has no successor; work the
-  checklist inline or hand this file's path to a dispatched general-purpose agent.
+  (deleted 2026-09-01, near-verbatim overdub of this checklist) and the former `design-system`
+  skill (deleted 2026-09-01, sweep #3, zero lifetime dispatches — its dimension-8 visual audit
+  used to read on this checklist) have no successor; work the checklist inline or hand this
+  file's path to a dispatched general-purpose agent.
 
 ## References
 

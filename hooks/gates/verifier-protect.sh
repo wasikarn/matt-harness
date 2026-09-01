@@ -239,9 +239,10 @@ def _verifier_reason(fp, reason=None):
     return reason or (PROTECTED_REASON + " (" + fp + ")")
 
 # is_gate_path -- imported above from _protected_paths (2026-08-15
-# extraction; was is_verifier_path, defined inline here). Also used by
-# the embedded classifier in skills/review/risk-check/SKILL.md, which previously had its own
-# narrower copy missing hooks/advisory/ coverage.
+# extraction; was is_verifier_path, defined inline here). Was also used by
+# risk-check/SKILL.md own embedded classifier (narrower copy, missing
+# hooks/advisory/ coverage) before that skill was deleted 2026-09-01,
+# sweep #3 (zero lifetime dispatches).
 
 def bash_write_targets(cmd):
     """Yield candidate file paths the Bash command writes to or deletes.
