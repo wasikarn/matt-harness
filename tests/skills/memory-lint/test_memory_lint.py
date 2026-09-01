@@ -1446,6 +1446,56 @@ def test_apply_action_plan_rewrites_dangling_wikilink_on_disk():
         assert len(applied["C"]) == 1, applied
 
 
+def test_apply_action_plan_deindexes_class_d_pointer_on_disk():
+    # Class D's planning logic (class_d_count_fold) has coverage; its APPLICATION
+    # (apply_action_plan actually removing the pointer line from MEMORY.md) did not --
+    # unlike Class A/C above, which both have a dedicated apply-path test. Found via
+    # 2026-09-01 deep-audit re-scan of this fix's own test coverage. Exercises the full
+    # pipeline: class_d_count_fold -> apply_action_plan -> re-run the real detector to
+    # confirm the deindexed file lands in the healthy context-layer, not UNINDEXED --
+    # the actual end-to-end guarantee the reachability guard exists to provide.
+    orig_line, orig_byte = memory_lint.LINE_CAP, memory_lint.BYTE_CAP
+    try:
+        memory_lint.LINE_CAP = 10_000
+        memory_lint.BYTE_CAP = 200
+        with tempfile.TemporaryDirectory() as d:
+            now = 2_000_000_000
+            with open(os.path.join(d, "old-topic.md"), "w") as f:
+                f.write("---\nname: old-topic\n---\nolder content, safe to fold\n")
+            os.utime(os.path.join(d, "old-topic.md"), (now, now))
+            with open(os.path.join(d, "anchor.md"), "w") as f:
+                f.write("---\nname: anchor\n---\nlinks to [[old-topic]] so it stays reachable if deindexed\n")
+            os.utime(os.path.join(d, "anchor.md"), (now + 1000, now + 1000))
+            old_line = "- [old-topic](old-topic.md) — a pointer hook long enough to help cross the budget trigger here"
+            anchor_line = "- [anchor](anchor.md) — a pointer hook that must survive this untouched, verbatim"
+            with open(os.path.join(d, "MEMORY.md"), "w") as f:
+                f.write(old_line + "\n" + anchor_line + "\n")
+            state = memory_lint.collect_state(d)
+            idx_bytes = len(state["idx"].encode("utf-8"))
+            assert idx_bytes / memory_lint.BYTE_CAP >= 0.80, "fixture must actually cross the trigger"
+
+            plan_d = memory_lint.class_d_count_fold(state, exclude_files=set())
+            assert [e["file"] for e in plan_d] == ["old-topic.md"], plan_d   # positive control
+            plan = {"A": [], "B": [], "C": [], "D": plan_d}
+            saved, applied = memory_lint.apply_action_plan(state, plan)
+
+            idx_after = open(state["index_path"]).read()
+            assert old_line not in idx_after, idx_after           # pointer line gone
+            assert anchor_line in idx_after, idx_after             # untouched sibling survives verbatim
+            assert os.path.exists(os.path.join(d, "old-topic.md")), "Class D must never delete the backing file"
+            assert saved == len(old_line.encode("utf-8")) + 1, (saved, old_line)
+            assert applied["D"] == [{"action": "deindex", "file": "old-topic.md"}], applied
+
+            # End-to-end: re-run the REAL detector against the post-apply on-disk state and
+            # confirm old-topic lands in the healthy context-layer, not UNINDEXED.
+            state_after = memory_lint.collect_state(d)
+            findings, _, _, context_layer = memory_lint.detector_findings(state_after)
+            assert not any("old-topic" in f for f in findings), findings
+            assert context_layer == 1, (context_layer, findings)
+    finally:
+        memory_lint.LINE_CAP, memory_lint.BYTE_CAP = orig_line, orig_byte
+
+
 def test_print_plan_projects_post_trim_size():
     # L1312: `new_bytes = max(idx_bytes + estimated_impact, 0)`. Two cases: clamp inert (arithmetic
     # governs -> kills '+'->'-') and clamp active (only max(...,0) makes it 0 -> kills removing max).
@@ -1706,6 +1756,7 @@ if __name__ == "__main__":
     test_class_c_ignores_link_that_resolves_by_slug_only()
     test_apply_action_plan_moves_superseded_files_and_stubs_pointers()
     test_apply_action_plan_rewrites_dangling_wikilink_on_disk()
+    test_apply_action_plan_deindexes_class_d_pointer_on_disk()
     test_print_plan_projects_post_trim_size()
     test_print_plan_reports_class_d_savings_separately()
     test_auto_archive_yes_applies_and_moves_file()
