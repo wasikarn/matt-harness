@@ -91,6 +91,12 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
     # pattern-catalog skill's first word IS the framework — a named concept that
     # recruits a prior, not a generic noun; forcing a matt coined term onto a
     # framework catalog degrades the desc) + recognized kbg coined concepts.
+    # M16 removed 6 of these framework tokens (2026-09-01, sweep #3 Phase 5):
+    # adonisjs, effect-ts, fastapi, hono, langchain, tauri were real shipped
+    # pattern-catalog skills, confirmed via `git log --diff-filter=A`, deleted
+    # before this sweep began — ghosts, not placeholders. drizzle/grpc/mysql
+    # (still-live pattern skills) prove the framework-proper-noun class itself
+    # is still correct; only the specific dead tokens were trimmed.
     # Generic imperative verbs (run/use/manage/create/analyze/prioritize/orchestrate/audits)
     # are deliberately NOT added — those descs are recast to a vocab lead instead.
     # humanize: skill-name-derived lead for tech-humanize, same treatment as
@@ -114,6 +120,10 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
     # humanize. sweep is bug-sweep's own name, same class as scan. ship
     # covers ship-merge (ship-release deleted 2026-09-01, sweep #3 — token
     # still needed) — a coined pipeline-stage verb, same class as tier/finish.
+    # M16 removed review-fixtures, risk-check, and tiered from this list
+    # (2026-09-01, sweep #3 Phase 4/5): their originating skills (review-fixtures,
+    # risk-check, tiered-pipeline) were deleted this same sweep — ghosts, not
+    # placeholders, same reasoning as the M12 framework-token removal above.
     # summarize is tech-humanize's own precedent
     # applied literally: the skill's own name used as its own leading verb.
     # ingest is wiki-ingest's own name fragment, same class as sweep/scan.
@@ -125,7 +135,7 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
     # every mutation — confirmed by reading recursive-improve/SKILL.md
     # directly, not asserted), same class as pre-flight: a specific idiom
     # naming a real property, not a generic noun.
-    synthesise-seam|slice|doctrine|doctrine-backed|triage|mental-model|catalogue|catalog|test-driven|deep-module|diagnosis|build|compact|scan|teach|adonisjs|backend|frontend|drizzle|effect-ts|fastapi|grpc|hono|langchain|tauri|mysql/mariadb|pythonic|score|incident|router|eval-driven|dart/flutter|humanize|prep-map|pr|typescript|db/sql|fix-authenticity|requirement-coverage|wcag|fowler|tier|pre-flight|finish|next.js|cost-report|frame|sweep|complexity-check|compliance-audit|deep-audit|review-fixtures|risk-check|post-mortem|ship|tiered|cage) : ;;  # silent
+    synthesise-seam|slice|doctrine|doctrine-backed|triage|mental-model|catalogue|catalog|test-driven|deep-module|diagnosis|build|compact|scan|teach|backend|frontend|drizzle|grpc|mysql/mariadb|pythonic|score|incident|router|eval-driven|dart/flutter|humanize|prep-map|pr|typescript|db/sql|fix-authenticity|requirement-coverage|wcag|fowler|tier|pre-flight|finish|next.js|cost-report|frame|sweep|complexity-check|compliance-audit|deep-audit|post-mortem|ship|cage) : ;;  # silent
     *) info "$name: description does not open with a matt-style coined term (first word: '$first_word') — leading word recruits a pretrained prior, not a generic noun" ;;
   esac
 

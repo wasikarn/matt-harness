@@ -37,24 +37,22 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
   if [ "$name" != "harness-audit" ] && grep -qi 'Daisy\|\\bdaisy\\b' "$f"; then
     warn "skill '$name' contains upstream 'Daisy' placeholder"
   fi
-  # "Don't use for" in description (skill pattern) — exclude self during bootstrap.
-  # Name-only skills (description ≤ 20 chars) carry no routing text; skip routing checks.
-  # Also excluded: `disable-model-invocation: true` skills, same reasoning check 47
-  # already applies to its own near-duplicate of this pair of checks — a gated
-  # skill's description is never read for auto-triggering at all (confirmed
-  # 2026-08-30: "removes the skill from Claude's context entirely",
-  # code.claude.com/docs/en/skills.md), so neither a negation clause nor a
-  # trigger-pattern clause in it does anything; matt's own rule is to keep
+  # Trigger pattern (verb + scenario). Name-only skills (description ≤ 20
+  # chars) carry no routing text; skip routing checks. Also excluded:
+  # `disable-model-invocation: true` skills — a gated skill's description is
+  # never read for auto-triggering at all (confirmed 2026-08-30: "removes the
+  # skill from Claude's context entirely", code.claude.com/docs/en/skills.md),
+  # so a trigger-pattern clause in it does nothing; matt's own rule is to keep
   # these descriptions to a one-line human-facing summary and move that
   # content into the body instead (`docs/reference/skill-agent-mechanics.md`).
+  # The negation-clause half of this pair of checks (was here too, "Don't use
+  # for") moved to check 47 and was promoted INFO→WARN there (2026-09-01,
+  # sweep #3 Phase 5 merge) — 47 now carries these same 3 carve-outs.
   desc=$(fm_get "$f" "description" --block)
   desc_len=${#desc}
   _gated=$(fm_get "$f" "disable-model-invocation" | tr -d ' ')
   if [ "$name" != "harness-audit" ] && [ "$desc_len" -gt 20 ] && [ "$_gated" != "true" ]; then
-    if ! echo "$desc" | grep -qiE "Don't use for|Do NOT use for|Do NOT trigger"; then
-      warn "skill '$name' missing negation clause (e.g. 'Don't use for') in description"
-    fi
-    # Positive-side: trigger pattern (verb + scenario) — complement to negation check.
+    # Positive-side: trigger pattern (verb + scenario) — complement to check 47's negation check.
     # Bare-verb descriptions ("Loads the foo skill") auto-trigger on every prompt;
     # require a "when"-clause (Use when… / Trigger when… / ALWAYS trigger when… / Trigger on:)
     # to gate routing. Block-scalar descriptions ARE matched (fm_get --block returns

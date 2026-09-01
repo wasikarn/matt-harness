@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# 20. Description length — skills, agents, commands.
+# 20. Description length — skills, agents.
+# (commands/ retired as a surface type 2026-08-25 #112 — the commands/*.md
+# globs this check used to scan were dropped 2026-09-01, sweep #3 Phase 5.)
 # code.claude.com/docs/en/skills + /sub-agents: description max 1536 chars
 # (combined with when_to_use). Over-limit is silently truncated by the runtime,
 # which can cut off the negation clause and degrade routing. fm_get --block
@@ -16,7 +18,7 @@
 # so the hardcoded default below is correct for now — would need the same
 # settings-lookup treatment if that ever changes.
 DESC_MAX=1536
-for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md "$CLAUDE_DIR/agents"/*.md "$CLAUDE_DIR/commands"/*.md; do
+for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md "$CLAUDE_DIR/agents"/*.md; do
   [ -f "$f" ] || continue
   case "$f" in */skills/_*) continue ;; esac
   label=$(basename "$f" .md); [ "$label" = "SKILL" ] && label=$(basename "$(dirname "$f")")
@@ -38,7 +40,7 @@ done
 # an intentional twin pair that drifts into similarity is a routing smell, not a
 # build-breaker.
 _dup_tsv=$(mktemp)
-for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md "$CLAUDE_DIR/agents"/*.md "$CLAUDE_DIR/commands"/*.md; do
+for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md "$CLAUDE_DIR/agents"/*.md; do
   [ -f "$f" ] || continue
   case "$f" in */skills/_*) continue ;; esac
   label=$(basename "$f" .md); [ "$label" = "SKILL" ] && label=$(basename "$(dirname "$f")")
