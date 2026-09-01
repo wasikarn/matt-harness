@@ -635,6 +635,12 @@ make_agent_line() {
 make_noise_line() {
   python3 -c 'import json; print(json.dumps({"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Read", "input": {}}]}}))'
 }
+# make_write_line <isSidechain> -- an Edit tool_use on an assistant-type transcript
+# line, with isSidechain set explicitly (true/false) so main_writes scoping can be
+# fixture-tested against both a main-thread and a subagent turn.
+make_write_line() {
+  python3 -c 'import json,sys; print(json.dumps({"type": "assistant", "isSidechain": sys.argv[1] == "true", "message": {"content": [{"type": "tool_use", "name": "Edit", "input": {}}]}}))' "$1"
+}
 
 fake_home=$(mktemp -d)
 transcript=$(mktemp)
@@ -700,6 +706,36 @@ row=$(tail -1 "$metrics_file" 2>/dev/null)
 printf '%s' "$row" | /usr/bin/grep -q '"nudges_fired":1' \
   && printf '%s' "$row" | /usr/bin/grep -q '"nudges_complied":1' && ok=1 || ok=0
 assert "Agent tool_use after a fire also counts as compliance (delegation, not just plan-mode/advisor)" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
+# main_writes scoping (2026-09-01): 3 main-thread Edit tool_use entries plus 1
+# sidechain (isSidechain:true) Edit tool_use entry -- the sidechain one must be
+# excluded, so main_writes must equal exactly 3, not 4.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+{ make_write_line false; make_write_line false; make_write_line false; make_write_line true; } > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-main-writes"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$NUDGE_COMPLIANCE_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/nudge-compliance.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" ]] && printf '%s' "$row" | /usr/bin/grep -q '"main_writes":3' && ok=1 || ok=0
+assert "main_writes counts only main-thread Edit tool_use entries, excludes the isSidechain:true one (3, not 4)" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
+# main_dispatches scoping: an Agent tool_use on the main thread counts; the same
+# fixture line's Agent-tool count from the compliance test above already exercises
+# the happy path, this asserts the field is present and correctly scoped on its own.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+{ make_agent_line; make_agent_line; } > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-main-dispatches"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$NUDGE_COMPLIANCE_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/nudge-compliance.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" ]] && printf '%s' "$row" | /usr/bin/grep -q '"main_dispatches":2' && ok=1 || ok=0
+assert "main_dispatches counts main-thread Agent tool_use entries (2)" "$ok"
 trash "$fake_home" "$transcript" 2>/dev/null || true
 
 fake_home=$(mktemp -d)

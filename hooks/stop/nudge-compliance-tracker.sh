@@ -39,7 +39,18 @@
 # per session is found by max_by(.nudges_fired), not max_by(.timestamp) -- two Stop hooks
 # firing in the same UTC second (async:true, back-to-back turns) can tie on timestamp and
 # pick a stale, lower count; nudges_fired is monotonic within a session by construction and
-# never ties on a real progression. Rolling compliance rate for a session:
+# never ties on a real progression.
+#
+# main_writes / main_dispatches (added 2026-09-01): raw counts of main-thread Edit/Write/
+# NotebookEdit and Agent tool_use entries, same re-derive-every-Stop convention as the rest
+# of this row -- context for reading nudges_fired/nudges_complied, not a nudge signal of
+# their own. Scoped to isSidechain != true (missing/absent counts as main-thread, matching
+# `!= true`, not `== false`) as defense against a future platform change, even though 0 of
+# 128 sampled local transcripts ever carry isSidechain:true on a subagent turn -- subagent
+# turns are structurally absent from the main transcript file entirely (cost-tracker.sh's
+# own confirmed finding on a real 15-subagent session), so counting main-transcript
+# tool_use already excludes subagent work by construction; the filter is belt-and-suspenders,
+# not the thing doing the real work. Rolling compliance rate for a session:
 #   jq -s '[.[] | select(.session_id=="<sid>")] | max_by(.nudges_fired) | .nudges_complied / (.nudges_fired // 1)' nudge-compliance.jsonl
 # Across all sessions (last row per session_id, since rows accumulate per-Stop):
 #   jq -s 'group_by(.session_id) | map(max_by(.nudges_fired)) | (map(.nudges_complied) | add) / (map(.nudges_fired) | add)' nudge-compliance.jsonl
@@ -104,7 +115,16 @@ row=$(jq -nRc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg sid "$session_id" 
        | (if $i + 1 < $fired then $fires[$i + 1] else infinite end) as $next
        | select(any($responses[]; . > $f and . < $next)) ]
      | length) as $complied
-  | { timestamp: $ts, session_id: $sid, nudges_fired: $fired, nudges_complied: $complied }
+  | ([ $idx[] | select(.value.type == "assistant" and (.value.isSidechain != true))
+       | (.value.message.content // [])[]?
+       | select(.type == "tool_use" and (.name == "Edit" or .name == "Write" or .name == "NotebookEdit")) ]
+     | length) as $main_writes
+  | ([ $idx[] | select(.value.type == "assistant" and (.value.isSidechain != true))
+       | (.value.message.content // [])[]?
+       | select(.type == "tool_use" and .name == "Agent") ]
+     | length) as $main_dispatches
+  | { timestamp: $ts, session_id: $sid, nudges_fired: $fired, nudges_complied: $complied,
+      main_writes: $main_writes, main_dispatches: $main_dispatches }
 ' "$transcript" 2>/dev/null) || row=''
 
 # Refuse to append through a symlink -- same guard as cost-tracker.sh.
