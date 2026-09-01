@@ -67,6 +67,12 @@
 #
 # Overlaps hooks/advisory/flow-nudge.sh's delegation-ratio nudge (GH #120) at
 # a more interruptive tier -- one more reason the default is off.
+#
+# FUTURE DIRECTION, NOT BUILT: a write:dispatch RATIO gate (main_writes vs.
+# main_dispatches, both already in the same nudge-compliance.jsonl row) would
+# be more meaningful than an absolute-count budget -- 251 writes alongside 77
+# dispatches isn't the same signal as 251 alongside 0 -- but needs a second
+# tuning knob and even less real data exists to set it from. Not this pass.
 set -uo pipefail
 
 # 1. Worktree-guard bail. Must be first, before touching stdin.
@@ -102,18 +108,37 @@ sid=$(jq -r '.session_id // empty' <<<"$payload" 2>/dev/null)
 mfile="${MH_NUDGE_METRICS_FILE:-$HOME/.local/share/kbg/metrics/nudge-compliance.jsonl}"
 [[ -f "$mfile" ]] || exit 0        # no metrics yet -> allow
 
-# 5. Cumulative main_writes for THIS session. tail -n 2000 first: the file has
-#    no rotation or cap and grows one row per Stop forever; the lookup only
-#    ever needs this session's most recent rows, which are always at the tail.
+# 5. Cumulative main_writes for THIS session. Filter to only this session's
+#    own rows FIRST (grep -F on the literal `"session_id":"$sid"` JSON
+#    substring -- nudge-compliance-tracker.sh's own `jq -nRc` emits compact
+#    JSON, no space after the colon), THEN cap with `tail -n 2000` on the
+#    already-filtered result -- a single session's own row count is
+#    inherently small (bounded by its own Stop-event count, not by how many
+#    OTHER sessions ran), so filtering before capping is both cheaper and
+#    correct. Filtering by FILE POSITION first (the original `tail -n 2000
+#    "$mfile" | jq ...` shape) was a real bug (deep-audit, 2026-09-01,
+#    reproduced against a fixture): a dormant session's own last row can fall
+#    outside the tail window once OTHER sessions keep appending after it
+#    stopped, silently under-counting a real budget crossing. Not live
+#    against the real file today (~660 lines) -- live in roughly 1-2 weeks
+#    at the observed ~250 rows/day growth rate with no rotation. The jq-level
+#    `select(.session_id == $sid ...)` stays as the authoritative correctness
+#    check; the grep is a cheap pre-filter, not a replacement for it.
 #    -nRr, not -nr: without -R, `inputs` yields parsed objects, fromjson
 #    throws, `try` swallows it, and this silently returns 0 forever. `try
 #    fromjson` per nudge-compliance-tracker.sh's own idiom: one
 #    truncated/malformed line must not kill the whole lookup.
-writes=$(tail -n 2000 "$mfile" 2>/dev/null | jq -nRr --arg sid "$sid" '
+writes=$(grep -F "\"session_id\":\"$sid\"" "$mfile" 2>/dev/null | tail -n 2000 | jq -nRr --arg sid "$sid" '
   [ inputs | try (fromjson | select(.session_id == $sid and (.main_writes | type == "number"))) ]
   | (max_by(.main_writes).main_writes // 0)
 ' 2>/dev/null)
-[[ "$writes" =~ ^[0-9]+$ ]] || exit 0   # malformed/absent -> allow
+# Bounded digit count (deep-audit, 2026-09-01), not an unbounded ^[0-9]+$: the
+# tracker only ever emits small non-negative integers, but an unbounded regex
+# would pass a hand-corrupted 19+ digit value straight into the bash
+# arithmetic below, which silently truncates at 64 bits and can evaluate as
+# under-budget with no error. 15 digits stays safely inside range for any
+# real value this gate will ever see.
+[[ "$writes" =~ ^[0-9]{1,15}$ ]] || exit 0   # malformed/absent -> allow
 
 (( writes >= budget )) || exit 0
 

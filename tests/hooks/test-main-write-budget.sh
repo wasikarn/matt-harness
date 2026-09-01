@@ -160,6 +160,33 @@ out=$(MH_MAIN_WRITE_BUDGET=100 run_gate '{"session_id":"sid-15","tool_name":"Not
 ok=1; is_ask "$out" && [ "$rc" -eq 0 ] && ok=0
 check "tool_name=NotebookEdit -> ask still fires" "$ok"
 
+# 16. Large-file boundary regression (deep-audit, 2026-09-01): the target
+#     session's own over-budget row sits near the TOP of the file, followed
+#     by 2500 other-session rows -- pins that filtering happens by session_id
+#     FIRST, not by tail -n 2000 on raw file position. The original shape
+#     (`tail -n 2000 "$mfile" | jq ...`) would have pushed sid-16's own row
+#     out of the tail window here and silently under-counted -- this exact
+#     fixture reproduced that bug before the fix.
+{
+  row "sid-16" 150
+  for i in $(seq 1 2500); do row "sid-other-$i" 1; done
+} > "$MFILE"
+out=$(MH_MAIN_WRITE_BUDGET=100 run_gate "$(payload sid-16)"); rc=$?
+ok=1; is_ask "$out" && [ "$rc" -eq 0 ] && ok=0
+check "target session's row survives file-position truncation (2500 other-session rows after it)" "$ok"
+
+# 17. main_writes value with far more digits than any real value can have
+#     (26 nines) must read as malformed -> allow, not get passed into the
+#     bash arithmetic comparison, where a 64-bit truncation could silently
+#     evaluate as under-budget with no error (deep-audit, 2026-09-01). jq
+#     itself preserves the full 26-digit literal on output (verified: it
+#     does not round to scientific notation), so the guard's own bounded
+#     digit-count regex is what actually closes this, not jq's behavior.
+row "sid-17" 99999999999999999999999999 > "$MFILE"
+out=$(MH_MAIN_WRITE_BUDGET=100 run_gate "$(payload sid-17)"); rc=$?
+ok=1; [ -z "$out" ] && [ "$rc" -eq 0 ] && ok=0
+check "26-digit main_writes value -> malformed, allow (not passed to bash arithmetic)" "$ok"
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]
