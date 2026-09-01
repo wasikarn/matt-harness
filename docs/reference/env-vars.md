@@ -46,6 +46,29 @@ repo's source — and is a **total no-op for every user of this public plugin** 
 | `MH_WORKTREE_BASE` | unset (current HEAD) | Branch to fetch and base a new worktree on, e.g. `=main` for a hotfix session. |
 | `MH_ALLOW_MAIN_EDIT` | unset | One-off escape hatch: `=1` skips the guard for the current call. Not a standing config value — don't pre-populate it in `env`. |
 
+## Main-write-budget gate (opt-in, off by default)
+
+Read by `hooks/gates/main-write-budget.sh` — an `ask`-only nudge (never blocks, never denies)
+that fires when main's own cumulative inline Write/Edit/NotebookEdit count for the current
+session crosses an operator-set budget. Ships generic and is a **total no-op for every user of
+this public plugin** unless `MH_MAIN_WRITE_BUDGET` is explicitly set.
+
+| Var | Default | Effect |
+|---|---|---|
+| `MH_MAIN_WRITE_BUDGET` | **none — gate is off when unset** | Positive-integer write-count threshold. An invalid value (non-positive-integer) also turns the gate off — it never silently falls back to a built-in number. The gate's own check says it plainly: `"MH_MAIN_WRITE_BUDGET='$budget' is not a positive integer -- main-write-budget gate off (no default is assumed)"`. |
+| `MH_NUDGE_METRICS_FILE` | `~/.local/share/kbg/metrics/nudge-compliance.jsonl` | Test-only override for the metrics file the gate reads cumulative `main_writes` counts from. Unset in production — same convention as `hooks/advisory/flow-nudge.sh`'s `MH_COST_METRICS_FILE`. |
+
+**Incompatible with `MH_GUARDED_WORKSPACE` — by design, not an accepted degradation.** Setting
+both `MH_GUARDED_WORKSPACE` and `MH_MAIN_WRITE_BUDGET` together disables this gate entirely: its
+very first check is an unconditional bail when `MH_GUARDED_WORKSPACE` is set, before it reads
+stdin or looks at the budget at all. Reason: `dispatch-pretooluse.py` discards `updatedInput` from
+every matched gate the instant any gate's merged decision reaches `ask` — so if this gate latched
+while `worktree-guard.py` was also active, worktree-guard's auto-redirect into a session worktree
+would be silently dropped for the rest of the session. The redirect matters more than the nudge:
+this gate steps aside completely rather than degrade worktree-guard's behavior. An operator running
+both vars at once gets worktree-guard's redirect only — the write-budget nudge never fires, no
+matter how high the write count climbs.
+
 ## Gate valves (per-run escapes, not standing config)
 
 | Var | Default | Effect |

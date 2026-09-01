@@ -224,6 +224,33 @@ check "multi-updatedInput + a co-firing ask: ask wins, updatedInput suppressed (
 ok=0; echo "$stderr_out2" | /usr/bin/grep -qi "more than one" && ok=1
 check "no misleading 'applying the last in table order' warning when updatedInput was never actually applied" "$ok"
 
+# Two gates BOTH ask -- the EARLIER table entry's reason wins on a rank tie
+# (worst_rank uses strict `>`, so worst_reason is only overwritten on a rank
+# INCREASE, never on a tie -- table-order iteration decides the winner).
+# This is the exact mechanic hooks/gates/main-write-budget.sh's table
+# placement (last among Write|Edit-matched gates) depends on -- plan-reviewer
+# finding, 2026-09-01: nothing exercised this directly before.
+cat > "$FIXTURE_DIR/asker2.sh" <<'EOF'
+#!/usr/bin/env bash
+cat <<'JSON'
+{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask", "permissionDecisionReason": "second fixture ask"}}
+JSON
+exit 0
+EOF
+
+cat > "$TMP/table-ask-tie-break.json" <<EOF
+[
+  {"id": "t:asker", "matcher": "Bash", "script": "fixtures/asker.sh"},
+  {"id": "t:asker2", "matcher": "Bash", "script": "fixtures/asker2.sh"}
+]
+EOF
+out=$(run_synthetic "$TMP/table-ask-tie-break.json" 2>/dev/null); rc=$?
+ok=1
+if [ "$rc" -eq 0 ] && echo "$out" | /usr/bin/grep -q '"fixture ask"' && ! echo "$out" | /usr/bin/grep -q '"second fixture ask"'; then
+  ok=0
+fi
+check "two asks tie: EARLIER table entry's reason wins, not the later one" "$ok"
+
 echo "=== failure isolation (#91 adversarial audit, 2026-08-25) ==="
 # Before this fix: an uncaught exception anywhere in table loading/matching
 # exited 1 -- Claude Code treats any non-2 exit as non-blocking, so a single

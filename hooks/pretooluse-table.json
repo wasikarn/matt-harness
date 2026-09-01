@@ -84,6 +84,12 @@
     "description": "Gate: redirect Edit/Write on a guarded sub-repo main checkout or protected branch into a session worktree under ~/.worktrees. Opt-in and off by default: no-op everywhere unless MH_GUARDED_WORKSPACE is set."
   },
   {
+    "id": "gate:write:main-write-budget",
+    "matcher": "Write|Edit|NotebookEdit",
+    "script": "hooks/gates/main-write-budget.sh",
+    "description": "Gate: ask when the MAIN session's own cumulative inline Write/Edit/NotebookEdit count for this session crosses a budget — a soft nudge toward delegation, never a block. Opt-in and off by default: no-op everywhere unless MH_MAIN_WRITE_BUDGET is set to a positive integer (no built-in default; an invalid value turns the gate off rather than assuming one). Subagent writes are never counted or gated (agent_id present -> allow). Count is read from hooks/stop/nudge-compliance-tracker.sh's main_writes field in nudge-compliance.jsonl, which updates once per Stop — so the count is 'as of the last completed turn' and a budget crossing is detected one turn late at worst, never early. Cumulative and monotonic: once crossed it asks on every main write for the rest of the session; silence with Claude Code's own always-allow. Threshold is PROVISIONAL, not derived. Placed LAST among Write|Edit-matched gates deliberately: dispatch-pretooluse.py resolves an ask-tier reason tie in favor of the EARLIER table entry, so every higher-stakes gate above (verifier-protect, config-guard, test-integrity, worktree-guard) always wins the reason text over this one. No-ops entirely, unconditionally, when MH_GUARDED_WORKSPACE is also set — an ask from this gate would otherwise permanently suppress worktree-guard's updatedInput redirect for the rest of a latched session. NOT an absolute 'main never executes' rule — the 9-clause inline-wins checklist in skills/workflow/orchestrate/reference.md still governs."
+  },
+  {
     "id": "gate:bash:worktree-guard",
     "matcher": "Bash",
     "script": "hooks/gates/worktree-guard-dispatch.sh",

@@ -478,6 +478,8 @@ Supplementary detail for `SKILL.md`'s Guardrails are brakes; GH #120 added the a
 
 **Disclosure requirement (prose-only — no script enforces this).** Any inline execution by the top-level session must name which of the 9 clauses applied, at the time it happens — not as a retroactive justification if later questioned. If none of the 9 applies, say so explicitly rather than defaulting to inline silently: an unnamed inline act is the same undisciplined-delegation failure GH #40339 describes, just running in the opposite direction — hoarding instead of over-dispatching. Naming the clause (or naming that none applied) is the whole mechanism here; nothing computational blocks an inline act that skips it.
 
+**A separate, narrower computational backstop now exists — on write volume alone, not clause compliance.** `hooks/gates/main-write-budget.sh` is an opt-in, off-by-default `ask`-gate that fires when main's own cumulative inline Write/Edit/NotebookEdit count for the session crosses an operator-set budget (`MH_MAIN_WRITE_BUDGET`). It doesn't change the sentence above: this gate counts writes, it does not and cannot check whether any individual edit actually satisfied one of the 9 clauses, so "nothing computational blocks an inline act that skips [disclosure]" stays literally true. Naming the clause is still the real mechanism; the gate only catches the volume looking off, regardless of whether each edit along the way was justified. The threshold is provisional, not derived from enough data — see the gate's own header comment for the current sample.
+
 ## Parallel fan-out — validity test + anti-patterns
 
 Parallel delegation is only a win when the fan-out is *real*. Before spawning N agents, all must hold:
