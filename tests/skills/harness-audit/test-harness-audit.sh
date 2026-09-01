@@ -19,6 +19,18 @@
 # (Check numbers above renumbered 2026-08-25, ticket 87, from the pre-cleanup
 # 39/40/49/55 — the old numbers this test used before the 8 stubbed checks
 # were deleted and the survivors renumbered 1..56.)
+#
+# 2026-09-01 addition — checks 05, 20, 28, 34, 47, 53 (all edited or created
+# the same session) had zero fixture coverage; a silent regression in any of
+# them would be indistinguishable from "clean" on the live fleet. Fixtures
+# added below, same known-bad/known-good pairing convention:
+#   05 — skill trigger-pattern clause (WARN) + the desc_len==20 boundary
+#   20 — description length >1536 chars (WARN) + 20.5 duplicate-surface twin
+#   28 — malformed YAML frontmatter on a bucketed 2-level path (CRIT)
+#   34 — matt-doctrine leading-word rule (INFO-only)
+#   47 — disambiguation clause, promoted INFO->WARN this session, plus the
+#        harness-audit self-reference carve-out inherited from check 05
+#   53 — cross-file content drift (WARN) via a Jaccard-similarity pair
 set -uo pipefail
 
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
@@ -469,6 +481,133 @@ if [ "$WARN_FOUND" -eq 1 ]; then
   ok "check-04 bad-bucket-whitespace-only fixture fires exactly 1 WARN (missing, not unrecognized)"
 else
   bad "check-04 bad-bucket-whitespace-only fixture fired warn=$WARN_FOUND (want exactly 1 — either silent, or both missing+unrecognized fired)"
+fi
+
+# Check 05 — trigger-pattern clause. WARN when a routing-length description
+# (>20 chars) has no "Use when…" style clause; silent when it does; silent
+# at the desc_len==20 boundary (too short to carry routing text at all, so
+# the routing sub-check must not even run).
+run_check 05 "$FIX/check-05-bad-no-trigger"
+if [ "$WARN_FOUND" -ge 1 ] && [ "$CRIT_FOUND" -eq 0 ]; then
+  ok "check-05 bad-no-trigger fixture fires WARN (warn=$WARN_FOUND)"
+else
+  bad "check-05 bad-no-trigger fixture did NOT fire WARN as expected (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 05 "$FIX/check-05-good-with-trigger"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-05 good-with-trigger fixture silent"
+else
+  bad "check-05 good-with-trigger fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 05 "$FIX/check-05-good-boundary-desc-len-20"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-05 good-boundary-desc-len-20 fixture silent (desc_len==20 skips the routing sub-check)"
+else
+  bad "check-05 good-boundary-desc-len-20 fixture not silent — desc_len boundary regressed (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
+# Check 20 — description length (>1536 chars WARN) and the 20.5 duplicate-
+# surface detector (two surfaces sharing the same `name:` with near-identical
+# descriptions WARN; sharing a name with genuinely different descriptions —
+# a legitimate skill+agent twin — stays silent).
+run_check 20 "$FIX/check-20-bad-long-desc"
+if [ "$WARN_FOUND" -ge 1 ] && [ "$CRIT_FOUND" -eq 0 ]; then
+  ok "check-20 bad-long-desc fixture fires WARN (warn=$WARN_FOUND)"
+else
+  bad "check-20 bad-long-desc fixture did NOT fire WARN as expected (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 20 "$FIX/check-20-good-short-desc"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-20 good-short-desc fixture silent"
+else
+  bad "check-20 good-short-desc fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 20 "$FIX/check-20-bad-duplicate-surface"
+if [ "$WARN_FOUND" -ge 1 ] && [ "$CRIT_FOUND" -eq 0 ]; then
+  ok "check-20 bad-duplicate-surface fixture fires WARN (warn=$WARN_FOUND)"
+else
+  bad "check-20 bad-duplicate-surface fixture did NOT fire WARN as expected (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 20 "$FIX/check-20-good-duplicate-distinct"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-20 good-duplicate-distinct fixture silent (same name, distinct descriptions — legitimate twin)"
+else
+  bad "check-20 good-duplicate-distinct fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
+# Check 28 — frontmatter YAML strict-parse validity on the BUCKETED
+# (skills/<bucket>/<name>/SKILL.md, 2-level) path. CRIT on genuinely broken
+# YAML; silent on well-formed frontmatter. (The separate 3-level-nesting
+# blind spot this same deep-audit found is fixed directly in the check
+# script elsewhere this session — out of scope here.)
+run_check 28 "$FIX/check-28-bad-malformed-yaml"
+if [ "$CRIT_FOUND" -ge 1 ]; then
+  ok "check-28 bad-malformed-yaml fixture fires CRIT (crit=$CRIT_FOUND)"
+else
+  bad "check-28 bad-malformed-yaml fixture did NOT fire CRIT (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 28 "$FIX/check-28-good-valid-yaml"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-28 good-valid-yaml fixture silent"
+else
+  bad "check-28 good-valid-yaml fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
+# Check 34 — matt doctrine conformance, leading-word rule (INFO-only,
+# never WARN/CRIT). A description opening with a non-vocabulary word must
+# INFO; opening with an allowlisted term (matt or kbg-native) stays silent.
+run_check 34 "$FIX/check-34-bad-leadword"
+if [ "$INFO_FOUND" -ge 1 ] && [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-34 bad-leadword fixture fires INFO (info=$INFO_FOUND)"
+else
+  bad "check-34 bad-leadword fixture did NOT fire INFO as expected (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
+fi
+run_check 34 "$FIX/check-34-good-leadword"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ] && [ "$INFO_FOUND" -eq 0 ]; then
+  ok "check-34 good-leadword fixture silent"
+else
+  bad "check-34 good-leadword fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
+fi
+
+# Check 47 — skill disambiguation clause. Promoted INFO->WARN 2026-09-01
+# (absorbed check 05's negation-clause half); a missing "don't use for X"
+# clause must now WARN, not INFO. Also confirms the harness-audit
+# self-reference carve-out (carried forward from check 05) stays silent even
+# with no disambiguation clause.
+run_check 47 "$FIX/check-47-bad-no-disambig"
+if [ "$WARN_FOUND" -ge 1 ] && [ "$CRIT_FOUND" -eq 0 ]; then
+  ok "check-47 bad-no-disambig fixture fires WARN, confirming the INFO->WARN promotion (warn=$WARN_FOUND)"
+else
+  bad "check-47 bad-no-disambig fixture did NOT fire WARN as expected — INFO->WARN promotion may have regressed (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 47 "$FIX/check-47-good-with-disambig"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-47 good-with-disambig fixture silent"
+else
+  bad "check-47 good-with-disambig fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 47 "$FIX/check-47-good-harness-audit-carveout"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-47 good-harness-audit-carveout fixture silent (self-reference carve-out holds with no disambiguation clause)"
+else
+  bad "check-47 good-harness-audit-carveout fixture not silent — self-reference carve-out regressed (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+
+# Check 53 — cross-file content drift. A near-duplicate paragraph pair
+# (J=0.71, inside the 0.60-0.95 drift band, not in accepted-duplication.tsv)
+# must WARN; a similar-length, similar-opening but genuinely different-topic
+# pair (J=0.10, below the 0.60 floor) must stay silent.
+run_check 53 "$FIX/check-53-bad-drift"
+if [ "$WARN_FOUND" -ge 1 ] && [ "$CRIT_FOUND" -eq 0 ]; then
+  ok "check-53 bad-drift fixture fires WARN (warn=$WARN_FOUND)"
+else
+  bad "check-53 bad-drift fixture did NOT fire WARN as expected (crit=$CRIT_FOUND warn=$WARN_FOUND)"
+fi
+run_check 53 "$FIX/check-53-good-nodrift"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-53 good-nodrift fixture silent (below the Jaccard drift floor)"
+else
+  bad "check-53 good-nodrift fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
 fi
 
 echo ""

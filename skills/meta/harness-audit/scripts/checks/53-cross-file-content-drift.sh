@@ -91,6 +91,12 @@ def fleet_files():
         ("skills", "*", "*", "SKILL.md"),
         ("skills", "*", "*", "reference.md"),
         ("skills", "*", "*", "references", "*.md"),
+        # One level deeper than the bucket convention actually uses -- same
+        # accidental-nesting blind spot as check 28, same fix (deep-audit
+        # finding, 2026-09-01).
+        ("skills", "*", "*", "*", "SKILL.md"),
+        ("skills", "*", "*", "*", "reference.md"),
+        ("skills", "*", "*", "*", "references", "*.md"),
     ]
     out = set()
     for p in pats:

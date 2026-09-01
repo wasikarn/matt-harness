@@ -363,7 +363,13 @@ fi
 # commit-frequency repo; risk to a safety-closed guard > seconds saved).
 # >/dev/null suppresses stdout; the write to _FM_CACHE persists because this
 # runs in the main shell, not a $(...) subshell.
-for _fmf in "$CLAUDE_DIR"/skills/[!_]*/SKILL.md "$CLAUDE_DIR"/agents/*.md; do
+# skills/[!_]*/[!_]*/SKILL.md (bucketed depth) added 2026-09-01 (deep-audit
+# finding) -- the flat-only glob below matched 0 files after the 2026-08-25
+# bucket migration moved every skill to skills/<bucket>/<name>/SKILL.md, so
+# this pre-cache had been silently warming nothing for the whole fleet (no
+# correctness bug -- fm_get falls back to awk on a cache miss -- but the
+# documented ~0.4s perf win was gone).
+for _fmf in "$CLAUDE_DIR"/skills/[!_]*/SKILL.md "$CLAUDE_DIR"/skills/[!_]*/[!_]*/SKILL.md "$CLAUDE_DIR"/agents/*.md; do
   [ -f "$_fmf" ] || continue
   fm_get "$_fmf" name --block >/dev/null
   fm_get "$_fmf" description --block >/dev/null

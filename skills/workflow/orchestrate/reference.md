@@ -450,7 +450,7 @@ The guardrail bounds **cost**; the Step 4 confirm gate bounds **authorization**.
 
 **Delegate (cost axis) only when** — specialized (matches an agent), parallelizable (independent of in-flight work), or context-heavy (reads many files — keeps main context clean). Over-delegation is as wrong as soloing (Rule 2): each dispatch costs latency + context transfer.
 
-**Keep inline when** — trivial/fast, tightly coupled, or needs back-and-forth with the user.
+**Keep inline when** — trivial/fast, tightly coupled, or needs back-and-forth with the user. See the Inline-wins checklist — 9 conditions where top-level execution is correct section, below, for the full breakdown.
 
 **Action class (authorization axis)** — mutation-capable dispatch (any agent holding `Edit`, `Write`, or `Bash`) is privileged: it needs the Step 4 go-ahead, a higher bar than the no-tool read-only agents.
 

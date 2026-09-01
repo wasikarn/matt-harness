@@ -50,7 +50,11 @@
 # turns are structurally absent from the main transcript file entirely (cost-tracker.sh's
 # own confirmed finding on a real 15-subagent session), so counting main-transcript
 # tool_use already excludes subagent work by construction; the filter is belt-and-suspenders,
-# not the thing doing the real work. Rolling compliance rate for a session:
+# not the thing doing the real work. Both counts are ATTEMPTED tool_use entries, not
+# confirmed-successful ones -- a denied or immediately-erroring Agent dispatch counts the
+# same as a clean one toward main_dispatches, same "attempted, not confirmed successful"
+# property main_writes and nudges_fired already have elsewhere in this hook. Rolling
+# compliance rate for a session:
 #   jq -s '[.[] | select(.session_id=="<sid>")] | max_by(.nudges_fired) | .nudges_complied / (.nudges_fired // 1)' nudge-compliance.jsonl
 # Across all sessions (last row per session_id, since rows accumulate per-Stop):
 #   jq -s 'group_by(.session_id) | map(max_by(.nudges_fired)) | (map(.nudges_complied) | add) / (map(.nudges_fired) | add)' nudge-compliance.jsonl

@@ -81,7 +81,7 @@ elsewhere (Claude Code issue #40339). Still advisory, not a gate: the hook is en
 whether the model acts on it stays prose-only, same as the plan-mode nudge it lives beside.
 
 **The other direction has its own checklist.** Not delegating is correct under 9 specific
-conditions, not a lapse — `reference.md`'s Inline-wins checklist — 9 conditions where top-level execution is correct section.
+conditions, not a lapse — `reference.md`'s Inline-wins checklist — 9 conditions where top-level execution is correct (prose-only) section.
 
 ## Agent tool vs Workflow tool
 

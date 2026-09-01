@@ -115,7 +115,7 @@ grows.
 
 ## 7. Grow on proven need, not speculatively
 
-19 agents got here via individually-justified commits (91, as of the last count — 2026-07-20), each solving a real, named gap —
+At the 2026-07-20 count, 19 agents had gotten here via individually-justified commits (91 by that point), each solving a real, named gap —
 not a bulk import or a "let's have one for every domain" sweep. Before adding a new agent, be
 able to name the concrete task it handles that no existing agent covers. Check the fleet
 routing table first; if an existing agent's domain is close, extend it before adding a

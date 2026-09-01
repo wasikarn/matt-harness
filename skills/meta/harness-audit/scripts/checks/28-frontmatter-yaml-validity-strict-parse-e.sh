@@ -28,7 +28,13 @@ def frontmatter(path):
     return t[3:end] if end != -1 else None
 files = (sorted(glob.glob(os.path.join(root, 'agents', '*.md')))
          + sorted(glob.glob(os.path.join(root, 'skills', '*', 'SKILL.md')))
-         + sorted(glob.glob(os.path.join(root, 'skills', '*', '*', 'SKILL.md'))))
+         + sorted(glob.glob(os.path.join(root, 'skills', '*', '*', 'SKILL.md')))
+         # One level deeper than the bucket convention (skills/<bucket>/<name>/SKILL.md)
+         # actually uses -- an accidental extra nesting (bad merge, copy-paste) would
+         # otherwise be silently invisible to this check, including a load-breaking
+         # YAML error, which is exactly the defect class this check exists to catch
+         # (deep-audit finding, 2026-09-01).
+         + sorted(glob.glob(os.path.join(root, 'skills', '*', '*', '*', 'SKILL.md'))))
 for f in files:
     # skip _-prefixed scaffolds (e.g. skills/_template) — not real fleet
     if os.path.basename(f).startswith('_') or os.path.basename(os.path.dirname(f)).startswith('_'):

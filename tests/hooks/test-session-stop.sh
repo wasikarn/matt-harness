@@ -626,11 +626,13 @@ make_enterplanmode_line() {
 make_advisor_line() {
   python3 -c 'import json; print(json.dumps({"type": "assistant", "message": {"content": [], "usage": {"iterations": [{"type": "advisor_message"}]}}}))'
 }
-# make_agent_line -- a real Agent-tool dispatch, as it appears on an assistant-type
-# transcript line. Added 2026-09-01 (Part B, mattpocock-compat + delegation-discipline
-# redesign): a turn that delegated via Agent used to score non-compliant.
+# make_agent_line [isSidechain] -- a real Agent-tool dispatch, as it appears on an
+# assistant-type transcript line. Added 2026-09-01 (Part B, mattpocock-compat +
+# delegation-discipline redesign): a turn that delegated via Agent used to score
+# non-compliant. Optional isSidechain arg (default false) so main_dispatches scoping
+# can be fixture-tested the same way make_write_line's isSidechain arg tests main_writes.
 make_agent_line() {
-  python3 -c 'import json; print(json.dumps({"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Agent", "input": {}}]}}))'
+  python3 -c 'import json,sys; print(json.dumps({"type": "assistant", "isSidechain": sys.argv[1] == "true", "message": {"content": [{"type": "tool_use", "name": "Agent", "input": {}}]}}))' "${1:-false}"
 }
 make_noise_line() {
   python3 -c 'import json; print(json.dumps({"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Read", "input": {}}]}}))'
@@ -736,6 +738,22 @@ metrics_file="$fake_home/.local/share/kbg/metrics/nudge-compliance.jsonl"
 row=$(tail -1 "$metrics_file" 2>/dev/null)
 [[ "$rc" == "0" ]] && printf '%s' "$row" | /usr/bin/grep -q '"main_dispatches":2' && ok=1 || ok=0
 assert "main_dispatches counts main-thread Agent tool_use entries (2)" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
+# Inverse case: zero main-thread writes/dispatches but several sidechain
+# (isSidechain:true) ones present -- the more realistic shape for an orchestrator-heavy
+# session. Guards that sidechain activity never leaks into either count.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+{ make_write_line true; make_write_line true; make_write_line true; make_write_line true; make_agent_line true; make_agent_line true; } > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-all-sidechain"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$NUDGE_COMPLIANCE_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/nudge-compliance.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" ]] && printf '%s' "$row" | /usr/bin/grep -q '"main_writes":0' \
+  && printf '%s' "$row" | /usr/bin/grep -q '"main_dispatches":0' && ok=1 || ok=0
+assert "all-sidechain transcript (4 Edit + 2 Agent, isSidechain:true) -> main_writes:0, main_dispatches:0" "$ok"
 trash "$fake_home" "$transcript" 2>/dev/null || true
 
 fake_home=$(mktemp -d)

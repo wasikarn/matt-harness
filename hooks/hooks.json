@@ -135,6 +135,18 @@
             "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "advisory:plan-review-nudge", "standard", "${CLAUDE_PLUGIN_ROOT}/hooks/advisory/plan-review-nudge.sh"]
           }
         ]
+      },
+      {
+        "id": "advisory:gate-syntax-nudge",
+        "matcher": "Edit|Write",
+        "description": "Advisory: immediately after an Edit/Write to a hooks/gates/*.sh or hooks/advisory/*.sh file, run bash -n on it and warn if it's now syntactically broken -- a broken one there can lock out the whole session's tool calls (2026-09-01 incident). Never blocks.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "advisory:gate-syntax-nudge", "standard", "${CLAUDE_PLUGIN_ROOT}/hooks/advisory/gate-syntax-nudge.sh"]
+          }
+        ]
       }
     ],
     "PostToolUseFailure": [
