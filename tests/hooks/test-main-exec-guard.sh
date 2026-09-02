@@ -120,6 +120,8 @@ check "env=1 main Write whose CONTENT contains \"agent_id\" -> still DENY (jq pa
 run 1 "$(write_payload Write "$FIXDIR/.claude/plans/my-plan.md")"
 ok=1; allowed && ok=0
 check "env=1 main Write under ~/.claude/plans/ -> allow" "$ok"
+# shellcheck disable=SC2088 # intentional: proving the GATE's own os.path.expanduser()
+# resolves a literal, unexpanded ~ (unlike line 120's already-shell-expanded $FIXDIR case).
 run 1 "$(write_payload Write "~/.claude/plans/tilde.md")"
 ok=1; allowed && ok=0
 check "env=1 main Write under ~/.claude/plans/ via literal ~ -> allow (expanduser)" "$ok"
