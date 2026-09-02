@@ -37,12 +37,12 @@ loss, security, or accessibility — laziness stops there.
 
 ## Route to a specialist agent when the work fits one
 - A feature that needs a design pass first → `code-architect` for the blueprint, then `/mattpocock-skills:implement` to write it
-- Build/compile failure → `mattpocock-skills:diagnosing-bugs`, or fix inline
-- Dead code, unused exports, duplication → `/mattpocock-skills:improve-codebase-architecture` findings + inline deletion
+- Build/compile failure → `mattpocock-skills:diagnosing-bugs`, or dispatch a fixer agent
+- Dead code, unused exports, duplication → `/mattpocock-skills:improve-codebase-architecture` findings + a fixer agent for the deletions
 - Bottleneck, bundle size, render/memory issue → `performance-optimizer`
 
 ## Tools to favor
-- Edit, Write for code changes
+- Agent (a dispatched fixer) for code changes — Edit, Write are the fixer's tools, not main's
 - Bash for running tests/builds
 - Grep, Glob for finding code
 

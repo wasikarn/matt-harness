@@ -13,7 +13,7 @@ recursive-improve — iteration <N> report
   executed:        <N>   dropped: <N — and why>
   per candidate:
     - <name> · file:line | session | audit-id
-        executor:  inline | <agent>
+        executor:  <agent>
         done_when: <observable check>
         status:    done | not-done (<reason>)
         delta:     <metric moved? gaps N→M / audit X→Y / n/a>

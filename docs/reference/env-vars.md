@@ -22,6 +22,7 @@ That makes *user-global* settings reach **every repo you open** — so the home 
 |---|---|---|
 | **Tuning** (`MH_IDEATE_*`) | User-global `env` is fine — but only override one you *actually* change often (defaults are sensible; pre-populating a default just creates drift). | No safety impact; convenience only. (On some setups `~/.claude/settings.json` is a symlink into a dotfiles repo — `readlink -f` it before editing; if so, that edit commits to *that* repo, not this one.) |
 | **Safety-gate config** (`MH_GUARDED_WORKSPACE`) | User-global `env` is the *only* placement that reliably reaches every session — a multi-repo client workspace typically has no per-sub-repo `.claude/settings.json` of its own, so a project-scoped setting at the workspace root is never read when a session opens directly in a sub-repo. | Unset = the gate is a total no-op (the shipped default for every user of this public plugin). This is deliberately NOT documented as a value in this repo — it names a real path outside the plugin's own source. |
+| **Main-exec guard** (`MH_MAIN_EXEC_GUARD`) | Set via the interactive `csp`/`cspr` shell alias (dotfiles), NOT settings.json's `env` block — settings.json would also gate background/Superset worker sessions, which don't set the var themselves and would otherwise be denied as if they were main. | Unset = the gate is a total no-op (the shipped default). `log` evaluates but never denies; `1` enforces. Detail in the Main-exec guard section below. |
 
 ## Autonomy flags — RETIRED 2026-06-26 (ADR 0006)
 
@@ -46,28 +47,35 @@ repo's source — and is a **total no-op for every user of this public plugin** 
 | `MH_WORKTREE_BASE` | unset (current HEAD) | Branch to fetch and base a new worktree on, e.g. `=main` for a hotfix session. |
 | `MH_ALLOW_MAIN_EDIT` | unset | One-off escape hatch: `=1` skips the guard for the current call. Not a standing config value — don't pre-populate it in `env`. |
 
-## Main-write-budget gate (opt-in, off by default)
+## Main-exec guard (opt-in, off by default)
 
-Read by `hooks/gates/main-write-budget.sh` — an `ask`-only nudge (never blocks, never denies)
-that fires when main's own cumulative inline Write/Edit/NotebookEdit count for the current
-session crosses an operator-set budget. Ships generic and is a **total no-op for every user of
-this public plugin** unless `MH_MAIN_WRITE_BUDGET` is explicitly set.
+Read by `hooks/gates/main-exec-guard.sh` — the computational half of the "main plans, dispatches,
+verifies, decides; it never edits files or runs mutating commands itself" rule (ADR 0012). Ships
+generic and is a **total no-op for every user of this public plugin** unless `MH_MAIN_EXEC_GUARD`
+is explicitly set. Subagent calls (`agent_id` present) are never touched — the gate only ever
+looks at the top-level session.
 
-| Var | Default | Effect |
+| Var | Value | Effect |
 |---|---|---|
-| `MH_MAIN_WRITE_BUDGET` | **none — gate is off when unset** | Positive-integer write-count threshold. An invalid value (non-positive-integer) also turns the gate off — it never silently falls back to a built-in number. The gate's own check says it plainly: `"MH_MAIN_WRITE_BUDGET='$budget' is not a positive integer -- main-write-budget gate off (no default is assumed)"`. |
-| `MH_NUDGE_METRICS_FILE` | `~/.local/share/kbg/metrics/nudge-compliance.jsonl` | Test-only override for the metrics file the gate reads cumulative `main_writes` counts from. Unset in production — same convention as `hooks/advisory/flow-nudge.sh`'s `MH_COST_METRICS_FILE`. |
+| `MH_MAIN_EXEC_GUARD` | unset / any other value | **Off** — total no-op, the public-plugin default. |
+| | `log` | **Calibration** — evaluates every call but never denies; appends what it *would* have denied to `~/.local/share/kbg/metrics/main-exec-guard.jsonl`. Run this first to see what a real session trips before turning enforcement on. |
+| | `1` | **Enforcing** — denies the top-level session's `Write`/`Edit`/`NotebookEdit` and a defined set of mutating Bash commands. Carve-outs: plan files, the memory store, and the session scratchpad stay writable from main. |
 
-**Incompatible with `MH_GUARDED_WORKSPACE` — by design, not an accepted degradation.** Setting
-both `MH_GUARDED_WORKSPACE` and `MH_MAIN_WRITE_BUDGET` together disables this gate entirely: its
-very first check is an unconditional bail when `MH_GUARDED_WORKSPACE` is set, before it reads
-stdin or looks at the budget at all. Reason: `dispatch-pretooluse.py` discards `updatedInput` from
-every matched gate the instant any gate's merged decision reaches `ask` — so if this gate latched
-while `worktree-guard.py` was also active, worktree-guard's auto-redirect into a session worktree
-would be silently dropped for the rest of the session. The redirect matters more than the nudge:
-this gate steps aside completely rather than degrade worktree-guard's behavior. An operator running
-both vars at once gets worktree-guard's redirect only — the write-budget nudge never fires, no
-matter how high the write count climbs.
+**Where it's set:** the interactive `csp`/`cspr` shell alias in dotfiles, not settings.json's `env`
+block — see the placement table above for why (a settings-level var would also gate
+background/Superset worker sessions, which are their own top-level sessions and would be denied as
+if they were main).
+
+Count denies per day from the shared gate journal (rows carry `ts`, `id`, `tool_name`, `decision` —
+no session id, so the day is the finest grouping the file supports):
+
+```bash
+jq -r 'select(.decision == "deny" and (.id == "gate:write:main-exec-guard" or .id == "gate:bash:main-exec-guard")) | .ts[:10]' ~/.local/share/kbg/metrics/gate-decisions.jsonl | sort | uniq -c
+```
+
+Supersedes the former `main-write-budget.sh` ask-tier nudge (`MH_MAIN_WRITE_BUDGET`) — a
+count-based reminder that main was doing too much itself; this gate denies the act instead of
+counting it.
 
 ## Gate valves (per-run escapes, not standing config)
 

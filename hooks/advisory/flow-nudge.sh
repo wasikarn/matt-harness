@@ -181,6 +181,7 @@ emit_delegation_nudge() {
 [mh:flow-nudge] Broad/multi-file scope detected (>~3 files — METHODOLOGY Rule 13) — $ratio_line.
   Bounded, independently-verifiable slices? → delegate via the Agent tool, spawn prompt built
   from the F9 template (skills/workflow/orchestrate/reference.md, "Spawn-prompt template (F9)").
+  main-exec-guard denies top-level writes — dispatch, don't edit.
 Rate without scoping quality makes things worse, not better (Claude Code issue #40339) — use
 the template, don't just delegate more. The nudge is advisory; the model judges.
 EOF

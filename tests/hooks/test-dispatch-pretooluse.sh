@@ -335,6 +335,23 @@ if [ -f "$JOURNAL" ] && /usr/bin/grep -q '"decision": "error"' "$JOURNAL" && /us
 fi
 check "a non-blocking-error verdict is journaled to gate-decisions.jsonl" "$ok"
 
+# session_id threading (2026-09-02): the payload's own session_id lands on the
+# journal row, so verdicts can be grouped per session (jq group_by(.session_id)).
+# A payload without one writes null, never a crash -- the deny-journal case
+# above already runs without a session_id and is what pins the null.
+: > "$JOURNAL"  # reset from the non-blocking-error run above
+out=$(python3 -c 'import json; print(json.dumps({"tool_name": "Bash", "tool_input": {"command": "irrelevant"}, "session_id": "sess-journal-9f3a"}))' \
+  | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" python3 "$DISPATCH_PY" "$TMP/table-deny-vs-ask.json" "$FIXTURE_DIR/.." 2>/dev/null)
+ok=1
+/usr/bin/grep -q '"session_id": "sess-journal-9f3a"' "$JOURNAL" && ok=0
+check "a journal row carries the payload's session_id" "$ok"
+
+: > "$JOURNAL"  # reset from the session_id run above
+out=$(run_synthetic "$TMP/table-deny-vs-ask.json" 2>/dev/null)
+ok=1
+/usr/bin/grep -q '"session_id": null' "$JOURNAL" && ok=0
+check "a payload with no session_id journals session_id: null (no crash, key still present)" "$ok"
+
 echo "=== gate-verdict journal fail-safe (the Critical finding the review caught) ==="
 # An unwritable journal path must NEVER change the dispatch's own merged
 # verdict -- the fail-open risk: an unguarded journal write throwing inside

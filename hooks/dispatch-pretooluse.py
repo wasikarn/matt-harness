@@ -65,7 +65,7 @@ from datetime import datetime, timezone
 RANK = {"allow": 0, "ask": 1, "defer": 2, "deny": 3}
 
 
-def _journal(gate_id, tool_name, decision):
+def _journal(gate_id, tool_name, decision, session_id=None):
     # Gate-verdict journal: append a JSONL row for a non-"allow" verdict only
     # (matches the actual need -- "how often did gate X block/ask" -- and
     # avoids logging on every allow, which at up to 4 matched gates per Bash
@@ -81,6 +81,10 @@ def _journal(gate_id, tool_name, decision):
     # otherwise guarantees. Mirrors instructions-loaded-journal.sh's
     # swallow-everything shape (mkdir -p + >> ... 2>/dev/null + unconditional
     # exit 0), translated to Python.
+    # session_id (added 2026-09-02): the PreToolUse payload's own session_id,
+    # null when the payload lacks one, so verdicts can be grouped per session
+    # (jq group_by(.session_id)) -- the feedback loop for the main-plans-
+    # dispatches-never-executes doctrine, a number rather than a feeling.
     try:
         log_dir = os.path.join(os.environ.get("HOME", ""), ".local", "share", "kbg", "metrics")
         os.makedirs(log_dir, exist_ok=True)
@@ -89,6 +93,7 @@ def _journal(gate_id, tool_name, decision):
             "id": gate_id,
             "tool_name": tool_name,
             "decision": decision,
+            "session_id": session_id,
         }
         with open(os.path.join(log_dir, "gate-decisions.jsonl"), "a") as f:
             f.write(json.dumps(row) + "\n")
@@ -103,8 +108,10 @@ def main():
     try:
         d = json.loads(payload)
         tool_name = d.get("tool_name", "") if isinstance(d, dict) else ""
+        session_id = d.get("session_id") if isinstance(d, dict) else None
     except Exception:
         tool_name = ""
+        session_id = None
 
     # Catastrophic failure: the table itself can't even be read/parsed. This
     # dispatcher is now the SOLE PreToolUse gate — if we can't tell what's
@@ -196,7 +203,7 @@ def main():
             msg = err.strip()
             if msg:
                 deny_messages.append(msg)
-            _journal(entry.get("id", "?"), tool_name, "deny")
+            _journal(entry.get("id", "?"), tool_name, "deny", session_id)
             continue
 
         if rc != 0:
@@ -206,7 +213,7 @@ def main():
                 f"[mh:dispatch] {entry['id']} exited {rc} — non-blocking error, proceeding: {msg.splitlines()[0]}",
                 file=sys.stderr,
             )
-            _journal(entry.get("id", "?"), tool_name, "error")
+            _journal(entry.get("id", "?"), tool_name, "error", session_id)
             continue
 
         out = out.strip()
@@ -226,7 +233,7 @@ def main():
 
         decision = hso.get("permissionDecision")
         if decision in RANK and decision != "allow":
-            _journal(entry.get("id", "?"), tool_name, decision)
+            _journal(entry.get("id", "?"), tool_name, decision, session_id)
         if decision in RANK and RANK[decision] > worst_rank:
             worst_rank = RANK[decision]
             worst_reason = hso.get("permissionDecisionReason")

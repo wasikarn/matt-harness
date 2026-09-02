@@ -75,13 +75,18 @@ prompt has no built-in timeout and the invocation hangs indefinitely, a stuck jo
 stop. This is why any headless invocation (scheduled or otherwise) must pass the flag explicitly
 for the stop-at-analysis-only guarantee to hold.
 
+## Origin — Phase 4 of harness-recursive-improvement
+
+Phases 1–3 gave the harness eyes (nudge telemetry, the verification journal); this skill is the
+hand. It's a hand the human always holds — see the operating invariant in SKILL.md.
+
 ## Integration Notes — full detail
 
 - **METHODOLOGY:**
   - Rule 4 (this skill *is* the loop-until-verified instrument for the harness)
   - surface conflicts, don't average (drift guard picks the measured audit delta over the optimistic claim)
   - fail loud (surface flat/negative deltas and regressions, never bury them)
-  - Rule 13 (decompose, route, verify, combine — inline)
+  - Rule 13 (decompose, route, verify, combine — applied in-skill, not via `mh:orchestrate`)
 - **Composes:**
   - `orchestrate` (the decompose/route/verify pattern, inlined)
   - `harness-audit` (both the candidate-detail signal and the deterministic verification metric — its exit count is the loop's branchable score)

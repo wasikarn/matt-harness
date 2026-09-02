@@ -65,6 +65,7 @@ hotfixes (`mh:incident`).
 2. Rebase onto base branch: `git rebase origin/<base-branch>`
    - Gate: rebase produces conflicts → STOP. Tell user to resolve manually and retry.
 3. Force-push rebased branch: `git push --force-with-lease`
+   - **Who runs steps 1–3:** one dispatched foreground `general-purpose` agent, not main. F9-style brief: PR number + branch + `<base-branch>`; run exactly `git fetch origin`, `git rebase origin/<base-branch>`, `git push --force-with-lease` — nothing else — and report the verbatim output, including whether the rebase replayed commits or was a no-op (step 4 reads that). `irrecoverable.sh` still gates that agent's Bash calls; this moves who issues the command, not what checks it.
 4. Decide the merge flags from Phase 1 step 2's protection read — no new API call:
    - **No protection** (step 2 read a 404) → plain merge, no `--admin`.
    - **Protection exists** → cross-check this phase's step 2 rebase result with Phase 1 step 3's CI signal. Rebase replayed commits (not a no-op) **and** CI not N/A → step 3's force-push produced a fresh SHA with no completed checks yet (possibly dismissed reviews too) → `--admin` is needed to land now rather than wait for CI to re-run; a real bypass — say so plainly in step 5, not folded into a generic line. Rebase was a no-op, **or** CI was verified-N/A → the fresh-CI concern doesn't apply, but step 6 still uses `--admin` regardless (protection active always does — no partial-bypass command exists); only the *why* differs: some other protection rule (e.g. required reviews), not an unvalidated CI check.
@@ -80,21 +81,24 @@ hotfixes (`mh:incident`).
    gh pr merge <n> --squash --delete-branch              # no protection (step 4: 404)
    gh pr merge <n> --admin --squash --delete-branch       # protection active — bypass confirmed in step 5
    ```
+   - **Who runs it:** one dispatched foreground `general-purpose` agent, not main. Brief: PR number + step 4's flag decision; run exactly that one `gh pr merge` line, nothing else, and report the verbatim output. `merge-door.sh` and `irrecoverable.sh` still apply their own checks to that agent's Bash call — this moves who issues the command, not what gates it.
    - `--admin` bypasses branch protection — include it only when step 4 found protection active and step 5 confirmed the bypass, never as a default.
    - `--squash` collapses the PR into a single commit **on GitHub**; `--delete-branch` removes the remote branch **on GitHub**.
    - Gate: merge attempted without `--admin` and GitHub refuses because a required check is still pending on the post-rebase SHA → STOP, tell the user CI needs to finish or the merge needs the bypass. Don't silently retry with `--admin` unprompted.
+   - Fold step 7 (below) into this same dispatched agent's brief — after the merge report comes back, the same agent runs step 7's `git checkout <base-branch> && git pull` as the final action and reports that output too, rather than main running it or a second agent being dispatched.
 
 **Sync seam:** this merge command is duplicated in `skills/workflow/incident/references/hotfix-reference.md` Phase 4 for the P0/P1 emergency path (hotfix strips Phase 1's validation for speed, so it's a deliberately separate call, not a shared subroutine) — see `references/sync-seams.md` before changing the merge flags or confirm-prompt shape here.
 
-7. Pull the result locally: `git checkout <base-branch> && git pull`
-8. Verify merge landed: `git log --oneline -3` on target branch.
+7. Pull the result locally: `git checkout <base-branch> && git pull` — same dispatched agent as step 6, run as that agent's final action (not main; `git checkout`/`git pull` aren't on main's read-only allowlist either — see step 6's note).
+8. Verify merge landed: `git log --oneline -3` on target branch (`git log` is read-only — main can run this one itself).
 
 ---
 
 ## Phase 3: Clean Up
 
 1. Prune local refs: `git fetch --prune`.
-2. If the branch was checked out locally, switch to the target branch and pull.
+   - **Who runs it:** one dispatched foreground `general-purpose` agent, not main (`git fetch` isn't on the read-only allowlist). Brief: run exactly `git fetch --prune` and report the verbatim output.
+2. If the branch was checked out locally, the same dispatched agent as step 1 switches to the target branch and pulls.
 
 ---
 

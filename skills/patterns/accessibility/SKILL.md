@@ -89,8 +89,8 @@ in practice if `aria-live` timing or focus order doesn't match what the markup i
 - This skill IS the fleet's accessibility audit surface — the former `a11y-architect` agent
   (deleted 2026-09-01, near-verbatim overdub of this checklist) and the former `design-system`
   skill (deleted 2026-09-01, sweep #3, zero lifetime dispatches — its dimension-8 visual audit
-  used to read on this checklist) have no successor; work the checklist inline or hand this
-  file's path to a dispatched general-purpose agent.
+  used to read on this checklist) have no successor; hand this file's path to a dispatched
+  general-purpose agent.
 
 ## References
 

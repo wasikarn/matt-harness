@@ -39,64 +39,64 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 ### agent-support
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
-| performance-optimizer-algorithms | Catalog of performance-optimizer's 14-row algorithmic-complexity pattern table. Auto-loads when performance-optimizer runs. Don't use for other agents. | inline | auto |
-| plan-reviewer-format | Catalog of plan-reviewer's Output Format template and Anti-Patterns list. Auto-loads when plan-reviewer runs. Don't use for other agents or standalone review. | inline | auto |
-| requirement-analyst-format | Catalog of requirement-analyst's self-consistency checklist, Output Format template, and Anti-Patterns list. Auto-loads when requirement-analyst runs. Don't use for other reviewer agents or standalone requirement analysis. | inline | auto |
-| summarizer-format | Catalog of summarizer's Output Format templates, word-level compression BAD/GOOD table, and Anti-Patterns list. Auto-loads when summarizer runs. Don't use for other agents or standalone summarization. | inline | auto |
+| performance-optimizer-algorithms | Catalog of performance-optimizer's 14-row algorithmic-complexity pattern table. Auto-loads when performance-optimizer runs. Don't use for other agents. | any-agent | auto |
+| plan-reviewer-format | Catalog of plan-reviewer's Output Format template and Anti-Patterns list. Auto-loads when plan-reviewer runs. Don't use for other agents or standalone review. | any-agent | auto |
+| requirement-analyst-format | Catalog of requirement-analyst's self-consistency checklist, Output Format template, and Anti-Patterns list. Auto-loads when requirement-analyst runs. Don't use for other reviewer agents or standalone requirement analysis. | any-agent | auto |
+| summarizer-format | Catalog of summarizer's Output Format templates, word-level compression BAD/GOOD table, and Anti-Patterns list. Auto-loads when summarizer runs. Don't use for other agents or standalone summarization. | any-agent | auto |
 
 ### design
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
-| make-interfaces-feel-better | Catalog of UI-polish details — spacing, borders, shadows, motion, hit areas, text wrapping. Use when a UI feels flat. Don't use for overall direction choices. | inline | auto |
-| tech-humanize | Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing chat, standup/PR/commit, UI copy, or prose/ticket/spec/ADR, or say แก้ให้เป็นธรรมชาติ. Don't use for translation. | inline | auto |
+| make-interfaces-feel-better | Catalog of UI-polish details — spacing, borders, shadows, motion, hit areas, text wrapping. Use when a UI feels flat. Don't use for overall direction choices. | any-agent | auto |
+| tech-humanize | Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing chat, standup/PR/commit, UI copy, or prose/ticket/spec/ADR, or say แก้ให้เป็นธรรมชาติ. Don't use for translation. | any-agent | auto |
 
 ### meta
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
-| compress-docs | Compact a bloated markdown doc for tokens; verify-before-overwrite, grammar stays full. Use when over harness-audit's 20K threshold. Don't use for content grading or suggest-only scans. | inline | auto |
-| cost-report | Cost-report: local Claude Code spend from the cost-tracker metrics log. Use when checking session spend. Don't use for scheduling or budget alerts (none exist). | inline | auto |
-| frame | Frame: dev/review/research working-posture, not a workflow or voice change. Use when switching posture; say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /config's output-style picker. | inline | auto |
-| goal-craft | Compact a /goal completion condition: done-when check, one-way-door screen, turn bound. Use when drafting a /goal condition. Don't use for single-turn tasks (do it directly). | inline | auto |
-| harness-audit | Harness-state surface, two modes: fleet/schema audit, --health for session token cost. Use for harness audits or cost checks. Don't use for repo lint/security (mh:security-auditor). | inline | auto |
-| learn | Scan a session transcript for cross-turn patterns ambient auto-memory misses. Use when wrapping up a session; batch-gate via AskUserQuestion. Don't use for single known memories. | inline | auto |
-| memory-lint | Scan memory store for dangling [[links]], orphans, index drift; --trim archives bloat. Use when MEMORY.md over cap. Don't use for semantic review or harness health. | inline | auto |
-| recursive-improve | Cage: human-gated, anti-unattended harness loop. | inline | manual |
-| score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. | inline | manual |
+| compress-docs | Compact a bloated markdown doc for tokens; verify-before-overwrite, grammar stays full. Use when over harness-audit's 20K threshold. Don't use for content grading or suggest-only scans. | any-agent | auto |
+| cost-report | Cost-report: local Claude Code spend from the cost-tracker metrics log. Use when checking session spend. Don't use for scheduling or budget alerts (none exist). | any-agent | auto |
+| frame | Frame: dev/review/research working-posture, not a workflow or voice change. Use when switching posture; say 'dev mode/โหมด dev/ตั้งโหมด'. Don't use for skills or /config's output-style picker. | any-agent | auto |
+| goal-craft | Compact a /goal completion condition: done-when check, one-way-door screen, turn bound. Use when drafting a /goal condition. Don't use for single-turn tasks (do it directly). | any-agent | auto |
+| harness-audit | Harness-state surface, two modes: fleet/schema audit, --health for session token cost. Use for harness audits or cost checks. Don't use for repo lint/security (mh:security-auditor). | any-agent | auto |
+| learn | Scan a session transcript for cross-turn patterns ambient auto-memory misses. Use when wrapping up a session; batch-gate via AskUserQuestion. Don't use for single known memories. | any-agent | auto |
+| memory-lint | Scan memory store for dangling [[links]], orphans, index drift; --trim archives bloat. Use when MEMORY.md over cap. Don't use for semantic review or harness health. | any-agent | auto |
+| recursive-improve | Cage: human-gated, anti-unattended harness loop. | any-agent | manual |
+| score-decision | Score pending decisions on weighted criteria: numeric verdict, pass/fail, confidence, trace. | any-agent | manual |
 
 ### patterns
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
-| accessibility | WCAG 2.2 AA accessibility, ARIA patterns, React a11y fixes for forms/focus/keyboard nav. Use when building web UI. Don't use for React architecture (mh:frontend-patterns). | inline | auto |
-| backend-patterns | Backend architecture, API design, and DB optimization for Node.js/Next.js. Use when building a Node/TS backend. Don't use for Python/Go/Rust backends, or the client half (mh:frontend-patterns). | inline | auto |
-| drizzle-patterns | Drizzle ORM patterns: schema, type inference, migrations, query builder, relations, transactions. Use when building Drizzle apps on PostgreSQL/SQLite. Don't use for Prisma or TypeORM. | inline | auto |
-| frontend-patterns | Frontend architecture, component design, and rendering optimization for React/TS. Use when building a React/TS frontend. Don't use for Vue/Svelte/Angular, backend (mh:backend-patterns), or WCAG/a11y audits (mh:accessibility). | inline | auto |
-| grpc-node-patterns | gRPC patterns for Node/Bun: proto, @grpc/grpc-js client/server, TypeScript codegen, streaming, deadlines/metadata. Use when building gRPC services in Node/Bun. Don't use for REST/HTTP or non-Node gRPC. | inline | auto |
-| mysql-patterns | MySQL/MariaDB schema, query, indexing, transaction, replication, and pool patterns. Use when designing or troubleshooting MySQL/MariaDB. Don't use for non-MySQL databases. | inline | auto |
-| typescript-patterns | TypeScript idioms: type-modeling and tsconfig choices, compatible across 5.9-7.x. Use when picking compiler options or type shapes. Don't use for routine edits or backend architecture. | inline | auto |
+| accessibility | WCAG 2.2 AA accessibility, ARIA patterns, React a11y fixes for forms/focus/keyboard nav. Use when building web UI. Don't use for React architecture (mh:frontend-patterns). | any-agent | auto |
+| backend-patterns | Backend architecture, API design, and DB optimization for Node.js/Next.js. Use when building a Node/TS backend. Don't use for Python/Go/Rust backends, or the client half (mh:frontend-patterns). | any-agent | auto |
+| drizzle-patterns | Drizzle ORM patterns: schema, type inference, migrations, query builder, relations, transactions. Use when building Drizzle apps on PostgreSQL/SQLite. Don't use for Prisma or TypeORM. | any-agent | auto |
+| frontend-patterns | Frontend architecture, component design, and rendering optimization for React/TS. Use when building a React/TS frontend. Don't use for Vue/Svelte/Angular, backend (mh:backend-patterns), or WCAG/a11y audits (mh:accessibility). | any-agent | auto |
+| grpc-node-patterns | gRPC patterns for Node/Bun: proto, @grpc/grpc-js client/server, TypeScript codegen, streaming, deadlines/metadata. Use when building gRPC services in Node/Bun. Don't use for REST/HTTP or non-Node gRPC. | any-agent | auto |
+| mysql-patterns | MySQL/MariaDB schema, query, indexing, transaction, replication, and pool patterns. Use when designing or troubleshooting MySQL/MariaDB. Don't use for non-MySQL databases. | any-agent | auto |
+| typescript-patterns | TypeScript idioms: type-modeling and tsconfig choices, compatible across 5.9-7.x. Use when picking compiler options or type shapes. Don't use for routine edits or backend architecture. | any-agent | auto |
 
 ### review
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
-| address-review | Triage open PR review comments: fetch, classify, fix, reply. | inline | manual |
-| blind-spot-hunter-shapes | Catalog of 7 highest-yield blind-spot shapes (cross-file, framework-behavior, data-flow-asymmetry, identity, scope-mismatch, emitted-string, vacuous-test). Auto-loads when blind-spot-hunter runs. Don't use for escalation/output-format or standalone hunting. | inline | auto |
-| bug-sweep | Sweep: parallel agents hunt one bug, report-only. Use when hunting bugs across a codebase. Don't use for PR review (mattpocock-skills:code-review) or session audit (mh:deep-audit). | inline | auto |
-| complexity-check | Complexity-check: cyclomatic complexity per function via `lizard`. Use when reviewing hotspots before refactoring. Advisory only. Don't use for bash/shell or Big-O (mh:performance-optimizer). | inline | auto |
-| compliance-audit | Compliance-audit: verify a finished implementation against its plan via fresh-context verifiers. | inline | manual |
-| deep-audit | Deep-audit: post-implementation audit — verify every claim, score before/after, fix evidence-backed gaps, re-score. Use after an implementation pass. Don't use for a first-pass review (mattpocock-skills:code-review). | inline | auto |
-| pr | PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`mh:ship-merge`) or review replies (`mh:address-review`). | inline | auto |
-| production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /mattpocock-skills:implement). | inline | auto |
-| review-lens-nextjs-routing | Next.js App Router file-convention (error.tsx/loading.tsx/route.ts/parallel routes) and Middleware checklist. Auto-loads when nextjs-reviewer runs. Don't use for caching/Server Actions or standalone review. | inline | auto |
-| security-auditor | Scan standing code for at-rest security issues (auth, secrets, injection, XSS, traversal). Use when auditing existing code. Don't use for a pending-changes diff (native security-review). | inline | auto |
-| security-reviewer-patterns | Catalog of security-reviewer's BAD/GOOD examples (SQLi, IDOR, JWT, mass assignment, SSRF, ReDoS). Auto-loads when security-reviewer runs. Don't use for the deep-audit workflow (security-auditor). | inline | auto |
+| address-review | Triage open PR review comments: fetch, classify, fix, reply. | any-agent | manual |
+| blind-spot-hunter-shapes | Catalog of 7 highest-yield blind-spot shapes (cross-file, framework-behavior, data-flow-asymmetry, identity, scope-mismatch, emitted-string, vacuous-test). Auto-loads when blind-spot-hunter runs. Don't use for escalation/output-format or standalone hunting. | any-agent | auto |
+| bug-sweep | Sweep: parallel agents hunt one bug, report-only. Use when hunting bugs across a codebase. Don't use for PR review (mattpocock-skills:code-review) or session audit (mh:deep-audit). | any-agent | auto |
+| complexity-check | Complexity-check: cyclomatic complexity per function via `lizard`. Use when reviewing hotspots before refactoring. Advisory only. Don't use for bash/shell or Big-O (mh:performance-optimizer). | any-agent | auto |
+| compliance-audit | Compliance-audit: verify a finished implementation against its plan via fresh-context verifiers. | any-agent | manual |
+| deep-audit | Deep-audit: post-implementation audit — verify every claim, score before/after, fix evidence-backed gaps, re-score. Use after an implementation pass. Don't use for a first-pass review (mattpocock-skills:code-review). | any-agent | auto |
+| pr | PR the branch on GitHub, templated body previewed before submit. Trigger on 'open a PR/เปิด PR'. Don't use for merging (`mh:ship-merge`) or review replies (`mh:address-review`). | any-agent | auto |
+| production-audit | Scan production readiness pre-launch. Use when asked whether an app is ready to ship. Don't use for in-flight feature work (use /mattpocock-skills:implement). | any-agent | auto |
+| review-lens-nextjs-routing | Next.js App Router file-convention (error.tsx/loading.tsx/route.ts/parallel routes) and Middleware checklist. Auto-loads when nextjs-reviewer runs. Don't use for caching/Server Actions or standalone review. | any-agent | auto |
+| security-auditor | Scan standing code for at-rest security issues (auth, secrets, injection, XSS, traversal). Use when auditing existing code. Don't use for a pending-changes diff (native security-review). | any-agent | auto |
+| security-reviewer-patterns | Catalog of security-reviewer's BAD/GOOD examples (SQLi, IDOR, JWT, mass assignment, SSRF, ReDoS). Auto-loads when security-reviewer runs. Don't use for the deep-audit workflow (security-auditor). | any-agent | auto |
 
 ### workflow
 | Skill | Description | Agent | Invoke |
 |---|---|---|---|
-| ideate | Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Use when the question is open-ended. Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks. | inline | manual |
-| incident | Incident: run a production incident incl. hotfix. Use when alerts fire or user asks for hotfix. Thai: 'เหตุฉุกเฉิน'. Don't use for non-prod bugs or post-mortem. | inline | auto |
-| orchestrate | Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | inline | auto |
-| post-mortem | Post-mortem: a writeup for a resolved bug (trigger/mechanism/patch/validation known). | inline | manual |
-| ship-merge | Ship a PR: validate, server-side merge, monitor CI. | inline | manual |
+| ideate | Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Use when the question is open-ended. Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks. | any-agent | manual |
+| incident | Incident: run a production incident incl. hotfix. Use when alerts fire or user asks for hotfix. Thai: 'เหตุฉุกเฉิน'. Don't use for non-prod bugs or post-mortem. | any-agent | auto |
+| orchestrate | Triage competing tasks and route each to single-agent/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review. | any-agent | auto |
+| post-mortem | Post-mortem: a writeup for a resolved bug (trigger/mechanism/patch/validation known). | any-agent | manual |
+| ship-merge | Ship a PR: validate, server-side merge, monitor CI. | any-agent | manual |
 
 ## Hooks — Repo
 | Hook | Purpose |
@@ -121,7 +121,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | _codeowners_match.py | Shared CODEOWNERS discovery + matching logic, used by skills/workflow/ship-merge/SKILL.md's step 7 (CLI wrapper below, argv/stdout contract unchanged from the original embedded block). Its second caller, hooks/gates/convergence-merge-gate.sh, was retired 2026-08-24 (#82). |
 | _hook_output.py | Shared hook-output JSON primitive. Used by hooks/gates/db-write-gate.sh and hooks/gates/verifier-protect.sh's embedded python3 -c blocks, both of which defined an identical emit_ask() before this extraction (2026-08-15) -- each gate still builds its own reason message inline (that part is legitimately gate-specific), only the JSON-shape emission is shared here. |
 | _protected_paths.py | Shared gate/verifier-governance path classifier. Ported near-verbatim (2026-08-15) from hooks/gates/verifier-protect.sh's own is_verifier_path() -- the more complete of two prior copies. skills/review/risk-check/SKILL.md's embedded is_gate_path() was the other, missing hooks/advisory/ coverage; verifier-protect.sh calls this shared one (risk-check itself deleted 2026-09-01, sweep #3 — zero lifetime dispatches). |
-| main-write-budget.sh | Gate: ask when the MAIN session's own cumulative inline Write/Edit/NotebookEdit count for THIS session crosses a budget -- a soft nudge toward delegation, never a block. Opt-in and off by default. |
+| main-exec-guard.sh | Gate: the TOP-LEVEL session plans, dispatches, verifies, decides -- it does not edit files, run mutating commands, or commit. Reads the PreToolUse JSON payload from stdin; exits 2 (+ stderr reason) to deny. Two legs, one script (same shape as agent-recursion-guard.sh): tool_name in Write/Edit/MultiEdit/ NotebookEdit denies any main-session file edit outside three carve-outs (~/.claude/plans/, ~/.claude/projects/*/memory/, the session scratchpad); tool_name == Bash allows only a read-only allowlist and denies everything else, including anything it cannot parse. |
 | merge-door.sh | Gate: ask before a raw `gh pr merge` runs outside the `ship-merge` skill flow. `convergence-merge-gate.sh` used to cover this and was retired 2026-08-24 with the review pipeline (#82) — ship-merge/SKILL.md's own text admits its in-flow gates are "now the only merge-door protection", but those only fire when the model goes through the Skill call; a raw Bash `gh pr merge` had zero hook coverage until this file. Reads the PreToolUse JSON payload from stdin; emits `permissionDecision: ask` (exit 0) on a match, never a hard deny — a human can still approve a legitimate emergency merge in the moment, same tier `verifier-protect.sh` uses for tamper-sensitive edits. |
 | task-complete-separation.sh | Gate: a subagent may not mark its own task completed (maker≠checker). Reads the PreToolUse JSON payload from stdin; exits 2 to block. |
 | test-integrity.sh | Gate: ask when an edit to an existing test file removes an assertion- shaped line, or adds a skip/disable marker that wasn't there before. METHODOLOGY.md Rule 4 ("write the failing test first, don't weaken it while fixing") had no backing mechanism anywhere — pure prose, the exact same-role-grades-its-own-work case CLAUDE.md's maker≠checker doctrine argues against trusting. |
@@ -152,7 +152,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | test-jira-route-nudge.sh | jira-route-nudge unit tests: simulates UserPromptSubmit JSON payloads and asserts stdout output (nudge fired) vs silence (nudge skipped). The hook never blocks, so all tests expect exit 0. Run standalone: bash tests/hooks/test-jira-route-nudge.sh |
 | test-learn-nudge.sh | learn-nudge unit tests: simulates SessionEnd JSON payloads pointing at a fixture transcript, asserts stderr output (nudge fired) vs silence (nudge skipped) and that stdout is ALWAYS empty (SessionEnd stdout is discarded — a hook that wrote a nudge there would be dead-at-birth). The hook never blocks (SessionEnd has no decision control), so all tests expect exit 0. Run standalone: bash tests/hooks/test-learn-nudge.sh |
 | test-loop-repeat-nudge.sh | loop-repeat-nudge unit tests (#99): simulates PostToolUse JSON payloads, asserts stdout (hookSpecificOutput.additionalContext) fires once a tool is called with identical parameters MH_LOOP_REPEAT_THRESHOLD+ times in the last MH_LOOP_REPEAT_WINDOW calls, dedupes on subsequent identical calls, and re-arms after the pattern breaks. The hook never blocks (advisory only), so every call expects exit 0. Run standalone: bash tests/hooks/test-loop-repeat-nudge.sh |
-| test-main-write-budget.sh | Behavioral tests for hooks/gates/main-write-budget.sh. Covers the opt-in off-by-default no-op, the worktree-guard compatibility bail (must run before any budget check), the subagent bypass, the >= boundary, the session-id scoping (max_by across out-of-order/interleaved rows, not first/last match), the malformed-metrics-file resilience (one truncated JSONL line must not kill the whole lookup -- `jq -nRr`, not `jq -nr`), and the invalid-budget-value fail-open (never silently falls back to a default). Every case drives MH_NUDGE_METRICS_FILE at a throwaway fixture file -- never the operator's real nudge-compliance.jsonl. Run standalone: bash tests/hooks/test-main-write-budget.sh |
+| test-main-exec-guard.sh | Behavioral tests for hooks/gates/main-exec-guard.sh. Covers the three MH_MAIN_EXEC_GUARD modes (unset/off, log, 1/enforce), the agent_id discriminant (a subagent is never touched; a Write whose CONTENT contains the text "agent_id" is still main), the three Write carve-outs, the Bash read-only allowlist (allow + deny lists), the deny contract (exit 2 + stderr, never JSON), and the fail-direction asymmetry (malformed payload / missing python3 -> allow; untokenizable command -> deny). Every run sets HOME to a throwaway fixture so carve-out paths and the log file never touch the operator's real ~/.claude or ~/.local. Run standalone: bash tests/hooks/test-main-exec-guard.sh |
 | test-mcp-failure-nudge.sh | mcp-failure-nudge unit tests (#97): simulates PostToolUseFailure JSON payloads, asserts stdout (hookSpecificOutput.additionalContext) fires once an MCP server fails MH_MCP_FAILURE_THRESHOLD+ times within the trailing MH_MCP_FAILURE_WINDOW_SECONDS, dedupes on subsequent failures while the rate holds, and re-arms once the rate drops. Uses MH_MCP_FAILURE_NOW to inject a fake clock -- real time windows can't be tested deterministically without sleeping. The hook never blocks (advisory only), so every call expects exit 0. Run standalone: bash tests/hooks/test-mcp-failure-nudge.sh |
 | test-memory-health-nudge.sh | memory-health-nudge unit tests: focused on the --classify-unindexed wiring added on top of the pre-existing detector-findings nudge. Isolates a fake $HOME and a fake project cwd so real ~/.claude/projects state is never touched; the hook derives its memory dir from `pwd -P` (physical path, slashes -> dashes) the same way memory-lint.py's own memory_dir() does, so fixtures must be planted at that exact computed path. Run standalone: bash tests/hooks/test-memory-health-nudge.sh |
 | test-merge-door.sh | Behavioral tests for hooks/gates/merge-door.sh. Covers the ask-on-match case, the operator-window/prefix-wrapper/whitespace shapes the argv-based classifier is supposed to catch, and the false-positive/negative shapes named by the adversarial plan review that sank the original word-boundary- regex design: a HEREDOC/commit-message mention of "gh pr merge" as prose must NOT ask, and the `gh api .../merge` REST equivalent is a documented, deliberate non-goal (also must not ask). Also covers the sudo -u/-g value-taking-flag bypass (issue #115, fixed 2026-08-28): before the fix, `sudo -u alice gh pr merge` was misread as argv0="alice", not "gh". Run standalone: bash tests/hooks/test-merge-door.sh |
@@ -170,7 +170,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | crisp | Sole live-response register: concise, easy to read, human. Claude Code's Concise contract (result first, no preamble, full content for errors/security/destructive confirmations) as the base, with staff-engineer decision framing switched on only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-09-01T13:59:40Z_
+_Generated: 2026-09-02T15:02:21Z_
 
 ---
 

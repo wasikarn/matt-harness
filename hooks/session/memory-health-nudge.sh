@@ -118,7 +118,7 @@ FILTERED=$(printf '%s\n' "$OUT" | command sed -e '/^--- Staleness/,/^advisory:/{
 printf '%s\n' \
   "[memory-lint] The memory store has findings (dangling links / orphans / index drift / near-budget):" \
   "$FILTERED" \
-  "Run \`mh:memory-lint\` for detail, or fix inline. Advisory only — not a gate."
+  "Run \`mh:memory-lint\` for detail, or dispatch a fixer. Advisory only — not a gate."
 
 # UNINDEXED findings conflate two states: an authoring oversight vs. the fold
 # rule's own correct end-state (pointer removed, file kept — see

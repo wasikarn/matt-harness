@@ -23,7 +23,7 @@ for review itself (`mattpocock-skills:code-review`) or merge (`mh:ship-merge`).
 - **Cite the sha.** Replies that addressed a comment must include the commit sha that fixed it plus a one-line summary — reviewers shouldn't have to re-read the diff to figure out what changed.
 - **Triage before fix.** Phase 2 gates Phase 4 — don't edit code until classifications are user-approved, avoiding fixing things that should've been wontfix and skipping things that should've been fixed.
 - **Use gh CLI.** All GitHub ops via `gh`, never raw `curl` (per repo convention + memory `feedback_prefer_gh_cli_for_github`).
-- **Delegate bugs.** Phase 4 routes bug-shaped comments to `mattpocock-skills:diagnosing-bugs` instead of fixing inline — gets the full feedback-loop → reproduce → minimise → hypothesise → regression-test discipline.
+- **Delegate bugs.** Phase 4 routes bug-shaped comments to `mattpocock-skills:diagnosing-bugs` instead of a plain fixer-agent edit — gets the full feedback-loop → reproduce → minimise → hypothesise → regression-test discipline.
 - **Use TodoWrite.** Track phases + per-thread state so the user sees triage decisions + sha mapping at any point.
 
 ---
@@ -99,15 +99,16 @@ See `references/phase3-plan.md` for the full clustering, ordering, and
 See `references/phase4-implementation-details.md` for the full per-cluster procedure: pre-implement
 verification (verify the reviewer's claim against this codebase before implementing, YAGNI-check
 "do it properly" suggestions, author-aware dedup against commits the PR author already made on this
-branch), bug-shaped (`mattpocock-skills:diagnosing-bugs`) vs. inline-edit routing (grep every caller, fix sibling call sites
-in the same commit — the Ponytail root-cause rule, incident precedent included — commit-message
+branch), bug-shaped (`mattpocock-skills:diagnosing-bugs`) vs. fixer-agent edit routing (a fixer agent
+gets the cluster's file/line list, greps every caller, fixes sibling call sites in the same commit —
+the Ponytail root-cause rule, incident precedent included — and returns a diff; commit-message
 shape), and the per-cluster test/retry-once/escalate discipline. Any reclassification
 (`clarify`/`wontfix`) that surfaces during implementation must be shown to the user before Phase 5 —
 it's a new decision Phase 2's approval never covered.
 
 **Actions**:
 1. Maintain a running mapping: `{sha: [thread-id, ...]}`. This is the input to Phase 5.
-2. Conditional agent routing, launched in parallel, for inline-edit clusters only
+2. Conditional agent routing, launched in parallel, for fixer-routed edit clusters only
    (bug-shaped clusters already carry `mattpocock-skills:diagnosing-bugs`'s own
    regression-test + cleanup discipline — don't double-route)
    — see `references/phase4-agent-routing.md` for the full flagged-concern → agent

@@ -143,7 +143,7 @@ of skill-parked doctrine silently lost to resyncs/dedup sweeps in this repo).
 
 <!-- The both-surface-types line caught 2026-07-22, not folded back here until 2026-08-04. -->
 - **`orchestrate` vs deciding:** orchestrate decides whether and how to spend effort on an
-  ask (inline/parallel/sequential/drop, which surface receives it) *before* it's understood
+  ask (single-agent/parallel/sequential/drop, which surface receives it) *before* it's understood
   as a bounded decision. A bounded question you're already committed to answering is
   reasoned through directly under METHODOLOGY Rule 1 (triad + `advisor()`,
   `mattpocock-skills:grilling` for hard/contested calls). A pile of competing asks routes

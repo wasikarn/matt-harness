@@ -643,6 +643,13 @@ make_noise_line() {
 make_write_line() {
   python3 -c 'import json,sys; print(json.dumps({"type": "assistant", "isSidechain": sys.argv[1] == "true", "message": {"content": [{"type": "tool_use", "name": "Edit", "input": {}}]}}))' "$1"
 }
+# make_bash_line <command> [isSidechain] -- a Bash tool_use on an assistant-type
+# transcript line carrying the given command string, so main_bash_mutations'
+# mutating-command regex can be fixture-tested against both a mutating and a
+# read-only command (and, via isSidechain, excluded on a subagent turn).
+make_bash_line() {
+  python3 -c 'import json,sys; print(json.dumps({"type": "assistant", "isSidechain": sys.argv[2] == "true", "message": {"content": [{"type": "tool_use", "name": "Bash", "input": {"command": sys.argv[1]}}]}}))' "$1" "${2:-false}"
+}
 
 fake_home=$(mktemp -d)
 transcript=$(mktemp)
@@ -754,6 +761,67 @@ row=$(tail -1 "$metrics_file" 2>/dev/null)
 [[ "$rc" == "0" ]] && printf '%s' "$row" | /usr/bin/grep -q '"main_writes":0' \
   && printf '%s' "$row" | /usr/bin/grep -q '"main_dispatches":0' && ok=1 || ok=0
 assert "all-sidechain transcript (4 Edit + 2 Agent, isSidechain:true) -> main_writes:0, main_dispatches:0" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
+# main_bash_mutations (2026-09-02): one main-thread Bash tool_use with a mutating
+# command (sed -i) must count as exactly 1.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+{ make_bash_line 'sed -i s/x/y/ file'; } > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-bash-mutation"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$NUDGE_COMPLIANCE_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/nudge-compliance.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" ]] && printf '%s' "$row" | /usr/bin/grep -q '"main_bash_mutations":1' && ok=1 || ok=0
+assert "main_bash_mutations counts a main-thread Bash tool_use with a mutating command (sed -i) as 1" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
+# A read-only Bash command (git status) must NOT be flagged -- the regex has to
+# discriminate, not just count every Bash call.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+{ make_bash_line 'git status --porcelain'; } > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-bash-readonly"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$NUDGE_COMPLIANCE_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/nudge-compliance.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" ]] && printf '%s' "$row" | /usr/bin/grep -q '"main_bash_mutations":0' && ok=1 || ok=0
+assert "main_bash_mutations leaves a read-only Bash command (git status) at 0" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
+# One line per regex alternative (7 mutating), interleaved with read-only shapes
+# that sit right next to a mutating pattern (fd-dup 2>&1, >/dev/null, -i on grep
+# not sed, "tee" inside "committee"), plus one sidechain mutating line that must
+# be excluded -- exactly 7, not 8 and not 11.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+{
+  make_bash_line 'sed -Ei s/x/y/ file'
+  make_bash_line 'git status --porcelain'
+  make_bash_line 'echo x | tee out.txt'
+  make_bash_line 'cat file >/dev/null'
+  make_bash_line 'echo x > out.txt'
+  make_bash_line 'cmd 2>&1'
+  make_bash_line 'git -C repo add f.txt'
+  make_bash_line 'ls -la | grep -i foo'
+  make_bash_line 'cd x && rm -rf y'
+  make_bash_line 'echo committee'
+  make_bash_line 'python3 -c "print(1)"'
+  make_bash_line 'git diff >>/dev/null'
+  make_bash_line 'cat <<EOF
+hi
+EOF'
+  make_bash_line 'rm -rf z' true
+} > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-bash-mixed"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$NUDGE_COMPLIANCE_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/nudge-compliance.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" ]] && printf '%s' "$row" | /usr/bin/grep -q '"main_bash_mutations":7' && ok=1 || ok=0
+assert "main_bash_mutations: 7 mutating (one per regex alternative) + 6 read-only + 1 sidechain mutating -> exactly 7" "$ok"
 trash "$fake_home" "$transcript" 2>/dev/null || true
 
 fake_home=$(mktemp -d)

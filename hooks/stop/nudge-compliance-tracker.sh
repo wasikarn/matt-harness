@@ -53,7 +53,13 @@
 # not the thing doing the real work. Both counts are ATTEMPTED tool_use entries, not
 # confirmed-successful ones -- a denied or immediately-erroring Agent dispatch counts the
 # same as a clean one toward main_dispatches, same "attempted, not confirmed successful"
-# property main_writes and nudges_fired already have elsewhere in this hook. Rolling
+# property main_writes and nudges_fired already have elsewhere in this hook.
+#
+# main_bash_mutations (added 2026-09-02): the same main-thread scoping applied to Bash
+# tool_use entries whose command string matches the mutating-command regex below -- the
+# category main_writes misses entirely (a `sed -i`, a `>` redirect, a `git commit` all
+# mutate without ever touching Edit/Write). Feedback signal for the main-plans-dispatches-
+# never-executes doctrine: the deny gate can only be judged by a number. Rolling
 # compliance rate for a session:
 #   jq -s '[.[] | select(.session_id=="<sid>")] | max_by(.nudges_fired) | .nudges_complied / (.nudges_fired // 1)' nudge-compliance.jsonl
 # Across all sessions (last row per session_id, since rows accumulate per-Stop):
@@ -95,12 +101,33 @@ metrics_dir="$HOME/.local/share/kbg/metrics"
 mkdir -p "$metrics_dir"
 metrics_file="$metrics_dir/nudge-compliance.jsonl"
 
+# Mutating-command heuristic for main_bash_mutations: a regex over the Bash
+# command string, not a shell parser -- over-counts a `>` inside a jq filter or
+# quoted prose, under-counts a `sudo rm` / env-prefixed command. Alternatives,
+# one per line:
+#   sed with an in-place flag (-i, -ni, -Ei, --in-place) in the same pipeline segment
+#   tee as a whole word
+#   > or >> redirect that is neither to /dev/null nor an fd-dup (2>&1, >&2)
+#   git [opts...] add|commit|push|stash|checkout|reset|rm|mv
+#   cp|mv|rm|trash|mkdir|touch|install|patch as the leading word of a command
+#     (start of string, or after ; & | ( ` or a do/then keyword)
+#   python|python3 with an inline -c program
+#   << heredoc (also catches a <<< here-string)
+# ponytail: regex heuristic; swap for a real tokenizer only if the over-count ever matters.
+mutating_re='\bsed\b[^|;&]*\s-(\w*i\b|-in-place)'
+mutating_re+='|\btee\b'
+mutating_re+='|(?<!>)>>?(?!>)(?!\s*(/dev/null|&))'
+mutating_re+='|\bgit\b[^|;&]*\s(add|commit|push|stash|checkout|reset|rm|mv)\b'
+mutating_re+='|(^|[;&|(`]\s*|\b(do|then)\s+)(cp|mv|rm|trash|mkdir|touch|install|patch)\b'
+mutating_re+='|\bpython3?\s+-c\b'
+mutating_re+='|<<'
+
 # -nRc + try fromjson (not plain -nc): one malformed/truncated transcript line
 # must not kill the whole pass -- same defensive shape as cost-tracker.sh's
 # emit_rows, adopted after check62's silent-crash post-mortem
 # (docs/post-mortems/check62-allowlist-crash-2026-08-21.md) named the general
 # failure class this guards against.
-row=$(jq -nRc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg sid "$session_id" '
+row=$(jq -nRc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg sid "$session_id" --arg mut "$mutating_re" '
   ([inputs | try fromjson] | to_entries) as $idx
   | [ $idx[] | select(.value.type == "attachment"
                        and .value.attachment.type == "hook_success"
@@ -127,8 +154,14 @@ row=$(jq -nRc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg sid "$session_id" 
        | (.value.message.content // [])[]?
        | select(.type == "tool_use" and .name == "Agent") ]
      | length) as $main_dispatches
+  | ([ $idx[] | select(.value.type == "assistant" and (.value.isSidechain != true))
+       | (.value.message.content // [])[]?
+       | select(.type == "tool_use" and .name == "Bash"
+                and ((.input.command // "") | strings | test($mut))) ]
+     | length) as $main_bash_mutations
   | { timestamp: $ts, session_id: $sid, nudges_fired: $fired, nudges_complied: $complied,
-      main_writes: $main_writes, main_dispatches: $main_dispatches }
+      main_writes: $main_writes, main_dispatches: $main_dispatches,
+      main_bash_mutations: $main_bash_mutations }
 ' "$transcript" 2>/dev/null) || row=''
 
 # Refuse to append through a symlink -- same guard as cost-tracker.sh.

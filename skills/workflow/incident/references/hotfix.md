@@ -1,11 +1,11 @@
 # Hotfix path (reference for `mh:incident`)
 
-The fix-forward branch of `mh:incident`, loaded from step 6 when rollback/kill-switch is insufficient. Ship a critical fix fast — a compressed `mattpocock-skills:diagnosing-bugs` + fast review + `mh:ship-merge` with gates removed for speed. **Rollback first, fix forward second.** The main agent executes inline (no sub-agents) and acts with surgical speed; the irreversible `gh pr merge --admin` is reached only after the in-skill severity + review gates below.
+The fix-forward branch of `mh:incident`, loaded from step 6 when rollback/kill-switch is insufficient. Ship a critical fix fast — a compressed `mattpocock-skills:diagnosing-bugs` + fast review + `mh:ship-merge` with gates removed for speed. **Rollback first, fix forward second.** The main agent dispatches ONE foreground fixer agent, no fan-out, and keeps the surgical-speed cadence — that one agent's continuous Bash session carries the whole git/gh lifecycle main itself never runs directly (rollback/revert, branch setup, the fix, and, once review clears, commit/push/merge); the irreversible `gh pr merge --admin` is reached only after the in-skill severity + review gates below.
 
 ## Core Principles
 
 - **Stop the bleeding first.** Rollback or kill-switch is always faster than code. Only hotfix when rollback is impossible or insufficient.
-- **Branch from the production branch — resolve it first.** The production branch is the one prod deploys/tags actually cut from (check repo CLAUDE.md → deploy config → latest release tag). Never assume the repo default branch: in gitflow-style repos the default is the integration branch (`develop`), and a hotfix based there ships unreleased work. `git fetch origin && git switch -c hotfix/<ticket>-<slug> origin/<prod-branch>`. The PR targets `<prod-branch>` — never the integration branch. After merge: backmerge `<prod-branch>` → `develop` (merge, not rebase) if an integration branch exists.
+- **Branch from the production branch — resolve it first.** The production branch is the one prod deploys/tags actually cut from (check repo CLAUDE.md → deploy config → latest release tag). Never assume the repo default branch: in gitflow-style repos the default is the integration branch (`develop`), and a hotfix based there ships unreleased work. Run by the same dispatched foreground fixer agent (not main — `git fetch`/`git switch -c` aren't on main's read-only allowlist): `git fetch origin && git switch -c hotfix/<ticket>-<slug> origin/<prod-branch>`. The PR targets `<prod-branch>` — never the integration branch. After merge: backmerge `<prod-branch>` → `develop` (merge, not rebase) if an integration branch exists.
 - **Severity drives speed.** P0 = ship in <15 min. P1 = <1 hr. P2 = <4 hr. Maps 1:1 to mh:incident's
   S-tier by MTTR: S1↔P0, S2↔P1, S3↔P2 (S4/noise never reaches this path).
 - **Smallest possible change.** One file, one line if possible. No refactors, no cleanups.
@@ -45,9 +45,9 @@ Infer from user input or ask explicitly.
 | Phase | Action | When |
 |---|---|---|
 | 0 → 1 | Rollback or kill-switch check | Before any code change |
-| 1 → 2 | Branch `hotfix/<ticket>-<slug>` from `origin/<prod-branch>`, then fix inline | After repro confirmed ≤5 min |
+| 1 → 2 | Dispatch one foreground fixer (no fan-out) — not main: it branches `hotfix/<ticket>-<slug>` from `origin/<prod-branch>`, then fixes | After repro confirmed ≤5 min |
 | 2 → 3 | Launch the matching per-language reviewer agent (+ `security-reviewer` if needed) | After fix + regression test |
-| 3 → 4 | Commit + push + `gh pr merge --admin --squash --delete-branch` | After zero Block findings |
+| 3 → 4 | Same fixer agent, resumed (not main): commit + push + `gh pr merge --admin --squash --delete-branch` | After zero Block findings |
 | 4 → 5 | `gh run watch` + repro against prod | After merge |
 | 5 → 6 | Tell user to schedule `mh:post-mortem` | After verify passes |
 

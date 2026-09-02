@@ -40,7 +40,8 @@ N found (of <count> agents dispatched)
 If zero: `Sweep clean — no small bug found by any of the <count> agents.`
 
 **Suggested next step:**
-- One-line fix → verify it yourself first (reproduce the failure, don't just trust the
-  dispatched agent's report), apply the smallest change that addresses it, then re-run whatever
-  surfaced the bug to confirm it's actually gone.
+- One-line fix → dispatch a fixer agent to reproduce the failure first (don't just trust the
+  sweep agent's report), apply the smallest change that addresses it, and re-run whatever
+  surfaced the bug to confirm it's actually gone — main verifies the returned diff, it doesn't
+  edit.
 - Bigger than a one-line fix → route through `mattpocock-skills:diagnosing-bugs` instead.

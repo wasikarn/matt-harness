@@ -1,6 +1,6 @@
 ---
 name: orchestrate
-description: "Triage competing tasks and route each to inline/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review."
+description: "Triage competing tasks and route each to single-agent/parallel/sequential/drop. Use when the user lists tasks or says 'จัดสรรงาน'. Don't use for single-issue triage or PR review."
 model: inherit
 effort: high
 ---
@@ -57,7 +57,7 @@ The lead does the **judgment** — what to dispatch, in what order, with what F9
 **Hard rules** (full reasoning, cap history, and platform-cap details: `reference.md`'s
 Bounded fan-out — cap history & rationale section):
 
-1. **Hard cap = 5 agents per wave. No floor.** Fast Path Gate items executed inline don't count against this cap. The lead MUST clamp any work-list >5 to 5 before spawning, queuing the rest in a `deferred-<date>.md`. A wave of 1 or 2 is not a defect.
+1. **Hard cap = 5 agents per wave. No floor.** The lead MUST clamp any work-list >5 to 5 before spawning, queuing the rest in a `deferred-<date>.md`. A wave of 1 or 2 is not a defect.
 2. **Prefer 2-4 agents per wave** — a softer, advisory layer above the hard cap, not a replacement: the hard cap stops order-of-magnitude runaway (44→105 agents, one real incident), the 2-4 preference stops under-grouped-but-still-small fragmentation. Treat a wave that hits 5 without running Step 0's grouping pass as a signal to consolidate, not a green light.
 3. **On the Workflow tool, the cap is a number in code; on the Agent tool, each dispatch is its own visible tool call, so the lead's own discipline is the clamp.**
 4. **Worklist count ≠ spawn count (Workflow tool).** Audit + verify is a SECOND fan-out layer on top of the work-list — cap TOTAL spawned agents across the plan lifetime, not just work-list size.
@@ -80,23 +80,25 @@ the session's actual orchestrator:subagent token ratio (from `hooks/stop/cost-tr
 elsewhere (Claude Code issue #40339). Still advisory, not a gate: the hook is enforced to fire,
 whether the model acts on it stays prose-only, same as the plan-mode nudge it lives beside.
 
-**The other direction has its own checklist.** Not delegating is correct under 9 specific
-conditions, not a lapse — `reference.md`'s Inline-wins checklist — 9 conditions where top-level execution is correct (prose-only) section.
+**The other direction is settled, not a checklist.** The top-level session plans, dispatches,
+verifies, and decides; it never executes. What it keeps: the "Main retains" section in
+`docs/METHODOLOGY.md` Rule 13 and the protocols in `reference.md`'s Protocols that keep the rule
+alive section, per ADR 0012 (`docs/research/adr-0012-main-plans-dispatches-never-executes.md`).
 
 ## Agent tool vs Workflow tool
 
 This skill routes dispatch through the **`Agent` tool** — every pattern above (spawn-prompt template, validation chain, fan-out cap) assumes that primitive. The **`Workflow` tool** (scripted `pipeline()`/`parallel()`/`agent()`) is a separate, host-level primitive needing explicit user opt-in (the "ultracode" keyword, standing ultracode-session mode, or the user's own words asking for a workflow/multi-agent run) — this skill never invokes it, and no agent in this fleet is granted it. If the user has opted in, treat `Workflow` as parallel infrastructure available to the session, not a routing target this skill assigns.
 
-## Fast Path Gate
+## Single-agent fast path
 
-If ALL of these hold, **execute inline immediately** and skip all orchestration logic:
+If ALL of these hold, **dispatch ONE foreground fixer agent** (F9 short form, `model: haiku`) and skip all orchestration logic:
 
 1. Single bounded task (1 file, 1 behavior)
 2. Expected output <30 lines and <2000 tokens
 3. Verifiable by deterministic check (`tsc`, `bash -n`, `py_compile`, `jq`)
 4. Not auth/secrets/crypto
 
-→ Write the code directly. Validate with `py_compile` or equivalent. Present the result. **Done.**
+→ The fixer writes the code and validates with `py_compile` or equivalent; shape-check its returned diff and Done-when output, then present the result. Never write the code in the top-level session. **Done.**
 
 ## Pick the matrix
 
@@ -133,7 +135,7 @@ Present the allocation as a table, then a one-line disposition summary.
 
 | Task | Quadrant | Route | Agent | Done-when | Status |
 |---|---|---|---|---|---|
-| <task> | <Q1–Q4> | inline / parallel / sequential / drop (optionally followed by a short `: descriptor`, e.g. "sequential: Builder fixes → Validator confirms" — see the Example above) | <agent or "lead"> | <observable> | dispatched / deferred / dropped |
+| <task> | <Q1–Q4> | single-agent / parallel / sequential / drop (optionally followed by a short `: descriptor`, e.g. "sequential: Builder fixes → Validator confirms" — see the Example above) | <agent or "lead"> | <observable> | dispatched / deferred / dropped |
 
 Summary: `N dispatched, M deferred, K dropped — <one-line why for each non-dispatched>`.
 

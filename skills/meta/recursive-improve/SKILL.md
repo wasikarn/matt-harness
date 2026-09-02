@@ -13,9 +13,8 @@ Closes METHODOLOGY Rule 4's loop ("loop until verified") on the harness itself: 
 harness's own health signals, propose the highest-leverage fixes, and — only with the user's
 go-ahead — apply and verify them, one bounded iteration at a time.
 
-Convergence step of harness-recursive-improvement (Phase 4): Phases 1–3 gave the harness eyes
-(nudge telemetry, the verification journal); this skill is the hand — a
-hand the human always holds.
+Convergence step of harness-recursive-improvement (Phase 4) — this skill is the hand, always held
+by a human (rationale: `references/step-rationale.md`).
 
 **The operating invariant (load-bearing — do not soften):** there is **no** autonomous,
 multi-iteration, unattended mode — every iteration stops at an `AskUserQuestion` gate before any
@@ -42,8 +41,10 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
 
 ### 1. Observe — gather signals (read-only)
 
-- Run `harness-audit`: `bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"` → CRIT/WARN/INFO findings —
-  the loop's branchable score, both whether to act and what (`file:line`) to fix.
+- Run `harness-audit` — dispatched, not run by main directly (`bash` isn't on main's read-only
+  allowlist): a foreground agent runs `bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"` and reports
+  back CRIT/WARN/INFO findings — the loop's branchable score, both whether to act and what
+  (`file:line`) to fix.
 - Read the gate-verdict journal: `bash "${CLAUDE_SKILL_DIR}/scripts/gate-journal-summary.sh"` →
   per-gate ask/deny/defer counts (frequency signal only, no free-text reason — read the actual
   gate source before proposing a change). Absence from the summary ≠ not-wired; cross-check
@@ -52,24 +53,22 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
   regressions — the durable WHY backlog the audit doesn't encode.
 - Scan feedback-memory clusters: `python3 "${CLAUDE_SKILL_DIR}/scripts/feedback-surface-scan.py"`
   → repo surfaces (skill/hook/script/doc) mentioned by 2+ `type: feedback` memories in prose —
-  where human correction has already repeated. Heuristic, already filters stale paths, but still
-  read the actual memory files before proposing an edit (why heuristic-not-convention:
-  `references/step-rationale.md`).
+  where human correction has already repeated. Still read the actual memory files before
+  proposing an edit (why heuristic-not-convention: `references/step-rationale.md`).
 - Scan the session transcript for operator corrections or repeated workflows signaling a gap the
   audit doesn't catch.
 - Take a witness pre-snapshot: `bash "${CLAUDE_SKILL_DIR}/scripts/inventory-witness.sh"
   /tmp/ri-BEFORE.md` — so Step 6 can attest exactly what changed.
 - **Success criterion:** a written candidate list, each anchored to a `file:line`, a MEMORY.md
-  entry, or an audit finding id. Clean audit + no signal → **say so and stop** (Rule 2: a clean
-  harness isn't an invitation to invent work).
+  entry, or an audit finding id. Clean audit + no signal → **say so and stop** (Rule 2).
 
 ### 2. Propose — decompose + rank (model judgment)
 
-- Decompose findings into independently fixable candidates (`orchestrate` Rule 13 — inline, don't
-  delegate to `mh:orchestrate`). Can't name the boundary between two candidates? They're
-  entangled — split or sequence them.
-- Rank by impact, cost, and risk. State per candidate: what changes, who executes (inline or
-  agent), blast radius (low/med/high — e.g. `hooks/gates/**` = high, doc-only = low),
+- Decompose findings into independently fixable candidates (`orchestrate` Rule 13 — route each to a
+  fixer agent directly, don't delegate to `mh:orchestrate`). Can't name the boundary between two
+  candidates? They're entangled — split or sequence them.
+- Rank by impact, cost, and risk. State per candidate: what changes, who executes (always an
+  agent — note which), blast radius (low/med/high — e.g. `hooks/gates/**` = high, doc-only = low),
   dependencies (none/chain). **If the touched surface is unclear, the candidate hasn't cleared
   the scope guard below — treat it as "too big — route to /mattpocock-skills:implement"; don't guess a blast-radius
   tier to get it past the gate.**
@@ -109,18 +108,16 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
   Multiple HIGH candidates still share one single-select (bundling is fine — none is being
   smuggled past a LOW/MED item) — but don't reuse the LOW/MED batch's "recommended order"
   framing; name each HIGH candidate on its own line.
-- **Neither ask collapses, even when Step 2's ranking is unambiguous.** This gate is
-  authorization, not information-gathering — never skip it because the ranking feels settled.
-  (Why: `references/step-rationale.md`.)
+- **Neither ask collapses, even when Step 2's ranking is unambiguous.** Never skip it because the
+  ranking feels settled (rationale: `references/step-rationale.md`).
 - A planning request is **not** authorization to execute. **A denial is not an approval.** If
   `AskUserQuestion` is denied under `--permission-mode dontAsk`, render the question(s) as
   numbered prose and stop — no live channel to wait on inside one headless dispatch. **Any
   headless invocation of this skill (scheduled or otherwise) must pass `--permission-mode
-  dontAsk` explicitly** — bare `-p` does not fail closed on its own (why this flag is
-  load-bearing: `references/step-rationale.md`). Per-ask: a denial on one (HIGH-alone or
-  LOW/MED-batch) isn't a denial on the other — resolve independently. No human reachable →
-  **stop at analysis-only**, never fail open. A later turn with an explicit reply resumes at
-  this same gate, not Step 4.
+  dontAsk` explicitly** (why this flag is load-bearing: `references/step-rationale.md`). Per-ask:
+  a denial on one (HIGH-alone or LOW/MED-batch) isn't a denial on the other — resolve
+  independently. No human reachable → **stop at analysis-only**, never fail open. A later turn
+  with an explicit reply resumes at this same gate, not Step 4.
 - **Success criterion:** for each ask — an explicit Approve (with candidate(s) signed off), a
   Revise/Reject that loops back/ends, or (unreachable) the rendered question plus a
   stop-at-analysis-only statement. Only an Approve authorizes Step 4 for that ask's candidate(s);
@@ -128,9 +125,9 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
 
 ### 4. Act — execute approved candidates
 
-- Route each candidate to the cheapest correct executor (inline for trivial; a matching senior
-  agent for specialized work, gated per `orchestrate`). Give each a **done-when** — an observable
-  output, not a topic.
+- Route each candidate to the cheapest correct executor — a haiku-model fixer for trivial work, a
+  matching senior agent for specialized work, gated per `orchestrate`. Give each a **done-when** —
+  an observable output, not a topic.
 - **Repeated failure escalates, it does not retry.** A candidate's executor gets exactly **one**
   attempt; on failure it records not-done with the verbatim failure signal (surfaced at Step 6)
   and does not re-attempt — no failure counter, no retry, escalate to the human gate instead.
@@ -144,8 +141,9 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
   must be something this turn actually ran. If resuming from an earlier Act, label results as
   reported by that step — never phrase an inferred or already-given result as if you just ran it
   yourself.
-- Re-run `harness-audit` (`bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"`). Compare the CRIT/WARN
-  counts to the Observe baseline.
+- Re-run `harness-audit` — dispatched the same way as Step 1 (a foreground agent runs
+  `bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"` and reports back). Compare the CRIT/WARN counts to
+  the Observe baseline.
 - **Drift guard:** if no signal improved — audit count not down, no other metric moved — the
   iteration did **not** help. Do **not** report success. Surface the flat/negative delta as the
   rollback decision (Step 6); the audit exit count is the deterministic stop condition (score,
@@ -153,9 +151,12 @@ the proposal to a human and wait? **Stop** — don't proceed plan-only into exec
 - **Named bias guard — survivorship.** If the diff touched the verifier itself (`hooks/gates/**`,
   `hooks/hooks.json`, `skills/meta/harness-audit/**`, `checks/**`), a lower count could mean the
   check narrowed, not the defect fixed — read the diff before calling it "improved."
-- Run the relevant deterministic check on touched code: `bash scripts/run-gauntlet.sh`
-  (plugin-validate + shell-lint + JSON-lint + harness-audit), `bash tests/hooks/test-gates.sh`
-  (3 deny-gates), `bash -n`/`py_compile` on edited scripts.
+- Run the relevant deterministic check on touched code — dispatched, not run by main directly
+  (`bash` isn't on main's read-only allowlist): a foreground `general-purpose` agent runs
+  `bash scripts/run-gauntlet.sh` (plugin-validate + shell-lint + JSON-lint + harness-audit),
+  `bash tests/hooks/test-gates.sh` (3 deny-gates), and `bash -n`/`py_compile` on edited scripts,
+  then reports back the verbatim output (or its tail) for main to read and score — same executor
+  framing as Step 4's "who executes (always an agent — note which)."
 - **Success criterion:** a measured before/after delta (improved, flat, or regressed) — stated,
   not assumed.
 

@@ -6,10 +6,22 @@
     "description": "Gate: block irrecoverable Bash patterns (rm -rf, push --force, --no-verify, reset --hard, clean -f)"
   },
   {
+    "id": "gate:bash:main-exec-guard",
+    "matcher": "Bash",
+    "script": "hooks/gates/main-exec-guard.sh",
+    "description": "Gate: the Bash leg of main-exec-guard — the MAIN session (no agent_id in the payload) may run only a read-only allowlist (ls/cat/grep/rg/jq/sed -n/awk/find/git status|log|diff|show|config <key>/gh pr view|list/rtk/claude --version, plus >/dev/null and 2>&1 redirects); everything else is DENIED by default — mutating git (add/commit/push/stash/checkout/config <k> <v>), any other redirect or heredoc, interpreters (bash/sh/python/node/perl/eval/source/xargs), sudo, tee/cp/mv/mkdir/trash, test runners, `claude plugin validate|update`, and any command it cannot tokenize (fail CLOSED on the Bash leg; a false positive costs one blocked command). Subagents (agent_id present) are untouched. Opt-in and off by default: no-op before stdin unless MH_MAIN_EXEC_GUARD is `1` (enforce) or `log` (evaluate + append a would_deny row to ~/.local/share/kbg/metrics/main-exec-guard.jsonl, never deny — calibration). Deny not ask (ask silently becomes allow under --dangerously-skip-permissions). Exit 2 + stderr. Placed right after gate:bash:irrecoverable so its deny message follows the irrecoverable one when both fire."
+  },
+  {
     "id": "gate:bash:merge-door",
     "matcher": "Bash",
     "script": "hooks/gates/merge-door.sh",
     "description": "Gate: ask before a raw `gh pr merge` runs outside the ship-merge skill flow. Restores the merge-door protection convergence-merge-gate.sh used to provide before it was retired 2026-08-24 (#82) with no replacement. Emits permissionDecision: ask. Known non-goal: the REST equivalent (gh api .../pulls/N/merge) is not covered."
+  },
+  {
+    "id": "gate:write:main-exec-guard",
+    "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+    "script": "hooks/gates/main-exec-guard.sh",
+    "description": "Gate: DENY any Write/Edit/MultiEdit/NotebookEdit from the MAIN session — the top-level session plans, dispatches, verifies, decides; it does not edit files (operator decision 2026-09-02, replacing the retired volume-based main-write-budget ask-nudge). Discriminant is the ABSENCE of agent_id in the payload (never agent_type, which a top-level `claude --agent` also sets); a subagent's writes are untouched. Three carve-outs, matched after realpath+expanduser so ~/.. tricks cannot dodge them: ~/.claude/plans/, ~/.claude/projects/*/memory/, and the session scratchpad (/tmp/claude-*/*/*/scratchpad/, /private prefix tolerated). Opt-in and off by default: no-op before stdin unless MH_MAIN_EXEC_GUARD is `1` (enforce) or `log` (evaluate + append a would_deny row to ~/.local/share/kbg/metrics/main-exec-guard.jsonl, never deny — calibration mode). Deny not ask (ask silently becomes allow under --dangerously-skip-permissions). Exit 2 + stderr; fail-safe ALLOW on a malformed payload or missing python3 — a lockout on the operator's own session has no recovery path. No MH_GUARDED_WORKSPACE special-case needed: this gate only verdicts main's own calls, worktree-guard's redirect applies to a subagent's separate call. Placed FIRST among the Write|Edit-matched gates. Off for one session: relaunch with MH_MAIN_EXEC_GUARD=0. Companion gate:bash:main-exec-guard covers the same script's Bash matcher."
   },
   {
     "id": "gate:write:verifier-protect",
@@ -82,12 +94,6 @@
     "matcher": "Write|Edit|NotebookEdit",
     "script": "hooks/gates/worktree-guard-dispatch.sh",
     "description": "Gate: redirect Edit/Write on a guarded sub-repo main checkout or protected branch into a session worktree under ~/.worktrees. Opt-in and off by default: no-op everywhere unless MH_GUARDED_WORKSPACE is set."
-  },
-  {
-    "id": "gate:write:main-write-budget",
-    "matcher": "Write|Edit|NotebookEdit",
-    "script": "hooks/gates/main-write-budget.sh",
-    "description": "Gate: ask when the MAIN session's own cumulative inline Write/Edit/NotebookEdit count for this session crosses a budget — a soft nudge toward delegation, never a block. Opt-in and off by default: no-op everywhere unless MH_MAIN_WRITE_BUDGET is set to a positive integer (no built-in default; an invalid value turns the gate off rather than assuming one). Subagent writes are never counted or gated (agent_id present -> allow). Count is read from hooks/stop/nudge-compliance-tracker.sh's main_writes field in nudge-compliance.jsonl, which updates once per Stop — so the count is 'as of the last completed turn' and a budget crossing is detected one turn late at worst, never early. Cumulative and monotonic: once crossed it asks on every main write for the rest of the session; silence with Claude Code's own always-allow. Threshold is PROVISIONAL, not derived. Placed LAST among Write|Edit-matched gates deliberately: dispatch-pretooluse.py resolves an ask-tier reason tie in favor of the EARLIER table entry, so every higher-stakes gate above (verifier-protect, config-guard, test-integrity, worktree-guard) always wins the reason text over this one. No-ops entirely, unconditionally, when MH_GUARDED_WORKSPACE is also set — an ask from this gate would otherwise permanently suppress worktree-guard's updatedInput redirect for the rest of a latched session. NOT an absolute 'main never executes' rule — the 9-clause inline-wins checklist in skills/workflow/orchestrate/reference.md still governs."
   },
   {
     "id": "gate:bash:worktree-guard",

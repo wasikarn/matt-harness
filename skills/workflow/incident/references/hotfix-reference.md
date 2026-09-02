@@ -10,7 +10,7 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
 
 **Actions**:
 1. **Rollback check:** Is the previous commit/artifact known-good?
-   - If yes → `git revert <bad-commit-sha>` or trigger rollback deploy. STOP hotfix. Done.
+   - If yes → dispatch one foreground fixer agent (not main — `git revert` isn't on main's read-only allowlist) to run `git revert <bad-commit-sha>` or trigger the rollback deploy, then report back. STOP hotfix. Done.
    - If no → continue.
 2. **Kill-switch check:** Is there a feature flag, config toggle, or circuit breaker that can disable the broken behavior?
    - If yes → disable it. STOP hotfix. Done.
@@ -42,7 +42,7 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
 **Goal**: Smallest surgical change that resolves the repro.
 
 **Actions**:
-0. **Branch setup:** resolve the production branch — the branch prod deploys/tags cut from (repo CLAUDE.md → deploy config → latest release tag; never assume the repo default branch — gitflow defaults are integration branches). Then `git fetch origin && git switch -c hotfix/<ticket>-<slug> origin/<prod-branch>`.
+0. **Branch setup:** dispatch the one foreground fixer agent for this hotfix now (not main, no fan-out — this same agent carries the Bash session through the rest of Fix, then resumes for Commit/push/merge in Phase 4). Its first action: resolve the production branch — the branch prod deploys/tags cut from (repo CLAUDE.md → deploy config → latest release tag; never assume the repo default branch — gitflow defaults are integration branches). Then `git fetch origin && git switch -c hotfix/<ticket>-<slug> origin/<prod-branch>`.
 1. Localize the bug — which file, which line.
 2. Implement the fix. **No refactors.** No "while I'm here" changes.
 3. Run the repro again — confirm it's fixed.
@@ -64,7 +64,7 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
 3. Wait for both. Consolidate into two buckets only — if both reviewers flag the same file:line, note it once rather than picking one silently:
    - **Block** — must fix before merge (security, data loss, breaks prod)
    - **Ship** — everything else is a follow-up
-4. Fix Block items inline. Do NOT block on Minor/Important.
+4. Dispatch a fixer for Block items. Do NOT block on Minor/Important.
 
 **Timebox**:
 - P0: 3 minutes for review. Only Block items checked.
@@ -79,6 +79,8 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
 
 **Goal**: Land the fix immediately via GitHub. Never `git merge` locally + push.
 
+**Who runs it:** the same dispatched foreground fixer agent from Phase 2, resumed after Phase 3 review clears — not main (`git commit`/`git push`/`gh pr create`/`gh pr merge`/`git checkout`+`git pull` aren't on main's read-only allowlist). One continuous agent, no fan-out: steps 1–3, 5, 6, and 8 below are all in its brief, reporting back once at the end. Step 7 (`git log`) is read-only — main can run that one itself to confirm the merge landed.
+
 **Actions**:
 1. Commit with message prefix `hotfix:` + severity tag + short description + issue ref.
    ```
@@ -86,7 +88,7 @@ On-demand detail for `hotfix` skill. Loaded when the agent needs phase-by-phase 
 
    Fixes #1234
    ```
-2. Push branch: `git push origin <branch>`
+2. Push branch: `git push origin <branch>` — per this phase's "Who runs it" above.
 3. Create PR with emergency labels — **`--base` is the production branch the hotfix was cut from, never the integration branch (develop):**
    Write the body to a temp file first (the Write tool, not a bash heredoc or quoted string —
    real hotfix content routinely contains apostrophes/backticks that break inline shell-string
@@ -149,7 +151,7 @@ confirmed it as a follow-up. Ship-merge's Phase 2 step 5 now has its own
 default-recommendation sentence too, keyed to its own rebase-freshness signal
 (not severity — that axis doesn't exist there), not a copy of this step's logic.
 
-6. Pull locally: `git checkout <base-branch> && git pull` (`<base-branch>` = the production branch the hotfix was cut from)
+6. Pull locally: `git checkout <base-branch> && git pull` (`<base-branch>` = the production branch the hotfix was cut from) — per this phase's "Who runs it" above.
 7. Verify merge landed: `git log --oneline -3`
 8. If the repo has an integration branch (`develop`): backmerge `<prod-branch>` → `develop` immediately (merge commit, not rebase) — or open the backmerge PR now and record it in Phase 6 notes.
 
@@ -167,7 +169,7 @@ default-recommendation sentence too, keyed to its own rebase-freshness signal
    ```
 2. Run repro one more time against production/staging to confirm fix.
 3. Monitor for 10 minutes (P0: 10 min, P1: 15 min, P2: 30 min).
-4. If error rate spikes or symptoms return → **revert immediately** (`git revert <hotfix-sha>`) rather than debugging forward.
+4. If error rate spikes or symptoms return → **revert immediately**: dispatch one foreground fixer agent (not main — `git revert` isn't on main's read-only allowlist) to run `git revert <hotfix-sha>` and report back, rather than debugging forward.
 5. Summarize: severity, what broke, one-line fix, commit sha, monitoring instructions.
 
 **Gate**: CI fails post-merge or symptoms return → revert, do NOT patch forward.

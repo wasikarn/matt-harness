@@ -117,7 +117,7 @@ print_boundary() {
       else
         bucket=$(basename "$_parent")
       fi
-      _skill_rows+=("$bucket"$'\t'"$name"$'\t'"${desc:-—}"$'\t'"${agent:-inline}"$'\t'"$invoke")
+      _skill_rows+=("$bucket"$'\t'"$name"$'\t'"${desc:-—}"$'\t'"${agent:-any-agent}"$'\t'"$invoke")
     done
     if [ "${#_skill_rows[@]}" -gt 0 ]; then
       local _cur_bucket=""
