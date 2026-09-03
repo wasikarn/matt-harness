@@ -438,6 +438,37 @@ orch_row=$(/usr/bin/grep '"stream":"orchestrator"' "$metrics_file" 2>/dev/null)
 assert "subagent rows split by agent_type (from meta.json sibling) even on the same model; orchestrator row carries agent_type:null" "$ok"
 trash "$fake_home" "$sess_dir" 2>/dev/null || true
 
+# Per-role breakdown (2026-09-03, docs/research/orchestrate-cost-optimization-2026-09-03.md
+# candidate #10). The F9 brief's `[role: ...]` tag lands in the subagent's FIRST user
+# message; cost-tracker reads it into `role`. Tag present (string content, mixed case) →
+# recorded lower-cased; array-shaped content with no tag → "unknown", row still written;
+# orchestrator row carries role:null. Same agent_type on both so only `role` splits them.
+fake_home=$(mktemp -d)
+sess_dir=$(mktemp -d)
+transcript="$sess_dir/roles.jsonl"
+mkdir -p "$sess_dir/roles/subagents"
+make_transcript_line claude-sonnet-5 100 50 > "$transcript"
+{ python3 -c 'import json; print(json.dumps({"type":"user","message":{"role":"user","content":"# Task: fix thing\n[Role: Validator]\n\n## What\nreview"}}))'
+  make_transcript_line claude-sonnet-5 10 5; } > "$sess_dir/roles/subagents/agent-aaa.jsonl"
+printf '{"agentType":"general-purpose","toolUseId":"t1","spawnDepth":1}' > "$sess_dir/roles/subagents/agent-aaa.meta.json"
+{ python3 -c 'import json; print(json.dumps({"type":"user","message":{"role":"user","content":[{"type":"text","text":"# Task: no tag here"}]}}))'
+  make_transcript_line claude-sonnet-5 20 8; } > "$sess_dir/roles/subagents/agent-bbb.jsonl"
+printf '{"agentType":"general-purpose","toolUseId":"t2","spawnDepth":1}' > "$sess_dir/roles/subagents/agent-bbb.meta.json"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "roles"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+val_row=$(/usr/bin/grep '"role":"validator"' "$metrics_file" 2>/dev/null)
+unk_row=$(/usr/bin/grep '"role":"unknown"' "$metrics_file" 2>/dev/null)
+orch_row=$(/usr/bin/grep '"stream":"orchestrator"' "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" && -f "$metrics_file" \
+  && "$(wc -l < "$metrics_file" | tr -d ' ')" == "3" ]] \
+  && printf '%s' "$val_row" | /usr/bin/grep -q '"input_tokens":10' \
+  && printf '%s' "$unk_row" | /usr/bin/grep -q '"input_tokens":20' \
+  && printf '%s' "$orch_row" | /usr/bin/grep -q '"role":null' && ok=1 || ok=0
+assert "F9 [role: X] tag in the subagent's first user message → role recorded (lower-cased); no tag → role:\"unknown\", row kept; orchestrator row role:null" "$ok"
+trash "$fake_home" "$sess_dir" 2>/dev/null || true
+
 # Missing meta.json sibling (older sessions, or a subagent that never got one) must
 # fail safe to agent_type:"unknown" — never drop the row, never crash.
 fake_home=$(mktemp -d)

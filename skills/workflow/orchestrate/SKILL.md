@@ -39,13 +39,13 @@ The lead does the **judgment** — what to dispatch, in what order, with what F9
 
 ## Spawn-prompt template (F9)
 
-**The most common sub-agent failure is an under-specified spawn prompt — read `reference.md`'s Spawn-prompt template (F9) section — full text before dispatching a non-trivial subagent, and use it verbatim, not from memory.** Miss a required slot and the subagent guesses wrong. ("F9" names this fix's entry in `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`'s gap taxonomy — not a step number.)
+**The most common sub-agent failure is an under-specified spawn prompt — `Read` `f9-template.md` (the Spawn-prompt template (F9) — full text section) before dispatching a non-trivial subagent, and use it verbatim, not from memory.** Read only that file — not `reference.md`, which is history and rationale. Miss a required slot and the subagent guesses wrong. ("F9" names this fix's entry in `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`'s gap taxonomy — not a step number.)
 
 **Cross-references:** this template is the per-task contract; the validation chain (`addBlockedBy`) gates ordering. Enforce both at your dispatch boundary — the spawn prompt IS the contract.
 
 ## Validation chain (builder → validator → fix → re-validator)
 
-**4-step pipeline (Builder → Validator → conditional Fixer → Re-validator) — read `reference.md`'s Validation chain (builder → validator → fix → re-validator) section — full text before running one.** Every non-trivial write should be a chain, not a single dispatch — **non-trivial** = ≥2 files changed OR ≥1 test file touched. The reference covers the DAG ordering, why `gate:task:complete-separation` makes completion the main session's call, the Gating rules table, the fail-closed structured verdict contract, upstream-contract propagation, and a full worked 4-task example.
+**4-step pipeline (Builder → Validator → conditional Fixer → Re-validator) — `Read` `validation-chain.md` (the Validation chain (builder → validator → fix → re-validator) — full text section) before running one.** Every non-trivial write should be a chain, not a single dispatch — **non-trivial** = ≥2 files changed OR ≥1 test file touched. The reference covers the DAG ordering, why `gate:task:complete-separation` makes completion the main session's call, the Gating rules table, the fail-closed structured verdict contract, upstream-contract propagation, a full worked 4-task example, and the Re-validator skip rule (no Fixer ran and same lens → the chain ends at the Validator).
 
 **Cross-references:** this pattern uses the F9 spawn-prompt template above; enforce the ordering with the native `TaskCreate` + `addBlockedBy` protocol.
 
@@ -114,13 +114,13 @@ A mechanical, deterministically-verified item (a linter or dependency-checker's 
 
 "Important" needs the user's goals to mean anything. If importance can't be judged from context, ask — don't guess (Rule 1, clarify-first).
 
-Full routing tables, agent fleet mapping, scripted execution details, and delegation guardrail: `reference.md`
+Full routing tables and agent fleet mapping: `routing.md`. Scripted execution details and delegation guardrail: `reference.md`
 
 ## Example
 
 A worked 5-task triage (prod outage, auth refactor, a CSV pull, pnpm-migration research, and a
 low-priority toggle) showing quadrant, route, agent, and gating end to end, plus this skill's
-routing boundary with the decision doctrine (METHODOLOGY Rule 1) and `/mattpocock-skills:wayfinder`: `reference.md`'s
+routing boundary with the decision doctrine (METHODOLOGY Rule 1) and `/mattpocock-skills:wayfinder`: `routing.md`'s
 Full triage example section.
 
 ## Output Format
@@ -133,7 +133,7 @@ Present the allocation as a table, then a one-line disposition summary.
 
 Summary: `N dispatched, M deferred, K dropped — <one-line why for each non-dispatched>`.
 
-The Route cell's leading word MUST be one of the four values above — never copy a `reference.md` Path-column word (`schedule`, `delegate`, `avoid`, `do last`) straight in; Path names the matrix's *disposition*, Route names the *execution shape* once applied. Translate: `schedule`/`delegate to a later wave` → `parallel`/`sequential` (whichever shape it'll actually take), Status `deferred`; `avoid` → `drop`, Status `dropped`; `delegate` (now) → `parallel`/`sequential`, Status `dispatched`. No clean translation = the item needs its own judgment call, not a mechanical copy.
+The Route cell's leading word MUST be one of the four values above — never copy a `routing.md` Path-column word (`schedule`, `delegate`, `avoid`, `do last`) straight in; Path names the matrix's *disposition*, Route names the *execution shape* once applied. Translate: `schedule`/`delegate to a later wave` → `parallel`/`sequential` (whichever shape it'll actually take), Status `deferred`; `avoid` → `drop`, Status `dropped`; `delegate` (now) → `parallel`/`sequential`, Status `dispatched`. No clean translation = the item needs its own judgment call, not a mechanical copy.
 
 A `deferred` or `dropped` Status carries its re-open condition in the row's notes — the concrete event or evidence that brings the item back (a date, a dependency landing, a metric crossing a line). A drop with no re-open condition is a silent forever-no the user never agreed to.
 

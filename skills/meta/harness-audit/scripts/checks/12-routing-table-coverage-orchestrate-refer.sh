@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # 12. Routing table coverage (orchestrate references all agents)
-# The agent fleet list lives in reference.md; SKILL.md carries only inline
-# examples (SKILL.md:49 points to reference.md). Check both — an agent
-# documented in either file counts as covered.
+# The agent fleet list lives in routing.md (split out of reference.md
+# 2026-09-03); SKILL.md carries only inline examples. Check all three — an
+# agent documented in any of them counts as covered.
 ORCH_SKILL="$CLAUDE_DIR/skills/workflow/orchestrate/SKILL.md"
 ORCH_REF="$CLAUDE_DIR/skills/workflow/orchestrate/reference.md"
+ORCH_ROUTING="$CLAUDE_DIR/skills/workflow/orchestrate/routing.md"
 if [ -f "$ORCH_SKILL" ]; then
   _agent_names=()
   for f in "$CLAUDE_DIR/agents"/*.md; do
@@ -21,7 +22,7 @@ if [ -f "$ORCH_SKILL" ]; then
     declare -A _orch_refs=()
     while IFS= read -r _tok; do
       _orch_refs["$_tok"]=1
-    done < <(grep -ohE "\`($_alt)\`" "$ORCH_SKILL" "$ORCH_REF" 2>/dev/null | tr -d '`')
+    done < <(grep -ohE "\`($_alt)\`" "$ORCH_SKILL" "$ORCH_REF" "$ORCH_ROUTING" 2>/dev/null | tr -d '`')
     for agent in "${_agent_names[@]}"; do
       [ -n "${_orch_refs[$agent]:-}" ] || warn "agent '$agent' not referenced in orchestrate routing table"
     done

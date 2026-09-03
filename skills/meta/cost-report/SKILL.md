@@ -19,11 +19,15 @@ The tracker appends JSON rows to `~/.local/share/kbg/metrics/costs.jsonl` — on
 `model_scoped: true`; each row re-derives cumulative totals from the full transcript
 (stateless). Row schema:
 
-`{ timestamp, session_id, transcript_path, model, model_scoped, stream, agent_type, turns, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cache_read_per_turn, rate_verified, estimated_cost_usd }`
+`{ timestamp, session_id, transcript_path, model, model_scoped, stream, agent_type, role, turns, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cache_read_per_turn, rate_verified, estimated_cost_usd }`
+
+`role` (2026-09-03+) is the F9 brief's `[role: …]` tag read from the subagent's first
+message — `builder|validator|fixer|re-validator|research|other`, `unknown` when the brief
+carried no tag, `null` on orchestrator rows.
 
 **Aggregation rule (the part that must not regress):** for each session with any
 `model_scoped` row, take the latest row per (`session_id`, `stream`, `model`,
-`agent_type`) key and sum across keys — a streamless legacy row counts as
+`agent_type`, `role`) key and sum across keys — a streamless legacy row counts as
 `stream: "orchestrator"`, not a fourth bucket. A session with no `model_scoped` rows falls
 back to the single latest row by `session_id`. Every element of that key exists because
 dropping it double-counted or silently dropped real spend — the incident history, the legacy
@@ -66,7 +70,11 @@ node "${MH_PLUGIN_ROOT}/scripts/workflows/cost-report-dedup.js" csv
    row for untyped subagent rows; a `tok` column (input+output tokens) sits next to cost
    so ranking still works when `rate_verified` is false. Omitted entirely when no row
    carries `stream: subagent` (all data predates 2026-08-07).
-5. Last seven days: date and cost.
+5. By role: subagent spend ranked by the F9 `role` tag (`(untagged)` for pre-2026-09-03
+   rows, `unknown` for briefs that carried no tag). Same omission rule as By agent type.
+6. Orchestrate sessions: count and spend of sessions whose `session_id` appears with
+   `mh:orchestrate` in `skill-usage.jsonl` (omitted when that file is absent).
+7. Last seven days: date and cost.
 
 Rely on the precomputed `estimated_cost_usd` values written by the tracker; do
 not re-estimate pricing from raw tokens here.

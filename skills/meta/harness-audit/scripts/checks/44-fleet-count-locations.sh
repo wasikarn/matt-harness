@@ -83,7 +83,7 @@ if [ "$_is_mh" = "1" ]; then
 
   _check_triple "$CLAUDE_DIR/README.md" "real current fleet:"
   _check_triple "$CLAUDE_DIR/README.md" "| kbg-native |"
-  _check_agent_count "$CLAUDE_DIR/skills/workflow/orchestrate/reference.md" "-agent survivor set"
+  _check_agent_count "$CLAUDE_DIR/skills/workflow/orchestrate/routing.md" "-agent survivor set"
   _check_agent_count "$CLAUDE_DIR/docs/agent-voice-extension.md" "-agent fleet"
 
   unset -f _check_triple _check_agent_count

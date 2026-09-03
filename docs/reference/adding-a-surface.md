@@ -28,7 +28,7 @@ no awareness of this repo's own manifest/version-bump/BOUNDARY.md ritual. The st
    Same-version edits to a cached plugin are silent no-ops.
 4. Run `bash skills/inventory/scripts/sync-fleet-counts.sh` to patch the "N skills · M
    agents" pair into `plugin.json`/`marketplace.json`/`README.md`. A new **agent** also
-   needs two hand edits the script can't reach: `skills/workflow/orchestrate/reference.md`'s
+   needs two hand edits the script can't reach: `skills/workflow/orchestrate/routing.md`'s
    named routing table + "N-agent survivor set" count, and the count mention in
    `docs/agent-voice-extension.md`.
 5. Run `claude plugin validate . --strict`, then `bash

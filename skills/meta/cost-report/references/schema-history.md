@@ -110,3 +110,14 @@ the Node process's resolved local timezone
 timezone when `TZ` is unset) — correct for a user running this command on their own machine,
 but if invoked in a context whose system/`TZ` timezone doesn't match the reader's own (a
 container, a remote/headless session), the buckets follow that environment's zone instead.
+
+## `role` field (2026-09-03)
+
+`role` is the F9 brief's `[role: builder|validator|fixer|re-validator|research|other]` tag
+(`skills/workflow/orchestrate/f9-template.md`), read by `cost-tracker.sh` from the subagent's
+first user message (string or text-array content, case-insensitive). Fail-open: no tag or no
+readable user line → `"unknown"`; orchestrator rows carry `null`. It joined the dedup key for the
+same reason `agent_type` did — two roles on the same agent type are different populations of
+work (Builder vs Validator vs Re-validator spend is the number candidate #10 of
+`docs/research/orchestrate-cost-optimization-2026-09-03.md` collects before any model-downgrade
+decision). Rows written before this date have no field and report as `(untagged)`.

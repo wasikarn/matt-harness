@@ -679,7 +679,7 @@ if not would_deny:
 
 print("[mh:gate] BLOCKED: main-exec-guard — the top-level session plans and dispatches; "
       "it does not edit files, run mutating commands, or run tests. Dispatch a subagent "
-      "(Agent tool, F9 template in skills/workflow/orchestrate/reference.md) to do this "
+      "(Agent tool, F9 template in skills/workflow/orchestrate/f9-template.md) to do this "
       "— including any config edit. Attempted: " + clip(attempted) + ". "
       "Off for one session: relaunch with MH_MAIN_EXEC_GUARD=0 in the environment.",
       file=sys.stderr)

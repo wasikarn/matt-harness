@@ -13,8 +13,8 @@ const f=path.join(os.homedir(),".local","share","kbg","metrics","costs.jsonl");
 if(process.argv[2]==="csv"){
   if(!fs.existsSync(f)){console.error("no data");process.exit(0);}
   const rows=fs.readFileSync(f,"utf8").split(/\r?\n/).filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(Boolean).slice(-100);
-  console.log("timestamp,session_id,model,model_scoped,stream,agent_type,turns,input_tokens,output_tokens,cache_write_tokens,cache_read_tokens,cache_read_per_turn,estimated_cost_usd");
-  for(const r of rows)console.log([r.timestamp,r.session_id,r.model,r.model_scoped===true,r.stream||"",r.agent_type||"",r.turns||"",r.input_tokens,r.output_tokens,r.cache_write_tokens,r.cache_read_tokens,r.cache_read_per_turn||"",r.estimated_cost_usd].join(","));
+  console.log("timestamp,session_id,model,model_scoped,stream,agent_type,role,turns,input_tokens,output_tokens,cache_write_tokens,cache_read_tokens,cache_read_per_turn,estimated_cost_usd");
+  for(const r of rows)console.log([r.timestamp,r.session_id,r.model,r.model_scoped===true,r.stream||"",r.agent_type||"",r.role||"",r.turns||"",r.input_tokens,r.output_tokens,r.cache_write_tokens,r.cache_read_tokens,r.cache_read_per_turn||"",r.estimated_cost_usd].join(","));
   process.exit(0);
 }
 
@@ -27,7 +27,7 @@ for(const rs of bySession.values()){
   const scoped=rs.filter(r=>r.model_scoped===true);
   if(scoped.length){
     const byModel=new Map();
-    for(const r of scoped){const k=(r.stream||"orchestrator")+" "+(r.model||"")+" "+(r.agent_type||"");const p=byModel.get(k);if(!p||String(r.timestamp)>String(p.timestamp))byModel.set(k,r);}
+    for(const r of scoped){const k=(r.stream||"orchestrator")+" "+(r.model||"")+" "+(r.agent_type||"")+" "+(r.role||"");const p=byModel.get(k);if(!p||String(r.timestamp)>String(p.timestamp))byModel.set(k,r);}
     latest.push(...byModel.values());
   }else{
     let best=null;
@@ -64,6 +64,23 @@ if(typed.length){
   console.log("\n=== By agent type (subagent spend only; rows tagged 2026-08-07+; tok = input+output, rank by it when rate unverified) ===");
   const m=new Map();for(const r of typed){const k=r.agent_type||"(unknown)";const p=m.get(k)||{c:0,t:0};p.c+=cost(r);p.t+=(Number(r.input_tokens)||0)+(Number(r.output_tokens)||0);m.set(k,p);}
   for(const [k,v] of [...m.entries()].sort((a,b)=>b[1].c-a[1].c||b[1].t-a[1].t))console.log(f4(v.c).padStart(12)+"  "+String(v.t).padStart(10)+" tok  "+k);
+  // By role: the F9 brief's [role: ...] tag (skills/workflow/orchestrate/f9-template.md),
+  // read by cost-tracker.sh from the subagent's first message. Rows written before
+  // 2026-09-03 carry no `role` and land in "(untagged)"; a brief with no tag lands in "unknown".
+  console.log("\n=== By role (subagent spend only; F9 [role: ...] tag, rows tagged 2026-09-03+) ===");
+  const rm=new Map();for(const r of typed){const k=r.role||"(untagged)";const p=rm.get(k)||{c:0,t:0};p.c+=cost(r);p.t+=(Number(r.input_tokens)||0)+(Number(r.output_tokens)||0);rm.set(k,p);}
+  for(const [k,v] of [...rm.entries()].sort((a,b)=>b[1].c-a[1].c||b[1].t-a[1].t))console.log(f4(v.c).padStart(12)+"  "+String(v.t).padStart(10)+" tok  "+k);
+}
+// Orchestrate sessions: join on session_id against skill-usage.jsonl (same dir, written by
+// hooks/session/skill-usage-telemetry.sh) — the population the 7c threshold decision waits on
+// (docs/research/orchestrate-cost-optimization-2026-09-03.md, "Collect, then decide").
+const su=path.join(path.dirname(f),"skill-usage.jsonl");
+if(fs.existsSync(su)){
+  const orchSessions=new Set(fs.readFileSync(su,"utf8").split(/\r?\n/).filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(r=>r&&r.skill==="mh:orchestrate").map(r=>r.session_id));
+  const orchRows=latest.filter(r=>orchSessions.has(r.session_id));
+  const n=new Set(orchRows.map(r=>r.session_id)).size;
+  console.log("\n=== Orchestrate sessions (session_id seen with mh:orchestrate in skill-usage.jsonl) ===");
+  console.log(n+" sessions, "+f4(sum(orchRows))+"  (main+subagent; decide 7c/model downgrades at >=10)");
 }
 console.log("\n=== Last 7 days ===");
 const days=new Map();for(const r of latest){const k=day(r);days.set(k,(days.get(k)||0)+cost(r));}

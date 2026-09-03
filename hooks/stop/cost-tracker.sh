@@ -49,8 +49,15 @@ sonnet_rate='{"i":2.0,"o":10.0,"cw":2.50,"cr":0.20}'
 # the row — a type gap shouldn't cost the spend data. The orchestrator's own
 # transcript has no such sibling, so it's never passed as a subagent file;
 # emit_rows treats a file absent from the map as agent_type:null.
+#
+# Each map value is {t: <agent_type>, r: <role>}. `r` is the chain role from the
+# F9 brief's `[role: builder|validator|fixer|re-validator|research|other]` tag
+# (skills/workflow/orchestrate/f9-template.md), read from the subagent's first
+# user message — the only place the brief lands. Fail-open: no tag, no user
+# line, unreadable file → "unknown", never a dropped row (2026-09-03,
+# docs/research/orchestrate-cost-optimization-2026-09-03.md candidate #10).
 build_type_map() {
-  local parent="$1" out='{}' f meta t tu; shift
+  local parent="$1" out='{}' f meta t tu r; shift
   local parent_map
   parent_map=$(jq -nRc '[inputs | try fromjson | select(.type == "assistant")
     | (.message.content // [])[]? | select(.type == "tool_use" and .name == "Agent")
@@ -63,7 +70,12 @@ build_type_map() {
       [[ -n "$tu" ]] && t=$(printf '%s' "$parent_map" | jq -r --arg k "$tu" '.[$k] // empty' 2>/dev/null)
     fi
     [[ -z "$t" ]] && t="unknown"
-    out=$(printf '%s' "$out" | jq -c --arg f "$f" --arg t "$t" '. + {($f): $t}' 2>/dev/null) || out='{}'
+    r=$(jq -nRr 'first(inputs | try fromjson | select(.type == "user"))
+      | .message.content
+      | if type == "string" then . else ([.[]? | .text? // empty] | join(" ")) end
+      | ascii_downcase | capture("\\[role: *(?<r>[a-z-]+)\\]") | .r' "$f" 2>/dev/null) || r=''
+    [[ -z "$r" ]] && r="unknown"
+    out=$(printf '%s' "$out" | jq -c --arg f "$f" --arg t "$t" --arg r "$r" '. + {($f): {t: $t, r: $r}}' 2>/dev/null) || out='{}'
   done
   printf '%s' "$out"
 }
@@ -97,11 +109,13 @@ emit_rows() {
         cw: (.message.usage.cache_creation_input_tokens // 0),
         cr: (.message.usage.cache_read_input_tokens // 0),
         m: (.message.model // "unknown"),
-        t: ($typemap[input_filename] // null) } ]
-    | group_by([.m, .t])
+        t: ($typemap[input_filename].t // null),
+        r: ($typemap[input_filename].r // null) } ]
+    | group_by([.m, .t, .r])
     | map({
         model: .[0].m,
         agent_type: .[0].t,
+        role: .[0].r,
         turns: length,
         input_tokens: ((map(.in) | add) // 0),
         output_tokens: ((map(.out) | add) // 0),
@@ -128,7 +142,7 @@ emit_rows() {
       else ($sonnet_rate + {v:false}) end;
     .[] | . as $u | ($u | rate) as $r |
     { timestamp: $ts, session_id: $sid, transcript_path: $tp, model: $u.model,
-      model_scoped: true, stream: $stream, agent_type: $u.agent_type, turns: $u.turns,
+      model_scoped: true, stream: $stream, agent_type: $u.agent_type, role: $u.role, turns: $u.turns,
       input_tokens: $u.input_tokens, output_tokens: $u.output_tokens,
       cache_write_tokens: $u.cache_write_tokens, cache_read_tokens: $u.cache_read_tokens,
       cache_read_per_turn: (if $u.turns > 0 then ($u.cache_read_tokens / $u.turns | round) else 0 end),
