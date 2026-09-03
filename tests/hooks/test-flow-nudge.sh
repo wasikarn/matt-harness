@@ -578,6 +578,39 @@ else
   echo "  ❌ CONTENT EXPECTED delegation block <= 400 B, got ${short_rule_bytes} B: <$(printf '%s' "$short_rule_out" | head -c 200)>" >&2
   fail=$((fail + 1))
 fi
+# Same 400 B pin, but on the REAL ratio line (the test above only measures
+# the "no delegation data yet" fallback, which is shorter than the computed
+# ratio + carried-context text). Fixture: two-stream costs.jsonl so pct,
+# both token totals, and the ~NK tokens/turn suffix all render.
+real_ratio_fixture=$(mktemp)
+cat > "$real_ratio_fixture" <<'JSONL'
+{"timestamp":"2026-09-01T00:00:00Z","session_id":"len-test","model":"claude-sonnet-5","model_scoped":true,"stream":"orchestrator","agent_type":null,"turns":120,"input_tokens":1234567,"output_tokens":1234567,"cache_write_tokens":1234567,"cache_read_tokens":123456789}
+{"timestamp":"2026-09-01T00:05:00Z","session_id":"len-test","model":"claude-sonnet-5","model_scoped":true,"stream":"subagent","agent_type":"general-purpose","turns":20,"input_tokens":1234567,"output_tokens":1234567,"cache_write_tokens":1234567,"cache_read_tokens":12345678}
+JSONL
+real_ratio_out=$(echo "{\"session_id\":\"len-test\",\"hook_event_name\":\"UserPromptSubmit\",\"prompt\":\"go through these 5 files and tell me what they do\"}" | MH_COST_METRICS_FILE="$real_ratio_fixture" bash "$HOOK" 2>/dev/null)
+python3 -c "import os; os.unlink('$real_ratio_fixture')" 2>/dev/null
+real_ratio_bytes=$(printf '%s' "$real_ratio_out" | wc -c | tr -d ' ')
+if printf '%s' "$real_ratio_out" | /usr/bin/grep -q "% of tokens went to subagents" && (( real_ratio_bytes <= 400 )); then
+  echo "  ✅ CONTENT: real ratio line (large 9-digit totals) keeps the delegation block at ${real_ratio_bytes} B (<= 400)"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT EXPECTED real-ratio delegation block <= 400 B, got ${real_ratio_bytes} B: <$(printf '%s' "$real_ratio_out" | head -c 400)>" >&2
+  fail=$((fail + 1))
+fi
+# Regression pins (v0.68.631): the v0.68.629 early exit ran BEFORE
+# DELEGATION_TRIGGER / BUG_COMPLEX were computed, so these short prompts went
+# silent even though every one of them fired at 8f3e2057^.
+test_nudge "short multi-file count still fires (delegation)"        "4 files"
+test_nudge "short weak-bug + breadth still fires (plan-first)"      "flaky across all"
+test_nudge "short weak-bug + files-noun + breadth fires both"       "bug in every file"
+both_out=$(echo "$(user_prompt_payload "bug in every file")" | bash "$HOOK" 2>/dev/null)
+if printf '%s' "$both_out" | /usr/bin/grep -q "Non-trivial work" && printf '%s' "$both_out" | /usr/bin/grep -qi "delegat"; then
+  echo "  ✅ CONTENT: 'bug in every file' carries both the plan-first and delegation blocks"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT EXPECTED both blocks for 'bug in every file': <$(printf '%s' "$both_out" | head -c 200)>" >&2
+  fail=$((fail + 1))
+fi
 
 echo ""
 echo "--- empty / malformed input (must stay silent + exit 0) ---"

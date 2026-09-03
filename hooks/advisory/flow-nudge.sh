@@ -179,7 +179,7 @@ delegation_ratio_line() {
   pct=$(( sub * 100 / total ))
   ctx=""
   (( turns > 0 )) && ctx="; orchestrator context now ~$(( (cr / turns + 500) / 1000 ))K tokens/turn"
-  echo "this session's delegation ratio so far: ${pct}% of tokens went to subagents (${sub} subagent / ${orch} orchestrator, of ${total} total)${ctx}"
+  echo "delegation ratio so far: ${pct}% of tokens went to subagents (${sub} subagent / ${orch} orchestrator)${ctx}"
 }
 
 # emit_delegation_nudge — the independent trigger's payload (GH #120). Does
@@ -227,19 +227,6 @@ SESSION_ID=$(printf '%s' "$PAYLOAD" | jq -r '.session_id // empty' 2>/dev/null)
 # prompt. Only used for Thai matching — English checks stay on raw $INPUT.
 INPUT_TH="${INPUT//เพิ่มเติม/}"
 
-# Short-prompt early exit: a status reply ("ok thanks", "รอผล") has no work
-# in it, so skip the ~10 greps below. Short = under 6 words AND under 40
-# chars (Thai has no spaces, so word count alone under-counts it). A short
-# prompt that carries any trigger this script keys on (impl verb, PR/review
-# ask, strong bug signal, ticket key) still falls through — "ship this",
-# "สร้าง PR ให้หน่อย", "implement TP-919" keep firing.
-SHORT_WORDS=$(wc -w <<< "$INPUT")
-if (( SHORT_WORDS < 6 && ${#INPUT} < 40 )) \
-   && ! /usr/bin/grep -qiE "\b($IMPL)\b|pull request|\bPRs?\b|review|race condition|deadlock|memory leak|\btp-[0-9]+\b" <<< "$INPUT" \
-   && ! /usr/bin/grep -qE "$THAI_IMPL|แก้ตามรีวิว" <<< "$INPUT_TH"; then
-  exit 0
-fi
-
 # Delegation-ratio trigger (GH #120) — independent of the IMPL gate below.
 # docs/METHODOLOGY.md Rule 13's own ">~3 files" condition is the anchor: a
 # prompt naming more than 3 files, or a files-plural noun co-occurring with a
@@ -250,7 +237,7 @@ fi
 # read/research-heavy prompt ("review these 5 files...", "go through every
 # module...") with no IMPL verb never saw it — exactly the shape where
 # hoarding happens, per the issue. SCOPE_SIGNAL is shared with the
-# BUG_SIGNAL_WEAK co-occurrence gate further down this file — defined once,
+# BUG_SIGNAL_WEAK co-occurrence gate right below — defined once,
 # here, not duplicated there.
 # English-only for now, same as this file's other new-signal precedent (see
 # the BUG_SIGNAL carve-in comment below) — no held-out Thai evidence gathered
@@ -272,6 +259,62 @@ if /usr/bin/grep -qiE "$FILES_COUNT" <<< "$INPUT" \
    || ( /usr/bin/grep -qiE "$FILES_NOUN" <<< "$INPUT" && /usr/bin/grep -qiE "$SCOPE_SIGNAL" <<< "$INPUT" ); then
   DELEGATION_TRIGGER=1
 fi
+
+# Complex-bug-fix carve-in: `fix`/`debug`/`diagnose` are deliberately absent
+# from IMPL (a trivial "fix typo" must stay silent — decision-doctrine-map.md's
+# "Bug report -> fix" row explicitly defers a bug-report-specific nudge). But
+# Rule 1's plan-mode criteria (multi-file / unfamiliar subsystem / architectural)
+# apply to a hard bug fix exactly as much as a feature — a race condition or
+# memory leak spanning "every service" is exactly the shape plan-first exists
+# for, and the held-out audit (see IMPL comment above) measured 0/8 recall on
+# this category. Not extended to Thai — no held-out evidence for Thai
+# bug-language phrasing yet.
+#
+# Two tiers, added 2026-08-06 after the audit's residual-miss review found one
+# tested case ("fix the race condition ... causing intermittent prod outages")
+# had strong bug-language but no explicit breadth word:
+#   - STRONG: race condition / deadlock / memory leak. These fire alone, no
+#     breadth co-occurrence required — a race condition or deadlock is, by its
+#     own definition, an interaction between multiple components; diagnosing
+#     one correctly is rarely a single-file task even when the eventual patch
+#     is small. Treating them as self-evidently non-trivial is a claim about
+#     what those terms mean, not a rule shaped to match one audit sentence.
+#   - WEAK: bug / leak(s) / intermittent / flaky / silently drops-fails /
+#     regression / corrupt(s/ed/ing). These stay behind the original
+#     co-occurrence gate (WEAK signal AND a breadth word, neither alone) —
+#     "there's a regression in the login flow" or "debug this one function"
+#     must still stay silent, and a bare "corrupted" without breadth language
+#     is exactly that kind of ordinary, possibly-trivial report.
+BUG_SIGNAL_STRONG='(race condition|deadlock|memory leak)'
+BUG_SIGNAL_WEAK='(\bbug\b|\bleaks?\b|intermittent|flak(y|iness)|silently (drops?|fails?)|\bregression\b|corrupt(s|ed|ing)?)'
+# SCOPE_SIGNAL is defined once, earlier in this file (Delegation-ratio
+# trigger section, GH #120) — shared by that trigger and this co-occurrence
+# gate, not redeclared here.
+BUG_COMPLEX=0
+if /usr/bin/grep -qiE "$BUG_SIGNAL_STRONG" <<< "$INPUT"; then
+  BUG_COMPLEX=1
+elif /usr/bin/grep -qiE "$BUG_SIGNAL_WEAK" <<< "$INPUT" && /usr/bin/grep -qiE "$SCOPE_SIGNAL" <<< "$INPUT"; then
+  BUG_COMPLEX=1
+fi
+
+# Short-prompt early exit: a status reply ("ok thanks", "รอผล") has no work
+# in it, so skip the PR/review greps below. Short = under 6 words AND under
+# 40 chars (Thai has no spaces, so word count alone under-counts it). A short
+# prompt that carries any trigger this script keys on still falls through —
+# "ship this", "สร้าง PR ให้หน่อย", "implement TP-919", "4 files", "flaky
+# across all" keep firing. Completeness: every emitter below is gated by
+# exactly one of IMPL / THAI_IMPL / แก้ตามรีวิว / pull request|PRs? / review /
+# TICKET_KEY / DELEGATION_TRIGGER / BUG_COMPLEX, so the two computed flags are
+# checked here too (v0.68.631 — the v0.68.629 exit ran before they were
+# computed and silenced "4 files", "bug in every file"; the strong bug
+# signals are folded into BUG_COMPLEX, not listed twice).
+SHORT_WORDS=$(wc -w <<< "$INPUT")
+if (( SHORT_WORDS < 6 && ${#INPUT} < 40 && DELEGATION_TRIGGER == 0 && BUG_COMPLEX == 0 )) \
+   && ! /usr/bin/grep -qiE "\b($IMPL)\b|pull request|\bPRs?\b|review|\btp-[0-9]+\b" <<< "$INPUT" \
+   && ! /usr/bin/grep -qE "$THAI_IMPL|แก้ตามรีวิว" <<< "$INPUT_TH"; then
+  exit 0
+fi
+
 
 # PR-creation intent → route to mh:pr and skip the generic plan-first nudge
 # (which is the wrong advice for a discrete "create a PR" action). Placed BEFORE
@@ -359,43 +402,6 @@ fi
 if /usr/bin/grep -qE "แก้ตามรีวิว" <<< "$INPUT_TH" \
    && ! /usr/bin/grep -qE "$THAI_IMPL" <<< "$INPUT_TH"; then
   emit_address_review_nudge
-fi
-
-# Complex-bug-fix carve-in: `fix`/`debug`/`diagnose` are deliberately absent
-# from IMPL (a trivial "fix typo" must stay silent — decision-doctrine-map.md's
-# "Bug report -> fix" row explicitly defers a bug-report-specific nudge). But
-# Rule 1's plan-mode criteria (multi-file / unfamiliar subsystem / architectural)
-# apply to a hard bug fix exactly as much as a feature — a race condition or
-# memory leak spanning "every service" is exactly the shape plan-first exists
-# for, and the held-out audit (see IMPL comment above) measured 0/8 recall on
-# this category. Not extended to Thai — no held-out evidence for Thai
-# bug-language phrasing yet.
-#
-# Two tiers, added 2026-08-06 after the audit's residual-miss review found one
-# tested case ("fix the race condition ... causing intermittent prod outages")
-# had strong bug-language but no explicit breadth word:
-#   - STRONG: race condition / deadlock / memory leak. These fire alone, no
-#     breadth co-occurrence required — a race condition or deadlock is, by its
-#     own definition, an interaction between multiple components; diagnosing
-#     one correctly is rarely a single-file task even when the eventual patch
-#     is small. Treating them as self-evidently non-trivial is a claim about
-#     what those terms mean, not a rule shaped to match one audit sentence.
-#   - WEAK: bug / leak(s) / intermittent / flaky / silently drops-fails /
-#     regression / corrupt(s/ed/ing). These stay behind the original
-#     co-occurrence gate (WEAK signal AND a breadth word, neither alone) —
-#     "there's a regression in the login flow" or "debug this one function"
-#     must still stay silent, and a bare "corrupted" without breadth language
-#     is exactly that kind of ordinary, possibly-trivial report.
-BUG_SIGNAL_STRONG='(race condition|deadlock|memory leak)'
-BUG_SIGNAL_WEAK='(\bbug\b|\bleaks?\b|intermittent|flak(y|iness)|silently (drops?|fails?)|\bregression\b|corrupt(s|ed|ing)?)'
-# SCOPE_SIGNAL is defined once, earlier in this file (Delegation-ratio
-# trigger section, GH #120) — shared by that trigger and this co-occurrence
-# gate, not redeclared here.
-BUG_COMPLEX=0
-if /usr/bin/grep -qiE "$BUG_SIGNAL_STRONG" <<< "$INPUT"; then
-  BUG_COMPLEX=1
-elif /usr/bin/grep -qiE "$BUG_SIGNAL_WEAK" <<< "$INPUT" && /usr/bin/grep -qiE "$SCOPE_SIGNAL" <<< "$INPUT"; then
-  BUG_COMPLEX=1
 fi
 
 if ! /usr/bin/grep -qiE "\b($IMPL)\b" <<< "$INPUT" && ! /usr/bin/grep -qE "$THAI_IMPL" <<< "$INPUT_TH" \
