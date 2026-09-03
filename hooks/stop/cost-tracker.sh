@@ -36,19 +36,32 @@ mkdir -p "$metrics_dir"
 # previously scheduled increase ... will not occur."
 sonnet_rate='{"i":2.0,"o":10.0,"cw":2.50,"cr":0.20}'
 
-# build_type_map <transcript-file>...
+# build_type_map <parent-transcript> <subagent-transcript-file>...
 # Maps each subagent transcript to the `agentType` from its sibling
 # agent-<id>.meta.json (Claude Code writes one alongside every agent-<id>.jsonl,
 # carrying the real Agent-tool subagent_type — confirmed shape against a real
-# transcript, 2026-08-07). Missing/unreadable meta.json falls back to "unknown"
-# rather than dropping the row — a type gap shouldn't cost the spend data. The
-# orchestrator's own transcript has no such sibling, so it's never passed here;
+# transcript, 2026-08-07; 2762/2762 metas on this machine carried it, 2026-09-03).
+# Fallback when meta has no agentType: its `toolUseId` keyed into the parent
+# transcript's Agent tool_use `.input.subagent_type` — the only other place the
+# type is recorded (the subagent JSONL itself carries none, and the parent never
+# mentions the agent id, so a fully missing meta has no recoverable source).
+# Missing/unreadable meta.json then falls back to "unknown" rather than dropping
+# the row — a type gap shouldn't cost the spend data. The orchestrator's own
+# transcript has no such sibling, so it's never passed as a subagent file;
 # emit_rows treats a file absent from the map as agent_type:null.
 build_type_map() {
-  local out='{}' f meta t
+  local parent="$1" out='{}' f meta t tu; shift
+  local parent_map
+  parent_map=$(jq -nRc '[inputs | try fromjson | select(.type == "assistant")
+    | (.message.content // [])[]? | select(.type == "tool_use" and .name == "Agent")
+    | {(.id): (.input.subagent_type // empty)}] | add // {}' "$parent" 2>/dev/null) || parent_map='{}'
   for f in "$@"; do
     meta="${f%.jsonl}.meta.json"
     t=$([[ -f "$meta" ]] && jq -r '.agentType // empty' "$meta" 2>/dev/null)
+    if [[ -z "$t" && -f "$meta" ]]; then
+      tu=$(jq -r '.toolUseId // empty' "$meta" 2>/dev/null)
+      [[ -n "$tu" ]] && t=$(printf '%s' "$parent_map" | jq -r --arg k "$tu" '.[$k] // empty' 2>/dev/null)
+    fi
     [[ -z "$t" ]] && t="unknown"
     out=$(printf '%s' "$out" | jq -c --arg f "$f" --arg t "$t" '. + {($f): $t}' 2>/dev/null) || out='{}'
   done
@@ -142,7 +155,7 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
     sub_files=("$sub_dir"/*.jsonl)
     shopt -u nullglob
     if (( ${#sub_files[@]} )); then
-      sub_typemap=$(build_type_map "${sub_files[@]}")
+      sub_typemap=$(build_type_map "$transcript" "${sub_files[@]}")
       sub_rows=$(emit_rows subagent "$sub_typemap" "${sub_files[@]}")
       [[ -n "$sub_rows" ]] && rows="${rows:+$rows$'\n'}$sub_rows"
     fi

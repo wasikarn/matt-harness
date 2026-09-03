@@ -457,6 +457,35 @@ sub_row=$(/usr/bin/grep '"stream":"subagent"' "$metrics_file" 2>/dev/null)
 assert "subagent transcript with no .meta.json sibling falls back to agent_type:\"unknown\" (fails safe, no crash)" "$ok"
 trash "$fake_home" "$sess_dir" 2>/dev/null || true
 
+# meta.json present but agentType empty/missing → fall back to the parent transcript's
+# Agent tool_use `.input.subagent_type`, joined on meta's toolUseId (the one other place
+# the type is recorded; verified 2026-09-03 the subagent JSONL carries none). A toolUseId
+# with no matching parent tool_use still lands on "unknown", never a crash.
+fake_home=$(mktemp -d)
+sess_dir=$(mktemp -d)
+transcript="$sess_dir/fb.jsonl"
+mkdir -p "$sess_dir/fb/subagents"
+{
+  make_transcript_line claude-sonnet-5 100 50
+  printf '{"type":"assistant","message":{"model":"claude-sonnet-5","content":[{"type":"tool_use","id":"toolu_fb1","name":"Agent","input":{"subagent_type":"mh:plan-reviewer","prompt":"x"}}]}}\n'
+} > "$transcript"
+make_transcript_line claude-sonnet-5 10 5 > "$sess_dir/fb/subagents/agent-ddd.jsonl"
+printf '{"description":"no type","toolUseId":"toolu_fb1","spawnDepth":1}' > "$sess_dir/fb/subagents/agent-ddd.meta.json"
+make_transcript_line claude-sonnet-5 20 8 > "$sess_dir/fb/subagents/agent-eee.jsonl"
+printf '{"agentType":"","toolUseId":"toolu_nomatch","spawnDepth":1}' > "$sess_dir/fb/subagents/agent-eee.meta.json"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "fb"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+fb_row=$(/usr/bin/grep '"agent_type":"mh:plan-reviewer"' "$metrics_file" 2>/dev/null)
+unk_row=$(/usr/bin/grep '"agent_type":"unknown"' "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" && -f "$metrics_file" ]] \
+  && printf '%s' "$fb_row" | /usr/bin/grep -q '"input_tokens":10' \
+  && printf '%s' "$unk_row" | /usr/bin/grep -q '"input_tokens":20' \
+  && printf '%s' "$fb_row" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null && ok=1 || ok=0
+assert "meta.json without agentType falls back to parent transcript's Agent tool_use subagent_type via toolUseId; unmatched toolUseId stays \"unknown\"" "$ok"
+trash "$fake_home" "$sess_dir" 2>/dev/null || true
+
 # Claude-only tracking (2026-08-07, operator request): a session can run non-Claude
 # models (e.g. via a proxy that swaps ANTHROPIC_BASE_URL — confirmed real in
 # production data: minimax-m3, glm-5.2, kimi-k2.7-code, nemotron-3-super all showed
