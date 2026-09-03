@@ -32,9 +32,33 @@ _norm="$(printf '%s' "$_input" | sed 's/\\[nt]/ /g' | tr -s '[:space:]' ' ' | tr
 # whitespace-collapsed variant catches that shape too; a false positive
 # here just costs a python spawn, same safe direction as above.
 _norm_nows="$(printf '%s' "$_norm" | tr -d '[:space:]')"
+# A backtick, $(...) command substitution, or ${x}/$'...'/$@ splice vanishes
+# (or resolves to unrelated text) in real bash but survives here as literal
+# characters -- "g$(true)h pr merge 123" never contains a contiguous "gh"
+# substring under either normalization pass above, so the case below would
+# otherwise exit 0 and fully bypass this gate on a real `gh pr merge`-shaped
+# command spliced this way (confirmed live 2026-09-03: rc=0, python3 never
+# spawned). A raw backslash gets the same treatment for the same reason
+# verifier-protect.sh's sibling _has_bs guard (GH #125/#134-adjacent) does:
+# multiple backslashes ahead of a JSON-encoded newline can leave a residual
+# character the substring match above doesn't expect. Same conservative-
+# deferral direction as the sibling fixes in irrecoverable.sh/verifier-
+# protect.sh: detect the PRESENCE of a marker on the RAW input and refuse the
+# fast-allow regardless of what the substring match finds, rather than
+# resolving/stripping the marker here -- python3's own tokenizer is a
+# separate, deeper question and does not itself resolve command-substitution
+# splicing (out of scope here, same as GH #129 for the sibling gates).
+# Tradeoff: this moves merge-door.sh from "fast-exit unless gh+merge
+# substrings survive" to "python3 spawns on any $/backtick/backslash
+# command" -- a meaningfully larger share of real commands than the narrow
+# gh+merge substring test above, since $ and backslash both appear in
+# ordinary non-merge commands too. Accepted: a false positive here only
+# costs a python3 cold start, never a wrong verdict.
+_defer=0
+case "$_input" in *\\*|*'`'*|*'$'*) _defer=1 ;; esac
 case "$_norm$_norm_nows" in
-  *gh*merge*) : ;;  # candidate -> python
-  *) exit 0 ;;      # neither token present -> allow
+  *gh*merge*) : ;;                    # candidate -> python
+  *) [ "$_defer" -eq 1 ] || exit 0 ;; # no candidate token, but a splice marker is present -> defer to python
 esac
 
 # Portability guard (#93): announced fail-open when python3 is missing;
@@ -110,9 +134,218 @@ cmd = _strip_heredocs(d["tool_input"].get("command", ""))
 # against real bash, and a genuine bypass of the exact-match argv0/token
 # dispatch below. Ported from the _newlines_to_seps helper in
 # worktree-guard.py (2026-08-04).
+#
+# EXCEPT inside a "#" comment: a bash comment already ends at the literal
+# newline no matter what precedes it, so a trailing backslash right
+# before that newline has no continuation effect there -- the newline is
+# still a real separator. The naive blind backslash-newline regex did not
+# know it was inside a comment and joined the next physical line onto
+# the same window as the comment, so only the FIRST command in
+# "git status # comment \" + newline + "gh pr merge 123" ever reached
+# the dispatch check below -- confirmed live 2026-09-03, GH #131, the
+# same shape of bug already fixed the same way in main-exec-guard.sh.
+# Comment state is tracked char by char alongside quotes (a "#"/backslash
+# inside a quoted string is never comment/escape syntax) and backslash-
+# escape parity (an escaped hash does not start a comment; an EVEN run of
+# backslashes before a newline pairs off into literal characters, so the
+# newline stays a real separator -- confirmed live 2026-09-03, GH #133),
+# matching the posix escaping shlex does on its own and this function
+# downstream (shlex.shlex(..., commenters="#") default). SQ is the
+# single-quote constant already defined above; DQ is its double-quote
+# counterpart, scoped here since nothing else in this file needs it.
+# Ported VERBATIM (state-machine body unchanged) from the same-named
+# function in irrecoverable.sh.
+DQ = chr(34)
 def _newlines_to_seps(s):
-    s = re.sub(r"\\\n", "", s)
-    return s.replace("\n", "\n; ")
+    out = []
+    in_squote = in_dquote = in_comment = False
+    i, n = 0, len(s)
+    while i < n:
+        c = s[i]
+        if in_comment:
+            if c == "\n":
+                # comment ends at the literal newline, same as bash --
+                # emit the same "; " separator a normal newline gets so
+                # the window that follows still splits off correctly.
+                out.append(c); out.append(";"); out.append(" ")
+                in_comment = False
+            else:
+                out.append(c)
+            i += 1
+            continue
+        if in_squote:
+            out.append(c)
+            if c == SQ:
+                in_squote = False
+            i += 1
+            continue
+        if in_dquote:
+            if c == "\\" and i + 1 < n and s[i + 1] == "\n":
+                # real continuation inside a double-quoted string: bash
+                # strips backslash-newline here too (same full removal as
+                # the unquoted case below), so nothing is appended.
+                i += 2
+                continue
+            if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`"):
+                out.append(c); out.append(s[i + 1])
+                i += 2
+                continue
+            out.append(c)
+            if c == DQ:
+                in_dquote = False
+            i += 1
+            continue
+        # unquoted, not in a comment
+        if c == SQ:
+            in_squote = True
+            out.append(c); i += 1
+        elif c == DQ:
+            in_dquote = True
+            out.append(c); i += 1
+        elif c == "\\" and i + 1 < n and s[i + 1] == "\n":
+            # real line continuation: bash removes the backslash AND the
+            # newline entirely, joining the two lines with nothing at
+            # all between them -- so nothing is appended here. Passing
+            # the pair through unchanged (the old behavior) left a stray
+            # "\n" attached to whatever followed, and when there was no
+            # whitespace after the continuation shlex glued that residual
+            # newline onto the very next token (e.g. "\n--force" instead
+            # of "--force"), which the exact-match force-push check
+            # missed entirely -- confirmed live 2026-09-03, GH #126.
+            i += 2
+        elif c == "\\" and i + 1 < n:
+            # any other backslash-escaped pair -- consumed together so
+            # the escaped character is never re-examined as an
+            # unescaped hash/quote marker.
+            out.append(c); out.append(s[i + 1])
+            i += 2
+        elif c == "#":
+            in_comment = True
+            out.append(c); i += 1
+        elif c == "\n":
+            out.append(c); out.append(";"); out.append(" ")
+            i += 1
+        else:
+            out.append(c)
+            i += 1
+    return "".join(out)
+
+# Command-substitution placeholder pass, ported from irrecoverable.sh own GH
+# #129 fix -- read that file for the full rationale, this is the same
+# mechanism verbatim. A backtick/$(...)/${...} span vanishes in real bash
+# once it expands ("g$(true)h" IS "gh"), but shlex treats the punctuation
+# as literal characters, so a spliced dispatch token survives tokenization
+# as its own garbled token and evades the exact-match checks below --
+# unlike irrecoverable.sh, THIS gate also dispatches on the two tokens
+# right after argv0 ("pr"/"merge"), so a splice landing on either of those
+# is an equally live bypass, not just an argv0 splice. This blanks every
+# such span to one placeholder byte (PH, added to shlex wordchars below so
+# it fuses into the surrounding token instead of splitting it) and
+# re-collects backtick/$(...) BODIES (never ${...} -- a variable
+# reference, not a command) as their own ";"-joined statement afterward, so
+# a real embedded command inside the substitution keeps getting scanned
+# instead of just erased.
+#
+# Real shell-quote-state tracking (not a naive apostrophe-pairing regex):
+# a substitution only counts as live when found unquoted or inside a
+# DOUBLE-quoted span -- never inside a genuine SINGLE-quoted one, where $
+# and backtick are inert text. Modeled on the _newlines_to_seps scanner
+# above (same in_squote/in_dquote/backslash-escape state machine),
+# precisely because irrecoverable.sh own history shows a flat regex here
+# has a real, confirmed bypass: an English contraction (a single-quote
+# byte used as a shorthand mark, e.g. spelling "it is" in shortened form)
+# sitting inside a real double-quoted string can shift what a regex thinks
+# is a quote boundary, either masking a live splice or falsely flagging
+# inert single-quoted text as live.
+#
+# No apostrophes anywhere in this python3 -c block: it lives inside the
+# bash single-quoted wrapper below, and a literal apostrophe closes that
+# string early.
+#
+# Fixed-point iteration (capped at 5 passes) handles nesting
+# ("$(echo $(date))"). A dispatch-FLAG splice and a paren crossing INSIDE
+# $(...) are both out of scope here, same as in irrecoverable.sh -- this
+# pass only re-derives which candidate name a garbled DISPATCH token might
+# be, it does not re-scan already-clean flag/argument tokens, and it stays
+# a mechanical scan, not a parser. Bare $VAR/$@/$* are never touched.
+PH = "\x01"
+def _blank_substitutions(s):
+    bodies = []
+
+    def _scan_once(s):
+        out = []
+        in_squote = in_dquote = False
+        i, n = 0, len(s)
+        while i < n:
+            c = s[i]
+            if in_squote:
+                out.append(c)
+                if c == SQ:
+                    in_squote = False
+                i += 1
+                continue
+            if in_dquote:
+                if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`"):
+                    out.append(c); out.append(s[i + 1])
+                    i += 2
+                    continue
+                if c == DQ:
+                    out.append(c)
+                    in_dquote = False
+                    i += 1
+                    continue
+                # else: ordinary char while in_dquote (a bare apostrophe
+                # included, deliberately not toggling in_squote) -- fall
+                # through, $(...)/`...`/${...} are live inside double quotes.
+            else:
+                if c == SQ:
+                    in_squote = True
+                    out.append(c); i += 1
+                    continue
+                if c == DQ:
+                    in_dquote = True
+                    out.append(c); i += 1
+                    continue
+                if c == "\\" and i + 1 < n:
+                    out.append(c); out.append(s[i + 1])
+                    i += 2
+                    continue
+            if c == "`":
+                j = s.find("`", i + 1)
+                if j != -1:
+                    bodies.append(s[i + 1:j])
+                    out.append(PH)
+                    i = j + 1
+                    continue
+            elif c == "$" and s[i + 1:i + 2] == "(":
+                j = i + 2
+                while j < n and s[j] not in "()":
+                    j += 1
+                if j < n and s[j] == ")":
+                    bodies.append(s[i + 2:j])
+                    out.append(PH)
+                    i = j + 1
+                    continue
+            elif c == "$" and s[i + 1:i + 2] == "{":
+                j = i + 2
+                while j < n and s[j] not in "{}":
+                    j += 1
+                if j < n and s[j] == "}":
+                    out.append(PH)
+                    i = j + 1
+                    continue
+            out.append(c)
+            i += 1
+        return "".join(out)
+
+    for _ in range(5):
+        new = _scan_once(s)
+        if new == s:
+            break
+        s = new
+    if bodies:
+        s = s + " ; " + " ; ".join(bodies)
+    return s
 
 # shlex.split() only recognizes ;/&&/||/|/& as separators when whitespace
 # already surrounds them -- "git push;gh pr merge 123" tokenized as one
@@ -128,9 +361,27 @@ def _newlines_to_seps(s):
 # pattern for their own write-target detection.
 OPERATORS = {";", "&&", "||", "|", "&", "(", ")", "{", "}"}
 try:
-    tokens = list(shlex.shlex(_newlines_to_seps(cmd), posix=True, punctuation_chars=True))
+    # _blank_substitutions must run BEFORE shlex ever sees the command:
+    # without it, an unresolved "(...)" span gets read by punctuation_chars
+    # as real grouping operators, splitting a window apart mid-splice --
+    # the placeholder byte PH added to wordchars below is what lets a
+    # blanked span fuse into its surrounding token instead.
+    lex = shlex.shlex(_blank_substitutions(_newlines_to_seps(cmd)), posix=True, punctuation_chars=True)
+    lex.wordchars += PH
+    tokens = list(lex)
 except ValueError:
-    tokens = cmd.split()
+    # This file has no deny outcome -- ask is the only fail-closed option
+    # available. The old fallback re-tokenized cmd.split() on the raw,
+    # PRE-BLANKING string -- PH was never in it, so a spliced dispatch
+    # token built this way could never match a candidate, making the whole
+    # placeholder mechanism inert (the exact bypass shape already found and
+    # fixed in irrecoverable.sh own GH #129 work).
+    emit_ask(
+        "merge-door: could not safely tokenize this command (unbalanced "
+        "quote or substitution) -- approve it manually, or use mh:ship-merge "
+        "for the reviewed path."
+    )
+    sys.exit(0)
 windows, cur = [], []
 for tok in tokens:
     if tok in OPERATORS:
@@ -147,16 +398,41 @@ def basename(p):
 
 PREFIX_WRAPPERS = {"env", "command", "nohup", "nice", "time", "sudo"}
 
-for w in windows:
+# Same leading-PH-erases-flag-shape bypass as the dispatch-trio duplication
+# above (ported from irrecoverable.sh own GH #129 fix), found live in this
+# unwrap loop 2026-09-03: a command substitution that resolves to empty at
+# runtime splices directly onto whatever follows it in real bash --
+# "env $(true)FOO=bar gh pr merge 123" IS "env FOO=bar gh pr merge 123" once
+# bash evaluates it -- but _blank_substitutions leaves a non-empty PH byte
+# glued to the front, so the token becomes "PH FOO=bar" (as one word), which
+# no longer starts with "-" and no longer isidentifier()-passes on its
+# "=" split. Every branch below then falls through to "break", so the loop
+# stops early and misreads the PH-prefixed wrapper flag/assignment itself as
+# the argv0 of the wrapped command -- shifting the trio-dispatch window by
+# one token so the real gh/pr/merge trio sitting one position later never
+# lines up with the checked positions, and the ask silently does not fire
+# (confirmed live 2026-09-03: env/sudo/nice/generic-wrapper splices this
+# shape all silently allowed). Stripping a leading placeholder before every
+# shape test below assumes the conservative (still-a-wrapper-token)
+# resolution -- same direction as the rm -rf fix in irrecoverable.sh -- so a
+# token that becomes flag-shaped or VAR=value-shaped once the substitution
+# is assumed empty is treated as that flag/assignment and skipped, keeping
+# the unwrap loop aligned on the real wrapped command.
+def _window_is_merge_dispatch(w):
+    # Runs the unwrap-then-trio-check pipeline against one window and
+    # reports match/no-match instead of asking directly -- factored out so
+    # the driving loop below can run this SAME logic a second time against a
+    # compacted window (see _drop_bare_vanish_tokens), not just once against
+    # the raw one.
     if not w:
-        continue
+        return False
     argv0, rest = basename(w[0]), w[1:]
 
     while rest and argv0 in PREFIX_WRAPPERS:
         if argv0 == "env":
             i = 0
             while i < len(rest):
-                t = rest[i]
+                t = rest[i].lstrip(PH)
                 if t == "-u" and i + 1 < len(rest):
                     i += 2
                 elif t.startswith("-"):
@@ -170,8 +446,8 @@ for w in windows:
             argv0, rest = basename(rest[i]), rest[i + 1:]
         elif argv0 == "nice":
             i = 0
-            while i < len(rest) and rest[i].startswith("-"):
-                t = rest[i]
+            while i < len(rest) and rest[i].lstrip(PH).startswith("-"):
+                t = rest[i].lstrip(PH)
                 i += 1
                 if t == "-n" and i < len(rest):
                     i += 1
@@ -203,7 +479,7 @@ for w in windows:
             LONG_VALUE_FLAGS = {"--user", "--group"}
             i = 0
             while i < len(rest):
-                t = rest[i]
+                t = rest[i].lstrip(PH)
                 bare = t.split("=", 1)[0]
                 if bare in LONG_VALUE_FLAGS:
                     i += 1 if "=" in t else min(2, len(rest) - i)
@@ -223,13 +499,73 @@ for w in windows:
             argv0, rest = basename(rest[i]), rest[i + 1:]
         else:  # command, nohup, time — bare flags then the wrapped command
             i = 0
-            while i < len(rest) and rest[i].startswith("-"):
+            while i < len(rest) and rest[i].lstrip(PH).startswith("-"):
                 i += 1
             if i >= len(rest):
                 break
             argv0, rest = basename(rest[i]), rest[i + 1:]
 
-    if argv0 == "gh" and len(rest) >= 2 and rest[0] == "pr" and rest[1] == "merge":
+    # GH #129-shaped duplication (ported from irrecoverable.sh, adapted to
+    # 3 dispatch positions): this gate dispatches on argv0 AND the two
+    # tokens right after it ("pr"/"merge"), so a splice landing on any of
+    # the 3 is an equally live bypass -- each position tries its own fixed
+    # candidate whenever it carries a PH byte (a real, non-spliced token is
+    # tried as-is), and any resulting combination that completes the
+    # ("gh", "pr", "merge") trio counts as a match.
+    if len(rest) >= 2:
+        GH, PR, MERGE = "gh", "pr", "merge"
+        argv0_c = (GH,) if PH in argv0 else (argv0,)
+        rest0_c = (PR,) if PH in rest[0] else (rest[0],)
+        rest1_c = (MERGE,) if PH in rest[1] else (rest[1],)
+        if any((a, b, c) == (GH, PR, MERGE) for a in argv0_c for b in rest0_c for c in rest1_c):
+            return True
+    return False
+
+# Layer 3 fix (found by an independent adversarial reviewer, 2026-09-03,
+# distinct from the GH #129 placeholder mechanism above): a STANDALONE,
+# unquoted word that resolves to empty at runtime -- its own space-separated
+# token, nothing else attached -- vanishes entirely in real bash via
+# word-splitting, shifting every later token left by one position ("gh
+# $(true) pr merge 123" runs as "gh pr merge 123"). _blank_substitutions
+# above cannot know a substitution resolves to empty without running it, so
+# it leaves a PH-only token sitting in that position instead of removing it,
+# and every FIXED-INDEX read in _window_is_merge_dispatch (argv0/rest[0]/
+# rest[1] against a fixed candidate tuple, or a PREFIX_WRAPPERS unwrap-loop
+# flag/assignment shape test) then reads the wrong token entirely, missing
+# the real dispatch one position later (confirmed live 2026-09-03: bare
+# vanishes before, mid, and inside a wrapper-unwrap chain all silently
+# allowed). This is a distinct, narrower shape than the GH #129 fix: that
+# one duplicates a candidate at a position whose token is still THERE but
+# garbled; this one is about a position whose token is GONE in real bash.
+#
+# Fixed by building a second, compacted token list per window with every
+# bare-vanish token dropped -- a token counts as bare-vanish only when
+# EVERY character in it is the placeholder byte (stripping PH from it
+# leaves nothing), never a token that merely CONTAINS PH glued to real
+# content (e.g. a PH-prefixed flag/assignment from the GH #129 fix above --
+# those already resolve correctly via lstrip(PH) and must not be touched
+# here). The full unwrap-then-trio-check pipeline runs against BOTH the
+# original window and the compacted one; a match on either asks.
+#
+# This must not become a blanket "any bare-vanish token anywhere -> ask"
+# rule: "$(which gh) pr view 123" also produces a bare-vanish argv0 token,
+# but it resolves to a real, non-empty command at runtime, not an empty
+# one, and must stay noask. Compacting drops the argv0 token, leaving
+# [pr, view, 123] -- position 0 is "pr", not "gh", so the trio check
+# correctly fails to match and this stays noask; only a genuine vanish
+# whose compacted form lines up on the real ("gh", "pr", "merge") trio
+# triggers ask.
+def _drop_bare_vanish_tokens(w):
+    return [t for t in w if t.strip(PH) != ""]
+
+for w in windows:
+    if not w:
+        continue
+    compacted = _drop_bare_vanish_tokens(w)
+    matched = _window_is_merge_dispatch(w)
+    if not matched and compacted != w:
+        matched = _window_is_merge_dispatch(compacted)
+    if matched:
         emit_ask(
             "merge-door: a raw `gh pr merge` was about to run outside the "
             "ship-merge skill flow. Use mh:ship-merge for the reviewed path, "

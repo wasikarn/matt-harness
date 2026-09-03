@@ -611,6 +611,38 @@ for tok in tokens:
 if cur:
     windows.append(cur)
 
+# GH #129 Layer 3 (2026-09-03): a standalone UNQUOTED substitution that
+# resolves to empty ($(true), `true`) vanishes as its own token in real
+# bash, shifting every later token left by one position -- but
+# _blank_substitutions above leaves a PH-only token sitting in its place,
+# so a fixed-index read anywhere downstream (worktree/stash args[0], the
+# git-subcommand extraction below, ...) trusts the wrong position.
+# Confirmed live: "$(true) git worktree add -b evil /tmp/x" silently
+# ALLOWed the single-branch-develop-only doctrine gate to be bypassed --
+# the vanished token becomes argv0 itself, shifting "git" one slot into
+# rest where no dispatch check below looks for it. A check that SCANS the
+# whole rest/args list (the -b/-B/--branch loop below, once PH-stripped) is
+# naturally immune; only a fixed-index read is at risk, and enumerating
+# every one individually is the same losing game as #122/#123/#125/#129
+# already were, one spelling at a time. Instead: re-run the whole existing
+# per-window dispatch a second time against a compacted copy of the window
+# with every bare-PH-only token dropped (including several adjacent
+# vanishes glued into one all-PH token) -- appended alongside the original,
+# so both get the exact same checks with no separate code path, and a
+# deny() in either one wins. A token that merely CONTAINS PH as part of a
+# larger word (a glued splice) is left untouched -- already handled by the
+# leading-PH-strip fixes below. Verified this does not turn a benign
+# standalone splice into a false deny: "$(which git) status" compacts to
+# ["status"] (argv0 dropped), which stays correctly unmatched by every
+# check below.
+_aug = []
+for _w in windows:
+    _wc = [_t for _t in _w if not (_t and all(_c == PH for _c in _t))]
+    _aug.append(_w)
+    if _wc != _w:
+        _aug.append(_wc)
+windows = _aug
+
 def basename(p):
     return p.rsplit("/", 1)[-1]
 
@@ -640,7 +672,12 @@ for w in windows:
         if argv0 == "env":
             i = 0
             while i < len(rest):
-                t = rest[i]
+                # Leading-PH fix: a disguised env flag (env $(true)-u FOO
+                # ...) no longer starts with a dash, so this loop misreads
+                # it as the wrapped command and the real command ends up
+                # misplaced in rest instead of becoming argv0 (found live
+                # 2026-09-03).
+                t = rest[i].lstrip(PH)
                 if t == "-u" and i + 1 < len(rest):
                     i += 2
                 elif t.startswith("-"):
@@ -654,8 +691,9 @@ for w in windows:
             argv0, rest = basename(rest[i]), rest[i + 1:]
         elif argv0 == "nice":
             i = 0
-            while i < len(rest) and rest[i].startswith("-"):
-                t = rest[i]
+            # Same leading-PH fix as env above.
+            while i < len(rest) and rest[i].lstrip(PH).startswith("-"):
+                t = rest[i].lstrip(PH)
                 i += 1
                 if t == "-n" and i < len(rest):
                     i += 1
@@ -687,7 +725,8 @@ for w in windows:
             LONG_VALUE_FLAGS = {"--user", "--group"}
             i = 0
             while i < len(rest):
-                t = rest[i]
+                # Same leading-PH fix as env/nice above.
+                t = rest[i].lstrip(PH)
                 bare = t.split("=", 1)[0]
                 if bare in LONG_VALUE_FLAGS:
                     i += 1 if "=" in t else min(2, len(rest) - i)
@@ -707,7 +746,8 @@ for w in windows:
             argv0, rest = basename(rest[i]), rest[i + 1:]
         else:  # command, nohup, time — bare flags then the wrapped command
             i = 0
-            while i < len(rest) and rest[i].startswith("-"):
+            # Same leading-PH fix as env/nice/sudo above.
+            while i < len(rest) and rest[i].lstrip(PH).startswith("-"):
                 i += 1
             if i >= len(rest):
                 break
@@ -721,17 +761,23 @@ for w in windows:
         # commands; without it, argv0 stays as "xargs" and the worktree
         # check is silently bypassed (found 2026-07-03 when designing the
         # worktree-create-block gate).
+        # Full PH removal (not just leading): a splice can land mid-
+        # basename (xargs g$(true)it ..., found live 2026-09-03), same
+        # shape as the SQL keyword check below.
         for j, t in enumerate(rest):
-            if basename(t) in ("rm", "find", "dd", "git"):
+            if basename(t).replace(PH, "") in ("rm", "find", "dd", "git"):
                 argv0, rest = basename(t), rest[j + 1:]
                 break
-    elif argv0 == "docker" and rest and rest[0] == "exec":
+    elif argv0 == "docker" and rest and rest[0].lstrip(PH) == "exec":
         # "docker exec <flags> <container> <cmd...>" re-points argv0 to the
         # inner command so the SQL check below can fire on the wrapped
         # client (feeds A6 — mysql/psql/sqlite3/mariadb run inside a
         # container is otherwise invisible to this gate).
+        # Leading-PH fix: a disguised exec token or a disguised docker flag
+        # before the container name each let the real inner command slip
+        # past this re-pointing (found live 2026-09-03).
         j = 1
-        while j < len(rest) and rest[j].startswith("-"):
+        while j < len(rest) and rest[j].lstrip(PH).startswith("-"):
             j += 1
         if j < len(rest):
             j += 1  # skip the container name/id
@@ -755,6 +801,23 @@ for w in windows:
             # "$(which node) --before=1" wrongly denied).
             has_r = has_f = False
             for t in rest:
+                # Fail-toward-suspicion for a NEW, broader residual than the
+                # already-accepted one above (PH landing INSIDE an
+                # already-dash-prefixed flag body, e.g. "--for<PH>ce"): a
+                # command substitution resolving to empty at runtime splices
+                # directly onto whatever follows it in real bash --
+                # "$(true)-rf" IS "-rf" once bash evaluates it -- but the
+                # placeholder pass leaves a non-empty PH byte glued to the
+                # front, so the token becomes "PH-rf", which no longer even
+                # STARTS WITH "-" and evades every check below entirely
+                # (confirmed live 2026-09-03: "rm $(true)-rf /tmp/x" and the
+                # backtick equivalent both silently ALLOWed). Stripping a
+                # leading placeholder assumes the conservative (dangerous)
+                # resolution -- same direction as the dispatch-token
+                # duplication above -- so a token that becomes flag-shaped
+                # once the substitution is assumed empty is treated as that
+                # flag.
+                t = t.lstrip(PH)
                 if t.startswith("--"):
                     has_r = has_r or t == "--recursive"
                     has_f = has_f or t == "--force"
@@ -765,9 +828,13 @@ for w in windows:
             if has_r and has_f:
                 deny("rm -rf detected — " + delete_hint())
 
-        if argv0 == "find" and ("-exec" in rest or "-execdir" in rest) and "rm" in [basename(t) for t in rest]:
+        # Same leading-PH-erases-flag-shape fix as the rm block above --
+        # "find $(true)-exec rm {} \;" blanks to "find PH-exec rm {} \;",
+        # which the old exact "-exec" in rest membership test missed
+        # entirely since the token no longer equals "-exec" at all.
+        if argv0 == "find" and any(t.lstrip(PH) in ("-exec", "-execdir") for t in rest) and "rm" in [basename(t) for t in rest]:
             deny("find -exec/-execdir rm detected — destructive delete; " + delete_hint())
-        if argv0 == "find" and "-delete" in rest:
+        if argv0 == "find" and any(t.lstrip(PH) == "-delete" for t in rest):
             deny("find -delete detected — destructive delete; " + delete_hint())
 
         if argv0 == "git" and rest:
@@ -776,7 +843,10 @@ for w in windows:
             # loop-leak `tokens` which only held the last line — found v0.36.0
             # audit: a --no-verify on an earlier line bypassed the old global
             # check). Git-specific so `echo "--no-verify"` does not false-positive.
-            if "--no-verify" in w:
+            # Same leading-PH fix as below: "git commit $(true)--no-verify"
+            # blanks to a "PH--no-verify" token that no longer equals
+            # "--no-verify" at all, so the old exact membership test missed it.
+            if any(t.lstrip(PH) == "--no-verify" for t in w):
                 deny("--no-verify bypasses safety hooks")
             # -c core.hooksPath=<path> (split "-c core.hooksPath=X" or joined
             # "-ccore.hooksPath=X") re-points git at a different hooks dir —
@@ -785,10 +855,11 @@ for w in windows:
             # is not a meaningful re-point.
             hooks_path_val = None
             for idx, t in enumerate(w):
-                if t == "-c" and idx + 1 < len(w) and w[idx + 1].startswith("core.hooksPath="):
+                t_pf = t.lstrip(PH)  # same leading-PH fix as --no-verify above
+                if t_pf == "-c" and idx + 1 < len(w) and w[idx + 1].startswith("core.hooksPath="):
                     hooks_path_val = w[idx + 1].split("=", 1)[1]
-                elif t.startswith("-c") and t[2:].startswith("core.hooksPath="):
-                    hooks_path_val = t[2:].split("=", 1)[1]
+                elif t_pf.startswith("-c") and t_pf[2:].startswith("core.hooksPath="):
+                    hooks_path_val = t_pf[2:].split("=", 1)[1]
             if hooks_path_val:
                 deny("-c core.hooksPath=<path> re-points git at a different hooks dir — same bypass as --no-verify")
             # Walk past leading global flags before the subcommand so a prefix
@@ -800,8 +871,12 @@ for w in windows:
             # `git -C . worktree add -b newbranch`.
             GIT_VALUE_GLOBALS = {"-C", "-c", "--git-dir", "--work-tree", "--config-env"}
             i = 0
-            while i < len(rest) and rest[i].startswith("-"):
-                t = rest[i]
+            # Leading-PH fix (hardening): a disguised global flag here
+            # stops this walk before the real subcommand, misplacing it
+            # into args. Membership checks below already tolerate this;
+            # args[0]-based ones (worktree/stash) do not.
+            while i < len(rest) and rest[i].lstrip(PH).startswith("-"):
+                t = rest[i].lstrip(PH)
                 if t in GIT_VALUE_GLOBALS:
                     i += 2  # bare value-taking global → skip flag + its value
                     continue
@@ -823,10 +898,23 @@ for w in windows:
                 if skip:
                     skip = False
                     continue
-                if t in ("-m", "--message"):
+                if t.lstrip(PH) in ("-m", "--message"):
                     skip = True
                     continue
                 scan.append(t)
+            # Fail-toward-suspicion for the same empty-substitution-splice gap
+            # named in the rm -rf block above (GH #129 adjacent, confirmed
+            # live 2026-09-03): "$(true)--force" resolves to a genuinely
+            # flag-shaped "--force" in real bash, but the placeholder pass
+            # leaves a non-empty PH byte glued to the front of the dash, so
+            # every startswith("-")/exact-flag check in every sub == "..."
+            # branch below (push/reset/clean/restore/checkout/switch/branch/
+            # commit/add all read from this one `scan` list) would otherwise
+            # see "PH--force" -- not flag-shaped at all -- and silently miss
+            # it. Stripping a leading placeholder here, once, before any of
+            # those branches run, covers all of them the same way the
+            # dispatch-token duplication above already covers argv0/sub.
+            scan = [t.lstrip(PH) for t in scan]
 
             for sub in (KNOWN_GIT_SUBS if PH in sub else (sub,)):
                 if sub == "push" and any(
@@ -930,6 +1018,10 @@ for w in windows:
                     # via positional commit-ish) — allow.
                     branch_name = None
                     for i, t in enumerate(args):
+                        # Leading-PH fix (confirmed live): a spliced -b flag
+                        # no longer starts with a dash, so this doctrine
+                        # gate silently ALLOWed a new non-develop branch.
+                        t = t.lstrip(PH)
                         if t in ("-b", "-B", "--branch") and i + 1 < len(args):
                             branch_name = args[i + 1]
                             break
@@ -985,7 +1077,7 @@ for w in windows:
                                  "use detached worktrees, develop, or an existing branch. "
                                  "Remove /.kbg-no-worktree or /.mh-no-worktree to allow")
 
-        if argv0 == "dd" and any(t.startswith("of=/dev/") for t in rest):
+        if argv0 == "dd" and any(t.lstrip(PH).startswith("of=/dev/") for t in rest):
             deny("dd writing to a raw device — irrecoverable disk-level destruction")
 
         if argv0 in ("mysql", "psql", "sqlite3", "mariadb"):
@@ -995,8 +1087,10 @@ for w in windows:
             # TABLE is optional in TRUNCATE grammar (MySQL/MariaDB/Postgres all
             # accept bare "TRUNCATE tbl_name") — matching only "TRUNCATE TABLE"
             # let a fully destructive bare TRUNCATE through undetected.
+            # Full PH removal: a splice can land mid-keyword
+            # (DR$(true)OP -> DRPHOP), unlike a flag boundary.
             if re.search(r"DROP\s+(TABLE|DATABASE|SCHEMA)|TRUNCATE\s+(TABLE\s+)?\w",
-                         " ".join(rest), re.IGNORECASE):
+                         " ".join(rest).replace(PH, ""), re.IGNORECASE):
                 deny("destructive SQL (DROP TABLE/DATABASE/SCHEMA or TRUNCATE) detected — confirm with user first")
 
 sys.exit(0)

@@ -179,6 +179,9 @@ PROTECTED_REASON = (
 # match or emit a quote character.
 SQ = chr(39)
 DQ = chr(34)
+# Command-substitution blanking placeholder (GH #129, ported from
+# irrecoverable.sh -- see _blank_substitutions below).
+PH = "\x01"
 
 # Ported from worktree-guard.py 2026-08-04, after a subagent_type
 # mh:silent-failure-hunter re-verification dispatch confirmed this generator
@@ -235,42 +238,101 @@ def _strip_heredocs(cmd):
 
 
 def _normalize_ansi_c_quotes(cmd):
-    # shlex does not understand ANSI-C quoting ($SQ...SQ) — it splits on the
-    # bare $ instead of treating the whole span as one token. Rewriting to a
-    # plain quoted token fixes token BOUNDARIES, which is all this generator
-    # needs (not a full backslash-escape reimplementation).
+    # shlex does not understand ANSI-C quoting ($SQ...SQ) -- it splits on the
+    # bare $ instead of treating the whole span as one token, so a spliced
+    # argv0 like $SQ\x70SQ (SQ = single quote) never reassembles into the
+    # decoded character it resolves to in real bash.
     #
-    # One escape needs real handling anyway: a captured backslash-SQ pair
-    # (an escaped literal quote inside $SQ...SQ). Naively re-wrapping the raw
-    # captured text embeds a raw SQ byte inside what is now a plain SQ...SQ
-    # token — an unbalanced string that later throws off _newlines_to_seps
-    # own quote-tracking scanner: it opens in_squote at the first SQ and,
-    # since the string never closes, stays in_squote for the rest of the
-    # command, silently swallowing every following newline/write with no
-    # separator inserted. A plain SQ...SQ token can never contain a literal
-    # quote at all — there is no escape mechanism inside single quotes — so
-    # any backslash-SQ pair in the captured body is spliced out into the
-    # standard bash idiom instead: close the quote, emit an escaped literal
-    # quote OUTSIDE quotes, reopen a new quoted span. Every other
-    # backslash-escape pair is left as its raw two literal characters, same
-    # as before — full ANSI-C escape decoding stays out of scope, and none
-    # of those other pairs can reintroduce a quote-balance break since none
-    # of them contain a literal SQ byte.
+    # This file own dispatch logic below compares argv0 by EXACT STRING
+    # (argv0 == "tee", argv0 in ("rm", ...)) -- a boundary-only rewrite
+    # ($SQ...SQ becomes a plain SQ...SQ token, escapes left raw) is
+    # insufficient here: re-wrapping "$SQ\x70SQ" as "SQ\x70SQ" still yields
+    # the literal token "c\x70" once glued to a preceding "c", which can
+    # never equal "cp". Proven exploitable live 2026-09-03: "c$SQ\x70SQ
+    # evil.sh hooks/gates/x.sh" (bash-equivalent to "cp evil.sh
+    # hooks/gates/x.sh") reached bash_write_targets() with zero candidates --
+    # this version diverges from the boundary-only approach on purpose,
+    # actually RESOLVING the escape rather than just re-quoting it. Ported
+    # verbatim from the irrecoverable.sh sibling fix for the identical root
+    # cause (fixed there first the same session) -- the decode logic itself
+    # needs no changes to fit here, only the surrounding names.
+    #
+    # Bounded escape set, matching what a cp/rm/git/dd/... argv0 or write-
+    # target splice realistically needs: \xHH (hex), \nnn (1-3 octal
+    # digits), and the standard single-char escapes \n \t \r \\ \SQ \DQ.
+    # Anything else (\a \b \e \cX \uHHHH, ...) falls through as its raw two
+    # literal characters, same as before -- a full ANSI-C decoder is out of
+    # scope; those spellings are not realistic splice vectors and an
+    # unhandled one just stays a literal (non-matching, safe-direction)
+    # token.
+    #
+    # A literal SQ byte can appear in the DECODED result two ways: an
+    # explicit \SQ escape, or an octal/hex escape that happens to resolve to
+    # SQ (\047 or \x27, both decimal 39). Either way, the byte cannot sit
+    # inside the SQ...SQ wrapper this function returns -- there is no escape
+    # mechanism inside single quotes -- so the decoded text is scanned a
+    # SECOND time (after all escapes are resolved, not mid-scan) and any SQ
+    # byte found is spliced into the standard bash idiom: close the quote,
+    # emit an escaped literal quote OUTSIDE quotes, reopen a new quoted span.
+    # Skipping this second pass and only checking the raw \SQ spelling (the
+    # boundary-only version own approach) would miss the octal/hex spellings
+    # and leave an unbalanced quote, which throws off _newlines_to_seps own
+    # quote-tracking scanner downstream: it opens in_squote at the first SQ
+    # and, since the string never closes, stays in_squote for the rest of
+    # the command, silently swallowing every following newline/write with no
+    # separator inserted.
+    #
+    # A decoded newline (from \n, \012, or \x0a) must also stay INSIDE the
+    # SQ...SQ wrapper, not emitted bare -- composition order already
+    # guarantees this (this function runs BEFORE _newlines_to_seps below),
+    # but only because the return value stays fully quoted: an unquoted
+    # decoded newline would otherwise be read by _newlines_to_seps as a real
+    # statement separator and split one command window into two.
+    OCTAL = "01234567"
+    HEXDIGITS = "0123456789abcdefABCDEF"
+    SIMPLE = {"n": "\n", "t": "\t", "r": "\r", "\\": "\\", SQ: SQ, DQ: DQ}
     def _decode_ansi_c(m):
         body = m.group(1)
-        out = []
+        decoded = []
         i, n = 0, len(body)
         while i < n:
-            if body[i] == "\\" and i + 1 < n:
-                if body[i + 1] == SQ:
-                    out.append(SQ + "\\" + SQ + SQ)
+            c = body[i]
+            if c == "\\" and i + 1 < n:
+                nxt = body[i + 1]
+                if nxt in SIMPLE:
+                    decoded.append(SIMPLE[nxt])
+                    i += 2
+                elif nxt == "x":
+                    j, digits = i + 2, ""
+                    while j < n and len(digits) < 2 and body[j] in HEXDIGITS:
+                        digits += body[j]
+                        j += 1
+                    if digits:
+                        decoded.append(chr(int(digits, 16)))
+                        i = j
+                    else:
+                        decoded.append(body[i:i + 2])
+                        i += 2
+                elif nxt in OCTAL:
+                    j, digits = i + 1, ""
+                    while j < n and len(digits) < 3 and body[j] in OCTAL:
+                        digits += body[j]
+                        j += 1
+                    decoded.append(chr(int(digits, 8) & 0xFF))
+                    i = j
                 else:
-                    out.append(body[i:i + 2])
-                i += 2
+                    decoded.append(body[i:i + 2])
+                    i += 2
             else:
-                out.append(body[i])
+                decoded.append(c)
                 i += 1
-        return SQ + "".join(out) + SQ
+        spliced = []
+        for ch in decoded:
+            if ch == SQ:
+                spliced.append(SQ + "\\" + SQ + SQ)
+            else:
+                spliced.append(ch)
+        return SQ + "".join(spliced) + SQ
     return _ANSI_C_QUOTE_RE.sub(_decode_ansi_c, cmd)
 
 
@@ -391,6 +453,122 @@ def _newlines_to_seps(cmd):
     return "".join(out)
 
 
+def _blank_substitutions(cmd):
+    # Command-substitution placeholder pass (GH #129, ported from
+    # irrecoverable.sh -- see that file for the full rationale). A
+    # backtick/$(...)/${...} span vanishes in real bash once its (possibly
+    # empty) output splices into the surrounding text -- "c$(true)p" IS "cp"
+    # once bash evaluates it -- but shlex has no concept of this and treats
+    # the punctuation as literal characters, so a spliced argv0 or write-
+    # target survives tokenization as its own garbled token and evades every
+    # exact-match dispatch below (argv0 == "cp", argv0 in ("rm", "trash"),
+    # is_gate_path(target), ...). This blanks the whole span to one
+    # placeholder byte (PH), which is added to shlex wordchars at the call
+    # site so it fuses into the surrounding literal text as ONE token
+    # instead of splitting it; any dispatch or target token that still
+    # contains PH after tokenization is treated as unknowable rather than
+    # trusted literally (duplicated across every known write-verb, or
+    # treated as a possible protected path).
+    #
+    # Real shell-quote-state tracking (a left-to-right character scan, same
+    # mechanism as _newlines_to_seps above), not a naive regex pairing of
+    # single-quote bytes -- an ordinary English contraction inside
+    # a double-quoted string must not be mistaken for a quote boundary in
+    # either direction (irrecoverable.sh own history: a flat regex version
+    # of this pass both let a real splice through past an unrelated
+    # contraction and, separately, mis-collected real single-quoted prose as
+    # a live command because of one). $(...)/`...`/${...} are only ever live
+    # when unquoted or inside double quotes, never inside a genuine single-
+    # quoted span. Fixed-point iterated (capped at 5 passes) to handle
+    # nesting. ${...} bodies are never re-collected as a statement (a
+    # parameter expansion is a variable reference, not a command); backtick/
+    # $(...) bodies are, so a real command hidden inside one still gets
+    # scanned by the window loop below.
+    #
+    # Two accepted non-goals, out of scope for this pass: a placeholder
+    # landing inside an already-dash-prefixed flag body (--for<PH>ce) garbles
+    # the flag name but stays recognizable as a flag; a paren nested inside a
+    # $(...) span (e.g. $(f() { :; }; f)) can defeat the fixed-point scan.
+    bodies = []
+
+    def _scan_once(s):
+        out = []
+        in_squote = in_dquote = False
+        i, n = 0, len(s)
+        while i < n:
+            c = s[i]
+            if in_squote:
+                out.append(c)
+                if c == SQ:
+                    in_squote = False
+                i += 1
+                continue
+            if in_dquote:
+                if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`"):
+                    out.append(c); out.append(s[i + 1])
+                    i += 2
+                    continue
+                if c == DQ:
+                    out.append(c)
+                    in_dquote = False
+                    i += 1
+                    continue
+                # else: ordinary char while in_dquote, including a bare
+                # apostrophe (no special meaning here) -- fall through to
+                # the shared substitution-start check below, since
+                # $(...)/`...`/${...} ARE live inside double quotes.
+            else:
+                if c == SQ:
+                    in_squote = True
+                    out.append(c); i += 1
+                    continue
+                if c == DQ:
+                    in_dquote = True
+                    out.append(c); i += 1
+                    continue
+                if c == "\\" and i + 1 < n:
+                    out.append(c); out.append(s[i + 1])
+                    i += 2
+                    continue
+                # else: fall through to the shared substitution-start check.
+            if c == "`":
+                j = s.find("`", i + 1)
+                if j != -1:
+                    bodies.append(s[i + 1:j])
+                    out.append(PH)
+                    i = j + 1
+                    continue
+            elif c == "$" and s[i + 1:i + 2] == "(":
+                j = i + 2
+                while j < n and s[j] not in "()":
+                    j += 1
+                if j < n and s[j] == ")":
+                    bodies.append(s[i + 2:j])
+                    out.append(PH)
+                    i = j + 1
+                    continue
+            elif c == "$" and s[i + 1:i + 2] == "{":
+                j = i + 2
+                while j < n and s[j] not in "{}":
+                    j += 1
+                if j < n and s[j] == "}":
+                    out.append(PH)
+                    i = j + 1
+                    continue
+            out.append(c)
+            i += 1
+        return "".join(out)
+
+    for _ in range(5):
+        new = _scan_once(cmd)
+        if new == cmd:
+            break
+        cmd = new
+    if bodies:
+        cmd = cmd + " ; " + " ; ".join(bodies)
+    return cmd
+
+
 def _diff_targets(path):
     # Read a diff/patch file and yield the real write targets named in its
     # +++ b/<path> headers -- a patch/git-apply/am command argv never names
@@ -423,18 +601,37 @@ def bash_write_targets(cmd):
     Bounded idiom set: redirects, tee, rm, trash, sed -i, perl -i,
     cp/mv/install, dd, rsync, tar -x, patch, git apply/am. Not an
     adversarial sandbox."""
-    cmd = _newlines_to_seps(_normalize_ansi_c_quotes(_strip_heredocs(cmd)))
-    try:
-        lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
-        # $ is not in shlex default wordchars, so an unquoted redirect target
-        # like $HOME/foo splits into two tokens ($ and HOME/foo) instead of
-        # one.
-        lex.wordchars += "$"
-        tokens = list(lex)
-    except ValueError:
-        tokens = cmd.split()
+    cmd = _blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(_strip_heredocs(cmd))))
+    # No except ValueError / cmd.split() fallback here on purpose (GH #129,
+    # same bypass shape already fixed in irrecoverable.sh): tokenizing the
+    # raw pre-blanking string on a shlex failure re-exposes every splice
+    # _blank_substitutions just neutralized -- PH was never in that raw
+    # string, so a spliced argv0 built this way can never match a known
+    # write-verb and the whole mechanism goes inert (silent allow). Let the
+    # exception propagate to this file own top-level `except Exception:
+    # emit_ask(...)` below instead -- fail toward asking, never toward a
+    # silent allow, same invariant as the malformed-tool_input branch above.
+    lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
+    # $ is not in shlex default wordchars, so an unquoted redirect target
+    # like $HOME/foo splits into two tokens ($ and HOME/foo) instead of
+    # one. PH (GH #129) needs the same treatment so a blanked splice fuses
+    # into its surrounding literal text as one token instead of splitting it.
+    lex.wordchars += "$" + PH
+    tokens = list(lex)
     # Split into windows on command separators so per-command argv0 logic works.
-    SEPS = {";", "&&", "||", "|", "&"}
+    # ( ) { } added (2026-09-03): shlex with punctuation_chars=True already
+    # tokenizes a bare ( ) as its own token (confirmed by direct testing --
+    # part of shlexs default punctuation_chars string) and { } as single-char
+    # tokens too (posix-mode non-wordchar splitting), but without them here
+    # a grouped/braced command left the literal "(" or "{" as argv0 instead
+    # of the real command inside it -- e.g. "(cp evil.sh hooks/gates/x.sh)"
+    # never dispatched to the cp branch below, silently allowing the write.
+    # Matches the already-shipped OPERATORS set in the sibling gates
+    # irrecoverable.sh (line ~276) and merge-door.sh (line ~129). A literal
+    # ( inside a QUOTED argument (e.g. a commit message "fix(gates): ...")
+    # stays inside that one token and is unaffected -- shlex only emits a
+    # standalone ( / ) / { / } token for an unquoted one.
+    SEPS = {";", "&&", "||", "|", "&", "(", ")", "{", "}"}
     windows, cur = [], []
     for t in tokens:
         if t in SEPS:
@@ -445,6 +642,37 @@ def bash_write_targets(cmd):
             cur.append(t)
     if cur:
         windows.append(cur)
+
+    # GH #129 Layer 3 (2026-09-03, ported from irrecoverable.sh, same root
+    # cause): a standalone vanish shifts every later token left by one
+    # position in real bash, but _blank_substitutions above leaves a
+    # PH-only token in its place, so the git apply/am fixed-index reads
+    # below (rest[0]=="-C", rest[sub_idx]) trust the wrong position.
+    # Confirmed live: "git $(true) -C <dir> apply <diff>" silently allowed
+    # -- the branch is skipped entirely, not just the wrong directory. Same
+    # fix as the sibling file: append a compacted copy of any window
+    # carrying a bare-PH-only token, run BEFORE the KNOWN_WRITE_VERBS
+    # duplication below so a compacted window whose argv0 comes out clean
+    # goes through the ordinary dispatch path (duplicating it too would
+    # misalign rest a second, different way).
+    _aug = []
+    for _w in windows:
+        _wc = [_t for _t in _w if not (_t and all(_c == PH for _c in _t))]
+        _aug.append(_w)
+        if _wc != _w:
+            _aug.append(_wc)
+    windows = _aug
+
+    KNOWN_WRITE_VERBS = ("tee", "rm", "trash", "sed", "perl", "cp", "mv",
+                         "install", "rsync", "tar", "patch", "git", "dd")
+    dup = []
+    for w in windows:
+        if w and PH in w[0].rsplit("/", 1)[-1]:
+            for cand in KNOWN_WRITE_VERBS:
+                dup.append([cand] + w[1:])
+        else:
+            dup.append(w)
+    windows = dup
     for w in windows:
         if not w:
             continue
@@ -480,18 +708,21 @@ def bash_write_targets(cmd):
             for t in nonflag:
                 yield t
         elif argv0 in ("sed", "perl"):
-            if any(t in ("-i", "--in-place") or t == "-i" for t in rest) or \
-               any(t.startswith("-i") and t != "-i" for t in rest):
+            # PH-prefixed flag (e.g. $(true)-i -> PH-i) must still count as
+            # -i -- strip a leading PH before every flag test below (found
+            # 2026-09-03: zero targets yielded otherwise, silent allow).
+            if any(t.lstrip(PH) in ("-i", "--in-place") or t.lstrip(PH) == "-i" for t in rest) or \
+               any(t.lstrip(PH).startswith("-i") and t.lstrip(PH) != "-i" for t in rest):
                 # skip -e/-i values; remaining nonflag args are the files
                 skipnext = False
                 for t in rest:
                     if skipnext:
                         skipnext = False
                         continue
-                    if t in ("-e", "--expression"):
+                    if t.lstrip(PH) in ("-e", "--expression"):
                         skipnext = True
                         continue
-                    if not t.startswith("-") and t not in ("-", ""):
+                    if not t.lstrip(PH).startswith("-") and t not in ("-", ""):
                         yield t
         elif argv0 in ("cp", "mv", "install"):
             # -t / --target-directory= sets the destination explicitly and the
@@ -506,21 +737,26 @@ def bash_write_targets(cmd):
             # containing a literal t with trailing chars covers both joined and
             # bundled forms; this is a habit-guard heuristic (widens the match,
             # never narrows it), not full getopt parsing.
+            # PH-prefixed flag (e.g. $(true)-t -> PH-t) must still count as
+            # -t -- strip a leading PH before every flag test below (found
+            # 2026-09-03: PH-t fell through to nonflag[-1], landing on a
+            # source arg instead of the real destination).
             tgt = None
             for j, t in enumerate(rest):
-                if t in ("-t", "--target-directory") and j + 1 < len(rest):
+                dt = t.lstrip(PH)
+                if dt in ("-t", "--target-directory") and j + 1 < len(rest):
                     tgt = rest[j + 1]
                     break
-                if t.startswith("--target-directory="):
-                    tgt = t[len("--target-directory="):]
+                if dt.startswith("--target-directory="):
+                    tgt = dt[len("--target-directory="):]
                     break
-                if t.startswith("-") and not t.startswith("--") and len(t) > 2:
-                    m = re.match(r"^-[a-zA-Z]*t(.+)$", t)
+                if dt.startswith("-") and not dt.startswith("--") and len(dt) > 2:
+                    m = re.match(r"^-[a-zA-Z]*t(.+)$", dt)
                     if m:
                         tgt = m.group(1)
                         break
-                if t.startswith("-") and not t.startswith("--") and \
-                   re.match(r"^-[a-zA-Z]*t$", t) and j + 1 < len(rest):
+                if dt.startswith("-") and not dt.startswith("--") and \
+                   re.match(r"^-[a-zA-Z]*t$", dt) and j + 1 < len(rest):
                     # bundle ending in t with no joined value (-rt DIR): the
                     # next token is the target dir, same idiom as -t DIR above,
                     # just bundled with other short flags first (found in the
@@ -550,13 +786,16 @@ def bash_write_targets(cmd):
             has_extract = ("x" in mode_str.lstrip("-")) or ("--extract" in rest)
             if has_extract:
                 yielded_dir = False
+                # Leading-PH fix: a disguised -C/--directory flag falls
+                # through to the "." fallback, losing the real target.
                 for j, t in enumerate(rest):
-                    if t in ("-C", "--directory") and j + 1 < len(rest):
+                    dt = t.lstrip(PH)
+                    if dt in ("-C", "--directory") and j + 1 < len(rest):
                         yield rest[j + 1]
                         yielded_dir = True
                         break
-                    if t.startswith("--directory="):
-                        yield t[len("--directory="):]
+                    if dt.startswith("--directory="):
+                        yield dt[len("--directory="):]
                         yielded_dir = True
                         break
                 if not yielded_dir:
@@ -595,10 +834,12 @@ def bash_write_targets(cmd):
             # version of this fix dispatched into the branch correctly but
             # still resolved the diff relative path against the cwd the hook
             # runs in, missing the actual -C directory entirely.
+            # Leading-PH fix: a disguised -C or a disguised apply/am token
+            # each skip this whole branch.
             sub_idx, directory = 0, None
-            if len(rest) > 1 and rest[0] == "-C":
+            if len(rest) > 1 and rest[0].lstrip(PH) == "-C":
                 sub_idx, directory = 2, rest[1]
-            if len(rest) > sub_idx and rest[sub_idx] in ("apply", "am"):
+            if len(rest) > sub_idx and rest[sub_idx].lstrip(PH) in ("apply", "am"):
                 diff_args = [t for t in rest[sub_idx + 1:] if not t.startswith("-")]
                 for t in diff_args:
                     yield t
@@ -610,9 +851,11 @@ def bash_write_targets(cmd):
             # so writing a verifier-surface file (a gate, hooks.json, an audit
             # check) triggers the recoverable ASK (found v0.36.0 audit: dd had
             # no verifier-protect coverage at all).
+            # Leading-PH fix, same pattern as cp/mv/install -t above.
             for t in rest:
-                if t.startswith("of=") and not t.startswith("of=/dev/"):
-                    yield t[len("of="):]
+                dt = t.lstrip(PH)
+                if dt.startswith("of=") and not dt.startswith("of=/dev/"):
+                    yield dt[len("of="):]
 
 try:
     d = json.load(sys.stdin)
@@ -638,7 +881,7 @@ try:
             # never did either. Expand both, or a target that really
             # resolves into a protected path never matches.
             expanded = os.path.expandvars(os.path.expanduser(p))
-            if is_gate_path(expanded):
+            if PH in expanded or is_gate_path(expanded):
                 emit_ask(_verifier_reason(expanded, "Bash write to a verifier surface (" + expanded + ") — " + PROTECTED_REASON))
                 break
         sys.exit(0)

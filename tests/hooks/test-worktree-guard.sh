@@ -237,6 +237,58 @@ out=$( (cd "$WS" && echo "$bashpayload_ansitwoseg" \
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "two ANSI-C strings on one line, each with an escaped quote, + write after -> deny exit 2" "$ok"
 
+# GH #129 companion fix (this file, 2026-09-03): argv0-splice via command substitution.
+# _blank_substitutions() (ported mechanism-only from irrecoverable.sh) plus the
+# KNOWN_WRITE_CMDS candidate-duplication loop close the identical bypass shape
+# irrecoverable.sh already fixed for its own exact-match argv0 dispatch -- a spliced argv0
+# like "c$(true)p" (bash-equivalent to "cp") never equals "cp"/"mv"/"install"/... by exact
+# string match. Confirmed by hand-trace before this fix: shlex tokenized the unfixed command
+# into an argv0 token no dispatch branch matches (the raw "c$(true)p" text, backticks/parens
+# intact -- shlex has no notion that a $(...) span vanishes once bash evaluates it), so
+# bash_write_targets() yielded ZERO targets -- a silent bypass of a write that really lands
+# on the protected checkout.
+SPLICE_ARGV0_CMD='c$(true)p evil.sh repo1/f.txt'
+bashpayload_spliceargv0=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$SPLICE_ARGV0_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_spliceargv0" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "argv0 splice via \$(...) resolving to cp, writing inside the guarded workspace -> deny exit 2 (was a silent bypass)" "$ok"
+
+# Same bug family, the splice sits in the write TARGET instead of argv0: an unknown \${x}
+# parameter expansion blanks to the PH placeholder rather than resolving to empty (real bash
+# expands an unset \$x to ""), but the nearest EXISTING directory ancestor of the resulting
+# fictitious path still climbs to the real, protected repo1 checkout either way -- so the
+# placeholder mismatch doesn't change the verdict here, only the exact candidate string.
+TARGET_SPLICE_CMD='cp evil.sh repo1/sub${x}dir/notes.txt'
+bashpayload_targetsplice=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$TARGET_SPLICE_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_targetsplice" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "target-path splice via \${x} (unknown var) -> deny exit 2" "$ok"
+
+# Negative control: the SAME splice shape, run from a directory genuinely OUTSIDE the guarded
+# workspace (not the workspace root itself, which is exempt via an unrelated path -- see the
+# "workspace-root repo file: exempt" case above) -- must allow. Guards against an
+# overcorrection that denies any splice regardless of where it actually resolves.
+OUTSIDE_SPLICE_CMD='$(which cp) evil.sh /tmp/harmless.txt'
+bashpayload_outsidesplice=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$OUTSIDE_SPLICE_CMD")
+out=$( (cd "$TMP" && echo "$bashpayload_outsidesplice" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "argv0 splice resolving OUTSIDE the guarded workspace -> allow exit 0 (not over-blocked)" "$ok"
+
+# English contraction inside real double quotes must not mask a genuine splice sitting later
+# in the same command -- the exact false-negative shape a naive apostrophe-pairing regex hits
+# (irrecoverable.sh's own confirmed bug: a shorthand mark used inside real double quotes pairs
+# across a genuine $(...) splice and hides it entirely). Fixed the same way here via real
+# shell quote-state tracking in _blank_substitutions instead of regex pairing of quote bytes.
+CONTRACTION_SPLICE_CMD=$(printf 'echo "it%ss" ; c$(true)p evil.sh repo1/f.txt' "'")
+bashpayload_contractionsplice=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$CONTRACTION_SPLICE_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_contractionsplice" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "English contraction inside double quotes must not mask a splice later in the command -> deny exit 2" "$ok"
+
 # Regression test (found + fixed 2026-08-04, round 2 -- caught by a genuine
 # subagent_type:kbg:silent-failure-hunter re-verification dispatch after the
 # round-1 fix landed): shlex treats a bare newline as ordinary whitespace, and
@@ -440,6 +492,94 @@ CASES = [
     # repo1/we'ird.txt, same as real bash.
     ("ANSI-C escaped quote inside the write target itself",
      "cp secret.txt $'repo1/we\\'ird.txt'", {"repo1/we'ird.txt"}, None),
+    # Grouping-operator gap (2026-09-03, same root cause as verifier-protect.sh's identical
+    # fix that same day): SEPS was {";", "&&", "||", "|", "&"} -- missing "(", ")", "{", "}".
+    # A parenthesized/braced command never gets its window split at the grouping boundary, so
+    # "(" or "{" becomes argv0 instead of the real command, and no argv0-dispatch branch
+    # matches it -- silent bypass (empty target set) instead of the real "cp" target.
+    ("parenthesized subshell command (grouping-operator gap)",
+     "(cp evil.sh repo1/target.txt)", {"repo1/target.txt"}, None),
+    ("braced group command (grouping-operator gap)",
+     "{ cp evil.sh repo1/target.txt; }", {"repo1/target.txt"}, None),
+    # Negative control: a literal "(" / "{" inside a QUOTED argument is not a real grouping
+    # construct -- shlex keeps the quoted token intact as one string, so it must never equal
+    # the bare "(" / "{" separator token and must not be misclassified as a window boundary.
+    ("quoted literal parenthesis is not a grouping operator",
+     'echo "value(1)" > repo1/target.txt', {"repo1/target.txt"}, None),
+    ("quoted literal brace is not a grouping operator",
+     'echo "{not a group}" > repo1/target.txt', {"repo1/target.txt"}, None),
+    # 2026-09-03: _normalize_ansi_c_quotes only fixed token BOUNDARIES ($'...' -> '...'),
+    # never RESOLVED the escape itself. This file's dispatch below compares argv0 by EXACT
+    # STRING (argv0 in ("cp", "mv", "install"), ...), so a boundary-only rewrite leaves argv0
+    # as the literal token "c\x70" (backslash-x-7-0 raw), which can never equal "cp". Same
+    # root cause fixed the same day in a sibling gate for its own exact-match argv0 dispatch;
+    # ported the corrected decode logic here. Confirmed exploitable live before this fix:
+    # bash_write_targets() yielded [] for the command below (silent bypass) -- bash itself
+    # evaluates it identically to a plain cp of evil.sh onto repo1/target.txt.
+    ("ANSI-C hex escape resolves argv0 back to a real command (was a silent bypass)",
+     "c$'\\x70' evil.sh repo1/target.txt", {"repo1/target.txt"}, None),
+    # Negative control: an ordinary single-quoted argument (no $'...' form at all, never
+    # enters the ANSI-C regex) must stay correctly classified after the fix -- guards against
+    # the decode-resolving rewrite breaking the common, already-working case.
+    ("ordinary single-quoted argument unaffected by ANSI-C normalization",
+     "cp secret.txt 'repo1/target.txt'", {"repo1/target.txt"}, None),
+    # Decode-path-without-mis-split control: the write TARGET itself carries a \n escape
+    # that must actually RESOLVE to a real newline byte (not stay literal backslash-n, which
+    # is what the old boundary-only rewrite produced), and that real newline byte must stay
+    # INSIDE the quoted span rather than leaking out and being read by _newlines_to_seps as a
+    # statement separator -- which would either mis-split this one write into two windows or
+    # throw off its quote-tracking scanner and swallow the write statement that follows with
+    # no separator inserted. The second write confirms the window after it is still detected
+    # independently.
+    ("ANSI-C newline escape resolves to a real newline inside the target, without mis-splitting the window after it",
+     "cp secret.txt $'repo1/embed\\nded.txt'\ncp evil.sh repo1/target.txt",
+     {"repo1/embed\nded.txt", "repo1/target.txt"}, None),
+    # Negative control for the tar false-positive fix (item 7, 2026-09-03): once argv0
+    # splices to a PH-bearing token, the tar branch runs against WHATEVER the real first
+    # argument is, even when the real command was never tar at all. A bare "x in mode_str"
+    # containment check false-denied on any first argument that merely CONTAINS the letter x
+    # -- "extract.sh" looks like an old-style "-xvf" flag cluster to a naive containment
+    # check, but is really just a filename. Fixed by requiring every character of mode_str to
+    # be a real tar single-letter flag before "x" counts as extract mode -- "extract.sh" fails
+    # immediately on its own "." byte, which is never a real tar flag character, so the tar
+    # branch now correctly yields nothing. must_equal (not must_include) confirms "." (the
+    # false implicit-cwd-extraction target) is ABSENT -- the only candidate left is the one
+    # every other duplicated branch (tee/cp/mv/install/rsync/patch) independently agrees on.
+    ("PH-spliced argv0 with a tar-look-alike first arg does not false-flag tar extract (item 7 fix)",
+     "$(true)x extract.sh", None, {"extract.sh"}),
+    # Reviewer-found bug in a SIBLING gate (irrecoverable.sh/verifier-protect.sh, confirmed
+    # 2026-09-03), independently re-verified here against this file's own flag-detection sites:
+    # a command substitution resolving to empty sitting IMMEDIATELY BEFORE a flag's leading
+    # dash vanishes in real bash ("sed $(true)-i ..." really runs as "sed -i ..."), but
+    # _blank_substitutions() inserts a literal, non-empty PH byte instead of modeling "resolves
+    # to empty" -- so the token becomes e.g. "\x01-i", which does NOT start with a literal "-".
+    # Every startswith("-")/exact-equality flag check below silently MISSED it before this fix,
+    # not just the argv0-dispatch that _blank_substitutions itself already covers via the
+    # KNOWN_WRITE_CMDS duplication loop -- this is a second, independent gap one level deeper,
+    # inside the per-command flag parsing. Fixed by stripping a leading PH before every such
+    # test (t.lstrip(PH)), same fix shape as the sibling gates.
+    ("sed -i via PH-before-dash splice (was a silent bypass)",
+     "sed $(true)-i s/a/b/ repo1/target.txt", {"repo1/target.txt"}, None),
+    ("perl -i via PH-before-dash splice (was a silent bypass)",
+     "perl $(true)-i -e s/a/b/ repo1/target.txt", {"repo1/target.txt"}, None),
+    ("cp -t via PH-before-dash splice (was: fell through to nonflag[-1], a source arg not the real dest)",
+     "cp $(true)-t repo1 evil.sh", {"repo1"}, None),
+    ("mv -t via PH-before-dash splice (was: fell through to nonflag[-1], a source arg not the real dest)",
+     "mv $(true)-t repo1 evil.sh", {"repo1"}, None),
+    ("install -t via PH-before-dash splice (was: fell through to nonflag[-1], a source arg not the real dest)",
+     "install $(true)-t repo1 evil.sh", {"repo1"}, None),
+    ("tar short -xvf via PH-before-dash splice (was a silent bypass)",
+     "tar $(true)-xvf archive.tar -C repo1", {"repo1"}, None),
+    # Legacy tar mode strings are bare words with no dash at all, so the leading PH can sit
+    # directly in front of the flag letters too, not just before a dash -- a distinct splice
+    # shape from every other site above, needing the same fix (mode_str.lstrip(PH) before the
+    # "--" check and before dash-stripping).
+    ("tar old-style xvf via PH-before-bareword splice, no dash at all (was a silent bypass)",
+     "tar $(true)xvf evil.tar -C repo1", {"repo1"}, None),
+    ("tar -C via PH-before-dash splice (was: fell through to the implicit-cwd '.' fallback)",
+     "tar -xf archive.tar $(true)-C repo1", {"repo1"}, None),
+    ("dd of= via PH-before-prefix splice, not a dash flag but the same root cause (was a silent bypass)",
+     "dd if=/dev/zero $(true)of=repo1/target.txt", {"repo1/target.txt"}, None),
 ]
 
 fails = 0
@@ -480,6 +620,18 @@ out=$( (cd "$WS" && echo "$(payload_bash "git -C $WS/repo1 apply $DIFF_FILE")" \
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "git -C <dir> apply: -C resolves the diff target, not the hook's own cwd -> deny exit 2" "$ok"
 
+# Reviewer-found bug (confirmed in a sibling gate 2026-09-03, re-verified here): git -C's
+# exact-equality check (rest[0] == "-C") never accounted for a leading PH placeholder from an
+# empty command substitution ($(true)-C -> \x01-C in real bash resolves to plain -C). Unlike
+# patch's -d below, there is no redundant nonflag fallback here -- the ENTIRE apply/am dispatch
+# is gated behind this one check, so a bypass yielded nothing at all (full pipeline, was exit
+# 0). Run from $WS (the exempt workspace root) so a naive cwd-relative resolution would
+# silently pass, same discipline as the non-spliced case above.
+out=$( (cd "$WS" && echo "$(payload_bash "git \$(true)-C $WS/repo1 apply $DIFF_FILE")" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "git \$(true)-C <dir> apply (PH-before-dash splice): still deny exit 2 (was a silent bypass)" "$ok"
+
 # patch's -d/--directory relocates where a relative in-diff target resolves, same class of
 # bug as git -C above. Run from $TMP (neutral, outside any repo) so a naive cwd-relative
 # resolution would silently pass.
@@ -488,11 +640,57 @@ out=$( (cd "$TMP" && echo "$(payload_bash "patch --directory=$WS/repo1 -p1 < $DI
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "patch --directory=: real target resolves against it, not bare cwd -> deny exit 2" "$ok"
 
+# Same reviewer-found bug, patch's bundled --directory=X form: unlike -d/--directory (a
+# separate token whose VALUE independently lands in `nonflag` and gets yielded regardless of
+# whether the flag itself is recognized -- see the code comment at this branch), --directory=X
+# packs flag and value into ONE token, so a PH-disguised prefix hides the whole value with no
+# redundant fallback. Run from $TMP (neutral) so a naive cwd-relative resolution would silently
+# pass, same discipline as the non-spliced case above.
+out=$( (cd "$TMP" && echo "$(payload_bash "patch \$(true)--directory=$WS/repo1 -p1 < $DIFF_FILE")" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "patch \$(true)--directory= (PH-before-dashdash splice): still deny exit 2 (was a silent bypass)" "$ok"
+
 # tar xf with no -C writes into cwd; the branch used to yield nothing at all for this form.
 out=$( (cd "$WS/repo1" && echo "$(payload_bash "tar xf archive.tar")" \
   | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "tar xf, no -C: cwd itself is the implicit target -> deny exit 2" "$ok"
+
+# Layer 3 bug (found by an independent adversarial reviewer, 2026-09-03): a
+# STANDALONE, unquoted word that resolves to empty at runtime vanishes
+# entirely in real bash via word-splitting, shifting every later token left
+# by one position. The two fixed-index reads below (git apply/am's -C check
+# at rest[0], and tar's mode-string check also at rest[0]) instead see a
+# PH-only token sitting in that position and read the wrong token, missing
+# the real -C directory / extract mode entirely. Fixed by also running each
+# check against a second, COMPACTED token list with every bare-PH-only token
+# removed -- the verdict denies if either pass denies.
+out=$( (cd "$WS" && echo "$(payload_bash "git \$(true) -C $WS/repo1 apply $DIFF_FILE")" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "git \$(true) -C <dir> apply (bare vanish before -C): still deny exit 2 (was a silent bypass)" "$ok"
+
+# cwd is $WS (outside repo1) so only the -C reading — not an accidental cwd
+# fallback — can make this deny; that isolates the fixed-index bug from the
+# already-working "tar xf, no -C" implicit-cwd case above.
+out=$( (cd "$WS" && echo "$(payload_bash "tar \$(true) -xf archive.tar -C $WS/repo1")" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "tar \$(true) -xf archive.tar -C <dir> (bare vanish before -xf): still deny exit 2 (was a silent bypass)" "$ok"
+
+# Adjacent shape checked while closing the above (2026-09-03): a bare-vanish
+# token AT argv0 itself ("$(true) tar -xf archive.tar -C repo1") was also
+# probed. Not added as its own regression case here -- differential testing
+# (this fix present vs. reverted to rest-only scope) showed the full suite
+# passes either way for that shape, so a test for it would not distinguish
+# buggy from fixed behavior (test-honesty "distinguishes-or-it-doesn't"
+# rule). Root cause: argv0 containing PH already routes through the GH #129
+# KNOWN_WRITE_CMDS duplication loop, and its tee/patch candidates
+# unconditionally yield every non-flag token in `rest` regardless of
+# position, so the real target still surfaces through one of them even
+# while the tar/git branches' own fixed-index read is misaligned -- see the
+# code comment at rest_compacted's definition in worktree-guard.py.
 
 # Negative: git apply against a diff that does not touch a protected path must not false-deny.
 BENIGN_DIFF="$TMP/benign.diff"
@@ -544,6 +742,30 @@ git -C "$WS/repowt" worktree add -q -b feat-c "$WS/wt-featc" 2>/dev/null
 out=$(run_guard "$(payload "$WS/wt-featc/f.txt" sessclc)" 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "(c) worktree on a non-protected branch inside the workspace -> allow, no redirect (not over-blocked)" "$ok"
+
+# Grouping-operator gap, full pipeline (2026-09-03): confirm the same bug through main() /
+# classify(), not just the bash_write_targets() battery above -- a parenthesized or braced
+# command run against a protected checkout must deny exit 2, not silently pass.
+GROUP_PAREN_CMD='(cp evil.sh repo1/f.txt)'
+out=$( (cd "$WS" && echo "$(payload_bash "$GROUP_PAREN_CMD")" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "grouping-operator gap: (cp evil.sh repo1/f.txt) -> deny exit 2 (was a silent bypass)" "$ok"
+
+GROUP_BRACE_CMD='{ cp evil.sh repo1/f.txt; }'
+out=$( (cd "$WS" && echo "$(payload_bash "$GROUP_BRACE_CMD")" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "grouping-operator gap: { cp evil.sh repo1/f.txt; } -> deny exit 2 (was a silent bypass)" "$ok"
+
+# Negative control, full pipeline: a legitimate command with a literal "(" in a quoted
+# argument (not a real grouping construct) must not be misclassified -- must still resolve
+# and deny on its real write target, not silently pass due to a broken window split.
+QUOTED_PAREN_CMD='echo "value(1)" > repo1/f.txt'
+out=$( (cd "$WS" && echo "$(payload_bash "$QUOTED_PAREN_CMD")" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "negative control: quoted literal '(' in an argument is not a grouping operator -> still deny exit 2 on the real target" "$ok"
 
 echo ""
 total=$((pass + fail))

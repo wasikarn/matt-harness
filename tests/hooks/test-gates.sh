@@ -418,6 +418,101 @@ test_deny "$IRRECOVERABLE" "contraction apostrophes inside double quotes pair up
 test_allow "$IRRECOVERABLE" "same stray contraction apostrophe shifts pairing so a REAL single-quoted -m argument is no longer matched as one span (was a false DENY of inert commit-message text)" \
   "$(bash_payload $'echo "it\'s" ; git commit -m \'see $(git push --force)\'')"
 
+# Independent-review finding, 2026-09-03: distinct from and broader than the
+# already-accepted "--for<PH>ce" residual documented above (PH landing
+# INSIDE an already-dash-prefixed flag, which garbles the spelling but keeps
+# the flag SHAPE recognizable). This one erases the flag shape entirely --
+# a command substitution resolving to empty at runtime splices directly
+# onto whatever follows in real bash ("$(true)-rf" IS "-rf"), but the
+# placeholder pass leaves a non-empty PH byte glued to the front of the
+# dash instead, producing a token like "PH-rf" that no longer even STARTS
+# WITH "-" -- so every flag-detection check that tests startswith("-") or
+# an exact dash-prefixed string missed it entirely and silently ALLOWed.
+# Fixed by stripping a leading placeholder before every such check (rm -rf,
+# find -exec/-execdir/-delete, git --no-verify/hooksPath, and every git
+# sub == "..." branch that reads from `scan`: push/reset/clean/restore/
+# checkout/switch/branch/commit/add).
+test_deny "$IRRECOVERABLE" "empty-substitution splice hides rm -rf's dash (rm \$(true)-rf /tmp/x, was silently ALLOWed)" \
+  "$(bash_payload 'rm $(true)-rf /tmp/x')"
+test_deny "$IRRECOVERABLE" "same bug via backticks (rm \`true\`-rf /tmp/x, was silently ALLOWed)" \
+  "$(bash_payload 'rm `true`-rf /tmp/x')"
+test_deny "$IRRECOVERABLE" "empty-substitution splice hides git push --force's dashes (git push \$(true)--force, was silently ALLOWed)" \
+  "$(bash_payload 'git push $(true)--force')"
+test_deny "$IRRECOVERABLE" "empty-substitution splice hides git clean -f's dash (git clean \$(true)-f, was silently ALLOWed)" \
+  "$(bash_payload 'git clean $(true)-f')"
+# Negative control: the substitution sits inside a QUOTED ARGUMENT VALUE
+# (a real -m message), not in flag position -- the existing -m/--message
+# value-skip logic empties `scan` before the new lstrip(PH) pass ever runs,
+# so this must stay ALLOW, proving the fix does not turn commit-message
+# prose into a false deny.
+test_allow "$IRRECOVERABLE" "substitution inside a quoted -m message value, not a bare flag position (git commit -m \"\$(cat msg.txt)\") -- must stay ALLOW" \
+  "$(bash_payload 'git commit -m "$(cat msg.txt)"')"
+
+# GH #129 follow-up (2026-09-03): an adversarial review found the leading-PH
+# fix above was applied to some checks but not others, and a third bug class
+# (Layer 3 -- a standalone vanish token, not glued to anything, shifts every
+# later token left one position, same as real bash word-splitting, but the
+# PH-only token stays in place here) had never been tested in this file.
+# --- Layer 2: the single-branch-develop-only worktree doctrine gate ---
+# (the highest-severity gap: git worktree add -b was never lstrip(PH)-ed at
+# all, unlike every other flag check above).
+test_deny "$IRRECOVERABLE" "empty-substitution splice hides git worktree add -b's dash (was silently ALLOWed, bypassing the single-branch doctrine gate)" \
+  "$(bash_payload 'git worktree add $(true)-b feature-branch /tmp/wt-feature')"
+test_deny "$IRRECOVERABLE" "baseline: plain git worktree add -b, no splice at all (must still deny)" \
+  "$(bash_payload 'git worktree add -b feature-branch /tmp/wt-feature')"
+# --- Layer 2: dd of= and destructive SQL, neither was lstrip(PH)-ed ---
+test_deny "$IRRECOVERABLE" "empty-substitution splice hides dd's of=/dev/ prefix (was silently ALLOWed)" \
+  "$(bash_payload 'dd if=/dev/zero $(true)of=/dev/sda')"
+test_deny "$IRRECOVERABLE" "baseline: plain dd of=/dev, no splice (must still deny)" \
+  "$(bash_payload 'dd if=/dev/zero of=/dev/sda')"
+test_deny "$IRRECOVERABLE" "splice lands mid-keyword in a destructive SQL statement (DR\$(true)OP TABLE, was silently ALLOWed -- the old check only handled a LEADING splice, not one INSIDE a keyword)" \
+  "$(bash_payload 'mysql -e "DR$(true)OP TABLE users"')"
+test_deny "$IRRECOVERABLE" "baseline: plain destructive SQL, no splice (must still deny)" \
+  "$(bash_payload 'mysql -e "DROP TABLE users"')"
+# --- Layer 2, exhaustive-grep finds: the prefix-wrapper unwrap loops
+# (env/nice/sudo/command/nohup/time) and the xargs/docker-exec re-pointing
+# never stripped a leading PH from the flags they read either -- a disguised
+# wrapper flag misreads itself as the wrapped command, leaving the REAL
+# wrapped command (git, mysql, ...) misplaced one slot into `rest` where the
+# position-sensitive worktree/stash checks never look for it (membership
+# checks like rm -rf/push --force already tolerate this by accident; the
+# fixed-index ones do not). Each pairs the splice with its already-passing
+# no-splice baseline from the existing prefix-wrapper battery above.
+test_deny "$IRRECOVERABLE" "env wrapper flag splice defeats worktree doctrine gate (env \$(true)-u FOO git worktree add -b evil ..., was silently ALLOWed)" \
+  "$(bash_payload 'env $(true)-u FOO git worktree add -b evil /tmp/wt-evil-env')"
+test_deny "$IRRECOVERABLE" "sudo wrapper flag splice defeats worktree doctrine gate (sudo \$(true)-u alice git worktree add -b evil ..., was silently ALLOWed)" \
+  "$(bash_payload 'sudo $(true)-u alice git worktree add -b evil /tmp/wt-evil-sudo')"
+test_deny "$IRRECOVERABLE" "nice wrapper flag splice defeats worktree doctrine gate (nice \$(true)-n5 git worktree add -b evil ..., was silently ALLOWed)" \
+  "$(bash_payload 'nice $(true)-n5 git worktree add -b evil /tmp/wt-evil-nice')"
+test_deny "$IRRECOVERABLE" "command wrapper flag splice defeats worktree doctrine gate (command \$(true)-p git worktree add -b evil ..., was silently ALLOWed)" \
+  "$(bash_payload 'command $(true)-p git worktree add -b evil /tmp/wt-evil-cmd')"
+test_deny "$IRRECOVERABLE" "xargs mid-basename splice defeats worktree doctrine gate (xargs g\$(true)it worktree add -b evil ..., was silently ALLOWed)" \
+  "$(bash_payload 'echo x | xargs g$(true)it worktree add -b evil /tmp/wt-evil-xargs')"
+test_deny "$IRRECOVERABLE" "docker exec flag splice defeats the inner-command re-point, hiding destructive SQL (docker exec \$(true)-i c1 mysql -e DROP TABLE, was silently ALLOWed)" \
+  "$(bash_payload 'docker exec $(true)-i c1 mysql -e "DROP TABLE users"')"
+test_deny "$IRRECOVERABLE" "docker exec-itself splice defeats the inner-command re-point, hiding destructive SQL (docker \$(true)exec c1 mysql -e DROP TABLE, was silently ALLOWed)" \
+  "$(bash_payload 'docker $(true)exec c1 mysql -e "DROP TABLE users"')"
+# --- Layer 3: a standalone unquoted vanish token shifts fixed-index reads.
+# The worst case is the whole vanish landing right where argv0 would be
+# (before "git" itself) -- "git" then ends up misplaced one slot into
+# `rest`, and none of this file own git dispatch checks look there.
+test_deny "$IRRECOVERABLE" "Layer 3: a standalone vanish sits WHERE argv0 would be, before git itself (\$(true) git worktree add -b evil ..., was silently ALLOWed)" \
+  "$(bash_payload '$(true) git worktree add -b evil /tmp/wt-evil-vanish')"
+# Companion: a standalone vanish AFTER git, before the subcommand -- already
+# safely denied today via this file own KNOWN_GIT_SUBS candidate duplication
+# (the "restore" branch own broad any-nonflag-token condition happens to
+# fire), locked in here as a regression test for the exact shape named in
+# the fix review, not because it was ever a confirmed bypass.
+test_deny "$IRRECOVERABLE" "Layer 3 companion: a standalone vanish sits between git and the subcommand (git \$(true) worktree add -b evil ...)" \
+  "$(bash_payload 'git $(true) worktree add -b evil /tmp/wt-evil-vanish2')"
+# Negative control (Layer 3 must not over-deny): a standalone vanish
+# resolving to something REAL, not empty, still shifts a token in the SAME
+# way at the placeholder level -- but the compacted-window retry must not
+# misfire into a false deny just because dropping that token leaves a
+# shorter, still-benign list.
+test_allow "$IRRECOVERABLE" "Layer 3 negative control: \$(which git) status -- compacted window drops argv0 entirely, must stay ALLOW" \
+  "$(bash_payload '$(which git) status')"
+
 test_allow "$IRRECOVERABLE" "git push --force-with-lease (safe variant)" \
   "$(bash_payload 'git push --force-with-lease origin develop')"
 test_allow "$IRRECOVERABLE" "git push --force-with-lease with refspec (still safe)" \

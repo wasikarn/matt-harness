@@ -222,6 +222,60 @@ BATTERY=(
   # was added -- lowering only widens the match against the tracked protected
   # substrings, it must not turn every uppercase letter into a false ask.
   "differently-cased word, non-protected target (parity companion)|echo x > /tmp/GATES/probe127b.sh|noask"
+  # Missing-operator gap (2026-09-03): this generator own SEPS window-split
+  # set never included ( ) { } grouping/brace-group operators -- unlike its
+  # two already-fixed siblings irrecoverable.sh (line ~276) and
+  # merge-door.sh (line ~129), which both carry
+  # OPERATORS = {";", "&&", "||", "|", "&", "(", ")", "{", "}"}. shlex with
+  # punctuation_chars=True already tokenizes a bare ( ) { } as its own
+  # token (confirmed by direct testing), but without them in SEPS the
+  # window is never split there -- so "(cp evil.sh hooks/gates/x.sh)"
+  # yields ONE window ["(", "cp", "evil.sh", "hooks/gates/x.sh", ")"] whose
+  # argv0 is the literal "(", never "cp" -- the write-command dispatch for
+  # cp/mv/install never fires and the write silently allows. Confirmed live
+  # against the unfixed gate before writing this test. Same shape for a
+  # brace group ("{ ...; }").
+  "grouped command (parens) hides argv0 from cp dispatch|(cp evil.sh hooks/gates/x.sh)|ask"
+  "brace-group command hides argv0 from cp dispatch|{ cp evil.sh hooks/gates/x.sh; }|ask"
+  # Negative control: a literal ( inside a QUOTED argument (this repo's own
+  # commit-message convention, e.g. fix(gates): ...) is not a grouping
+  # operator at all -- shlex keeps the whole quoted span as ONE token
+  # (confirmed by direct testing), so adding ( ) { } to SEPS must not start
+  # misreading this as a subshell boundary.
+  "quoted literal paren in a commit message, not a grouping op|git commit -m \"fix(gates): update x\"|noask"
+  # Discriminating companion to the row above: on its own, a quoted-paren
+  # command yields zero write targets regardless of whether the quoted (
+  # fragments correctly, so it would stay noask even against a broken
+  # SEPS/tokenizer that mis-split the quoted span (a vacuous check). Chaining
+  # a real protected write after it makes this row actually earn the
+  # "not misread as a grouping boundary" claim: if the quoted ( ever DID
+  # spuriously start a new window, it would orphan the following cp window
+  # and this would go noask instead.
+  "quoted literal paren, then a real protected write chained after|git commit -m \"fix(gates): update x\" && cp evil.sh hooks/gates/y.sh|ask"
+  # Independent-reviewer finding (2026-09-03): a command substitution that
+  # resolves EMPTY at runtime (e.g. $(true)) glues onto the very next flag in
+  # real bash ("cp $(true)-t DIR file" IS "cp -t DIR file"), but
+  # _blank_substitutions above replaces it with a non-empty PH byte instead of
+  # nothing, so the resulting token (PH + "-t"/"-i") never matches a raw
+  # startswith("-") flag test below. Confirmed live before this fix: all
+  # three rows silently allowed (rc=0, no output) -- the cp/mv/install -t
+  # detection fell through to nonflag[-1] (wrong target), and the sed/perl -i
+  # detection never entered its yield loop at all (zero targets).
+  "PH-prefixed -t flag on cp, GH review 2026-09-03|cp \$(true)-t hooks/gates/ evil.sh|ask"
+  "PH-prefixed -i flag on sed, GH review 2026-09-03|sed \$(true)-i s/a/b/ hooks/gates/x.sh|ask"
+  "PH-prefixed -i flag on perl, GH review 2026-09-03|perl \$(true)-i -pe s/a/b/ hooks/gates/x.sh|ask"
+  # Parity companion: an ORDINARY (non-spliced) -t flag pointing at a
+  # non-protected directory must stay allowed -- the fix must only change
+  # behavior for a PH-prefixed token, never widen an already-correct ordinary
+  # flag parse.
+  "ordinary -t flag, non-protected target, parity companion|cp evil.sh -t /tmp/harmless_dir|noask"
+  # Adversarial-review follow-up (2026-09-03): the leading-PH fix above
+  # covered cp/mv/install/sed/perl but not dd or tar, both of which read
+  # their flags with the identical unstripped startswith/exact-match shape.
+  "PH-prefixed of= flag on dd targets a verifier path, was silently allowed|dd if=/dev/zero \$(true)of=hooks/gates/probevp1.sh bs=1 count=1|ask"
+  "baseline: plain dd of= to a verifier path, no splice (must still ask)|dd if=/dev/zero of=hooks/gates/probevp1.sh bs=1 count=1|ask"
+  "PH-prefixed -C flag on tar falls through to the . fallback, losing the real target, was silently allowed|tar -xf evil.tar \$(true)-C hooks/gates/|ask"
+  "baseline: plain tar -C to a verifier path, no splice (must still ask)|tar -xf evil.tar -C hooks/gates/|ask"
 )
 
 for row in "${BATTERY[@]}"; do
@@ -262,6 +316,25 @@ check "git apply against a diff touching nothing protected -> exit 0, no false a
 out=$(payload_bash "git -C $ROOT apply $DIFF_FILE" | bash "$GUARD" 2>/dev/null)
 ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
 check "git -C <dir> apply: -C resolves the diff target, not the hook's own cwd -> ask" "$ok"
+
+# Adversarial-review follow-up (2026-09-03): rest[0] == "-C" and
+# rest[sub_idx] in ("apply","am") above were both an exact/unstripped
+# check, unlike the already-fixed cp/mv/install -t detection. A PH-glued -C
+# falls through to sub_idx=0, and rest[0] no longer equals "apply"/"am"
+# either -- the whole branch is skipped, not just the wrong directory.
+out=$(payload_bash "git \$(true)-C $ROOT apply $DIFF_FILE" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "PH-glued -C on git apply, was silently allowed (Layer 2) -> ask" "$ok"
+
+# Layer 3: a standalone (not glued) vanish token between "git" and "-C"
+# shifts rest[0] out of the "-C" position the exact same way real bash
+# word-splitting would shift it, but the PH-only token stays in place here
+# instead of vanishing -- so rest[0] is the PH token, never "-C", and the
+# whole apply/am branch never fires. Confirmed exploitable before this fix:
+# rc=0, no output at all.
+out=$(payload_bash "git \$(true) -C $ROOT apply $DIFF_FILE" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Layer 3: standalone vanish shifts -C out of position on git apply, was silently allowed -> ask" "$ok"
 
 out=$(payload_bash "patch -p1 < $DIFF_FILE" | bash "$GUARD" 2>/dev/null)
 ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
@@ -384,6 +457,66 @@ check "benign \${...} expansion, no write target -> exit 0, no output" "$ok"
 out=$(payload_bash "$(printf "echo \$'hello'")" | bash "$GUARD" 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "benign \$'...' ANSI-C quoting, no write target -> exit 0, no output" "$ok"
+
+# Deep ANSI-C decode gap (2026-09-03, same session as the irrecoverable.sh
+# fix for the identical root cause): this generator's own
+# _normalize_ansi_c_quotes only fixed token BOUNDARIES ($'...' -> '...',
+# escapes left raw) -- enough for the redirect/target scanning this file
+# does elsewhere, but NOT for the exact-string argv0 dispatch above (argv0
+# == "tee", argv0 in ("rm","trash"), ("sed","perl"), ("cp","mv","install"),
+# argv0 == "rsync"/"tar"/"patch"/"git"/"dd"). "c$'\x70' evil.sh
+# hooks/gates/x.sh" re-quotes (boundary-only) to "c'\x70' evil.sh ...",
+# which shlex glues into the literal argv0 "c\x70" (raw backslash-x-7-0),
+# never equal to "cp". Confirmed live before this fix: bash_write_targets()
+# yields zero candidates -- a silent allow on a real cp write to a verifier
+# path. Fixed by porting the escape-RESOLVING _normalize_ansi_c_quotes from
+# irrecoverable.sh (same root cause, fixed there first the same session)
+# rather than re-deriving the decode logic here.
+out=$(payload_bash "c\$'\\x70' evil.sh hooks/gates/x.sh" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "ANSI-C hex-escape-glued argv0 (c\$'\\x70' resolves to cp) writes to hooks/gates -> ask" "$ok"
+
+# Negative control: an ordinary single-quoted argument with no \$'...' form
+# at all never enters the ANSI-C regex -- must stay correctly classified
+# (no write target here at all -- git commit alone), not misclassified as
+# some ANSI-C construct by the deeper decode logic.
+out=$(payload_bash "git commit -m 'a normal message'" | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "ordinary single-quoted commit message unaffected by ANSI-C normalization (negative control)" "$ok"
+
+# Real decode-path exercise (port of test-gates.sh's equivalent control for
+# irrecoverable.sh's own sibling fix): a genuine \$'...' payload with an
+# embedded \n escape that DOES enter the new decode path. The decoded
+# newline must stay INSIDE the returned quoted span (SQ...SQ), or
+# _newlines_to_seps below would read it as a real statement separator and
+# corrupt quote-balance tracking for the write on the next line, either
+# hiding it (silent allow) or misparsing everything after.
+out=$(payload_bash "$(printf 'echo $%sline1\\nline2%s\ncp evil.sh hooks/gates/x2.sh' "'" "'")" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "ANSI-C embedded \\n decode stays inside quoted span, real write on next line still ask (decode-path exercise)" "$ok"
+
+# GH #129 (2026-09-03): ported from irrecoverable.sh -- python3's own shlex
+# tokenizer does not resolve a command-substitution splice either (the
+# check_reaches_pyguard rows above only proved the fast path stops
+# short-circuiting; they never asserted python3 then classifies correctly).
+# A blanked-to-placeholder splice at argv0 must be duplicate-checked against
+# every write-verb this generator dispatches on, and a target token that
+# still carries the placeholder must be treated as a possible protected path.
+out=$(payload_bash "$(printf 'c$(true)p evil.sh hooks/gates/x.sh')" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "GH #129: argv0 splice (c\$(true)p -> cp) targeting a protected path -> ask" "$ok"
+
+out=$(payload_bash 'cp evil.sh hooks/g${x}ates/x.sh' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "GH #129: target-path splice via \${x} (unknown var) -> ask (placeholder-bearing target treated as possibly protected)" "$ok"
+
+out=$(payload_bash "$(printf '$(which cp) evil.sh /tmp/harmless.txt')" | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "GH #129 negative control: argv0 splice resolving to a benign non-protected op -> allow (no over-deny from duplication)" "$ok"
+
+out=$(payload_bash "$(printf 'echo "it%ss" ; c$(true)p evil.sh hooks/gates/x.sh' "'")" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "GH #129: English contraction adjacent to a real splice does not mask it -> ask" "$ok"
 
 echo ""
 total=$((pass + fail))
