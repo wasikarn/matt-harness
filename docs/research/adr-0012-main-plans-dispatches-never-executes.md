@@ -90,11 +90,14 @@ and this decision is made with them in full view — not in ignorance of them.
 never edits files, runs mutating commands, runs tests, or commits. Enforced by
 `hooks/gates/main-exec-guard.sh` when `MH_MAIN_EXEC_GUARD=1`.
 
-The guard is switched on for this operator's interactive sessions through a shell alias (the
-`csp`/`cspr` launchers export `MH_MAIN_EXEC_GUARD=1` before starting `claude`), not through
-the global `settings.json` `env` block — a settings-level export would also gate background and
-Superset-dispatched workers, which are the executors the rule exists to route work to. The
-plugin ships with the guard off.
+The guard is switched on for this operator's interactive sessions through the shell
+initialization file (`~/.zshrc` contains an unconditional `export
+MH_MAIN_EXEC_GUARD="${MH_MAIN_EXEC_GUARD:-1}"`, giving every interactive shell the default
+value), not through the global `settings.json` `env` block — a settings-level export would
+also gate background and Superset-dispatched workers, which are the executors the rule exists
+to route work to. The plain `csp`/`cspr` aliases remain as originally written (`claude --dangerously-skip-permissions[--resume]`); a caller can still override the default by setting
+`MH_MAIN_EXEC_GUARD=0` before invoking `claude` for a single session. The plugin ships with
+the guard off.
 
 ## Accepted costs
 

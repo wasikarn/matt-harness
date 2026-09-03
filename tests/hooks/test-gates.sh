@@ -226,6 +226,28 @@ test_deny  "$IRRECOVERABLE" "dangerous cmd after newline" \
   "$(bash_payload $'echo hi\nrm -rf /tmp/x')"
 test_deny  "$IRRECOVERABLE" "dangerous cmd after & (background)" \
   "$(bash_payload 'echo done & rm -rf /tmp/x')"
+
+# 2026-09-03: comment-aware continuation fix. A "#" comment already ends
+# at the literal newline in real bash no matter what precedes it, but the
+# old _newlines_to_seps treated EVERY backslash-newline as a protected
+# continuation, even one sitting inside a comment -- so "git status #
+# comment \" + newline + "git push origin develop --force" glued the
+# second (real, dangerous) command onto the first (inert, comment)
+# window and it was never checked. Confirmed live as a bypass before
+# this fix: exit 0, no deny reason, even though real bash runs both
+# commands. Adjacent shapes locked down alongside the exact repro so a
+# narrow patch cannot re-open the same hole from a slightly different
+# angle.
+test_deny  "$IRRECOVERABLE" "backslash-newline inside a # comment does not hide the next real command (exact repro)" \
+  "$(bash_payload $'git status # comment \\\ngit push origin develop --force')"
+test_deny  "$IRRECOVERABLE" "same shape, comment with no trailing backslash (pre-existing case, must stay denied)" \
+  "$(bash_payload $'git status # comment\ngit push origin develop --force')"
+test_deny  "$IRRECOVERABLE" "real backslash-newline continuation (no comment) still joins tokens for detection" \
+  "$(bash_payload $'git push --force \\\n  origin develop')"
+test_allow "$IRRECOVERABLE" "legit backslash-newline continuation outside a comment still allows (no false split)" \
+  "$(bash_payload $'git log --oneline \\\n  -5')"
+test_deny  "$IRRECOVERABLE" "trailing # comment on the same line does not hide the command before it" \
+  "$(bash_payload 'git push origin develop --force # not a real flag, just a comment')"
 test_allow "$IRRECOVERABLE" "git push --force-with-lease (safe variant)" \
   "$(bash_payload 'git push --force-with-lease origin develop')"
 test_allow "$IRRECOVERABLE" "git push --force-with-lease with refspec (still safe)" \

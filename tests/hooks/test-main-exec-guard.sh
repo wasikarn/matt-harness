@@ -149,6 +149,7 @@ ALLOW_CMDS=(
   'rtk git status' 'rtk gain' 'echo hi >/dev/null' 'git status 2>&1' 'claude --version'
   'env | grep X' 'date' 'shasum somefile' 'git status && git diff --stat' "sed 's/w/x/' f"
   'FOO=bar git status' 'ls -la 2>/dev/null' $'# comment\ngit status' 'claude plugin list'
+  $'git log --oneline \\\n-5'
 )
 for c in "${ALLOW_CMDS[@]}"; do
   run 1 "$(bash_payload "$c")"
@@ -170,6 +171,7 @@ DENY_CMDS=(
   'find . -exec rm {} \;' 'sort -o f' 'xargs rm' 'eval x' 'source f' 'a $(rm x)' 'cat <(rm x)'
   'npm test' 'ls; rm f' 'sudo ls' 'echo "$(rm x)"' 'rtk proxy rm x' 'echo a#; rm x'
   'cat <<EOF' 'echo "unbalanced' 'cat f | tee g' 'git status | xargs rm'
+  $'git status # comment \\\ngit push origin develop --force'
 )
 for c in "${DENY_CMDS[@]}"; do
   run 1 "$(bash_payload "$c")"

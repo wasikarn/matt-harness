@@ -68,7 +68,12 @@ check "rm -rf: direct and dispatched both exit 2 (direct=$direct_rc dispatch=$di
 
 echo "=== ask parity (verifier-protect.sh via Write) ==="
 direct_out=$(echo "$(write_payload "hooks/gates/foo.sh" "x")" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" bash "$ROOT/hooks/gates/verifier-protect.sh" 2>/dev/null)
-dispatch_out=$(echo "$(write_payload "hooks/gates/foo.sh" "x")" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" bash "$DISPATCH_SH" 2>/dev/null)
+# MH_MAIN_EXEC_GUARD neutralized: this check is testing verifier-protect.sh
+# dispatcher parity, not main-exec-guard.sh -- the synthetic payload has no
+# agent_id on purpose (it's not a subagent call), which is exactly what makes
+# main-exec-guard deny/short-circuit it first when that var is ambiently "1"
+# or "log" in the calling shell (this repo's own dotfiles now export it).
+dispatch_out=$(echo "$(write_payload "hooks/gates/foo.sh" "x")" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" MH_MAIN_EXEC_GUARD= bash "$DISPATCH_SH" 2>/dev/null)
 ok=1
 if echo "$direct_out" | /usr/bin/grep -q '"permissionDecision": "ask"' && \
    echo "$dispatch_out" | /usr/bin/grep -q '"permissionDecision": "ask"'; then
@@ -92,7 +97,9 @@ git -C "$WS/repo1" -c user.email=t@t -c user.name=t commit -q -m add-f
 edit_payload() { python3 -c 'import json, sys; print(json.dumps({"tool_name": "Edit", "tool_input": {"file_path": sys.argv[1]}, "session_id": sys.argv[2]}))' "$1" "$2"; }
 P=$(edit_payload "$WS/repo1/f.txt" sess1234)
 direct_out=$(echo "$P" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" CLAUDE_PROJECT_DIR="$WS/repo1" MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= bash "$ROOT/hooks/gates/worktree-guard-dispatch.sh" 2>/dev/null)
-dispatch_out=$(echo "$P" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" CLAUDE_PROJECT_DIR="$WS/repo1" MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= bash "$DISPATCH_SH" 2>/dev/null)
+# MH_MAIN_EXEC_GUARD neutralized: same reason as the foo.sh check above --
+# this is worktree-guard.py dispatcher parity, not main-exec-guard's own.
+dispatch_out=$(echo "$P" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" CLAUDE_PROJECT_DIR="$WS/repo1" MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= MH_MAIN_EXEC_GUARD= bash "$DISPATCH_SH" 2>/dev/null)
 ok=1
 python3 -c '
 import json, sys

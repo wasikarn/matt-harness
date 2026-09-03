@@ -36,7 +36,7 @@ The lead does the **judgment** — what to dispatch, in what order, with what F9
    - Review diff-sized changes yourself; don't blindly forward them to the next stage.
    - Combine verified outputs into a single coherent artifact or commit. Own the integration.
    - **Answer status questions from what you already know — never by pulling an agent's raw transcript into the main thread.** Wait for the completion notification; if asked "how's it going" first, say what was dispatched and what's still outstanding. Need an agent's actual result? `Read` the file it was told to write (the Deliverable slot's path). A raw transcript dump is tens of thousands of tokens of intermediate reasoning riding along in every subsequent turn — the exact disposable-reasoning leak subagents exist to prevent.
-   - **Report** the final allocation: delegated to whom, inline with the user, scheduled, dropped — and why.
+   - **Report** the final allocation: delegated to whom, single-agent/parallel/sequential, dropped — and why.
 
 ## Spawn-prompt template (F9)
 

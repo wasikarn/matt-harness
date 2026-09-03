@@ -137,12 +137,84 @@ def check_write(path):
 # ----------------------------------------------------------------- Bash leg
 # Newlines are command separators in bash but shlex eats them as whitespace;
 # insert ";" after each real newline (a backslash-newline is a continuation,
-# protected via placeholder). Copied from irrecoverable.sh.
+# protected via placeholder) -- EXCEPT inside a "#" comment: a bash comment
+# runs to the next literal newline full stop, so a trailing backslash there
+# does not glue the next line on and does not suppress the separator. Track
+# quote state too, since "#" only starts a comment when unquoted and at a
+# word boundary (mid-word a# or a quoted comment marker is never a comment).
+# SQ/DQ avoid a literal quote char in this source: the whole Bash-leg body
+# below lives inside the outer printf|python3 -c invocation above, itself a
+# single-quoted bash string -- an inline apostrophe character would end
+# that string early. Same reasoning as SQ = chr(39) in irrecoverable.sh.
+SQ = chr(39)
+DQ = chr(34)
 def _newlines_to_seps(s):
-    placeholder = chr(0)
-    s = re.sub(r"\\\n", placeholder, s)
-    s = s.replace("\n", "\n; ")
-    return s.replace(placeholder, "\\\n")
+    out = []
+    i, n = 0, len(s)
+    squote = dquote = comment = False
+    word_start = True
+    while i < n:
+        c = s[i]
+        if comment:
+            if c == "\n":
+                comment = False
+                out.append("\n; ")
+                word_start = True
+            else:
+                out.append(c)
+            i += 1
+            continue
+        if squote:
+            out.append(c)
+            if c == SQ:
+                squote = False
+                word_start = False
+            i += 1
+            continue
+        if dquote:
+            if c == "\\" and i + 1 < n:
+                out.append(c); out.append(s[i + 1])
+                i += 2
+                continue
+            out.append(c)
+            if c == DQ:
+                dquote = False
+                word_start = False
+            i += 1
+            continue
+        if c == "\\" and i + 1 < n:
+            nxt = s[i + 1]
+            out.append(c); out.append(nxt)
+            i += 2
+            if nxt != "\n":
+                word_start = False
+            continue
+        if c == SQ:
+            squote = True
+            out.append(c)
+            word_start = False
+            i += 1
+            continue
+        if c == DQ:
+            dquote = True
+            out.append(c)
+            word_start = False
+            i += 1
+            continue
+        if c == "#" and word_start:
+            comment = True
+            out.append(c)
+            i += 1
+            continue
+        if c == "\n":
+            out.append("\n; ")
+            word_start = True
+            i += 1
+            continue
+        out.append(c)
+        word_start = c in " \t;&|(){}<>"
+        i += 1
+    return "".join(out)
 
 OPERATORS = {";", "&&", "||", "|", "&", "(", ")", "{", "}"}
 PUNCT = set("();<>|&")

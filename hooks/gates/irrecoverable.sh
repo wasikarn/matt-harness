@@ -129,16 +129,85 @@ def delete_hint():
 # Newlines are command separators in bash but shlex eats them as
 # whitespace, so a dangerous command after a newline would otherwise
 # hide inside the first command window (found 2026-07-03). Insert a
-# literal ";" after each real newline (not in place of it, so a
-# following "#" comment still stops there) -- a backslash immediately
-# before the newline is a real line continuation, not a separator, and
-# is protected via a placeholder. Ported from the _newlines_to_seps
-# helper in worktree-guard.py (2026-08-04).
+# literal ";" after each real newline -- a backslash immediately before
+# the newline is normally a real line continuation, not a separator, and
+# is left untouched so the posix escaping shlex does on its own joins it.
+# Ported from the _newlines_to_seps helper in worktree-guard.py
+# (2026-08-04).
+#
+# EXCEPT inside a "#" comment: a bash comment already ends at the literal
+# newline no matter what precedes it, so a trailing backslash right
+# before that newline has no continuation effect there -- the newline is
+# still a real separator. The old blind backslash-newline regex did not
+# know it was inside a comment and joined the next physical line onto
+# the same window as the comment, so only the FIRST command in
+# "git status # comment \" + newline + "git push --force" ever reached
+# the deny checks below -- confirmed live 2026-09-03, the same shape of
+# bug already fixed the same way in main-exec-guard.sh. Comment state is
+# tracked char by char alongside quotes (a "#"/backslash inside a quoted
+# string is never comment/escape syntax) and backslash-escape parity (an
+# escaped hash does not start a comment), matching the posix escaping
+# shlex does on its own and this function downstream
+# shlex.shlex(..., commenters="#") default. SQ is the single-quote
+# constant already defined above; DQ is its double-quote counterpart,
+# scoped here since nothing else in this file needs it.
+DQ = chr(34)
 def _newlines_to_seps(s):
-    placeholder = chr(0)
-    s = re.sub(r"\\\n", placeholder, s)
-    s = s.replace("\n", "\n; ")
-    return s.replace(placeholder, "\\\n")
+    out = []
+    in_squote = in_dquote = in_comment = False
+    i, n = 0, len(s)
+    while i < n:
+        c = s[i]
+        if in_comment:
+            if c == "\n":
+                # comment ends at the literal newline, same as bash --
+                # emit the same "; " separator a normal newline gets so
+                # the window that follows still splits off correctly.
+                out.append(c); out.append(";"); out.append(" ")
+                in_comment = False
+            else:
+                out.append(c)
+            i += 1
+            continue
+        if in_squote:
+            out.append(c)
+            if c == SQ:
+                in_squote = False
+            i += 1
+            continue
+        if in_dquote:
+            if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`", "\n"):
+                out.append(c); out.append(s[i + 1])
+                i += 2
+                continue
+            out.append(c)
+            if c == DQ:
+                in_dquote = False
+            i += 1
+            continue
+        # unquoted, not in a comment
+        if c == SQ:
+            in_squote = True
+            out.append(c); i += 1
+        elif c == DQ:
+            in_dquote = True
+            out.append(c); i += 1
+        elif c == "\\" and i + 1 < n:
+            # any backslash-escaped pair, including a real "\<newline>"
+            # continuation -- consumed together so the escaped character
+            # is never re-examined as an unescaped hash/quote marker.
+            out.append(c); out.append(s[i + 1])
+            i += 2
+        elif c == "#":
+            in_comment = True
+            out.append(c); i += 1
+        elif c == "\n":
+            out.append(c); out.append(";"); out.append(" ")
+            i += 1
+        else:
+            out.append(c)
+            i += 1
+    return "".join(out)
 
 # shlex.split() only recognizes ;/&&/||/|/& as separators when whitespace
 # already surrounds them -- "echo hi;rm -rf x" tokenized as one glued word
