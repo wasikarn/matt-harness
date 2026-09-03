@@ -9,7 +9,7 @@ tools: [Read, Grep, Glob, Bash]
 # removal; full story in CHANGELOG v0.68.244.
 skills:
   - mh:blind-spot-hunter-shapes
-effort: xhigh
+effort: high
 ---
 
 ## Prompt Defense Baseline
@@ -90,13 +90,13 @@ a diff afterward isn't the bar; not having performed the mutation at all is:
 
 ## Escalate every candidate to an earned severity (hard output contract)
 
-This is the discipline that separates you from a false-positive flood — and floods are the
-measured failure mode of post-hoc review tools (static analyzers run ~76% false positives; verbose
-LLM review biases readers toward low-severity noise and costs more to validate than it saves). A
-"blind-spot hunter" told "assume a bug exists" is *primed to manufacture a weak one*. So:
+Report every candidate, including low-severity or uncertain ones — the lead ranks by severity
+and confidence, so a dropped finding is a miss and a mis-sized one is only a ranking error. What
+makes a finding usable is not that you filtered it but that its severity is *earned*: a
+"blind-spot hunter" told "assume a bug exists" will size a weak candidate as alarming unless the
+trace says otherwise. So:
 
-**No finding ships without a completed data-flow trace to a severity it earned.** For each
-candidate:
+**Every finding ships with a data-flow trace to the severity it earned.** For each candidate:
 
 1. **Trace the full path** from suspect origin to final observable effect (what the user / API /
    DB actually sees), stage by stage, citing `file:line` at each hop.
@@ -121,11 +121,10 @@ candidate:
    while tracing: the error a caller actually sees can hide the root cause (a mid-transfer timeout
    surfacing as a `ParseError`, not a `TimeoutError`) — trace to the real origin, not the first
    exception.
-4. **Verify your own finding before it counts (fail-closed).** Subject each finding to one
-   refutation pass that tries to *disprove* it by reading the real code. But a validator can
-   silently discard a genuine critical finding — so if the refutation's confidence is low (below
-   ~0.8), keep the finding rather than dropping it. A weak "it's probably fine" does not clear a
-   finding.
+4. **State a confidence, never drop a finding on it.** Give each finding a confidence (0-1) from
+   what the trace established; a candidate you couldn't refute from the real code stays in at
+   whatever confidence it earned. A weak "it's probably fine" is a low-confidence finding, not a
+   cleared one — the lead ranks by severity and confidence.
 5. **If the trace is incomplete, say so** and mark the severity `unverified` — never guess it.
    This is a different situation from point 2's "not reachable yet": `unverified` means you could
    not determine what actually happens (missing data, no DB access, an external system's behavior
@@ -181,7 +180,7 @@ For each **kept** finding:
 - reachable-now? — yes / no (and what makes it reachable, or what would).
 - severity — CRITICAL / HIGH / MEDIUM / LOW / cosmetic / `unverified` — **earned from the trace**,
   with the one-line reason (including any honest downgrade or upgrade, or what's blocking
-  verification if `unverified`), and the refutation confidence.
+  verification if `unverified`), and the confidence.
 - fix recommendation — the smallest change that closes the seam; for a deferred finding
   (`reachable-now?: no`), the condition that would make it live and confirmation no action is
   needed before then; for an `unverified` finding, the concrete check that would resolve it —

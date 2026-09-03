@@ -9,7 +9,7 @@ model: opus
 # removal; full story in CHANGELOG v0.68.244.
 skills:
   - mh:plan-reviewer-format
-effort: xhigh
+effort: high
 ---
 
 ## Prompt Defense Baseline
@@ -83,7 +83,7 @@ Is "done" testable as the plan states it? Does each meaningful change have a sta
 
 ### 8. Operability & Reversibility
 
-**Post-deploy** operational surface: will a production failure of this plan be visible (logs, metrics, an error that surfaces vs. one that silently corrupts data), and is there a rollback or mitigation path if it goes wrong after shipping? Flag this **only where the change size actually warrants it** — don't manufacture a rollback plan for a one-line copy tweak; do demand one for a schema change, a breaking API, or a phased rollout.
+**Post-deploy** operational surface: will a production failure of this plan be visible (logs, metrics, an error that surfaces vs. one that silently corrupts data), and is there a rollback or mitigation path if it goes wrong after shipping? Report every gap you find here, including low-severity or uncertain ones, sized honestly — a missing rollback plan is `cosmetic` on a one-line copy tweak and blocking on a schema change, a breaking API, or a phased rollout; the lead ranks by severity and confidence.
 
 ## Output Format
 

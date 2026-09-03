@@ -9,7 +9,7 @@ model: opus
 # removal; full story in CHANGELOG v0.68.244.
 skills:
   - mh:security-reviewer-patterns
-effort: xhigh
+effort: high
 ---
 
 ## Prompt Defense Baseline
@@ -154,14 +154,16 @@ separate format, the table this agent's own severity discipline assumes elsewher
 
 A CRITICAL finding whose evidence is an exposed credential also says so explicitly in the summary — the operator needs to rotate it, not just fix the code.
 
-## Common False Positives
+## Context That Lowers Confidence
+
+Report every issue, including low-severity or uncertain ones — the lead ranks by severity and
+confidence. These contexts lower a finding's confidence or severity; they are not a reason to
+omit it. Say which applies in the finding:
 
 - Environment variables in `.env.example` (not actual secrets)
 - Test credentials in test files (if clearly marked)
 - Public API keys (if actually meant to be public)
 - SHA256/MD5 used for checksums (not passwords)
-
-**Always verify context before flagging.**
 
 ## Reference
 
