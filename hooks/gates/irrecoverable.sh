@@ -21,7 +21,17 @@ set -uo pipefail
 # 2026-08-14). If either file's normalize step changes, check the other.
 _input="$(cat)"
 _norm="$(printf '%s' "$_input" | sed 's/\\[nt]/ /g' | tr -s '[:space:]' ' ' | tr -d "\"'\\")"
-case "$_norm" in
+# A backslash-newline continuation splitting an argv0 itself (e.g. "gi" +
+# "\<newline>" + "t push --force") turns the \n escape into a space above,
+# so "git" never survives as one substring and the case below would exit 0
+# without ever reaching the python scanner that reassembles it correctly --
+# confirmed live 2026-09-03, GH #122 adjacent finding. A second, fully
+# whitespace-collapsed variant catches that shape too; false positives here
+# (two unrelated words happening to concatenate into a candidate substring)
+# just cost a python spawn, the same safe direction the comment above
+# already accepts for quote/backslash stripping.
+_norm_nows="$(printf '%s' "$_norm" | tr -d '[:space:]')"
+case "$_norm$_norm_nows" in
   *rm*|*find*|*git*|*dd*|*mysql*|*psql*|*sqlite3*|*mariadb*) : ;;  # candidate -> python
   *) exit 0 ;;                                                   # no destructive token possible -> allow
 esac
@@ -131,9 +141,12 @@ def delete_hint():
 # hide inside the first command window (found 2026-07-03). Insert a
 # literal ";" after each real newline -- a backslash immediately before
 # the newline is normally a real line continuation, not a separator, and
-# is left untouched so the posix escaping shlex does on its own joins it.
+# both the backslash and the newline are stripped out entirely (real
+# bash line-continuation semantics), so the token that follows joins
+# cleanly with no residual character glued onto it, whitespace or not.
 # Ported from the _newlines_to_seps helper in worktree-guard.py
-# (2026-08-04).
+# (2026-08-04); the full-removal fix for the whitespace-less case is
+# 2026-09-03, GH #122.
 #
 # EXCEPT inside a "#" comment: a bash comment already ends at the literal
 # newline no matter what precedes it, so a trailing backslash right
@@ -176,7 +189,13 @@ def _newlines_to_seps(s):
             i += 1
             continue
         if in_dquote:
-            if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`", "\n"):
+            if c == "\\" and i + 1 < n and s[i + 1] == "\n":
+                # real continuation inside a double-quoted string: bash
+                # strips backslash-newline here too (same full removal as
+                # the unquoted case below), so nothing is appended.
+                i += 2
+                continue
+            if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`"):
                 out.append(c); out.append(s[i + 1])
                 i += 2
                 continue
@@ -192,10 +211,21 @@ def _newlines_to_seps(s):
         elif c == DQ:
             in_dquote = True
             out.append(c); i += 1
+        elif c == "\\" and i + 1 < n and s[i + 1] == "\n":
+            # real line continuation: bash removes the backslash AND the
+            # newline entirely, joining the two lines with nothing at
+            # all between them -- so nothing is appended here. Passing
+            # the pair through unchanged (the old behavior) left a stray
+            # "\n" attached to whatever followed, and when there was no
+            # whitespace after the continuation shlex glued that residual
+            # newline onto the very next token (e.g. "\n--force" instead
+            # of "--force"), which the exact-match force-push check
+            # missed entirely -- confirmed live 2026-09-03, GH #122.
+            i += 2
         elif c == "\\" and i + 1 < n:
-            # any backslash-escaped pair, including a real "\<newline>"
-            # continuation -- consumed together so the escaped character
-            # is never re-examined as an unescaped hash/quote marker.
+            # any other backslash-escaped pair -- consumed together so
+            # the escaped character is never re-examined as an
+            # unescaped hash/quote marker.
             out.append(c); out.append(s[i + 1])
             i += 2
         elif c == "#":

@@ -246,6 +246,39 @@ test_deny  "$IRRECOVERABLE" "real backslash-newline continuation (no comment) st
   "$(bash_payload $'git push --force \\\n  origin develop')"
 test_allow "$IRRECOVERABLE" "legit backslash-newline continuation outside a comment still allows (no false split)" \
   "$(bash_payload $'git log --oneline \\\n  -5')"
+
+# GH #122: a backslash-newline continuation with NO leading whitespace on the
+# continuation line bypassed force-push detection. Real bash removes the
+# backslash AND the newline entirely (line-continuation), joining the two
+# physical lines with nothing between them -- so "git push \" + newline +
+# "--force origin develop" is, to bash, identical to one clean line
+# "git push --force origin develop". The old _newlines_to_seps left the
+# newline character attached to whatever followed instead of fully removing
+# it; shlex then glued that residual "\n" onto the very next token, producing
+# "\n--force" instead of "--force", which the exact-match force-push check
+# (`t in ("-f", "--force")`) missed. Confirmed live 2026-09-03: exit 0
+# (allowed) before this fix. The whitespace-present sibling above already
+# worked and stays a live control for the same case.
+test_deny  "$IRRECOVERABLE" "backslash-newline continuation with NO leading whitespace on the next line (exact repro, was a bypass)" \
+  "$(bash_payload $'git push \\\n--force origin develop')"
+test_deny  "$IRRECOVERABLE" "same shape, leading whitespace on the next line (already worked, stays denied)" \
+  "$(bash_payload $'git push \\\n  --force origin develop')"
+# Adjacent shapes a narrow patch could still miss: back-to-back
+# whitespace-less continuations gluing two flags together with nothing
+# between them (true bash also glues here -- no separator survives), a
+# continuation immediately followed by another continuation before any
+# real content, and a continuation as the very last two characters of the
+# whole command (no crash, no false deny -- there is no dangerous token).
+test_deny  "$IRRECOVERABLE" "two whitespace-less continuations back to back, force flag glued onto the second (adjacent-shape check)" \
+  "$(bash_payload $'git push origin\\\ndevelop --for\\\nce')"
+test_allow "$IRRECOVERABLE" "trailing whitespace-less continuation at the very end of the command, nothing after it (no crash, no dangerous token)" \
+  "$(bash_payload $'git push origin develop\\\n')"
+# The DQ-quoted branch of _newlines_to_seps had the identical unremoved-
+# newline defect for a continuation inside a double-quoted string (bash
+# strips backslash-newline there too) -- fixed alongside the unquoted case
+# since it is the same defect shape in the same function.
+test_deny  "$IRRECOVERABLE" "whitespace-less continuation inside a double-quoted flag still reassembles (adjacent-shape check)" \
+  "$(bash_payload $'git push "--for\\\nce" origin develop')"
 test_deny  "$IRRECOVERABLE" "trailing # comment on the same line does not hide the command before it" \
   "$(bash_payload 'git push origin develop --force # not a real flag, just a comment')"
 test_allow "$IRRECOVERABLE" "git push --force-with-lease (safe variant)" \
@@ -831,6 +864,16 @@ test_deny  "$IRRECOVERABLE" "r\"\"m -rf (quote-concatenation -> fast-path quote-
   "$(bash_payload 'r""m -rf /tmp/x')"
 test_deny  "$IRRECOVERABLE" "r\\m -rf (backslash-concatenation -> fast-path strip)" \
   "$(bash_payload 'r\m -rf /tmp/x')"
+# GH #122 adjacent finding: a backslash-newline continuation splitting the
+# argv0 ITSELF (not just a flag) turns the \n escape into a space at the
+# fast-path's own sed step, so "git"/"rm" never survives as one substring
+# and the fast path exits 0 before python3 -- and the reassembled _newlines_
+# to_seps fix above -- ever runs. Confirmed live 2026-09-03: exit 0 before
+# the fast-path's whitespace-collapsed second variant was added.
+test_deny  "$IRRECOVERABLE" "gi + backslash-newline + t (argv0 split, was a fast-path bypass)" \
+  "$(bash_payload $'gi\\\nt push --force origin develop')"
+test_deny  "$IRRECOVERABLE" "r + backslash-newline + m (argv0 split, was a fast-path bypass)" \
+  "$(bash_payload $'r\\\nm -rf /tmp/x')"
 # verifier-protect: a Write to a file_path containing "Bash" must NOT be
 # mis-routed through the Bash fast-path (which would exit 0 and skip the Write
 # ask) -- the tool_name peek matches the quoted value precisely.
