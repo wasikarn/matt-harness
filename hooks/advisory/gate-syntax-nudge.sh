@@ -61,7 +61,7 @@ esac
 ERR=$(bash -n "$FILE_PATH" 2>&1) && exit 0
 
 NAME=${FILE_PATH##*/}
-NUDGE="[mh:gate-syntax-nudge] '$NAME' has a bash syntax error after this edit — bash -n: ${ERR}. Since dispatch-pretooluse.sh invokes every hooks/gates and hooks/advisory script on every PreToolUse call, a broken one here can lock out the whole session's Bash/Edit/Write/NotebookEdit tools (this exact incident happened 2026-09-01 with an apostrophe inside an embedded python3 -c '...' block in verifier-protect.sh). Fix the syntax error now, before any other tool call — Read still works even if the gate is already broken. See memory kbg-gate-python-c-quoting-lockout and dispatch-pretooluse-prefilter-substring-lockout-recovery-2026-09-01 for the recovery technique if a lockout has already started."
+NUDGE="[mh:gate-syntax-nudge] '$NAME' has a bash syntax error after this edit — bash -n: ${ERR}. dispatch-pretooluse.sh runs every gates/advisory script on every PreToolUse call, so a broken one locks out Bash/Edit/Write/NotebookEdit for the whole session. Fix it now, before any other tool call; Read still works. If already locked out, a Python edit that avoids the protected-path substring recovers it."
 
 python3 -c '
 import json, sys

@@ -395,9 +395,7 @@ fi
 
 cat <<'EOF'
 
-[mh:flow-nudge] Non-trivial work detected — interrogate the requirement, then plan before you edit.
-  Multi-file / unfamiliar / architectural / hard-to-reverse?
-    → enter plan mode (Shift+Tab, or EnterPlanMode) first, or stress-test the ask with mattpocock-skills:grilling.
+[mh:flow-nudge] Non-trivial work detected — Rule 1 sizes the checkpoint (plan mode for one-way doors / wide blast radius; mattpocock-skills:grilling to stress-test the ask).
   A new feature to spec out? → the user types /mattpocock-skills:grill-with-docs first (stateful, writes CONTEXT.md/ADRs), then /mattpocock-skills:to-spec → /mattpocock-skills:to-tickets → /mattpocock-skills:implement (all four are user-invoked only — never Skill-call them)
 Skip if the work shape is already known (typo / doc-tweak / known small fix).
 The nudge is advisory; the model judges.

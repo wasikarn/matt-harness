@@ -41,10 +41,7 @@ loss, security, or accessibility — laziness stops there.
 - Dead code, unused exports, duplication → `/mattpocock-skills:improve-codebase-architecture` findings + a fixer agent for the deletions
 - Bottleneck, bundle size, render/memory issue → `performance-optimizer`
 
-## Tools to favor
-- Agent (a dispatched fixer) for code changes — Edit, Write are the fixer's tools, not main's
-- Bash for running tests/builds
-- Grep, Glob for finding code
+Code changes go through a dispatched fixer agent, not main (Rule 13).
 
 ## Not this frame's job
 A full spec→ship pipeline is a skill or command (`/mattpocock-skills:implement`), not this frame — `mh:frame dev` only sets posture for the current conversation, it doesn't replace those workflows.

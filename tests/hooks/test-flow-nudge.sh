@@ -319,7 +319,7 @@ fi
 echo ""
 echo "--- requirement-interrogation reminder (content contract, v0.66.0 widened scope) ---"
 # v0.66.0 (METHODOLOGY Rule 3): the base nudge's OPENING LINE now says
-# "interrogate the requirement" on ANY impl-verb prompt, ticket or not — that's
+# "Rule 1 sizes the checkpoint" on ANY impl-verb prompt, ticket or not — that's
 # the widened signal. The base nudge deliberately does NOT name
 # 'requirement-analyst' directly (the plan explicitly rejected a standalone
 # 5th route naming it — that would just stack a 4th/5th route onto an already
@@ -329,7 +329,7 @@ echo "--- requirement-interrogation reminder (content contract, v0.66.0 widened 
 # addendum ("Ticket reference detected", naming requirement-analyst directly)
 # stays gated on TICKET_KEY — unchanged, pre-existing behavior.
 ticket_impl_out=$(echo "$(user_prompt_payload "implement TP-919")" | bash "$HOOK" 2>/dev/null)
-if printf '%s' "$ticket_impl_out" | /usr/bin/grep -qi "interrogate the requirement" \
+if printf '%s' "$ticket_impl_out" | /usr/bin/grep -qi "Rule 1 sizes the checkpoint" \
    && printf '%s' "$ticket_impl_out" | /usr/bin/grep -qi "Ticket reference detected" \
    && printf '%s' "$ticket_impl_out" | /usr/bin/grep -qi "requirement-analyst"; then
   echo "  ✅ CONTENT: ticket + impl verb gets widened opening line AND the ticket-specific addendum"
@@ -343,7 +343,7 @@ fi
 # — regression guard against re-adding a standalone 5th route (the exact
 # over-implementation an audit caught and reverted here).
 impl_no_ticket_out=$(echo "$(user_prompt_payload "implement the auth flow")" | bash "$HOOK" 2>/dev/null)
-if printf '%s' "$impl_no_ticket_out" | /usr/bin/grep -qi "interrogate the requirement" \
+if printf '%s' "$impl_no_ticket_out" | /usr/bin/grep -qi "Rule 1 sizes the checkpoint" \
    && ! printf '%s' "$impl_no_ticket_out" | /usr/bin/grep -qi "Ticket reference detected" \
    && ! printf '%s' "$impl_no_ticket_out" | /usr/bin/grep -qi "requirement-analyst"; then
   echo "  ✅ CONTENT: impl verb with no ticket gets widened opening line only (no standalone route, no ticket addendum)"
@@ -355,7 +355,7 @@ fi
 # Thai ticket + impl verb — verifies TICKET_KEY matches against mixed
 # Thai/ASCII input, same as jira-route-nudge.sh's proven pattern.
 thai_ticket_impl_out=$(echo "$(user_prompt_payload "พัฒนา TP-919 ให้หน่อย")" | bash "$HOOK" 2>/dev/null)
-if printf '%s' "$thai_ticket_impl_out" | /usr/bin/grep -qi "interrogate the requirement" \
+if printf '%s' "$thai_ticket_impl_out" | /usr/bin/grep -qi "Rule 1 sizes the checkpoint" \
    && printf '%s' "$thai_ticket_impl_out" | /usr/bin/grep -qi "Ticket reference detected" \
    && printf '%s' "$thai_ticket_impl_out" | /usr/bin/grep -qi "requirement-analyst"; then
   echo "  ✅ CONTENT: Thai ticket + impl verb gets widened opening line AND the ticket-specific addendum"

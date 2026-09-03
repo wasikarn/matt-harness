@@ -1,6 +1,6 @@
 ---
 name: typescript-reviewer
-description: "Expert TypeScript/JavaScript reviewer: type safety, async correctness, security, and idiomatic patterns. Use for all TS/JS code changes."
+description: "TypeScript/JavaScript reviewer: type safety, async correctness, idiomatic patterns. Use for TS/JS diffs; Next.js-specific concerns go to nextjs-reviewer."
 bucket: review
 tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet

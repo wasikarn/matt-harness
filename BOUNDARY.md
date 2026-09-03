@@ -13,7 +13,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 ### build
 | Agent | Domain | Tools | Mutates |
 |---|---|---|---|
-| performance-optimizer | Performance optimizer. Identifies bottlenecks, optimizes slow code, reduces bundle sizes, and fixes memory leaks and render issues. | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
+| performance-optimizer | Fixes measured bottlenecks, bundle size, memory leaks, render churn. Use with a profile or repro; not for speculative tuning or cyclomatic complexity (mh:complexity-check). | ["Read", "Write", "Edit", "Bash", "Grep", "Glob"] | yes |
 
 ### design
 | Agent | Domain | Tools | Mutates |
@@ -28,7 +28,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | nextjs-reviewer | Next.js App Router framework specialist: rendering/caching model, Server Actions, middleware, route handlers, metadata API, image/font optimization. Use for Next.js-specific changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
 | security-reviewer | Security vulnerability detector. Flags secrets, SSRF, injection, unsafe crypto, and OWASP Top 10. Use after writing code handling user input or auth. | ["Read", "Bash", "Grep", "Glob"] | yes |
 | silent-failure-hunter | Review code for silent failures, swallowed errors, bad fallbacks, and missing error propagation. Use when reviewing error handling — try/catch, fallbacks, or async error flow. | [Read, Grep, Glob, Bash] | yes |
-| typescript-reviewer | Expert TypeScript/JavaScript reviewer: type safety, async correctness, security, and idiomatic patterns. Use for all TS/JS code changes. | ["Read", "Grep", "Glob", "Bash"] | yes |
+| typescript-reviewer | TypeScript/JavaScript reviewer: type safety, async correctness, idiomatic patterns. Use for TS/JS diffs; Next.js-specific concerns go to nextjs-reviewer. | ["Read", "Grep", "Glob", "Bash"] | yes |
 
 ### utility
 | Agent | Domain | Tools | Mutates |
@@ -170,7 +170,7 @@ _Schema version: v5 (Skills and Agents tables now grouped by `bucket:` frontmatt
 | crisp | Sole live-response register: concise, easy to read, human. Claude Code's Concise contract (result first, no preamble, full content for errors/security/destructive confirmations) as the base, with staff-engineer decision framing switched on only for genuine cross-boundary trade-offs or long-term consequences. Formal deliverables (PRs, docs, reports) switch to their own audience's register. |
 
 ---
-_Generated: 2026-09-03T07:26:40Z_
+_Generated: 2026-09-03T09:46:15Z_
 
 ---
 
