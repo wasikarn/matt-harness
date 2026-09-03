@@ -399,7 +399,7 @@ _n_files=${#_checks[@]}
 _n_total=$(printf '%s\n' "$_all_ids" | grep -c .)
 _n_uniq=$(printf '%s\n' "$_all_ids" | sort -u | grep -c .)
 _uniq_ids=$(printf '%s\n' "$_all_ids" | uniq | tr '\n' ' ')
-_exp_ids=$({ seq 1 57; seq 61 62; seq 64 67; } | tr '\n' ' ')
+_exp_ids=$({ seq 1 57; seq 61 62; seq 64 68; } | tr '\n' ' ')
 [ "$_n_files" = "$_n_total" ] || err_die "audit: check-fragment header mismatch — $_n_files files sourced but $_n_total '# N.' headers (a fragment lacks a header or carries >1) — fail-closed"
 [ "$_n_total" = "$_n_uniq" ] || err_die "audit: duplicate check-fragment number (total=$_n_total unique=$_n_uniq) — a number is duplicated, not exactly-once — fail-closed"
 [ "$_uniq_ids" = "$_exp_ids" ] || err_die "audit: check-fragment integrity broken — set [$_uniq_ids] != expected [$_exp_ids]; a fragment was lost or a gap appeared — fail-closed"

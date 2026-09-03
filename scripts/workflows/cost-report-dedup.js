@@ -59,10 +59,11 @@ if(tagged.length){
   const cr=orch.reduce((s,r)=>s+(Number(r.cache_read_tokens)||0),0);
   if(turns)console.log("\norchestrator context carried per turn: "+Math.round(cr/turns).toLocaleString()+" tokens  (re-read every turn — the rent meter)");
 }
-const typed=latest.filter(r=>r.stream==="subagent"&&r.agent_type);
+const typed=latest.filter(r=>r.stream==="subagent");
 if(typed.length){
-  console.log("\n=== By agent type (subagent spend only; rows tagged 2026-08-07+) ===");
-  for(const [k,v] of by(r=>r.agent_type)){if(k==="(unknown)")continue;console.log(f4(v).padStart(12)+"  "+k);}
+  console.log("\n=== By agent type (subagent spend only; rows tagged 2026-08-07+; tok = input+output, rank by it when rate unverified) ===");
+  const m=new Map();for(const r of typed){const k=r.agent_type||"(unknown)";const p=m.get(k)||{c:0,t:0};p.c+=cost(r);p.t+=(Number(r.input_tokens)||0)+(Number(r.output_tokens)||0);m.set(k,p);}
+  for(const [k,v] of [...m.entries()].sort((a,b)=>b.c-a.c||b.t-a.t))console.log(f4(v.c).padStart(12)+"  "+String(v.t).padStart(10)+" tok  "+k);
 }
 console.log("\n=== Last 7 days ===");
 const days=new Map();for(const r of latest){const k=day(r);days.set(k,(days.get(k)||0)+cost(r));}

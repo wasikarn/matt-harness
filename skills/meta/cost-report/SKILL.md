@@ -62,8 +62,10 @@ node "${MH_PLUGIN_ROOT}/scripts/workflows/cost-report-dedup.js" csv
 2. By model: models ranked by total cost.
 3. By stream: orchestrator vs subagent, plus the orchestrator's context-carried-per-turn.
    Omitted entirely when no row carries `stream` (all data predates 2026-08-07).
-4. By agent type: subagent spend only, ranked by `agent_type`. Omitted entirely when
-   no subagent row carries `agent_type` (all data predates 2026-08-07).
+4. By agent type: subagent spend only, ranked by `agent_type`, including an `(unknown)`
+   row for untyped subagent rows; a `tok` column (input+output tokens) sits next to cost
+   so ranking still works when `rate_verified` is false. Omitted entirely when no row
+   carries `stream: subagent` (all data predates 2026-08-07).
 5. Last seven days: date and cost.
 
 Rely on the precomputed `estimated_cost_usd` values written by the tracker; do

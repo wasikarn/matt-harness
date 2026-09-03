@@ -138,15 +138,17 @@ trash "$fake_home" 2>/dev/null || true
 # so every non-subagent row (every orchestrator row, on a real dataset almost the
 # whole total) landed in an "(unknown)" line that read as "$38,403 of untyped
 # subagent spend" when it was actually "everything that isn't a typed subagent row."
-# Pin it: one large orchestrator row (no agent_type) + one small typed subagent row.
-# The By agent type section must show ONLY the subagent row's own $2, never the
-# orchestrator's $1000, and must never print a bare "(unknown)" line.
+# Pin it: one large orchestrator row (no agent_type) + one small typed subagent row
+# + one untyped subagent row. The By agent type section must show the typed row's $2
+# and the untyped subagent row as its own "(unknown)" line ($3), never the
+# orchestrator's $1000. A "tok" column (input+output) must also be present.
 fake_home=$(mktemp -d)
 metrics_dir="$fake_home/.local/share/kbg/metrics"
 mkdir -p "$metrics_dir"
 cat > "$metrics_dir/costs.jsonl" <<'EOF'
 {"timestamp":"2026-08-07T00:00:00Z","session_id":"unknown-leak","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"orchestrator","turns":2,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":1000.0}
 {"timestamp":"2026-08-07T00:00:01Z","session_id":"unknown-leak","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"subagent","agent_type":"Explore","turns":1,"input_tokens":5,"output_tokens":2,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":2.0}
+{"timestamp":"2026-08-07T00:00:02Z","session_id":"unknown-leak","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"subagent","turns":1,"input_tokens":7,"output_tokens":3,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":3.0}
 EOF
 out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
 rc=$?
@@ -155,9 +157,9 @@ agent_section=$(printf '%s' "$out" | awk '/=== By agent type/{f=1;next} /^$/{f=0
   && printf '%s' "$agent_section" | /usr/bin/grep -q 'Explore' \
   && printf '%s' "$agent_section" | /usr/bin/grep -q '\$2.0000' \
   && ! printf '%s' "$agent_section" | /usr/bin/grep -q '1000' \
-  && ! printf '%s' "$out" | /usr/bin/grep -qE '\(unknown\)\s*$' \
-  && ! printf '%s' "$out" | /usr/bin/grep -q '(unknown)  ' && ok=1 || ok=0
-assert "By agent type shows only the typed subagent row's own \$2.0000, never the untyped orchestrator row's \$1000, and never prints an (unknown) line" "$ok"
+  && printf '%s' "$agent_section" | /usr/bin/grep -q '\$3.0000.*(unknown)$' \
+  && printf '%s' "$agent_section" | /usr/bin/grep -qE '\b7 tok  Explore$' && ok=1 || ok=0
+assert "By agent type shows the typed subagent row's \$2.0000 and the untyped subagent row as its own \$3.0000 (unknown) line, never the orchestrator's \$1000, with a tok column" "$ok"
 trash "$fake_home" 2>/dev/null || true
 
 echo ""

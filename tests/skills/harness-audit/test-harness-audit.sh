@@ -186,6 +186,31 @@ else
   bad "check-67 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
 fi
 
+# Check 68 — obsolete prompt patterns in bodies (INFO only): bad fixture has
+# "step by step" in an agent body and "MUST ALWAYS" in a skill body; good
+# fixture is the same frontmatter with clean bodies.
+run_check 68 "$FIX/check-68-bad"
+if [ "$INFO_FOUND" -ge 2 ] && [ "$CRIT_FOUND" -eq 0 ]; then
+  ok "check-68 bad fixture fires INFOs (info=$INFO_FOUND)"
+else
+  bad "check-68 bad fixture did NOT fire >=2 INFOs as expected (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
+fi
+run_check 68 "$FIX/check-68-good"
+if [ "$INFO_FOUND" -eq 0 ] && [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
+  ok "check-68 good fixture silent"
+else
+  bad "check-68 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
+fi
+
+# Check 29 — agents/*.md description: is now scanned too, and NEVER joined
+# the imperative list (2026-09-03).
+run_check 29 "$FIX/check-29-bad"
+if [ "$INFO_FOUND" -ge 1 ] && [ "$CRIT_FOUND" -eq 0 ]; then
+  ok "check-29 bad fixture (NEVER in agent description) fires INFO (info=$INFO_FOUND)"
+else
+  bad "check-29 bad fixture did NOT fire INFO for NEVER in agent description (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
+fi
+
 # Regression test — a `compliance-audit` adversarial pass (2026-07-23) found
 # the raw `head -20 | grep -qF` form (checks 36/45's original shape)
 # false-negatives when the literal flag string appears only in prose (e.g.
