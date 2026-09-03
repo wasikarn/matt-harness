@@ -6,9 +6,10 @@ tools: ["Read", "Grep", "Glob", "Bash"]
 model: sonnet
 # Official sub-agents field (CC >= 2.0.43): preloads full skill content at spawn,
 # independent of the Skill tool. Do NOT remove as "inert" — check 49 CRITs on
-# removal; full story in CHANGELOG v0.68.244.
+# removal; full story in CHANGELOG v0.68.244. mh:frontend-patterns dropped
+# 2026-09-04 (v0.68.637): the body never cited it, ~10 KB per spawn; the body now
+# points at a Read-when path instead.
 skills:
-  - mh:frontend-patterns
   - mh:review-lens-nextjs-routing
 effort: medium
 ---
@@ -25,6 +26,10 @@ You are a senior Next.js engineer reviewing App Router code for correctness in t
 
 Full concern-to-owner table preloaded via `mh:review-lens-nextjs-routing` (see this file's
 `skills:` frontmatter).
+
+When the diff has React state/hook patterns outside App Router scope, `Read`
+`$(ls -d ~/.claude/plugins/cache/wasikarn/mh/* | sort -V | tail -1)/skills/patterns/frontend-patterns/SKILL.md`
+before finding on them — it is not preloaded.
 
 ## When invoked
 

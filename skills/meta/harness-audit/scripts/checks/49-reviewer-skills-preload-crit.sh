@@ -13,6 +13,11 @@
 # a prose comment. Mirrors #36/#45's shape — a silently-dropped field here is
 # a capability regression invisible at dispatch time (the agent still
 # answers, just without the injected patterns content).
+# typescript-reviewer|mh:typescript-patterns and nextjs-reviewer|mh:frontend-
+# patterns REMOVED 2026-09-04 (v0.68.637): the preload mechanism is real (above),
+# but neither body used the content — ~10 KB/spawn each for nothing. Both
+# agents now carry a Read-when pointer to the SKILL.md instead. Deliberate,
+# not the 2026-08-09 conflation; re-add only if a body citation returns.
 # nextjs-reviewer|mh:review-lens-nextjs-routing added 2026-08-18 (v0.68.345):
 # same preload mechanism, added when nextjs-reviewer.md was split under check
 # 52's 20K-char threshold — carries App Router File Conventions/Middleware
@@ -60,7 +65,7 @@
 # companion skill existed, so this preload is the only lawful extraction path
 # and carries the 14-row Algorithmic Analysis pattern table this agent has no
 # other way to reach.
-for _pair in "typescript-reviewer|mh:typescript-patterns" "nextjs-reviewer|mh:frontend-patterns" "nextjs-reviewer|mh:review-lens-nextjs-routing" "requirement-analyst|mh:requirement-analyst-format" "blind-spot-hunter|mh:blind-spot-hunter-shapes" "summarizer|mh:summarizer-format" "security-reviewer|mh:security-reviewer-patterns" "performance-optimizer|mh:performance-optimizer-algorithms" "plan-reviewer|mh:plan-reviewer-format"; do
+for _pair in "nextjs-reviewer|mh:review-lens-nextjs-routing" "requirement-analyst|mh:requirement-analyst-format" "blind-spot-hunter|mh:blind-spot-hunter-shapes" "summarizer|mh:summarizer-format" "security-reviewer|mh:security-reviewer-patterns" "performance-optimizer|mh:performance-optimizer-algorithms" "plan-reviewer|mh:plan-reviewer-format"; do
   _agent="${_pair%%|*}"
   _skill="${_pair#*|}"
   _f="$CLAUDE_DIR/agents/$_agent.md"
