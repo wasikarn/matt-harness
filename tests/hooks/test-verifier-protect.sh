@@ -26,6 +26,48 @@ check() { # check <desc> <ok:0|1>
   else echo "  ❌ $1" >&2; fail=$((fail + 1)); fi
 }
 
+# GH #128/#130 proof helper: forcing a marker-spliced command through to
+# python3 does NOT, by itself, make python3 correctly resolve the splice and
+# ask -- confirmed by direct testing: python3's own shlex tokenizer
+# (bash_write_targets, punctuation_chars=True) fragments a spliced
+# argv0/redirect-target exactly like the bash fast path did, so is_gate_path()
+# never sees a reconstructed "hooks/gates" substring and the final
+# classification still concludes a silent allow even after this fix. That
+# deeper "python3's own tokenizer resolution of command substitution" gap is
+# GH #129 -- confirmed here to also affect verifier-protect.sh, not just
+# irrecoverable.sh where it was first found -- and stays explicitly out of
+# scope for #128/#130 (same scope line already drawn in irrecoverable.sh's own
+# sibling fix, commit 9749a43b same day). What #128/#130 DO close is the fast
+# path's own premature short-circuit: before the fix, a marker-spliced command
+# never reached even the python3-availability guard; after the fix, it does. A
+# bare rc=0 cannot tell these two apart (both print nothing with python3
+# present), so this proves it the same way tests/hooks/test-gates.sh's
+# test_nopython_allow already does for irrecoverable.sh's identical sibling
+# case: strip python3 off PATH (keep only bash/cat/sed/tr, which is all this
+# gate's own fast path shells out to) and assert the announced "python3 not
+# found" fail-open note fires -- which can only happen if the fast path
+# deferred past its own allow and reached that guard. /bin/cat resolved
+# directly (not via `command -v`) because this shell has `alias cat=bat`,
+# which `command -v` reports as the alias text, not a path.
+NOPY_BIN=$(mktemp -d "${TMPDIR:-/tmp}/kbg-vp-nopy.XXXXXX")
+ln -s /bin/cat "$NOPY_BIN/cat"
+ln -s /bin/bash "$NOPY_BIN/bash"
+ln -s /usr/bin/sed "$NOPY_BIN/sed"
+ln -s /usr/bin/tr "$NOPY_BIN/tr"
+
+check_reaches_pyguard() { # check_reaches_pyguard <desc> <command> <expect:reach|noreach>
+  local desc="$1" cmd="$2" expect="$3" rc errf
+  errf=$(mktemp "${TMPDIR:-/tmp}/kbg-vp-nopy-err.XXXXXX")
+  rc=$(payload_bash "$cmd" | PATH="$NOPY_BIN" bash "$GUARD" 2>"$errf"; echo $?)
+  local reached=1
+  [ "$rc" = "0" ] && /usr/bin/grep -q 'python3 not found' "$errf" && reached=0
+  local ok=1
+  if [ "$expect" = "reach" ] && [ "$reached" -eq 0 ]; then ok=0; fi
+  if [ "$expect" = "noreach" ] && [ "$reached" -eq 1 ]; then ok=0; fi
+  check "$desc" "$ok"
+  rm -f "$errf"
+}
+
 echo "=== verifier-protect gate ==="
 
 cd "$ROOT" || exit 1
@@ -165,6 +207,21 @@ BATTERY=(
   # "echo x" and "> hooks/gates/evil12.sh" with nothing between them (">" is
   # a metacharacter token boundary regardless of adjacent whitespace).
   "continuation immediately before the redirect operator|$(printf 'echo x\\\n> hooks/gates/evil12.sh')|ask"
+  # GH #127 (2026-09-03): the protected-path case-statement match never
+  # lowercased $_norm before matching, unlike this file's own header comment
+  # (macOS/APFS is case-insensitive but case-preserving) and the python-side
+  # is_gate_path()'s case-insensitive comparison. hooks/GATES/ resolves to the
+  # IDENTICAL real directory as hooks/gates/ on this filesystem (confirmed via
+  # `ls -ld` first), but the case-sensitive glob *hooks/gates* never matched
+  # the differently-cased spelling -- falling through to a silent fast-allow.
+  # Ground-truthed against real bash first: the write lands in the real
+  # protected directory either way.
+  "differently-cased protected path (GH #127 bypass)|echo x > hooks/GATES/probe127.sh|ask"
+  # Parity companion: an unrelated differently-cased word, targeting a
+  # NON-protected path, must not start over-asking just because lowercasing
+  # was added -- lowering only widens the match against the tracked protected
+  # substrings, it must not turn every uppercase letter into a false ask.
+  "differently-cased word, non-protected target (parity companion)|echo x > /tmp/GATES/probe127b.sh|noask"
 )
 
 for row in "${BATTERY[@]}"; do
@@ -256,6 +313,77 @@ check "hardcoded /Users/ path in .sh content -> block exit 2 (wins over ask)" "$
 out=$(payload_bash "ls -la" | bash "$GUARD" 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "plain benign command, no backslash, no write idiom -> exit 0, no output (fast path still works)" "$ok"
+
+# GH #128 (2026-09-03): a backtick command substitution vanishes in real bash
+# with zero width ("echo x > hoo`true`ks/gates/probe128.sh" evaluates to a
+# target of hooks/gates/probe128.sh, ground-truthed via `bash -x` first) but
+# survives here as literal characters, splicing the protected-path substring
+# apart so the case-statement match at the (fixed) inner check never sees a
+# contiguous "hooks/gates". See check_reaches_pyguard's own comment above for
+# why this asserts "reached the python3-availability guard" rather than "ask"
+# -- python3's own tokenizer has the identical splicing blindness (confirmed
+# by direct testing of bash_write_targets), so forcing through to python3
+# closes only the fast path's own premature short-circuit, not the full
+# bypass end-to-end (that deeper piece is GH #129, explicitly out of scope).
+check_reaches_pyguard "backtick splicing defeats protected-path check (GH #128 bypass) -> no longer fast-path-exited" \
+  "$(printf 'echo x > hoo`true`ks/gates/probe128.sh')" "reach"
+
+# GH #130 (2026-09-03): the SEPARATE outer write-command-NAME dispatch
+# (*tee*|*sed*|*cp*|...) has the identical splicing weakness, via a different
+# marker: "c$(true)p evil.sh hooks/gates/x.sh" evaluates in real bash to
+# "cp evil.sh hooks/gates/x.sh" (ground-truthed via `bash -x` first), but the
+# literal string never contains a contiguous "cp" for the outer dispatch to
+# match. Same residual-gap caveat as GH #128 above.
+check_reaches_pyguard "\$(...) splicing defeats write-command-name dispatch (GH #130 bypass) -> no longer fast-path-exited" \
+  "$(printf 'c$(true)p evil130.sh hooks/gates/x.sh')" "reach"
+
+# Controls: a plainly benign command, and a benign write to a non-protected
+# target, must both keep being caught by the fast path itself (never reach
+# the python3-availability guard) -- the new _has_subst guard must not force
+# EVERY command through python3, only ones actually carrying a splicing
+# marker.
+check_reaches_pyguard "plain benign command, no splicing marker -> still fast-path-exited" \
+  "ls -la" "noreach"
+check_reaches_pyguard "benign write to a non-protected target, no splicing marker -> still fast-path-exited" \
+  "cp a.sh /tmp/somewhere/b.sh" "noreach"
+
+# Fresh-context review finding (2026-09-03): $@ and $* are a 5th zero-width
+# splicer the 4-marker enumeration above (backtick, $(, ${, $') never covered
+# -- with zero positional parameters (real in a hook-script invocation
+# context), both expand to nothing, so "c$@p evil.sh hooks/gates/xgap.sh"
+# vanishes in real bash into "cp evil.sh hooks/gates/xgap.sh" (ground-truthed
+# via `bash -x` first: `+ cp evil.sh hooks/gates/xgap.sh`) but survives here
+# as literal characters, splicing the write-command-NAME dispatch apart --
+# same GH #130 shape, one marker spelling short. Confirmed live before this
+# fix: fast-path-exited (rc=0, no note), never reaching the python3-
+# availability guard. This motivated replacing the whole enumeration with a
+# single "any bare $ or backtick" guard rather than adding a 5th/6th marker.
+check_reaches_pyguard "\$@ splicing defeats write-command-name dispatch (zero-positional-params bypass) -> no longer fast-path-exited" \
+  "$(printf 'c$@p evil.sh hooks/gates/xgap.sh')" "reach"
+check_reaches_pyguard "\$* splicing defeats write-command-name dispatch (zero-positional-params bypass) -> no longer fast-path-exited" \
+  "$(printf 'c$*p evil.sh hooks/gates/xgap2.sh')" "reach"
+
+# Step 7 benign-marker battery: each of the 4 splicing marker spellings, used
+# in a totally ordinary way with NO write idiom and NO protected-path target
+# anywhere in the command, must still resolve to a clean allow once routed
+# through python3 (not merely "reach the guard" -- these carry no write op at
+# all, so python3's own tokenizer quirks never come into play; this is a
+# false-positive check on the new _has_subst guard itself, not on GH #129).
+out=$(payload_bash "$(printf 'echo `date`')" | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "benign backtick substitution, no write target -> exit 0, no output" "$ok"
+
+out=$(payload_bash "$(printf 'echo $(date)')" | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "benign \$(...) substitution, no write target -> exit 0, no output" "$ok"
+
+out=$(payload_bash "$(printf 'echo ${HOME}')" | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "benign \${...} expansion, no write target -> exit 0, no output" "$ok"
+
+out=$(payload_bash "$(printf "echo \$'hello'")" | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "benign \$'...' ANSI-C quoting, no write target -> exit 0, no output" "$ok"
 
 echo ""
 total=$((pass + fail))

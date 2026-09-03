@@ -953,6 +953,21 @@ test_nopython_allow "$IRRECOVERABLE" "irrecoverable: \${x}-split argv0 (gi\${x}t
   "$(bash_payload 'gi${x}t push --force origin develop')"
 test_nopython_allow "$IRRECOVERABLE" "irrecoverable: \$'...'-split argv0 (gi\$'\x74' push --force) still reaches the guard, not fast-path-exited" \
   "$(bash_payload "gi\$'\\x74' push --force origin develop")"
+# Fresh-context review finding (2026-09-03): $@ and $* are a 5th zero-width
+# splicer the 4-marker enumeration above never covered -- with zero
+# positional parameters (real in a hook-script invocation context), both
+# expand to nothing, so "gi$@t push --force origin develop" vanishes in real
+# bash into "git push --force origin develop" (ground-truthed via `bash -x`
+# first: `+ git push --force origin develop`) but survives here as literal
+# characters, splicing the argv0 apart -- same shape as the backtick/$(...)/
+# ${x}/$' cases above, one marker spelling short. Confirmed live before this
+# fix: fast-path-exited (rc=0, no note), never reaching this portability
+# guard. This motivated replacing the whole enumeration with a single "any
+# bare $ or backtick" guard rather than adding a 5th/6th marker.
+test_nopython_allow "$IRRECOVERABLE" "irrecoverable: \$@-split argv0 (gi\$@t push --force) still reaches the guard, not fast-path-exited" \
+  "$(bash_payload 'gi$@t push --force origin develop')"
+test_nopython_allow "$IRRECOVERABLE" "irrecoverable: \$*-split argv0 (gi\$*t push --force) still reaches the guard, not fast-path-exited" \
+  "$(bash_payload 'gi$*t push --force origin develop')"
 test_nopython_allow "$VERIFIER_PROTECT" "verifier-protect: Write to a gate path passes with note" \
   "$(write_payload 'hooks/gates/x.sh' 'echo y')"
 test_nopython_allow "$DB_WRITE_GATE" "db-write: SQL write passes with note" \

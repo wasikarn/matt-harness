@@ -73,6 +73,33 @@ got_ask=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && got_a
 ok=1; [ "$got_ask" -eq 1 ] && ok=0
 check "HEREDOC commit message mentioning 'gh pr merge' as prose -> noask" "$ok"
 
+# Real backslash-newline continuation, no surrounding whitespace, splitting a
+# dispatch token apart -- GH #126. Bash removes both the backslash AND the
+# newline entirely (ground-truthed via `bash -x`), joining the two halves
+# with nothing between them, so each of these is a genuine, valid
+# `gh pr merge`-shaped command that must still ask. The old _newlines_to_seps
+# put the literal "\<newline>" back unchanged instead of removing it, which
+# left a stray embedded newline glued onto whichever token followed --
+# defeating the exact-match argv0/token dispatch the same way GH #122/#123
+# were defeated, and the old bash-level fast-path prefilter had the same
+# "GH #122 adjacent finding" gap irrecoverable.sh already fixed: a
+# continuation splitting "gh" or "merge" itself turned the escape into a
+# space, so neither candidate substring survived and python3 was never even
+# spawned. Built with `printf` (real backslash + real newline chars, not the
+# BATTERY array above) since an embedded raw newline inside a
+# "desc|cmd|expect" row is fragile to parse -- same standalone-block
+# precedent as the HEREDOC case just above.
+assert_ask() { # assert_ask <desc> <command>
+  local out got_ask
+  out=$(payload_bash "$2" | bash "$GATE" 2>/dev/null)
+  got_ask=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && got_ask=0
+  check "$1" "$got_ask"
+}
+assert_ask "backslash-newline continuation, split inside gh -> ask (GH #126)" "$(printf 'g\\\nh pr merge 123')"
+assert_ask "backslash-newline continuation, split inside pr -> ask (GH #126)" "$(printf 'gh p\\\nr merge 123')"
+assert_ask "backslash-newline continuation, split inside merge -> ask (GH #126)" "$(printf 'gh pr me\\\nrge 123')"
+assert_ask "backslash-newline continuation, split inside sudo wrapper -> ask (GH #126)" "$(printf 's\\\nudo gh pr merge 123')"
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

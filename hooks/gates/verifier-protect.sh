@@ -101,6 +101,23 @@ _run=1
 # positives just spawn python" direction as every other coarse check here.
 _has_bs=0
 case "$_input" in *\\*) _has_bs=1 ;; esac
+# GH #128/#130: a backtick or $(...) command substitution (also ${x} with x
+# unset, $'...' ANSI-C quoting, and $@/$* with zero positional parameters --
+# each found and fixed one spelling at a time, 2026-09-03) vanishes in real
+# bash but survives here as literal characters, splicing either check below
+# apart -- a protected path (`echo x > hoo`true`ks/gates/probe.sh`, GH #128)
+# or a write-command NAME (`c$(true)p evil.sh hooks/gates/x.sh`, GH #130) --
+# so the contiguous substring match neither case-statement below performs can
+# catch it. Enumerating specific spellings kept finding gaps (4 rounds), so
+# this is the general form instead: ANY bare `$` or backtick anywhere in the
+# raw input refuses the whole fast-path classification below (one guard on
+# the outer `if`, since both case-statements live inside it) -- a strict
+# superset of every enumerated marker, since each one itself contains a `$`
+# or a backtick. Same conservative-deferral direction as the _has_bs guard
+# above and the sibling fix in irrecoverable.sh: detect the PRESENCE of the
+# marker on the RAW input rather than resolving the substitution here.
+_has_subst=0
+case "$_input" in *'`'*|*'$'*) _has_subst=1 ;; esac
 # Match the quoted tool_name value precisely (the "Bash" is the JSON value, not
 # a substring of a longer word) so a Write to a file_path that happens to
 # contain "Bash" is not mis-routed through the Bash fast-path (which could exit
@@ -108,13 +125,20 @@ case "$_input" in *\\*) _has_bs=1 ;; esac
 # because a `case` pattern cannot contain literal double-quotes cleanly (the
 # syntax-error lockout on the first attempt). The regex tolerates the optional
 # space after the colon in both JSON serializations.
-if [ "$_has_bs" -eq 0 ] && [[ $_ws =~ \"tool_name\"[[:space:]]*:[[:space:]]*\"Bash\" ]]; then
-  _norm="$(printf '%s' "$_ws" | tr -d "\"'\\")"
+if [ "$_has_bs" -eq 0 ] && [ "$_has_subst" -eq 0 ] && [[ $_ws =~ \"tool_name\"[[:space:]]*:[[:space:]]*\"Bash\" ]]; then
+  # GH #127: lowercase before matching. macOS/APFS is case-insensitive but
+  # case-preserving (header comment above), so a case-sensitive substring
+  # check can be bypassed by a differently-cased path spelling
+  # (hooks/GATES/x.sh) that the filesystem still resolves into the same real
+  # protected directory. Lowercasing only widens the match (more python
+  # spawns, never fewer allows), matching the python-side is_gate_path()
+  # behavior this file's header already promises.
+  _norm="$(printf '%s' "$_ws" | tr -d "\"'\\" | tr '[:upper:]' '[:lower:]')"
   case "$_norm" in
     *git*|*patch*|*tar*) : ;;  # diff/archive carrier -> target may be in a file/cwd -> python
     *tee*|*sed*|*perl*|*cp*|*mv*|*install*|*rsync*|*dd*|*rm*|*trash*|*">"*)
       case "$_norm" in
-        *hooks/gates*|*hooks/advisory*|*hooks/hooks.json*|*hooks/pretooluse-table.json*|*hooks/dispatch-pretooluse*|*skills/harness-audit*|*skills/*/harness-audit*|*'$'*|*'~'*) : ;;  # write + verifier path (or an expandable target) -> python
+        *hooks/gates*|*hooks/advisory*|*hooks/hooks.json*|*hooks/pretooluse-table.json*|*hooks/dispatch-pretooluse*|*skills/harness-audit*|*skills/*/harness-audit*|*'~'*) : ;;  # write + verifier path (or an expandable ~ target) -> python (a $ target is already caught by the outer _has_subst guard above)
         *) _run=0 ;;  # write to a non-verifier, non-expandable surface -> allow fast
       esac
       ;;

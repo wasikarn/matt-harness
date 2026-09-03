@@ -23,7 +23,16 @@ set -uo pipefail
 # fast-path (a false positive here just spawns python; safe direction).
 _input="$(cat)"
 _norm="$(printf '%s' "$_input" | sed 's/\\[nt]/ /g' | tr -s '[:space:]' ' ' | tr -d "\"'\\")"
-case "$_norm" in
+# A backslash-newline continuation splitting "gh" or "merge" itself (e.g.
+# "g\<newline>h pr merge 123") turns the \n escape into a space above, so
+# neither candidate substring survives and the case below would exit 0
+# without ever reaching the python scanner that reassembles it correctly
+# -- confirmed live 2026-09-03, GH #126 (same "GH #122 adjacent finding"
+# shape already fixed this way in irrecoverable.sh). A second, fully
+# whitespace-collapsed variant catches that shape too; a false positive
+# here just costs a python spawn, same safe direction as above.
+_norm_nows="$(printf '%s' "$_norm" | tr -d '[:space:]')"
+case "$_norm$_norm_nows" in
   *gh*merge*) : ;;  # candidate -> python
   *) exit 0 ;;      # neither token present -> allow
 esac
@@ -89,14 +98,21 @@ cmd = _strip_heredocs(d["tool_input"].get("command", ""))
 
 # Insert a literal ";" after each real newline (not in place of it, so a
 # following "#" comment still stops there) -- a backslash immediately
-# before the newline is a real line continuation, not a separator, and
-# is protected via a placeholder. Ported from the _newlines_to_seps
-# helper in worktree-guard.py (2026-08-04).
+# before the newline is a real line continuation, not a separator: bash
+# removes BOTH characters entirely, joining the two lines with nothing
+# between them, so nothing is emitted for that pair either (2026-09-03,
+# GH #126 -- mirrors the same fix already shipped in irrecoverable.sh /
+# main-exec-guard.sh / worktree-guard.py / verifier-protect.sh). The
+# prior version put the literal "\<newline>" back unchanged, which left
+# a stray embedded newline glued onto a token when there was no
+# whitespace around the continuation (e.g. "g\<newline>h pr merge 123"
+# tokenized argv0 as "g\nh", never "gh") -- confirmed live, ground-truthed
+# against real bash, and a genuine bypass of the exact-match argv0/token
+# dispatch below. Ported from the _newlines_to_seps helper in
+# worktree-guard.py (2026-08-04).
 def _newlines_to_seps(s):
-    placeholder = chr(0)
-    s = re.sub(r"\\\n", placeholder, s)
-    s = s.replace("\n", "\n; ")
-    return s.replace(placeholder, "\\\n")
+    s = re.sub(r"\\\n", "", s)
+    return s.replace("\n", "\n; ")
 
 # shlex.split() only recognizes ;/&&/||/|/& as separators when whitespace
 # already surrounds them -- "git push;gh pr merge 123" tokenized as one

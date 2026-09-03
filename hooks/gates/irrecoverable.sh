@@ -39,21 +39,21 @@ _norm_nows="$(printf '%s' "$_norm" | tr -d '[:space:]')"
 # a real `git push --force`-shaped command (confirmed live 2026-09-03:
 # rc=0, python3 never spawned). Same conservative-deferral direction as the
 # sibling GH #125 fix in verifier-protect.sh (any raw backslash forces that
-# fast path to defer): detect the PRESENCE of the substitution marker on
-# the RAW input and refuse the fast-allow regardless of what the substring
-# match below finds, rather than resolving/stripping the substitution here.
+# fast path to defer): detect the PRESENCE of a substitution marker on the
+# RAW input and refuse the fast-allow regardless of what the substring match
+# below finds, rather than resolving/stripping the substitution here.
 # Whether python3's own tokenizer classifies the reassembled command
 # correctly is a separate, deeper question (it does not resolve
 # command-substitution splicing today either -- out of scope for this fix,
 # which only closes the fast-path short-circuit).
-# Two more spellings of the same vanish-to-nothing class: ${x} with x unset
-# expands to "" ("gi${x}t" IS "git"), and $'...' ANSI-C quoting resolves its
-# escapes ("gi$'\x74'" IS "git"). Same conservative-deferral direction as
-# backtick/$(...) above -- detect the marker, defer to python, don't resolve
-# it here. (Bare $ arithmetic/brace-expansion/~ are a different mechanism
-# class and stay out of scope.)
+# Enumerating specific spellings (${x} unset, $'...' ANSI-C quoting, $@/$*
+# with zero positional parameters -- each found and fixed one at a time,
+# 2026-09-03) kept finding gaps, so this is the general form instead: ANY
+# bare $ or backtick anywhere in the raw input is treated as a possible
+# zero-width splice and forces the defer -- a strict superset of every
+# enumerated marker, since each one itself contains a $ or a backtick.
 _has_subst=0
-case "$_input" in *'`'*|*'$('*|*'${'*|*'$'\'*) _has_subst=1 ;; esac
+case "$_input" in *'`'*|*'$'*) _has_subst=1 ;; esac
 case "$_norm$_norm_nows" in
   *rm*|*find*|*git*|*dd*|*mysql*|*psql*|*sqlite3*|*mariadb*) : ;;  # candidate -> python
   *) [ "$_has_subst" -eq 1 ] || exit 0 ;;                          # no destructive token possible -> allow (unless obfuscated)
