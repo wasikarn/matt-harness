@@ -124,6 +124,8 @@ own measurements in `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`.
 
 Every important decision — approve / reject / rank / recommend / optimize / validate — must carry a **Decision Score**: stated criteria + weights + a numeric result + a pass/fail reason + confidence (prose-only — no check enforces this). **Score, not feel** — the same discipline CLAUDE.md's "unifying crux" note (under its Architecture section) applies to loop exits, extended here to *every* decision, not just loop stop-conditions.
 
+**What counts as important:** a decision Rule 1 flags (one-way door or wide blast radius), or one the user explicitly asked to be ranked, recommended, or compared. Everything else is routine and follows the terse default in `output-styles/crisp.md` — a one-line answer with the reason, no score.
+
 - State the criteria and each one's weight **before** scoring.
 - Score each criterion 0–100 with a one-line reason; weighted sum = the decision's number.
 - A pass threshold **and** a fatal-weakness floor (no criterion below the floor) — both must hold.
