@@ -469,6 +469,58 @@ orch_row=$(/usr/bin/grep '"stream":"orchestrator"' "$metrics_file" 2>/dev/null)
 assert "F9 [role: X] tag in the subagent's first user message → role recorded (lower-cased); no tag → role:\"unknown\", row kept; orchestrator row role:null" "$ok"
 trash "$fake_home" "$sess_dir" 2>/dev/null || true
 
+# Handoff cost (2026-09-04, delegation-criteria-field-survey G1). Main transcript:
+# dispatch (Agent tool_use) → its return as a <task-notification> user line → two
+# assistant turns (100+0+50, 200+0+80 = 430 verify tokens, 7+3 cache_read) → next Agent
+# tool_use (counted, closes the window) → a turn after it (NOT counted). Subagent
+# agent-aaa gets returns:1, verify_tokens:430 (window includes the closing dispatch
+# turn: 100+50 + 200+80 = 430); orchestrator row carries the same total.
+fake_home=$(mktemp -d)
+sess_dir=$(mktemp -d)
+transcript="$sess_dir/verify.jsonl"
+mkdir -p "$sess_dir/verify/subagents"
+agent_dispatch='{"type":"assistant","message":{"model":"claude-sonnet-5","content":[{"type":"tool_use","name":"Agent","id":"t1","input":{"subagent_type":"general-purpose"}}],"usage":{"input_tokens":1,"output_tokens":1,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}'
+{ printf '%s\n' "$agent_dispatch"
+  python3 -c 'import json; print(json.dumps({"type":"user","message":{"role":"user","content":"<task-notification>\n<task-id>aaa</task-id>\n<status>completed</status>\n</task-notification>"}}))'
+  make_transcript_line claude-sonnet-5 100 50 7
+  printf '%s\n' '{"type":"assistant","message":{"model":"claude-sonnet-5","content":[{"type":"tool_use","name":"Agent","id":"t2","input":{"subagent_type":"general-purpose"}}],"usage":{"input_tokens":200,"output_tokens":80,"cache_creation_input_tokens":0,"cache_read_input_tokens":3}}}'
+  make_transcript_line claude-sonnet-5 999 999; } > "$transcript"
+make_transcript_line claude-sonnet-5 10 5 > "$sess_dir/verify/subagents/agent-aaa.jsonl"
+printf '{"agentType":"general-purpose","toolUseId":"t1","spawnDepth":1}' > "$sess_dir/verify/subagents/agent-aaa.meta.json"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "verify"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+sub_row=$(/usr/bin/grep '"stream":"subagent"' "$metrics_file" 2>/dev/null)
+orch_row=$(/usr/bin/grep '"stream":"orchestrator"' "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" ]] \
+  && printf '%s' "$sub_row" | /usr/bin/grep -q '"returns":1,"verify_tokens":430,"verify_cache_read":10,"verify_per_return":\[430\]' \
+  && printf '%s' "$orch_row" | /usr/bin/grep -q '"returns":1,"verify_tokens":430' && ok=1 || ok=0
+assert "task-notification → next Agent tool_use window summed into verify_tokens (430, cache_read 10) on the subagent row and the orchestrator total; turn after the dispatch excluded" "$ok"
+trash "$fake_home" "$sess_dir" 2>/dev/null || true
+
+# Malformed notification (no <task-id>) plus a garbage line in the main transcript:
+# nothing attributable → returns:0, verify_tokens:null, row still written, rc 0.
+fake_home=$(mktemp -d)
+sess_dir=$(mktemp -d)
+transcript="$sess_dir/bad.jsonl"
+mkdir -p "$sess_dir/bad/subagents"
+{ printf '%s\n' "$agent_dispatch" 'not json at all {{{'
+  python3 -c 'import json; print(json.dumps({"type":"user","message":{"role":"user","content":"<task-notification>\n<status>completed</status>\n</task-notification>"}}))'
+  make_transcript_line claude-sonnet-5 100 50; } > "$transcript"
+make_transcript_line claude-sonnet-5 10 5 > "$sess_dir/bad/subagents/agent-aaa.jsonl"
+printf '{"agentType":"general-purpose","toolUseId":"t1","spawnDepth":1}' > "$sess_dir/bad/subagents/agent-aaa.meta.json"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "bad"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+sub_row=$(/usr/bin/grep '"stream":"subagent"' "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" && "$(wc -l < "$metrics_file" | tr -d ' ')" == "2" ]] \
+  && printf '%s' "$sub_row" | /usr/bin/grep -q '"input_tokens":10' \
+  && printf '%s' "$sub_row" | /usr/bin/grep -q '"returns":0,"verify_tokens":null,"verify_cache_read":null,"verify_per_return":\[\]' && ok=1 || ok=0
+assert "malformed notification / garbage line → verify_tokens:null, returns:0, both rows still written, exit 0" "$ok"
+trash "$fake_home" "$sess_dir" 2>/dev/null || true
+
 # Missing meta.json sibling (older sessions, or a subagent that never got one) must
 # fail safe to agent_type:"unknown" — never drop the row, never crash.
 fake_home=$(mktemp -d)

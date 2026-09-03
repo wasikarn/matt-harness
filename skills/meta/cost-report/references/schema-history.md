@@ -121,3 +121,23 @@ same reason `agent_type` did — two roles on the same agent type are different 
 work (Builder vs Validator vs Re-validator spend is the number candidate #10 of
 `docs/research/orchestrate-cost-optimization-2026-09-03.md` collects before any model-downgrade
 decision). Rows written before this date have no field and report as `(untagged)`.
+
+## `returns`, `verify_tokens`, `verify_cache_read`, `verify_per_return` (2026-09-04)
+
+The third handoff cost (`docs/research/delegation-criteria-field-survey-2026-09-04.md` gap
+G1; `orchestrate-t-shape-analysis-2026-09-04.md` hops 9-10): main's own tokens spent reading
+a subagent's result, re-reading files to verify it, and deciding — the cost F9 and the
+validation chain never priced. A subagent's return does not arrive as the Agent tool_result
+(that only says "Async agent launched"); it lands later as a `user` line whose string content
+starts `<task-notification>` and whose `<task-id>` is the subagent's file id
+(`agent-<id>.jsonl`). `cost-tracker.sh`'s `build_verify_map` opens a window at each such
+line and closes it at the next notification, the first assistant line carrying an Agent
+`tool_use` (counted — deciding to dispatch is part of the handoff), or EOF; every
+assistant line inside contributes input + cache_write + output to `v` and cache_read to `c`.
+`cache_write` counts as fresh input because under prompt caching raw `input_tokens` is ~2
+per turn — leaving it out would report the cost as near zero. Fail-open: any parse error
+gives an empty map, so rows keep `returns: 0`, `verify_tokens: null` rather than vanishing.
+Not in the dedup key (derived per file, not a population split). On the orchestrator row
+the same fields cover every return in the session; a multi-model main session repeats them
+on each model row. Rows before this date carry none of the fields and the Handoff cost
+section skips them.

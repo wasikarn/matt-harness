@@ -189,6 +189,28 @@ role_section=$(printf '%s' "$out" | awk '/=== By role/{f=1;next} /^$/{f=0} f')
 assert "By role: builder/validator rows (same agent_type) both survive dedup, legacy row shows as (untagged), Orchestrate sessions line joins skill-usage.jsonl (got total=\$${total:-?}, want \$12.0000)" "$ok"
 trash "$fake_home" 2>/dev/null || true
 
+# Handoff cost (2026-09-04): rows carrying verify_per_return render the section
+# (median/p90 per role, returns per orchestrator turn); a legacy row without the
+# field is skipped there, never a crash. builder windows [100,300,500] → med 300, p90 500.
+fake_home=$(mktemp -d)
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir"
+cat > "$metrics_dir/costs.jsonl" <<'EOF'
+{"timestamp":"2026-09-04T00:00:00Z","session_id":"hv","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"orchestrator","turns":10,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"returns":3,"verify_tokens":900,"verify_cache_read":0,"verify_per_return":[100,300,500],"rate_verified":true,"estimated_cost_usd":1.0}
+{"timestamp":"2026-09-04T00:00:01Z","session_id":"hv","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"subagent","agent_type":"general-purpose","role":"builder","turns":2,"input_tokens":10,"output_tokens":5,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"returns":3,"verify_tokens":900,"verify_cache_read":0,"verify_per_return":[100,300,500],"rate_verified":true,"estimated_cost_usd":2.0}
+{"timestamp":"2026-08-07T00:00:01Z","session_id":"legacy","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"subagent","agent_type":"Explore","turns":1,"input_tokens":5,"output_tokens":2,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":3.0}
+EOF
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
+rc=$?
+hv_section=$(printf '%s' "$out" | awk '/=== Handoff cost/{f=1;next} /^$/{f=0} f')
+[[ "$rc" == "0" ]] \
+  && printf '%s' "$out" | /usr/bin/grep -q '^total:     \$6.0000' \
+  && printf '%s' "$hv_section" | /usr/bin/grep -q 'returns per orchestrator turn: 0.30' \
+  && printf '%s' "$hv_section" | /usr/bin/grep -qE '300 med +500 p90 +3 returns  builder$' \
+  && ! printf '%s' "$hv_section" | /usr/bin/grep -q 'untagged' && ok=1 || ok=0
+assert "Handoff cost section: returns/turn 0.30, builder med 300 p90 500 over 3 returns; legacy row without verify_per_return skipped, total still \$6" "$ok"
+trash "$fake_home" 2>/dev/null || true
+
 echo ""
 total_t=$((pass + fail))
 echo "=== $pass/$total_t passed ==="

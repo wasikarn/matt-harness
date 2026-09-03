@@ -37,11 +37,10 @@ pre-push = full gauntlet. Detail: `docs/reference/repo-gotchas.md`.
 
 Before writing a new skill, command, or agent from scratch, check sources in this order:
 (1) `mattpocock/skills` — the installed `mattpocock-skills@mattpocock` plugin, plus the local
-clone at `~/Codes/Personals/mattpocock-skills` if present (`git fetch` it first; the installed
-plugin can be newer); (2) `~/Codes/Personals/ECC` and `~/Codes/Personals/superpowers` if
-present; (3) sibling harnesses under `~/Codes/Personals/`. Create kbg-native surfaces only
-when none fit. Skipping (1) has collided with matt's own skills before. History, the
-`--add-dir` CLAUDE.md-loading gotcha, and third-party vetting practice:
+clone at `~/Codes/Personals/mattpocock-skills` if present (`git fetch` it first);
+(2) `~/Codes/Personals/ECC` and `~/Codes/Personals/superpowers` if present;
+(3) sibling harnesses under `~/Codes/Personals/`.
+Create kbg-native surfaces only when none fit. History, gotchas, and third-party vetting:
 `docs/reference/composer-not-creator.md`, `docs/reference/third-party-vetting.md`.
 
 ## Agent skills
@@ -65,9 +64,8 @@ asked to "research" — plausibility isn't verification. qmd/`llm-wiki` first, t
 resyncs), cross-project reach, and the 3 caught-wrong claims: `docs/reference/repo-gotchas.md`.
 
 `graphify` (installed separately) answers "where does X live in code and what enforces it";
-qmd answers "why." Check `graphify-out/graph.json` exists before invoking `/graphify` — a
-missing file triggers a full multi-million-token rebuild. Detail:
-`docs/reference/graphify-vs-qmd.md`.
+qmd answers "why." Check `graphify-out/graph.json` exists first (missing → multi-million-token
+rebuild). Detail: `docs/reference/graphify-vs-qmd.md`.
 
 ## Architecture
 
@@ -78,14 +76,9 @@ symlinked. On a dev machine the marketplace is often registered as a local direc
 `docs/reference/plugin-cache-mechanics.md`.
 
 **Operating model:** deny the irrecoverable set computationally (gates in `hooks/gates/`),
-advise on the rest (sensors in `hooks/advisory/`) — no autonomy flag, no maker-checker
-ship-gate, no model self-start (the **no-model-self-start rule**). The gate is a *verifier*,
-the model is the *maker*, and the maker never grades its own work; every loop's stop
-condition is a number a deterministic gate can branch on (**score, not feel**). Same rule
-for N-worker fan-in: dropping malformed entries and surfacing agreement/conflict is
-deterministic code's job. Canonical source in full: `docs/reference/operating-model.md`.
-
-When hooks are wired: gates/ (deny), advisory/ (journal), session/ (inject), stop/ (cost tracking).
+advise on the rest (sensors in `hooks/advisory/`); the **no-model-self-start rule**; the maker
+never grades its own work; **score, not feel**. Canonical source (fan-in, loop design, hook
+layers): `docs/reference/operating-model.md`.
 
 ## Skill authoring doctrine (matt-pocock)
 

@@ -71,6 +71,24 @@ if(typed.length){
   const rm=new Map();for(const r of typed){const k=r.role||"(untagged)";const p=rm.get(k)||{c:0,t:0};p.c+=cost(r);p.t+=(Number(r.input_tokens)||0)+(Number(r.output_tokens)||0);rm.set(k,p);}
   for(const [k,v] of [...rm.entries()].sort((a,b)=>b[1].c-a[1].c||b[1].t-a[1].t))console.log(f4(v.c).padStart(12)+"  "+String(v.t).padStart(10)+" tok  "+k);
 }
+// Handoff cost (2026-09-04, docs/research/delegation-criteria-field-survey-2026-09-04.md G1):
+// main's own tokens between a subagent's return and the next dispatch, per return.
+// Rows before that date carry no verify_per_return and are skipped here, not crashed.
+const withVerify=latest.filter(r=>Array.isArray(r.verify_per_return)&&r.verify_per_return.length);
+if(withVerify.length){
+  const q=(a,p)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(p*(s.length-1)+0.5))];};
+  const line=(k,a)=>console.log(String(Math.round(q(a,0.5))).padStart(10)+" med  "+String(Math.round(q(a,0.9))).padStart(10)+" p90  "+String(a.length).padStart(4)+" returns  "+k);
+  console.log("\n=== Handoff cost (main tokens per subagent return: read result + re-verify + decide, until next dispatch; rows tagged 2026-09-04+) ===");
+  const orchV=withVerify.filter(r=>r.stream==="orchestrator");
+  const oTurns=orchV.reduce((s,r)=>s+(Number(r.turns)||0),0),oRet=orchV.reduce((s,r)=>s+(Number(r.returns)||0),0);
+  if(oRet)console.log("returns per orchestrator turn: "+(oRet/oTurns).toFixed(2)+"  ("+oRet+" returns / "+oTurns+" turns)");
+  const subV=withVerify.filter(r=>r.stream==="subagent");
+  if(subV.length){
+    line("all roles",subV.flatMap(r=>r.verify_per_return));
+    const rm=new Map();for(const r of subV){const k=r.role||"(untagged)";rm.set(k,(rm.get(k)||[]).concat(r.verify_per_return));}
+    for(const [k,a] of [...rm.entries()].sort((a,b)=>q(b[1],0.5)-q(a[1],0.5)))line(k,a);
+  }
+}
 // Orchestrate sessions: join on session_id against skill-usage.jsonl (same dir, written by
 // hooks/session/skill-usage-telemetry.sh) — the population the 7c threshold decision waits on
 // (docs/research/orchestrate-cost-optimization-2026-09-03.md, "Collect, then decide").

@@ -19,11 +19,18 @@ The tracker appends JSON rows to `~/.local/share/kbg/metrics/costs.jsonl` — on
 `model_scoped: true`; each row re-derives cumulative totals from the full transcript
 (stateless). Row schema:
 
-`{ timestamp, session_id, transcript_path, model, model_scoped, stream, agent_type, role, turns, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cache_read_per_turn, rate_verified, estimated_cost_usd }`
+`{ timestamp, session_id, transcript_path, model, model_scoped, stream, agent_type, role, turns, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cache_read_per_turn, returns, verify_tokens, verify_cache_read, verify_per_return, rate_verified, estimated_cost_usd }`
 
 `role` (2026-09-03+) is the F9 brief's `[role: …]` tag read from the subagent's first
 message — `builder|validator|fixer|re-validator|research|other`, `unknown` when the brief
 carried no tag, `null` on orchestrator rows.
+
+`returns` / `verify_tokens` / `verify_cache_read` / `verify_per_return` (2026-09-04+) price
+the third handoff cost: main's own tokens from a subagent's return (`<task-notification>`)
+to the next Agent dispatch. `verify_tokens` = input + cache_write + output summed over those
+windows (`null` when the row has no return); `verify_cache_read` is the rent re-read in
+them; `verify_per_return` lists each window. On the orchestrator row they cover every return
+in the session.
 
 **Aggregation rule (the part that must not regress):** for each session with any
 `model_scoped` row, take the latest row per (`session_id`, `stream`, `model`,
@@ -72,9 +79,12 @@ node "${MH_PLUGIN_ROOT}/scripts/workflows/cost-report-dedup.js" csv
    carries `stream: subagent` (all data predates 2026-08-07).
 5. By role: subagent spend ranked by the F9 `role` tag (`(untagged)` for pre-2026-09-03
    rows, `unknown` for briefs that carried no tag). Same omission rule as By agent type.
-6. Orchestrate sessions: count and spend of sessions whose `session_id` appears with
+6. Handoff cost: returns per orchestrator turn, then verify tokens per return (median, p90,
+   count) for all roles and per role. Rows without `verify_per_return` (pre-2026-09-04) are
+   skipped; the section is omitted when none carry it.
+7. Orchestrate sessions: count and spend of sessions whose `session_id` appears with
    `mh:orchestrate` in `skill-usage.jsonl` (omitted when that file is absent).
-7. Last seven days: date and cost.
+8. Last seven days: date and cost.
 
 Rely on the precomputed `estimated_cost_usd` values written by the tracker; do
 not re-estimate pricing from raw tokens here.
