@@ -159,9 +159,10 @@ API response shares the same `message.id`. Until this date both `emit_rows` and
 v0.68.639 kept the **first** line per (file, `message.id`); that fixed the inflation but
 the first line carries a streaming placeholder `output_tokens` and the last line the final
 count — measured across every transcript on disk (119,013 ids; a script that grouped lines
-by `message.id` and compared first vs last vs max usage): 92,431 same-usage duplicate
-lines vs 33,695 differing per id, last == max on 100% of the differing ids, and first-line
-`output_tokens` sat 38.6% under the last line corpus-wide (up to 92% on subagent files).
+by `message.id` and compared first vs last vs max usage): 92,431 duplicate *lines* carried
+the same usage as their id's first line, while 33,695 *ids* had at least one differing line;
+last == max on 100% of the differing ids, and first-line
+`output_tokens` sat 38.6% under the last line corpus-wide (up to 100% on subagent files — the first-line sum can be 0).
 Input/cache columns differed by <1%. v0.68.641 keeps the **last** line per id; lines with
 no id (old transcripts) still count per line. `turns` means "API responses".
 

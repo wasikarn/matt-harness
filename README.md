@@ -197,8 +197,10 @@ the interactive HTML version.
 
 [![matt-harness runtime workflow: the session-to-push path through doctrine injection, the deterministic gate boundary, and the auxiliary systems: plugin cache, advisory sensors, harness-audit, memory store, qmd/llm-wiki.](docs/diagrams/archify/matt-harness-runtime-architecture.png)](docs/diagrams/archify/matt-harness-runtime-architecture.html)
 
-**1. Session starts.** `hooks/session/doctrine-bootstrap.sh` injects `docs/METHODOLOGY.md`
-(the decision-sizing triad, the reasoning scaffold) into every fresh session. Skills and
+**1. Session starts.** `hooks/session/doctrine-bootstrap.sh` injects the core of
+`docs/METHODOLOGY.md` — everything above its `core-end` marker (the decision-sizing triad, the
+reasoning scaffold) — into every fresh session; the situational blocks below the marker stay on
+disk behind one-line pointers. Skills and
 agents load from the versioned cache at `~/.claude/plugins/cache/wasikarn/mh/<version>/`,
 not the working tree.
 

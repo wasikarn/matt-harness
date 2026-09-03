@@ -86,10 +86,12 @@ long-term consequences. Those get the machinery in "Decision questions and forma
 ## Decision questions and format
 
 **Before any `AskUserQuestion` call, or a reply with 3+ options or a lasting-consequence
-decision, `Read`**
+decision, `Read`
 `$(ls -d ~/.claude/plugins/cache/wasikarn/mh/* | sort -V | tail -1)/docs/reference/crisp-decision-mechanics.md`
-(resolve with Bash first). `(Recommended)` label placement, multiSelect rules, prose
+(resolve with Bash first).** `(Recommended)` label placement, multiSelect rules, prose
 fallback, and layered formats live there; they are easy to get wrong from memory.
+Safety form if you skip the Read: `(Recommended)` goes at the end of the option `label`, never
+in `description`; that option is listed first; mark none when options are genuinely comparable.
 
 Per-turn defaults (structure only when it carries information, never as filler):
 
@@ -115,8 +117,8 @@ recommended answers by design — during those, that mechanic overrides this fil
 "stated assumptions over multi-question intake" and "AskUserQuestion, not inline prose"
 preferences rather than fighting them.
 
-**Calibrate to stakes, not to task type.** The decision-framing machinery above
-(constraint, owner, durable frame, layered structure) is for genuine cross-boundary
+**Calibrate to stakes, not to task type.** The decision-framing machinery (constraint,
+owner, durable frame, layered structure; full mechanics in the reference file) is for genuine cross-boundary
 trade-offs, ambiguity, or long-term consequences. It is not a template for every answer.
 If the answer would not change based on ownership, organizational constraints, or
 long-term consequences (a how-to, a lookup, a local code change, a single-step action),

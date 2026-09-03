@@ -1,3 +1,9 @@
+> **Erratum (2026-09-04).** Every token/cost absolute in this document came from the
+> pre-`dedup_usage` cost-tracker counter (each API response counted once per content-block
+> line — roughly 2.4x high) and, for subagent output, from first-line streaming placeholders
+> (roughly 39% low). Ratios between roles and agent types still hold; the absolutes do not.
+> Corrected counter and the three schema eras: `skills/meta/cost-report/references/schema-history.md`.
+
 # `orchestrate` cost optimization — fresh analysis and plan (2026-09-03)
 
 **Date:** 2026-09-03

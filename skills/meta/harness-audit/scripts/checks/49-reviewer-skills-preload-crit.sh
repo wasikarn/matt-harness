@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 49. Reviewer skills: preload must survive rewrites (CRIT).
-# typescript-reviewer + nextjs-reviewer preload their framework-patterns skill
+# typescript-reviewer + nextjs-reviewer originally preloaded their framework-patterns skill
 # via the official `skills:` agent-frontmatter field (CC >= 2.0.43,
 # code.claude.com/docs/en/sub-agents "Preload skills into subagents": full
 # skill content injected at spawn; independent of the Skill tool). The effect

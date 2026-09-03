@@ -129,8 +129,8 @@ refute, re-score, drift guard) — the falsifiable membership test from the 2026
 round. A support skill that an agent preloads via `skills:` frontmatter OR runtime-`Skill()`-loads
 must carry the SAME effort as its host agent (preload-vs-agent effort precedence is undocumented
 platform behavior — matching values moots it). Deliberate exceptions: `frontend-patterns` and
-`typescript-patterns` stay `high` despite medium reviewer hosts (dual-use; main-thread coding
-dominates). Skill entrypoints only — `skills/*/references/*.md` fragments stay
+`typescript-patterns` stay `high` (dual-use; main-thread coding dominates — neither is preloaded
+by a reviewer since v0.68.637). Skill entrypoints only — `skills/*/references/*.md` fragments stay
 unstamped. Scope facts: skill `effort:` applies only while the surface is active;
 `CLAUDE_CODE_EFFORT_LEVEL` env would override every frontmatter value (unset in this environment);
 harness-audit check 21 accepts `inherit` as an agent model value. Drift backstop: check 54 WARNs on

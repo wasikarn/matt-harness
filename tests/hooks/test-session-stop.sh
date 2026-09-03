@@ -115,7 +115,7 @@ assert "fails safe (exit 0, silent) when plugin root path doesn't exist" "$ok"
 # SessionStart injection must NAME both missing deps (the gates' per-call
 # stderr notes rely on this being the one up-front announcement).
 NOPY_BIN=$(mktemp -d "${TMPDIR:-/tmp}/kbg-ss-nopy.XXXXXX")
-for _t in bash cat grep sed tr; do
+for _t in bash cat grep sed tr awk sort tail; do
   _src=$(PATH="/usr/bin:/bin" command -v "$_t" || command -v "$_t")
   ln -s "$_src" "$NOPY_BIN/$_t"
 done
@@ -125,6 +125,9 @@ rc=$?
   && echo "$out" | /usr/bin/grep -q 'python3.*not found' \
   && echo "$out" | /usr/bin/grep -q 'jq.*not found' && ok=1 || ok=0
 assert "preflight names python3 AND jq when both are missing from PATH (#93)" "$ok"
+# The stub must also carry awk (the core splice) or the hook silently emits an empty body.
+echo "$out" | sed -n '/^<doctrine>$/,/^<\/doctrine>$/p' | /usr/bin/grep -q 'One-way door' && ok=1 || ok=0
+assert "doctrine body is non-empty under the minimal PATH stub (awk present)" "$ok"
 
 out=$(CLAUDE_PLUGIN_ROOT="$ROOT" bash "$DOCTRINE" 2>/dev/null)
 echo "$out" | /usr/bin/grep -q 'portability-preflight' && ok=0 || ok=1
@@ -631,6 +634,35 @@ sub_row=$(/usr/bin/grep '"stream":"subagent"' "$metrics_file" 2>/dev/null)
   && printf '%s' "$sub_row" | /usr/bin/grep -q '"returns":1,"verify_tokens":100,' && ok=1 || ok=0
 assert "human string prompt closes the verify window (100, not 8100); tool_result array lines would not" "$ok"
 trash "$fake_home" "$sess_dir" 2>/dev/null || true
+
+# An image-paste prompt lands as ARRAY content with no tool_result block and isMeta unset —
+# a human prompt all the same, so it closes the window (100, not 8100). A tool_result array
+# keeps it open (8100); an isMeta:true array (injected context) keeps it open too.
+run_array_case() {  # $1 = the user line JSON, $2 = session id
+  local fake_home sess_dir transcript
+  fake_home=$(mktemp -d); sess_dir=$(mktemp -d)
+  transcript="$sess_dir/$2.jsonl"; mkdir -p "$sess_dir/$2/subagents"
+  { printf '%s\n' "$agent_dispatch"
+    python3 -c 'import json; print(json.dumps({"type":"user","message":{"role":"user","content":"<task-notification>\n<task-id>aaa</task-id>\n<status>completed</status>\n</task-notification>"}}))'
+    make_transcript_line claude-sonnet-5 100 0
+    printf '%s\n' "$1"
+    make_transcript_line claude-sonnet-5 8000 0; } > "$transcript"
+  make_transcript_line claude-sonnet-5 10 5 > "$sess_dir/$2/subagents/agent-aaa.jsonl"
+  printf '{"agentType":"general-purpose","toolUseId":"t1","spawnDepth":1}' > "$sess_dir/$2/subagents/agent-aaa.meta.json"
+  printf '%s' "$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": sys.argv[2]}))' "$transcript" "$2")" \
+    | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null
+  /usr/bin/grep '"stream":"subagent"' "$fake_home/.local/share/kbg/metrics/costs.jsonl" 2>/dev/null
+  trash "$fake_home" "$sess_dir" 2>/dev/null || true
+}
+row=$(run_array_case '{"type":"user","message":{"role":"user","content":[{"type":"text","text":"what is this"},{"type":"image","source":{"type":"base64","media_type":"image/png","data":"AAAA"}}]}}' imgpaste)
+printf '%s' "$row" | /usr/bin/grep -q '"returns":1,"verify_tokens":100,' && ok=1 || ok=0
+assert "image-paste prompt (array content, no tool_result, isMeta unset) closes the verify window (100, not 8100)" "$ok"
+row=$(run_array_case '{"type":"user","message":{"role":"user","content":[{"type":"tool_result","tool_use_id":"x","content":"done"}]}}' toolres)
+printf '%s' "$row" | /usr/bin/grep -q '"returns":1,"verify_tokens":8100,' && ok=1 || ok=0
+assert "tool_result array line keeps the verify window open (8100)" "$ok"
+row=$(run_array_case '{"type":"user","isMeta":true,"message":{"role":"user","content":[{"type":"text","text":"<system-reminder>injected</system-reminder>"}]}}' ismeta)
+printf '%s' "$row" | /usr/bin/grep -q '"returns":1,"verify_tokens":8100,' && ok=1 || ok=0
+assert "isMeta:true array line (injected context) keeps the verify window open (8100)" "$ok"
 
 # Notification delivered as a text-block array (not a bare string) still opens a window.
 fake_home=$(mktemp -d)

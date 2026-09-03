@@ -51,7 +51,7 @@ Do not assume the current implementation is correct. Treat the entire session ou
     Do not manufacture findings — filler nits, speculative "consider using X," or a hypothetical
     edge case with no concrete trigger — to give step 5 something to fix. This matches the standard
     already held elsewhere in this fleet: `agents/blind-spot-hunter.md`'s severity-earning discipline
-    (no finding ships without a traced path to an earned severity). An already-high baseline score
+    (every finding ships with a trace to its earned severity). An already-high baseline score
     is a legitimate baseline. This doesn't relax the Critical Rule below — if the score genuinely
     doesn't improve, say so explicitly; it just means "nothing worth fixing" and "under-audited" are
     not the same finding, and only evidence tells them apart.

@@ -172,7 +172,7 @@ vulnerability that did not exist, caught only by an empirical test. So:
 
 ## Output Format
 
-For each **kept** finding:
+For each finding:
 
 - location — the seam: the 2+ `file:line` sites whose interaction is the bug (or the single
   site + the framework behavior / emitted string).

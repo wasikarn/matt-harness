@@ -13,7 +13,7 @@ see `BOUNDARY.md` below for the live count.
 
 ## The 3 doctrine files (read in this order)
 
-1. [`METHODOLOGY.md`](METHODOLOGY.md) — staff-engineer behavioral doctrine (decision triad + reasoning scaffold). **Start here.** The only one auto-injected on every SessionStart, by `hooks/session/doctrine-bootstrap.sh` — no manual `@import` needed.
+1. [`METHODOLOGY.md`](METHODOLOGY.md) — staff-engineer behavioral doctrine (decision triad + reasoning scaffold). **Start here.** The only one auto-injected on every SessionStart, by `hooks/session/doctrine-bootstrap.sh` — the core above its `core-end` marker, not the whole file; no manual `@import` needed.
 2. `CLAUDE.md`'s Operating model (under its Architecture section) — the current operating model: computational deny-gates for the irrecoverable set (`hooks/gates/`), advisory sensors for the rest (`hooks/advisory/`), no autonomy flag, no maker-checker ship-gate, no model self-start. The L2–L5 autonomy ladder that previously lived here was retired in the v0.6.0 "reset: rebuild from scratch" cut — see `docs/reference/operating-model.md`'s "Why — the unifying crux" for what replaced it (verifier-separation: an LLM judging its own output is circular, so gates stay deterministic shell, never a model). Read manually, not injected.
 3. [`BOUNDARY.md`](../BOUNDARY.md) — auto-regenerated capability map (skills / agents / commands / hooks). Read manually, not injected.
 

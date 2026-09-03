@@ -27,9 +27,10 @@ You are a senior Next.js engineer reviewing App Router code for correctness in t
 Full concern-to-owner table preloaded via `mh:review-lens-nextjs-routing` (see this file's
 `skills:` frontmatter).
 
-When the diff has React state/hook patterns outside App Router scope, `Read`
-`$(ls -d ~/.claude/plugins/cache/wasikarn/mh/* | sort -V | tail -1)/skills/patterns/frontend-patterns/SKILL.md`
-before finding on them — it is not preloaded.
+When the diff has React state/hook patterns outside App Router scope, two steps before
+finding on them: (1) resolve the path with Bash —
+`ls -d ~/.claude/plugins/cache/wasikarn/mh/* | sort -V | tail -1`; (2) `Read`
+`<that path>/skills/patterns/frontend-patterns/SKILL.md`. It is not preloaded.
 
 ## When invoked
 

@@ -17,7 +17,7 @@ Before any non-trivial act, run:
 
 **Plan mode is the implementation checkpoint.** When the triad flags a one-way door or wide blast radius on a task that will edit code (multi-file, unfamiliar subsystem, ≥2 viable approaches, architectural), the "stop and get approval" step IS plan mode — suggest it strongly; enter it yourself only when the door is clearly one-way. Skip for trivial / mechanical changes. Full text: `Read` `$CLAUDE_PLUGIN_ROOT/docs/METHODOLOGY.md` section "Plan mode is the implementation checkpoint" before entering plan mode.
 
-**Pressure-test before committing.** Run the triad inline, then call `advisor()` before substantive work and before declaring done. A consequential decision closes with a **written revisit trigger and progress metric**, not just a verdict. Full text (grilling escalation): section "Pressure-test before committing".
+**Pressure-test before committing.** Run the triad inline, then call `advisor()` before substantive work and before declaring done. A consequential decision closes with a **written revisit trigger and progress metric**, not just a verdict. Full text (grilling escalation): section "Pressure-test before committing" — `Read` before committing to an approach.
 
 **disable-model-invocation surfaces are user-only.** A typed "go"/"yes" never lifts `disable-model-invocation: true`; hand the user the literal `/mh:<name>` (or `/mattpocock-skills:<name>`) to type themselves and stop. Full text (wizard candidates): section "disable-model-invocation surfaces are user-only" before naming a disable-model-invocation skill.
 
@@ -62,7 +62,7 @@ Every important decision — approve / reject / rank / recommend / optimize / va
 
 **What counts as important:** a decision Rule 1 flags (one-way door or wide blast radius), or one the user explicitly asked to be ranked, recommended, or compared. Everything else is routine and follows the terse default in `output-styles/crisp.md` — a one-line answer with the reason, no score.
 
-If data is insufficient to score a criterion, mark **ข้อมูลไม่เพียงพอ** and block on the operator — never guess the score. Full text (scoring bullets, precedent-before-scoring, `mh:score-decision`): section "Rule 14 — Decision scoring (scoring procedure)" — `Read` before scoring any non-trivial decision (approve/reject/validate/rank).
+If data is insufficient to score a criterion, mark **ข้อมูลไม่เพียงพอ** and block on the operator — never guess the score. Full text (scoring bullets, precedent-before-scoring, `mh:score-decision`): section "Rule 14 — Decision scoring (scoring procedure)" — `Read` before scoring an important decision (per the bar above; approve/reject/validate/rank).
 
 ## Governing constraint
 

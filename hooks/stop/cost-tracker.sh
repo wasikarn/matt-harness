@@ -10,6 +10,7 @@
 # in this format so a reader (skills/meta/cost-report/SKILL.md) can tell them apart from rows
 # written by the pre-fix version of this hook, which never carried the field and whose
 # per-row cost was the whole session's cumulative total repriced at the current model.
+# Assumes a response's lines are not split by a task-notification (0 of 63K runs in corpus).
 set -uo pipefail
 
 payload=$(cat)
@@ -96,7 +97,8 @@ build_type_map() {
 # line with plain string content that is not a notification (a human or injected
 # prompt — main moved on; tool_result lines carry array content and keep the window
 # open; measured 2026-09-04: 32% of windows held a human prompt, 70% of window tokens
-# fell after one), or EOF. Notification content is read as a string or a text-block
+# fell after one), a `user` line whose array content has no `tool_result` block and
+# `isMeta != true` (an image-paste prompt — 37 in the corpus; same close), or EOF. Notification content is read as a string or a text-block
 # array, same as the role capture in build_type_map.
 # `v` sums input + cache_write + output (cache_write IS fresh input under prompt
 # caching; raw input_tokens is ~2/turn), `c` keeps cache_read separate — the rent,
@@ -123,6 +125,8 @@ build_verify_map() {
            | capture("<task-id>(?<id>[^<]+)</task-id>") | .id) // null) as $id
        | if $id then flush | .cur = $id | .m[$id] += [{v: 0, c: 0}]
          elif ($l.message.content | type) == "string" then flush | .cur = null
+         elif ($l.message.content | type) == "array" and (($l.isMeta // false) != true)
+              and (($l.message.content | any(.type? == "tool_result")) | not) then flush | .cur = null
          else . end
      elif ($l.message.usage != null) and (.cur != null or (($l.message.id // null) != null and $l.message.id == .pid)) then
        ($l.message.id // null) as $mid

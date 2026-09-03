@@ -11,7 +11,7 @@
             "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "session:doctrine-bootstrap", "minimal", "${CLAUDE_PLUGIN_ROOT}/hooks/session/doctrine-bootstrap.sh"]
           }
         ],
-        "description": "Inject METHODOLOGY.md doctrine (decision-sizing triad + reasoning scaffold) into session context. Tier: minimal (always on) -- disabling this is a functionality loss, not a noise reduction."
+        "description": "Inject METHODOLOGY core doctrine (decision-sizing triad + reasoning scaffold) into session context. Tier: minimal (always on) -- disabling this is a functionality loss, not a noise reduction."
       },
       {
         "id": "session:command-root-anchor",

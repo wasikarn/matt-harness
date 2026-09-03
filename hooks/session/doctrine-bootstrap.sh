@@ -16,9 +16,11 @@ if [[ -f "$METHODOLOGY" ]]; then
   echo "<doctrine>"
   # Literal index/substr splice, not sed/gsub: a root containing `&`, `|`,
   # or `\` would corrupt or empty the doctrine through a replacement string;
-  # ENVIRON (not awk -v) also skips backslash-escape processing.
+  # ENVIRON (not awk -v) also skips backslash-escape processing. A trailing slash
+  # on the root is stripped so pointers never render `//docs/...`. The splice also
+  # matches the placeholder as a prefix of longer identifiers (none exist today).
   sed -n '1,/^<!-- core-end -->$/p' "$METHODOLOGY" \
-    | awk 'BEGIN { root = ENVIRON["CLAUDE_PLUGIN_ROOT"]; v = "$CLAUDE_PLUGIN_ROOT" }
+    | awk 'BEGIN { root = ENVIRON["CLAUDE_PLUGIN_ROOT"]; sub(/\/$/, "", root); v = "$CLAUDE_PLUGIN_ROOT" }
            /^<!-- core-end -->$/ { next }
            { out = ""
              while ((i = index($0, v)) > 0) { out = out substr($0, 1, i - 1) root; $0 = substr($0, i + length(v)) }
