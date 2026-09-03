@@ -192,12 +192,15 @@ fi
 # "scratchpad" (2 INFOs) = 6. Good fixture is the same frontmatter (minus
 # budget_tokens) with clean bodies, plus CRLF line endings, "think step by
 # step" inside a ``` fence and "You MUST" inside backticks on the agent —
-# all three must stay silent.
+# all three must stay silent. A third bad agent (z.md) opens a ``` fence and
+# never closes it, with "You MUST" after it: the pattern is swallowed, but
+# the check reports the unclosed fence (1 INFO) instead of staying silent = 7.
 run_check 68 "$FIX/check-68-bad"
-if [ "$INFO_FOUND" -eq 6 ] && [ "$CRIT_FOUND" -eq 0 ]; then
-  ok "check-68 bad fixture fires INFOs (info=$INFO_FOUND)"
+CHECK68_OUT=$(bash "$AUDIT" "$FIX/check-68-bad" --only 68 2>/dev/null || true)
+if [ "$INFO_FOUND" -eq 7 ] && [ "$CRIT_FOUND" -eq 0 ] && printf '%s\n' "$CHECK68_OUT" | /usr/bin/grep -q 'unclosed code fence in agents/z.md'; then
+  ok "check-68 bad fixture fires INFOs incl. unclosed-fence (info=$INFO_FOUND)"
 else
-  bad "check-68 bad fixture did NOT fire exactly 6 INFOs as expected (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
+  bad "check-68 bad fixture did NOT fire exactly 7 INFOs with an unclosed-fence line (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
 fi
 run_check 68 "$FIX/check-68-good"
 if [ "$INFO_FOUND" -eq 0 ] && [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then

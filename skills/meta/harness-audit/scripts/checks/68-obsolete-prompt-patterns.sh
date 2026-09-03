@@ -39,6 +39,11 @@ for _f in "$CLAUDE_DIR"/agents/*.md "$CLAUDE_DIR"/skills/[!_]*/SKILL.md "$CLAUDE
   _fm=$(awk '{sub(/\r$/,"")} NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm' "$_f")
   _body=$(awk '{sub(/\r$/,"")} NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{fm=0; next} fm{next}
     /^[[:space:]]*```/{fence=!fence; next} fence{next} {gsub(/`[^`]*`/,"")} 1' "$_f")
+  # An unclosed fence silently swallows every later hit — say so instead of
+  # skipping in silence. Same fence walk; prints the opening line at EOF.
+  _open=$(awk '{sub(/\r$/,"")} NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{fm=0; next} fm{next}
+    /^[[:space:]]*```/{fence=!fence; if (fence) fl=NR} END{if (fence) print fl}' "$_f")
+  [ -n "$_open" ] && info "unclosed code fence in ${_f#"$CLAUDE_DIR"/}: opened at line $_open and never closed; body scan after that line was skipped"
   for _pat in \
     'step[- ]by[- ]step|model reasons step-by-step unprompted; delete' \
     '\b[Yy]ou must\b|\b[Ii]t is (critical|essential|imperative)\b|\bthis is critical\b|pressure language; state the rule plainly' \
@@ -57,4 +62,4 @@ for _f in "$CLAUDE_DIR"/agents/*.md "$CLAUDE_DIR"/skills/[!_]*/SKILL.md "$CLAUDE
     info "obsolete prompt pattern in ${_f#"$CLAUDE_DIR"/}: $_msg — first hit: ${_hit:0:100}"
   done
 done
-unset _f _fm _body _pat _re _msg _hit _src
+unset _f _fm _body _open _pat _re _msg _hit _src
