@@ -561,6 +561,25 @@ else
 fi
 
 echo ""
+echo "--- short-prompt quiet rule (v0.68.629: every UserPromptSubmit byte is carried in main's context) ---"
+# A one-line status reply must print nothing at all — not a Rule-1 block, not
+# a delegation block. Thai has no spaces, so the char-length arm is the one
+# that catches "รอผล"; the word-count arm catches "ok thanks".
+test_silent "short Thai status reply (รอผล = 'wait for the result')" "รอผล"
+test_silent "short English status reply" "ok thanks"
+# A real multi-file prompt still fires, and the delegation block it prints
+# (no IMPL verb, so this is the whole output) stays under 400 bytes.
+short_rule_out=$(echo "$(user_prompt_payload "can you go through these 5 files and tell me what each one does")" | bash "$HOOK" 2>/dev/null)
+short_rule_bytes=$(printf '%s' "$short_rule_out" | wc -c | tr -d ' ')
+if printf '%s' "$short_rule_out" | /usr/bin/grep -qi "delegat" && (( short_rule_bytes <= 400 )); then
+  echo "  ✅ CONTENT: multi-file prompt still fires and the delegation block is ${short_rule_bytes} B (<= 400)"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT EXPECTED delegation block <= 400 B, got ${short_rule_bytes} B: <$(printf '%s' "$short_rule_out" | head -c 200)>" >&2
+  fail=$((fail + 1))
+fi
+
+echo ""
 echo "--- empty / malformed input (must stay silent + exit 0) ---"
 # Empty stdin (no JSON) → silent. Test by piping empty input directly.
 empty_out=$(echo "" | bash "$HOOK" 2>/dev/null)

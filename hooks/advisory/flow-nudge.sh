@@ -186,16 +186,17 @@ delegation_ratio_line() {
 # NOT exit — callers decide whether to keep going (main heredoc path) or
 # exit 0 right after (the no-IMPL-verb silent-exit path).
 emit_delegation_nudge() {
+  # Kept under 400 B: every UserPromptSubmit line is carried in main's
+  # context for the rest of the session (docs/research/orchestrate-cost-
+  # optimization-2026-09-03.md §5 c5). The ratio line (and its jq pass over
+  # costs.jsonl) runs only here, behind DELEGATION_TRIGGER — never standalone.
   local ratio_line
   ratio_line=$(delegation_ratio_line "$SESSION_ID")
   cat <<EOF
 
-[mh:flow-nudge] Broad/multi-file scope detected (>~3 files — METHODOLOGY Rule 13) — $ratio_line.
-  Bounded, independently-verifiable slices? → delegate via the Agent tool, spawn prompt built
-  from the F9 template (skills/workflow/orchestrate/f9-template.md, "Spawn-prompt template (F9)").
-  main-exec-guard denies top-level writes — dispatch, don't edit.
-Rate without scoping quality makes things worse, not better (Claude Code issue #40339) — use
-the template, don't just delegate more. The nudge is advisory; the model judges.
+[mh:flow-nudge] >~3 files (Rule 13) — delegate via the Agent tool; F9: skills/workflow/orchestrate/f9-template.md
+  main-exec-guard denies top-level writes — dispatch, don't edit. Advisory; the model judges.
+  ($ratio_line)
 EOF
 }
 
@@ -225,6 +226,19 @@ SESSION_ID=$(printf '%s' "$PAYLOAD" | jq -r '.session_id // empty' 2>/dev/null)
 # would also miss a real "เพิ่ม X" co-occurring with "เพิ่มเติม" in the same
 # prompt. Only used for Thai matching — English checks stay on raw $INPUT.
 INPUT_TH="${INPUT//เพิ่มเติม/}"
+
+# Short-prompt early exit: a status reply ("ok thanks", "รอผล") has no work
+# in it, so skip the ~10 greps below. Short = under 6 words AND under 40
+# chars (Thai has no spaces, so word count alone under-counts it). A short
+# prompt that carries any trigger this script keys on (impl verb, PR/review
+# ask, strong bug signal, ticket key) still falls through — "ship this",
+# "สร้าง PR ให้หน่อย", "implement TP-919" keep firing.
+SHORT_WORDS=$(wc -w <<< "$INPUT")
+if (( SHORT_WORDS < 6 && ${#INPUT} < 40 )) \
+   && ! /usr/bin/grep -qiE "\b($IMPL)\b|pull request|\bPRs?\b|review|race condition|deadlock|memory leak|\btp-[0-9]+\b" <<< "$INPUT" \
+   && ! /usr/bin/grep -qE "$THAI_IMPL|แก้ตามรีวิว" <<< "$INPUT_TH"; then
+  exit 0
+fi
 
 # Delegation-ratio trigger (GH #120) — independent of the IMPL gate below.
 # docs/METHODOLOGY.md Rule 13's own ">~3 files" condition is the anchor: a
