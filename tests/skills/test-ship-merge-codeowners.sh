@@ -26,7 +26,7 @@
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-SHIP_MERGE_MD="$ROOT/skills/workflow/ship-merge/SKILL.md"
+SHIP_MERGE_MD="$ROOT/skills/workflow/ship-merge/references/codeowners-gate-detail.md"  # step 7 wiring moved here from SKILL.md
 CM_LIB="$ROOT/hooks/gates/lib"
 
 pass=0

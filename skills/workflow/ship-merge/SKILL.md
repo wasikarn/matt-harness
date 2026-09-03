@@ -28,30 +28,7 @@ hotfixes (`mh:incident`).
 
 7. **CODEOWNER check — binary/3-way gate.** Read `references/codeowners-gate-detail.md` (matching grammar, SHA-pinning rationale, fixture coverage) before ever changing this step's shape.
 
-   **Locate CODEOWNERS pinned to this PR's head SHA** (not the local working tree — Phase 2's rebase hasn't run yet), via GitHub's search order (`.github/`, root, `docs/` — first found wins). Resolve `<head_sha>` once (`gh pr view <n> --json headRefOid --jq .headRefOid`) and reuse it for both calls below — never a value captured earlier in Phase 1 (a new commit landing between captures would let a review pinned to the older SHA still pass, the staleness issue #50 fixed):
-   ```bash
-   CODEOWNERS_CONTENT=$(python3 "${MH_PLUGIN_ROOT}/hooks/gates/lib/_codeowners_match.py" --discover "<head_sha>" 2>"${TMPDIR:-/tmp}/codeowners-err-$$")
-   DISCOVER_RC=$?
-   CODEOWNERS_FOUND=0
-   CODEOWNERS_ERROR=""
-   if [ "$DISCOVER_RC" -eq 0 ]; then
-     CODEOWNERS_FOUND=1
-   elif [ "$DISCOVER_RC" -ne 3 ]; then
-     CODEOWNERS_ERROR=$(cat "${TMPDIR:-/tmp}/codeowners-err-$$" 2>/dev/null)
-   fi
-   trash "${TMPDIR:-/tmp}/codeowners-err-$$" 2>/dev/null
-   ```
-   Exit codes: `0` = found (content on stdout, possibly empty), `3` = genuinely absent everywhere (verified-N/A), `4` = a real fetch error (message on stderr). `$CODEOWNERS_ERROR` non-empty → **fail-closed, STOP** ("CODEOWNERS fetch failed, not confirmed absent — the 'never fabricate a clean result' rule applies here too"). `$CODEOWNERS_FOUND` still `0` → **N/A**, proceed to Phase 2.
-
-   **If `$CODEOWNERS_FOUND` is `1`**, parse + match with the shared script, not prose reasoning. Reuse `gh pr diff <n> --name-only` (step 6 already calls it) and step 4's `gh pr view <n> --json reviews -q .reviews` (don't re-fetch either), plus the same `<head_sha>`:
-   ```bash
-   CHANGED_FILES=$(gh pr diff <n> --name-only)
-   REVIEWS_JSON=$(gh pr view <n> --json reviews -q .reviews)
-   python3 "${MH_PLUGIN_ROOT}/hooks/gates/lib/_codeowners_match.py" "$CODEOWNERS_CONTENT" "$CHANGED_FILES" "$REVIEWS_JSON" "<head_sha>"
-   ```
-   `tests/skills/test-ship-merge-codeowners.sh` exercises this shared script directly — see `references/codeowners-gate-detail.md` for the matching grammar and fixture list.
-
-   **Gate — 3-way, not binary**, read off the script's first printed line: `PASS` (every required entry satisfied, or N/A/no-owned-files) → proceed to Phase 2. `STOP` (an unsatisfied `@username` entry, an unparseable pattern, or a non-404 fetch error) → hard Phase 1 failure; render the reason + detail lines. `DEFERRED` (every remaining entry is `@org/team` or a bare email — unresolvable against the reviews API's usernames) → don't stop; carry the detail lines into Phase 2 step 5's prompt for human acknowledgment (same pattern as the branch-protection `--admin` bypass) — proceed to Phase 2.
+   Run the step as written in `references/codeowners-gate-detail.md`'s "Step 7 — commands and gate" section: locate CODEOWNERS pinned to the PR head SHA via `_codeowners_match.py --discover`, then match with the shared script. Gate is 3-way off the script's first printed line: `PASS` → Phase 2; `STOP` → hard Phase 1 failure; `DEFERRED` (`@org/team` / bare email) → carry the detail lines into Phase 2 step 5's prompt. A fetch error is fail-closed, never "absent".
 
    `MH_SKIP_CODEOWNERS_GATE=1` is the escape hatch for a repo with no CODEOWNERS policy; detail in `references/codeowners-gate-detail.md`. (The former `convergence-merge-gate.sh` hook that intercepted a raw `gh pr merge` outside this flow was retired with the review pipeline, 2026-08-24 #82 — this command's in-flow gates are now the only merge-door protection.)
 
@@ -66,16 +43,8 @@ hotfixes (`mh:incident`).
    - Gate: rebase produces conflicts → STOP. Tell user to resolve manually and retry.
 3. Force-push rebased branch: `git push --force-with-lease`
    - **Who runs steps 1–3:** one dispatched foreground `general-purpose` agent, not main. F9-style brief: PR number + branch + `<base-branch>`; run exactly `git fetch origin`, `git rebase origin/<base-branch>`, `git push --force-with-lease` — nothing else — and report the verbatim output, including whether the rebase replayed commits or was a no-op (step 4 reads that). `irrecoverable.sh` still gates that agent's Bash calls; this moves who issues the command, not what checks it.
-4. Decide the merge flags from Phase 1 step 2's protection read — no new API call:
-   - **No protection** (step 2 read a 404) → plain merge, no `--admin`.
-   - **Protection exists** → cross-check this phase's step 2 rebase result with Phase 1 step 3's CI signal. Rebase replayed commits (not a no-op) **and** CI not N/A → step 3's force-push produced a fresh SHA with no completed checks yet (possibly dismissed reviews too) → `--admin` is needed to land now rather than wait for CI to re-run; a real bypass — say so plainly in step 5, not folded into a generic line. Rebase was a no-op, **or** CI was verified-N/A → the fresh-CI concern doesn't apply, but step 6 still uses `--admin` regardless (protection active always does — no partial-bypass command exists); only the *why* differs: some other protection rule (e.g. required reviews), not an unvalidated CI check.
-   - `allow_squash_merge: false` (Phase 1 step 2) → STOP now — `--squash` would fail outright.
-   - **Phase 1 step 7 found required CODEOWNER entries (not N/A)** and this phase's rebase replayed commits → **re-run step 7's matching+approval logic** against the new post-rebase SHA before step 6 — a force-push can dismiss stale CODEOWNER approvals the same way it dismisses CI-relevant reviews. Skip when step 7 was N/A or the rebase was a no-op. A newly-unsatisfied `@username` → STOP as in step 7. A newly-DEFERRED entry folds into step 5's prompt like one found in Phase 1.
-5. **AskUserQuestion** single-select — this is the explicit go/no-go, the only authorization to merge: "Phase 2: PR [#N] — CI [green / red / pending / N/A — no CI configured], approvals [N], conflicts [none / yes]. Sensitive paths [none / {matched paths from Phase 1 step 6} — this diff touches sensitive surface, confirm deliberately]. [CODEOWNER: N/A / satisfied / DEFERRED — {file} requires {team-or-email} approval, unverified — confirm an owner has approved before proceeding]. Target: [base-branch]. [No branch protection to bypass / Branch protection active — this merge uses --admin to bypass it]. Merge will squash + delete branch. Proceed?" Always render the Sensitive-paths field — a **sensitive** result never auto-blocks, so the go/no-go must show it. Render the CODEOWNER field only when step 7 (or its re-check) returned DEFERRED — omit on PASS/N/A. Base the recommendation on step 4's decision, this phase's rebase result, and Phase 1 step 3's CI signal, not a blanket "Phase 1 already passed" assumption. Render the chosen option's `(best when X)` clause as `(Recommended)` — the list below is a template, not literal text:
-   - No protection, protection with a no-op rebase (Phase 1's validated SHA still current), or CI verified-N/A → recommend Merge now.
-   - Protection active, rebase replayed commits, and CI not N/A (step 4's fresh-SHA case — likely `pending`) → recommend Abort: the fresh SHA hasn't been CI-validated, so Merge now needs the user to knowingly accept an unvalidated `--admin` bypass, not a default nudge.
-   - `Merge now (best when all gates pass and the user is ready to land)` — execute server-side merge. Bypasses branch protection when active (step 4); on a fresh rebased SHA under active protection with a real CI signal, also merges before CI re-runs — not a concern when CI is N/A.
-   - `Abort (best when something changed since validation or the user wants to re-check)` — stop; user can re-run later. PR stays unmerged; Phase 1's gate must pass again.
+4. Decide the merge flags from Phase 1 step 2's protection read — no new API call. Read `references/merge-flag-decision.md` (steps 4-5, verbatim): no protection → plain merge; protection active → `--admin` always, with the *why* depending on whether the rebase replayed commits under a real CI signal; `allow_squash_merge: false` → STOP; CODEOWNER entries + replayed rebase → re-run step 7 against the new SHA.
+5. **AskUserQuestion** single-select — the explicit go/no-go, the only authorization to merge. Prompt template, field-rendering rules (Sensitive paths always; CODEOWNER only on DEFERRED), and the Merge-now / Abort recommendation logic keyed to step 4: `references/merge-flag-decision.md`.
 6. Execute **server-side** merge via GitHub CLI, using step 4's flag decision:
    ```bash
    gh pr merge <n> --squash --delete-branch              # no protection (step 4: 404)
