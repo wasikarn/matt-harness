@@ -222,6 +222,8 @@ Supplementary detail for `SKILL.md`'s Spawn-prompt template (F9) section.
 
 **Use this template verbatim for every dispatch. Inline the values; do not summarize.** ("Inline the values" means fill every slot with real specifics — file paths, exact criteria — instead of leaving a placeholder. It does not mean paste external content verbatim; see the sanitize note right after the template for anything sourced from a tracker or ticket.)
 
+**Effort default.** The Agent tool has no per-dispatch `effort` parameter — effort is the agent's own `effort:` frontmatter, so pick an agent pinned to what you want or state the intent in the prompt (`Effort: medium`). Default `medium` for Explore-shaped and general-purpose search/read dispatches (Anthropic's published effort curves are near-flat for research-shaped work; `low` is acceptable for pure lookup); builder/fixer agents on long coding tasks keep `high`/inherit. Unmeasured on this repo — no LLM-output eval exists as of 2026-09-03 — re-sweep once one does.
+
 ```
 # Task: <short verb-phrase, ≤8 words>
 
@@ -508,7 +510,7 @@ one-liner", "the worker stalled", "someone has to commit".
    hook failure it returns `BLOCKED <reason>` instead of working around it; the orchestrating
    session then dispatches a fixer for the underlying problem, then a FRESH commit agent —
    never a patch "inline to unblock the commit".
-3. **Ship agent.** For the plugin release ritual (CLAUDE.md's "Adding or removing a surface",
+3. **Ship agent.** For the plugin release ritual (`docs/reference/adding-a-surface.md`,
    steps 4–7: sync fleet counts, `claude plugin validate`, harness-audit, `claude plugin
    update`, regenerate `BOUNDARY.md`) — one foreground agent runs the whole sequence and
    returns each command's tail output.
