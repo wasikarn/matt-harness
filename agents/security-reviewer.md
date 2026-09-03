@@ -152,6 +152,8 @@ Plus the summary table the Severity-Label Discipline section above governs: coun
 tag reflecting any attack-chain escalation or confirmed-floor scoring from that section — not a
 separate format, the table this agent's own severity discipline assumes elsewhere in this file.
 
+A CRITICAL finding whose evidence is an exposed credential also says so explicitly in the summary — the operator needs to rotate it, not just fix the code.
+
 ## Common False Positives
 
 - Environment variables in `.env.example` (not actual secrets)
@@ -160,8 +162,6 @@ separate format, the table this agent's own severity discipline assumes elsewher
 - SHA256/MD5 used for checksums (not passwords)
 
 **Always verify context before flagging.**
-
-A CRITICAL finding whose evidence is an exposed credential also says so explicitly in the summary — the operator needs to rotate it, not just fix the code.
 
 ## Reference
 
