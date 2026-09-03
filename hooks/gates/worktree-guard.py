@@ -567,7 +567,7 @@ def _git_apply_am_targets(rest):
     sub_idx, directory = 0, None
     if len(rest) > 1 and rest[0].lstrip(PH) == "-C":
         sub_idx, directory = 2, rest[1]
-    if len(rest) > sub_idx and rest[sub_idx] in ("apply", "am"):
+    if len(rest) > sub_idx and rest[sub_idx].lstrip(PH) in ("apply", "am"):
         diff_args = [t for t in rest[sub_idx + 1:] if not t.startswith("-")]
         for t in diff_args:
             yield t

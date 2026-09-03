@@ -632,6 +632,22 @@ out=$( (cd "$WS" && echo "$(payload_bash "git \$(true)-C $WS/repo1 apply $DIFF_F
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "git \$(true)-C <dir> apply (PH-before-dash splice): still deny exit 2 (was a silent bypass)" "$ok"
 
+# Adversarial-review find (2026-09-03): the apply/am dispatch check itself
+# (rest[sub_idx] in ("apply", "am")) never accounted for a leading PH
+# placeholder either -- one token over from the git -C bug above, a splice
+# glued directly onto the subcommand token bypassed the ENTIRE apply/am
+# dispatch. Run from $WS/repo1 (protected main checkout) so only a correct
+# apply/am dispatch, not an accidental fallback, can deny.
+out=$( (cd "$WS/repo1" && echo "$(payload_bash "git \$(true)apply $DIFF_FILE")" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "git \$(true)apply <diff> (PH-glued-to-subcommand splice): still deny exit 2 (was a silent bypass)" "$ok"
+
+out=$( (cd "$WS/repo1" && echo "$(payload_bash "git \$(true)am $DIFF_FILE")" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "git \$(true)am <diff> (PH-glued-to-subcommand splice): still deny exit 2 (was a silent bypass)" "$ok"
+
 # patch's -d/--directory relocates where a relative in-diff target resolves, same class of
 # bug as git -C above. Run from $TMP (neutral, outside any repo) so a naive cwd-relative
 # resolution would silently pass.

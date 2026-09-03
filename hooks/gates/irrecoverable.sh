@@ -985,13 +985,13 @@ for w in windows:
                     or ("--delete" in scan and "--force" in scan)
                 ):
                     deny("git branch -D / --delete --force force-deletes a branch, discarding unmerged commits — confirm with user first")
-                if sub == "stash" and args and args[0] in ("drop", "clear"):
+                if sub == "stash" and args and args[0].lstrip(PH) in ("drop", "clear"):
                     deny("git stash drop/clear discards stashed changes — confirm with user first")
                 if sub == "commit" and "--amend" in scan:
                     deny("git commit --amend rewrites history — confirm with user first")
                 if sub == "add" and any(t in ("-A", "--all", ".") for t in scan):
                     deny("git add -A/. stages everything — stage files by name instead")
-                if sub == "worktree" and args and args[0] == "add":
+                if sub == "worktree" and args and args[0].lstrip(PH) == "add":
                     # kbg single-branch doctrine gate. This is the ONLY enforcement
                     # point for the doctrine — a prior companion gate on the native
                     # WorktreeCreate event (worktree-create-block.sh) was removed

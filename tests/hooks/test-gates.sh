@@ -460,6 +460,31 @@ test_deny "$IRRECOVERABLE" "empty-substitution splice hides git worktree add -b'
   "$(bash_payload 'git worktree add $(true)-b feature-branch /tmp/wt-feature')"
 test_deny "$IRRECOVERABLE" "baseline: plain git worktree add -b, no splice at all (must still deny)" \
   "$(bash_payload 'git worktree add -b feature-branch /tmp/wt-feature')"
+# Adversarial-review find (2026-09-03): the SUBCOMMAND token itself (args[0]
+# == "add") was also compared by exact match, never lstrip(PH)-ed, a
+# distinct gap from the -b flag splice tested above -- a splice glued to
+# "add" bypassed the single-branch doctrine gate entirely.
+test_deny "$IRRECOVERABLE" "empty-substitution splice hides the git worktree add subcommand token itself (git worktree \$(true)add -b evil ..., was silently ALLOWed)" \
+  "$(bash_payload 'git worktree $(true)add -b evil /tmp/wt-evil-subcmd')"
+# Same review, sibling gap: git stash drop/clear compared args[0] by exact
+# match too, never lstrip(PH)-ed.
+test_deny "$IRRECOVERABLE" "empty-substitution splice hides git stash drop (git stash \$(true)drop, was silently ALLOWed)" \
+  "$(bash_payload 'git stash $(true)drop')"
+test_deny "$IRRECOVERABLE" "empty-substitution splice hides git stash clear (git stash \$(true)clear, was silently ALLOWed)" \
+  "$(bash_payload 'git stash $(true)clear')"
+test_deny "$IRRECOVERABLE" "baseline: plain git stash drop, no splice at all (must still deny)" \
+  "$(bash_payload 'git stash drop')"
+test_deny "$IRRECOVERABLE" "baseline: plain git stash clear, no splice at all (must still deny)" \
+  "$(bash_payload 'git stash clear')"
+# Documented non-goal, unaffected by the leading-splice fix above: a splice
+# landing MID-WORD, not glued to the leading position (e.g. git stash
+# dr$(true)op), stays outside this check own scope and stays ALLOW either
+# way. Not encoded as its own test_allow here -- differential testing (this
+# fix present vs. reverted) shows the suite passes identically for that
+# shape either way, so a test for it would not distinguish buggy from fixed
+# behavior (test-honesty "distinguishes-or-it-doesn't" rule; same call
+# already made for the bare-vanish-at-argv0 shape a few hundred lines up in
+# the sibling worktree-guard test file).
 # --- Layer 2: dd of= and destructive SQL, neither was lstrip(PH)-ed ---
 test_deny "$IRRECOVERABLE" "empty-substitution splice hides dd's of=/dev/ prefix (was silently ALLOWed)" \
   "$(bash_payload 'dd if=/dev/zero $(true)of=/dev/sda')"
