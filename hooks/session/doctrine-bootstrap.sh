@@ -1,13 +1,21 @@
 #!/usr/bin/env bash
 # SessionStart: inject METHODOLOGY.md doctrine into the session context.
 # Output goes to stdout → CC injects it as system context for the session.
+#
+# Only the every-turn core (everything above the `<!-- core-end -->` line) is
+# injected; the situational blocks below it stay on disk and the core carries
+# one-line pointers to them. Pointers name `$CLAUDE_PLUGIN_ROOT/docs/...` so
+# main can `Read` them from any repo — the literal is expanded here, at
+# injection time, because mh is enabled user-wide and cwd is not the plugin.
+# A file with no marker is injected whole (old shape, still valid).
 set -uo pipefail
 
 METHODOLOGY="${CLAUDE_PLUGIN_ROOT:-}/docs/METHODOLOGY.md"
 
 if [[ -f "$METHODOLOGY" ]]; then
   echo "<doctrine>"
-  cat "$METHODOLOGY"
+  sed -n '1,/^<!-- core-end -->$/p' "$METHODOLOGY" \
+    | sed -e '/^<!-- core-end -->$/d' -e "s|\\\$CLAUDE_PLUGIN_ROOT|${CLAUDE_PLUGIN_ROOT}|g"
   echo "</doctrine>"
 fi
 

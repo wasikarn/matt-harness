@@ -56,6 +56,28 @@ rc=$?
   && echo "$out" | /usr/bin/grep -q 'Decision-sizing triad' && ok=1 || ok=0
 assert "injects METHODOLOGY.md wrapped in markers when plugin root is valid" "$ok"
 
+# Core-only injection (v0.68.640): everything above METHODOLOGY.md's
+# `<!-- core-end -->` marker ships; the situational blocks below it must NOT.
+# Rule 1's triad and the DMI safety line are core; the plan-mode step list
+# ("Once inside plan mode") lives only in the full text. The pointer path must
+# be expanded to an absolute plugin-root path, never the literal variable.
+echo "$out" | /usr/bin/grep -q 'One-way door?' \
+  && echo "$out" | /usr/bin/grep -q 'never lifts `disable-model-invocation: true`' \
+  && ! echo "$out" | /usr/bin/grep -q 'Once inside plan mode' \
+  && ! echo "$out" | /usr/bin/grep -q 'core-end -->' \
+  && ! echo "$out" | /usr/bin/grep -q '\$CLAUDE_PLUGIN_ROOT' \
+  && echo "$out" | /usr/bin/grep -q "$ROOT/docs/METHODOLOGY.md" && ok=1 || ok=0
+assert "core output has Rule 1 triad + DMI safety line, no plan-mode step list, pointer path expanded" "$ok"
+
+# Every "Rule N" that skills/hooks/docs cite must still be a heading in the
+# full file -- the core/situational split must never drop a cited rule.
+ok=1
+for _rule in $(/usr/bin/grep -rhoE "METHODOLOGY[^)]{0,40}Rule [0-9]+" "$ROOT/skills" "$ROOT/hooks" "$ROOT/docs/reference" "$ROOT/agents" 2>/dev/null \
+    | /usr/bin/grep -oE "Rule [0-9]+" | sort -u | tr ' ' '_'); do
+  /usr/bin/grep -qE "^## ${_rule/_/ } " "$ROOT/docs/METHODOLOGY.md" || { echo "  missing heading: ${_rule/_/ }" >&2; ok=0; }
+done
+assert "full METHODOLOGY.md still carries every cited 'Rule N' heading" "$ok"
+
 out=$(env -u CLAUDE_PLUGIN_ROOT bash "$DOCTRINE" 2>/dev/null)
 rc=$?
 [[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0

@@ -21,10 +21,11 @@
 # cut blind.
 set -uo pipefail
 
-# 24KB. Measured healthy-session total ~18KB (doctrine-bootstrap.sh dominant
-# at ~15.8KB, mostly docs/METHODOLOGY.md's own size) -- this leaves headroom
-# for a dirty-memory-store nudge (observed up to ~2.6KB) plus preflight
-# messages before warning.
+# 24KB. Measured healthy-session total ~10KB (doctrine-bootstrap.sh dominant
+# at ~7.8KB since v0.68.640 -- only docs/METHODOLOGY.md's core above its
+# `<!-- core-end -->` marker is injected; it was ~14KB whole-file before) --
+# this leaves headroom for a dirty-memory-store nudge (observed up to ~2.6KB)
+# plus preflight messages before warning.
 CAP=24576
 
 ROOT="${CLAUDE_PLUGIN_ROOT:-}"
