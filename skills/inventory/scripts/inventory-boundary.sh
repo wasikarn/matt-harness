@@ -248,8 +248,8 @@ if [ "${1:-}" = "--repo-only" ] || [ -n "${1:-}" ]; then
   # it can't be generated the same way. Found 2026-08-19 during a deep-audit:
   # the table's own text claimed "harness-audit check 12 verifies orchestrate
   # references every agent" as if that covered this table too — it doesn't;
-  # check 12 only checks skills/workflow/orchestrate/SKILL.md + reference.md, never
-  # BOUNDARY.md. This stderr comparison at least surfaces a stale table the
+  # check 12 only checks skills/workflow/orchestrate/SKILL.md + reference.md +
+  # routing.md, never BOUNDARY.md. This stderr comparison at least surfaces a stale table the
   # moment someone next regenerates, instead of it silently drifting again the
   # way the "12-agent fleet"/"60 checks" text did. It is NOT a CI gate (stderr
   # only, not part of the generated BOUNDARY.md content, and not a numbered

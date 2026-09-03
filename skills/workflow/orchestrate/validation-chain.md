@@ -8,7 +8,7 @@ Supplementary detail for `SKILL.md`'s Validation chain (builder → validator �
 
 The 4-step validation pipeline from article `team-orchestration`, adapted to the task board polyfill. Every non-trivial write should be a chain, not a single dispatch — **non-trivial** = ≥2 files changed OR ≥1 test file touched. Below that, run a single dispatch; the chain's coordination overhead isn't worth it (Rule 2). The board makes the ordering observable and resumable across sessions.
 
-This is the file-based counterpart to the `TaskCreate + addBlockedBy` protocol earlier in this skill. `addBlockedBy` enforces ordering in an external task system; `depends_on` + `kbg_recompute_blocked` enforces it in the local `board.json`.
+This is the file-based counterpart to the `TaskCreate + addBlockedBy` protocol described above in this file. `addBlockedBy` enforces ordering in an external task system; `depends_on` + `kbg_recompute_blocked` enforces it in the local `board.json`.
 
 ### Concept
 
@@ -78,6 +78,9 @@ Minimal blast radius — no new dependencies.
 ## Deliverable
 `src/api/routes/health.py` exists and `GET /health` returns `{"status":"ok"}`.
 
+## Brief-back
+First output line restates What + Deliverable in one sentence; the lead stops you on mismatch.
+
 ## FILES YOU OWN
 - src/api/routes/health.py
 
@@ -99,9 +102,9 @@ Spawn with `AskUserQuestion` (gated — builder holds Edit/Write/Bash).
 
 **Task 2 — Validator: review PR** (same template shape as Task 1, `[role: validator]`, abbreviated here)
 
-What: first run `git diff --name-only` and compare against `tasks["T1"].files` (Task 1's declared `FILES YOU OWN`) to set `scope_ok`/`unexpected_files`; only then review `src/api/routes/health.py` for correctness, style, test coverage. Deliverable: verdict file at `.scratch/health-review/verdict.md`, a fenced JSON block matching SKILL.md's structured-verdict contract — `pass` (bool), `findings` (array of `{file, line, description, severity}`, empty when `pass: true`), `confidence` (0.0–1.0), `scope_ok` (bool), `unexpected_files` (array, empty when `scope_ok: true`). Upstream contract: reads `tasks["T1"].files` from the board. Done-when: verdict file exists, parses as valid JSON with `pass` present, every finding cites file:line, no file was edited.
+What: first run `git diff --name-only` and compare against `tasks["T1"].files` (Task 1's declared `FILES YOU OWN`) to set `scope_ok`/`unexpected_files`; only then review `src/api/routes/health.py` for correctness, style, test coverage. Deliverable: verdict file at `.scratch/health-review/verdict.md`, a fenced JSON block matching the structured-verdict contract above in this file — `pass` (bool), `findings` (array of `{file, line, description, severity}`, empty when `pass: true`), `confidence` (0.0–1.0), `scope_ok` (bool), `unexpected_files` (array, empty when `scope_ok: true`). Upstream contract: reads `tasks["T1"].files` from the board. Report every issue you find, including low-severity or uncertain ones; do not filter — the lead ranks by your severity and confidence. Apply this to every file in FILES YOU OWN, not just the first. Done-when: verdict file exists, parses as valid JSON with `pass` present, every finding cites file:line, no file was edited.
 
-Spawn **ungated** — validators are read-only by allowlist (see SKILL.md's "Validator safety" note, under Gating rules, for why there's no runtime backstop beyond the allowlist). If the lead can't parse the verdict or `pass` is absent, treat it as **not verified** — re-dispatch, don't advance to Task 3/4 on a guess.
+Spawn **ungated** — validators are read-only by allowlist (see the "Validator safety" note above in this file, under Gating rules, for why there's no runtime backstop beyond the allowlist). If the lead can't parse the verdict or `pass` is absent, treat it as **not verified** — re-dispatch, don't advance to Task 3/4 on a guess.
 
 **Task 3 — Fixer: address review findings** (`[role: fixer]`; conditional — only spawned if Task 2's verdict is `pass: false`)
 

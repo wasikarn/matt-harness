@@ -328,7 +328,7 @@ Click the diagram to open the interactive HTML version.
 - **`routes-to`**: `hooks/advisory/flow-nudge.sh` emits the spec chain (`grilling` → `/to-spec` → `/to-tickets` → `/implement`) into session context on `UserPromptSubmit`. `grilling` fires bare (`model`-tier); the other three carry the leading slash and are user-invoked only.
 - **`depends-on`**, the required one: Quick start step 4 installs `mattpocock-skills@mattpocock` as a separate plugin; mh's own surfaces are unresolvable without it. `hooks/session/doctrine-bootstrap.sh` preflights the plugin's presence at every `SessionStart` and warns if it's missing or disabled.
 - **`verifies`**: harness-audit check 50 (4 sub-checks A-D; A-C are WARN, D is INFO) keeps `docs/reference/mattpocock-integration-map.md`'s 25-row ledger in sync with the installed plugin's own `plugin.json`.
-- **`hands-off-to`**: `skills/workflow/orchestrate/reference.md`'s boundary with `mattpocock-skills:wayfinder` (user-typed: `/mattpocock-skills:wayfinder`), one of only two such prose boundaries in the whole fleet.
+- **`hands-off-to`**: `skills/workflow/orchestrate/routing.md`'s boundary with `mattpocock-skills:wayfinder` (user-typed: `/mattpocock-skills:wayfinder`), one of only two such prose boundaries in the whole fleet.
 - **`ask-matt` is the actual routing layer** (`docs/reference/adding-a-surface.md`'s "Finding a surface" section). Even though no hook wires to it, it owns the routing map for 10 skills mh deliberately doesn't duplicate.
 - **Two matt skills are drawn as adopted, not routed**: `code-review` and `writing-for-agents` *are* mh's own review and authoring surfaces now (the native kbg equivalents were retired), which is a node label, not a relationship to draw an arrow for.
 

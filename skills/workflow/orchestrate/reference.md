@@ -108,7 +108,7 @@ For urgent, not-important, bounded compound work — decompose then execute via 
 
 **Not the host Workflow tool.** "Batch" and "Pipeline" below are a manual bash-scripted loop over the `Agent` tool (see the pseudocode) — a dispatch *style*, not the CC `Workflow` tool's JS `parallel()`/`pipeline()` runtime described later in this doc ("Dynamic-workflow pattern vocabulary"). The L-number is a dispatch tier, unrelated to the retired L2–L5 autonomy-flag ladder (ADR 0006) — every tier here stays human-gated.
 
-The chain pattern (builder → validator → fix → re-validator) lives in `SKILL.md`'s Validation chain (TaskCreate + addBlockedBy) section; the worked example is in `validation-chain.md`. Use this section for the merge after parallel fan-in; use SKILL.md for the chain itself.
+The chain pattern (builder → validator → fix → re-validator) lives in `SKILL.md`'s Validation chain (builder → validator → fix → re-validator) section; the worked example is in `validation-chain.md`. Use this section for the merge after parallel fan-in; use SKILL.md for the chain itself.
 
 ### Decompose
 
@@ -197,7 +197,8 @@ one-liner", "the worker stalled", "someone has to commit".
 
 1. **Fix-round (F9 short form).** For a known-location change touching 3 or fewer files:
    dispatch ONE foreground `general-purpose` agent with `model: haiku`, using a short-form F9
-   brief of just `# Task`, `## What` (the exact old-to-new text or diff), `## FILES YOU OWN`,
+   brief of just `# Task`, its `[role: fixer]` line (or the matching role — without it the cost
+   row logs `unknown`), `## What` (the exact old-to-new text or diff), `## FILES YOU OWN`,
    and `## Done-when` (one machine-checkable line: a grep count, `bash -n`, a `jq` field
    check). Omit Why/Focus/Skills/Upstream. The agent returns only `git diff -- <files>` plus
    its Done-when output. Batch tiny fixes that share a mental model into ONE fixer per wave —
