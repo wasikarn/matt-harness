@@ -92,7 +92,12 @@ build_type_map() {
 # the Agent tool_result itself only says "Async agent launched" (verified against a
 # real 23-dispatch session, 2026-09-04). A window opens at each notification and
 # closes at the next notification, the first assistant line carrying an Agent
-# tool_use (that line counts — deciding to dispatch is part of the handoff), or EOF.
+# tool_use (that line counts — deciding to dispatch is part of the handoff), a `user`
+# line with plain string content that is not a notification (a human or injected
+# prompt — main moved on; tool_result lines carry array content and keep the window
+# open; measured 2026-09-04: 32% of windows held a human prompt, 70% of window tokens
+# fell after one), or EOF. Notification content is read as a string or a text-block
+# array, same as the role capture in build_type_map.
 # `v` sums input + cache_write + output (cache_write IS fresh input under prompt
 # caching; raw input_tokens is ~2/turn), `c` keeps cache_read separate — the rent,
 # not the work. Same-message.id duplicate lines count once per line, matching
@@ -102,9 +107,12 @@ build_verify_map() {
   jq -nRc 'reduce (inputs | try fromjson | select(.type == "user" or .type == "assistant")) as $l
     ({cur: null, m: {}};
      if $l.type == "user" then
-       (($l.message.content | strings | select(startswith("<task-notification>"))
-         | capture("<task-id>(?<id>[^<]+)</task-id>") | .id) // null) as $id
-       | if $id then .cur = $id | .m[$id] += [{v: 0, c: 0}] else . end
+       ($l.message.content | if type == "string" then . else ([.[]? | .text? // empty] | join("")) end) as $txt
+       | (($txt | select(startswith("<task-notification>"))
+           | capture("<task-id>(?<id>[^<]+)</task-id>") | .id) // null) as $id
+       | if $id then .cur = $id | .m[$id] += [{v: 0, c: 0}]
+         elif ($l.message.content | type) == "string" then .cur = null
+         else . end
      elif .cur != null and ($l.message.usage != null) then
        .cur as $id | ((.m[$id] | length) - 1) as $i
        | .m[$id][$i].v += (($l.message.usage.input_tokens // 0) + ($l.message.usage.cache_creation_input_tokens // 0) + ($l.message.usage.output_tokens // 0))

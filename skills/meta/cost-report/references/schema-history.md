@@ -132,12 +132,20 @@ validation chain never priced. A subagent's return does not arrive as the Agent 
 starts `<task-notification>` and whose `<task-id>` is the subagent's file id
 (`agent-<id>.jsonl`). `cost-tracker.sh`'s `build_verify_map` opens a window at each such
 line and closes it at the next notification, the first assistant line carrying an Agent
-`tool_use` (counted — deciding to dispatch is part of the handoff), or EOF; every
-assistant line inside contributes input + cache_write + output to `v` and cache_read to `c`.
+`tool_use` (counted — deciding to dispatch is part of the handoff), a `user` line with plain
+string content that is not a notification (a human or injected prompt — main moved on;
+tool_result lines carry array content and do not close it; added 2026-09-04 after measuring
+that 32% of windows held a human prompt and 70% of window tokens fell after one), or EOF;
+every assistant line inside contributes input + cache_write + output to `v` and cache_read
+to `c`. Notification content is accepted as a string or a text-block array.
 `cache_write` counts as fresh input because under prompt caching raw `input_tokens` is ~2
 per turn — leaving it out would report the cost as near zero. Fail-open: any parse error
 gives an empty map, so rows keep `returns: 0`, `verify_tokens: null` rather than vanishing.
 Not in the dedup key (derived per file, not a population split). On the orchestrator row
-the same fields cover every return in the session; a multi-model main session repeats them
-on each model row. Rows before this date carry none of the fields and the Handoff cost
-section skips them.
+the same fields cover every notification window in the session, so Σ subagent-row
+`verify_tokens` can be smaller: task-ids with no subagent file (~1.4%) and non-Claude
+subagent rows (dropped) have no row to carry their window. Back-to-back returns give the
+first N-1 a zero window and the last absorbs the shared verify cost, so per-role medians
+over-read the last returner and under-read the rest. A multi-model main session repeats the
+fields on each model row. Rows before this date carry none of the fields and the Handoff
+cost section skips them.

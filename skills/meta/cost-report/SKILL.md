@@ -27,10 +27,11 @@ carried no tag, `null` on orchestrator rows.
 
 `returns` / `verify_tokens` / `verify_cache_read` / `verify_per_return` (2026-09-04+) price
 the third handoff cost: main's own tokens from a subagent's return (`<task-notification>`)
-to the next Agent dispatch. `verify_tokens` = input + cache_write + output summed over those
-windows (`null` when the row has no return); `verify_cache_read` is the rent re-read in
-them; `verify_per_return` lists each window. On the orchestrator row they cover every return
-in the session.
+to the next Agent dispatch or the next human prompt. `verify_tokens` = input + cache_write +
+output summed over those windows (`null` when the row has no return); `verify_cache_read` is
+the rent re-read in them; `verify_per_return` lists each window. On the orchestrator row they
+cover every notification window in the session; Σ subagent rows can be smaller (task-ids
+with no subagent file, non-Claude subagent rows dropped).
 
 **Aggregation rule (the part that must not regress):** for each session with any
 `model_scoped` row, take the latest row per (`session_id`, `stream`, `model`,

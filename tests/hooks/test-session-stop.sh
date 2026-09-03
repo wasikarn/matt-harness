@@ -499,6 +499,50 @@ orch_row=$(/usr/bin/grep '"stream":"orchestrator"' "$metrics_file" 2>/dev/null)
 assert "task-notification → next Agent tool_use window summed into verify_tokens (430, cache_read 10) on the subagent row and the orchestrator total; turn after the dispatch excluded" "$ok"
 trash "$fake_home" "$sess_dir" 2>/dev/null || true
 
+# A human (or injected) prompt — a `user` line with plain STRING content that is not a
+# notification — means main moved on: the window closes. notification → assistant 100
+# tok → human string prompt → assistant 8000 tok → verify_tokens 100, not 8100.
+fake_home=$(mktemp -d)
+sess_dir=$(mktemp -d)
+transcript="$sess_dir/human.jsonl"
+mkdir -p "$sess_dir/human/subagents"
+{ printf '%s\n' "$agent_dispatch"
+  python3 -c 'import json; print(json.dumps({"type":"user","message":{"role":"user","content":"<task-notification>\n<task-id>aaa</task-id>\n<status>completed</status>\n</task-notification>"}}))'
+  make_transcript_line claude-sonnet-5 100 0
+  printf '%s\n' '{"type":"user","message":{"role":"user","content":"ok now do the next thing"}}'
+  make_transcript_line claude-sonnet-5 8000 0; } > "$transcript"
+make_transcript_line claude-sonnet-5 10 5 > "$sess_dir/human/subagents/agent-aaa.jsonl"
+printf '{"agentType":"general-purpose","toolUseId":"t1","spawnDepth":1}' > "$sess_dir/human/subagents/agent-aaa.meta.json"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "human"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+sub_row=$(/usr/bin/grep '"stream":"subagent"' "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" ]] \
+  && printf '%s' "$sub_row" | /usr/bin/grep -q '"returns":1,"verify_tokens":100,' && ok=1 || ok=0
+assert "human string prompt closes the verify window (100, not 8100); tool_result array lines would not" "$ok"
+trash "$fake_home" "$sess_dir" 2>/dev/null || true
+
+# Notification delivered as a text-block array (not a bare string) still opens a window.
+fake_home=$(mktemp -d)
+sess_dir=$(mktemp -d)
+transcript="$sess_dir/arr.jsonl"
+mkdir -p "$sess_dir/arr/subagents"
+{ printf '%s\n' "$agent_dispatch"
+  printf '%s\n' '{"type":"user","message":{"role":"user","content":[{"type":"text","text":"<task-notification>\n<task-id>aaa</task-id>\n<status>completed</status>\n</task-notification>"}]}}'
+  make_transcript_line claude-sonnet-5 100 20; } > "$transcript"
+make_transcript_line claude-sonnet-5 10 5 > "$sess_dir/arr/subagents/agent-aaa.jsonl"
+printf '{"agentType":"general-purpose","toolUseId":"t1","spawnDepth":1}' > "$sess_dir/arr/subagents/agent-aaa.meta.json"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "arr"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+sub_row=$(/usr/bin/grep '"stream":"subagent"' "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" ]] \
+  && printf '%s' "$sub_row" | /usr/bin/grep -q '"returns":1,"verify_tokens":120,' && ok=1 || ok=0
+assert "array-content task-notification opens a verify window (120)" "$ok"
+trash "$fake_home" "$sess_dir" 2>/dev/null || true
+
 # Malformed notification (no <task-id>) plus a garbage line in the main transcript:
 # nothing attributable → returns:0, verify_tokens:null, row still written, rc 0.
 fake_home=$(mktemp -d)
