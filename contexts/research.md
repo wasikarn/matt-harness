@@ -17,11 +17,7 @@ Focus: Understanding before acting
 4. Verify with evidence
 5. Summarize findings
 
-## Tools to favor
-- Read for understanding code
-- Grep, Glob for finding patterns
-- The `Explore` agent for broad codebase fan-out — don't read everything inline yourself
-- WebSearch, WebFetch for external sources, after local/doc-specific search has been checked
+Broad codebase fan-out goes through a dispatched search agent, not inline reads (Rule 13).
 
 ## Output
 Findings first, recommendations second.
