@@ -186,14 +186,16 @@ else
   bad "check-67 good fixture not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"
 fi
 
-# Check 68 — obsolete prompt patterns in bodies (INFO only): bad fixture has
-# "step by step" in an agent body and "MUST ALWAYS" in a skill body; good
-# fixture is the same frontmatter with clean bodies.
+# Check 68 — obsolete prompt patterns (INFO only): bad fixture agent has
+# "step by step", "double-check", "be extremely thorough" in the body and
+# budget_tokens: in frontmatter (4 INFOs); skill has "MUST ALWAYS" and
+# "scratchpad" (2 INFOs) = 6. Good fixture is the same frontmatter (minus
+# budget_tokens) with clean bodies.
 run_check 68 "$FIX/check-68-bad"
-if [ "$INFO_FOUND" -ge 2 ] && [ "$CRIT_FOUND" -eq 0 ]; then
+if [ "$INFO_FOUND" -eq 6 ] && [ "$CRIT_FOUND" -eq 0 ]; then
   ok "check-68 bad fixture fires INFOs (info=$INFO_FOUND)"
 else
-  bad "check-68 bad fixture did NOT fire >=2 INFOs as expected (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
+  bad "check-68 bad fixture did NOT fire exactly 6 INFOs as expected (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
 fi
 run_check 68 "$FIX/check-68-good"
 if [ "$INFO_FOUND" -eq 0 ] && [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then
