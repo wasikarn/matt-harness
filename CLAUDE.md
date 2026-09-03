@@ -156,5 +156,8 @@ One line each; bodies in `docs/reference/repo-gotchas.md`.
 
 When compacting, preserve: which files are staged/committed vs. still pending this session,
 the current plugin version state (bumped or not since the last shipped-surface edit), any
-open plan-mode approval, and file:line citations already independently verified this
-session. Drop resolved tool-call output and superseded draft text.
+open plan-mode approval, file:line citations already independently verified this session,
+approaches or options raised, tried, or set aside and why, and anything the user asked for,
+decided, ruled out, or set as a constraint, in their exact wording. Weight the two sides
+differently: keep the user's words close to verbatim; condense the assistant's own reasoning
+to what it concluded. Drop resolved tool-call output and superseded draft text.
