@@ -129,6 +129,42 @@ BATTERY=(
   # a verifier path -- $'hooks/gates/we\'ird.sh' decodes to the literal filename
   # hooks/gates/we'ird.sh, same as real bash.
   "ANSI-C escaped quote inside the write target itself|$(printf 'cp evil.sh $%shooks/gates/we\\%sird.sh%s' "'" "'" "'")|ask"
+  # GH #125 (2026-09-03): the BASH-LEVEL fast-path pre-filter (lines ~85-108,
+  # NOT the python _newlines_to_seps above) has its own cruder normalization:
+  # the sed backslash-nt substitution matches only the LAST backslash immediately before a
+  # JSON-encoded "\n", so a real 1-backslash continuation survives as a
+  # residual space (e.g. "hoo\<nl>ks/gates/x.sh" -> "hoo ks/gates/x.sh"),
+  # which no longer contains the contiguous substring "hooks/gates" -- the
+  # fast path then concludes _run=0 (allow) and exits 0 BEFORE python ever
+  # runs, even though real bash fully removes a 1-backslash continuation and
+  # actually writes hooks/gates/irrecoverable.sh. Ground-truthed against real
+  # bash first (bash -x): the write executes for real. Fixed by deferring
+  # ANY raw-input backslash to python unconditionally, rather than
+  # reimplementing bash own parity-sensitive continuation rule inside this
+  # already twice-self-locked-out fast path.
+  "1-backslash continuation splits hooks/gates (GH #125 bypass)|$(printf 'echo x > hoo\\\nks/gates/irrecoverable.sh')|ask"
+  # Parity companion: 2 backslashes before the newline means the FIRST
+  # backslash escapes the SECOND (one literal backslash char), and the
+  # newline that follows is then a real, unescaped statement-ending newline
+  # -- NOT a continuation. Ground-truthed against real bash in an isolated
+  # scratch dir: this writes "x" into a harmless file literally named
+  # "hoo\", then tries (and fails) to run "ks/gates/irrecoverable.sh" as a
+  # command -- hooks/gates/irrecoverable.sh is never touched. Must stay
+  # noask so the fix does not overcorrect into asking on every backslash
+  # occurrence regardless of what real bash would do with it.
+  "2-backslash non-continuation before newline (parity companion)|$(printf 'echo x > hoo\\\\\nks/gates/irrecoverable.sh')|noask"
+  # Same bypass shape against a different protected substring (hooks/advisory).
+  "1-backslash continuation splits hooks/advisory|$(printf 'echo x > hoo\\\nks/advisory/evil10.py')|ask"
+  # Same bypass shape against hooks/hooks.json.
+  "1-backslash continuation splits hooks/hooks.json (via hoo/ks split)|$(printf 'echo x > hoo\\\nks/hooks.json')|ask"
+  # Continuation at the very start of the command, unrelated to the write
+  # target itself -- confirms ANY raw backslash defers to python, not just
+  # one that happens to sit inside the protected substring.
+  "continuation at the very start of the command|$(printf '\\\necho x > hooks/gates/evil11.sh')|ask"
+  # Continuation immediately before the redirect operator -- real bash joins
+  # "echo x" and "> hooks/gates/evil12.sh" with nothing between them (">" is
+  # a metacharacter token boundary regardless of adjacent whitespace).
+  "continuation immediately before the redirect operator|$(printf 'echo x\\\n> hooks/gates/evil12.sh')|ask"
 )
 
 for row in "${BATTERY[@]}"; do
@@ -212,6 +248,14 @@ hardcoded_snippet="path=/Us""ers/someone/x"
 out=$(payload_write "hooks/gates/newfile.sh" "$hardcoded_snippet" | bash "$GUARD" 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "hardcoded /Users/ path in .sh content -> block exit 2 (wins over ask)" "$ok"
+
+# GH #125 fast-path sanity: a plainly-benign command with no backslash and no
+# write idiom/verifier substring at all must still be caught by the fast path
+# itself (exit 0, no output) -- the fix must not force every command through
+# python3, only ones containing a raw backslash.
+out=$(payload_bash "ls -la" | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "plain benign command, no backslash, no write idiom -> exit 0, no output (fast path still works)" "$ok"
 
 echo ""
 total=$((pass + fail))

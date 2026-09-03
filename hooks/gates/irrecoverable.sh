@@ -31,9 +31,32 @@ _norm="$(printf '%s' "$_input" | sed 's/\\[nt]/ /g' | tr -s '[:space:]' ' ' | tr
 # just cost a python spawn, the same safe direction the comment above
 # already accepts for quote/backslash stripping.
 _norm_nows="$(printf '%s' "$_norm" | tr -d '[:space:]')"
+# A backtick or $(...) command substitution vanishes in real bash (its own
+# output splices into the surrounding text with zero width) but survives
+# here as literal characters -- "gi`true`t" or "gi$(true)t" never contains
+# a contiguous "git" substring under either normalization pass above, so
+# the case below would otherwise exit 0 and fully bypass this DENY gate on
+# a real `git push --force`-shaped command (confirmed live 2026-09-03:
+# rc=0, python3 never spawned). Same conservative-deferral direction as the
+# sibling GH #125 fix in verifier-protect.sh (any raw backslash forces that
+# fast path to defer): detect the PRESENCE of the substitution marker on
+# the RAW input and refuse the fast-allow regardless of what the substring
+# match below finds, rather than resolving/stripping the substitution here.
+# Whether python3's own tokenizer classifies the reassembled command
+# correctly is a separate, deeper question (it does not resolve
+# command-substitution splicing today either -- out of scope for this fix,
+# which only closes the fast-path short-circuit).
+# Two more spellings of the same vanish-to-nothing class: ${x} with x unset
+# expands to "" ("gi${x}t" IS "git"), and $'...' ANSI-C quoting resolves its
+# escapes ("gi$'\x74'" IS "git"). Same conservative-deferral direction as
+# backtick/$(...) above -- detect the marker, defer to python, don't resolve
+# it here. (Bare $ arithmetic/brace-expansion/~ are a different mechanism
+# class and stay out of scope.)
+_has_subst=0
+case "$_input" in *'`'*|*'$('*|*'${'*|*'$'\'*) _has_subst=1 ;; esac
 case "$_norm$_norm_nows" in
   *rm*|*find*|*git*|*dd*|*mysql*|*psql*|*sqlite3*|*mariadb*) : ;;  # candidate -> python
-  *) exit 0 ;;                                                   # no destructive token possible -> allow
+  *) [ "$_has_subst" -eq 1 ] || exit 0 ;;                          # no destructive token possible -> allow (unless obfuscated)
 esac
 
 # Portability guard (#93): without python3 the deny logic below cannot run,

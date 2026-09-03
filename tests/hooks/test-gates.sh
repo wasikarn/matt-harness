@@ -925,6 +925,34 @@ mkdir -p "$NOPY_AG_HOME/.claude/plugins/cache/wasikarn/jira-acli"
 
 test_nopython_allow "$IRRECOVERABLE" "irrecoverable: rm -rf passes with note (was: rc=127 read as fail-CLOSED, blocking every git/rm command)" \
   "$(bash_payload 'rm -rf /tmp/x')"
+# Backtick/$(...) fast-path bypass (found alongside GH #125): a command
+# substitution vanishes in real bash ("gi`true`t" IS "git" once bash
+# evaluates it) but survives as literal characters through the fast
+# path's normalization, so neither "git" nor any other tracked argv0
+# forms a contiguous substring and the old fast path exited 0 BEFORE ever
+# reaching this portability guard -- proven here by the missing note: a
+# bare rc=0 alone cannot distinguish "fast-path allowed" from "python3
+# ran and allowed," but the absence of the guard's stderr note can only
+# mean the fast path never got this far. Confirmed live 2026-09-03: rc=0,
+# no note, before this fix. Denying the reassembled command end-to-end is
+# a separate, deeper fix to python3's own tokenizer (it does not resolve
+# command-substitution splicing either) -- out of scope here; this closes
+# only the fast-path short-circuit.
+test_nopython_allow "$IRRECOVERABLE" "irrecoverable: backtick-split argv0 (gi\`true\`t push --force) still reaches the guard, not fast-path-exited" \
+  "$(bash_payload 'gi`true`t push --force origin develop')"
+test_nopython_allow "$IRRECOVERABLE" "irrecoverable: \$(...)-split argv0 (gi\$(true)t push --force) still reaches the guard, not fast-path-exited" \
+  "$(bash_payload 'gi$(true)t push --force origin develop')"
+# Same class, two more splicing spellings found alongside the backtick/$(...)
+# fix: ${x} with x unset expands to nothing ("gi${x}t" IS "git"), and $'...'
+# ANSI-C quoting resolves escapes ("gi$'\x74'" IS "git"). Both vanish in real
+# bash but survive as literal characters through the fast path's
+# normalization, so the old fast path exited 0 before ever reaching this
+# portability guard -- confirmed live 2026-09-03: rc=0, no note, before this
+# fix, same as the backtick/$(...) cases above.
+test_nopython_allow "$IRRECOVERABLE" "irrecoverable: \${x}-split argv0 (gi\${x}t push --force) still reaches the guard, not fast-path-exited" \
+  "$(bash_payload 'gi${x}t push --force origin develop')"
+test_nopython_allow "$IRRECOVERABLE" "irrecoverable: \$'...'-split argv0 (gi\$'\x74' push --force) still reaches the guard, not fast-path-exited" \
+  "$(bash_payload "gi\$'\\x74' push --force origin develop")"
 test_nopython_allow "$VERIFIER_PROTECT" "verifier-protect: Write to a gate path passes with note" \
   "$(write_payload 'hooks/gates/x.sh' 'echo y')"
 test_nopython_allow "$DB_WRITE_GATE" "db-write: SQL write passes with note" \

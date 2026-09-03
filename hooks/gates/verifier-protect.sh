@@ -85,6 +85,22 @@ set -uo pipefail
 _input="$(cat)"
 _ws="$(printf '%s' "$_input" | sed 's/\\[nt]/ /g' | tr -s '[:space:]' ' ')"
 _run=1
+# GH #125: the sed step above matches only the LAST backslash immediately
+# before a JSON-encoded "\n", so a real 1-backslash bash line-continuation
+# (which fully vanishes in real bash, gluing e.g. "hoo" + continuation +
+# "ks/gates/x.sh" into "hooks/gates/x.sh") survives normalization as a
+# residual space instead ("hoo ks/gates/x.sh") -- breaking the contiguous
+# substring match below and letting a real verifier-surface write fall
+# through as a fast-path allow. Rather than reimplement bash own
+# parity-sensitive continuation rule (odd backslash-run = continuation, even
+# = a real escaped backslash + ordinary newline) in sed/bash -- this exact
+# fast-path region has already cost 2 self-inflicted lockouts, and python own
+# _newlines_to_seps below already gets this parity rule right -- any raw
+# backslash anywhere in the input disables the whole fast-allow
+# classification below and defers to python unconditionally. Same "false
+# positives just spawn python" direction as every other coarse check here.
+_has_bs=0
+case "$_input" in *\\*) _has_bs=1 ;; esac
 # Match the quoted tool_name value precisely (the "Bash" is the JSON value, not
 # a substring of a longer word) so a Write to a file_path that happens to
 # contain "Bash" is not mis-routed through the Bash fast-path (which could exit
@@ -92,7 +108,7 @@ _run=1
 # because a `case` pattern cannot contain literal double-quotes cleanly (the
 # syntax-error lockout on the first attempt). The regex tolerates the optional
 # space after the colon in both JSON serializations.
-if [[ $_ws =~ \"tool_name\"[[:space:]]*:[[:space:]]*\"Bash\" ]]; then
+if [ "$_has_bs" -eq 0 ] && [[ $_ws =~ \"tool_name\"[[:space:]]*:[[:space:]]*\"Bash\" ]]; then
   _norm="$(printf '%s' "$_ws" | tr -d "\"'\\")"
   case "$_norm" in
     *git*|*patch*|*tar*) : ;;  # diff/archive carrier -> target may be in a file/cwd -> python
