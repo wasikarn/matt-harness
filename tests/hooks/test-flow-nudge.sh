@@ -532,6 +532,23 @@ else
   echo "  ❌ CONTENT EXPECTED computed 25% ratio: <$(printf '%s' "$ratio_out" | head -c 200)>" >&2
   fail=$((fail + 1))
 fi
+# Carried context per turn -- same formula as cost-report-dedup.js's
+# "orchestrator context carried per turn" (dedup'd orchestrator
+# cache_read_tokens / turns), scoped to this session: 936000/4 = 234K.
+ctx_fixture=$(mktemp)
+cat > "$ctx_fixture" <<'JSONL'
+{"timestamp":"2026-09-01T00:00:00Z","session_id":"ctx-test","model":"claude-sonnet-5","model_scoped":true,"stream":"orchestrator","agent_type":null,"turns":1,"input_tokens":1,"output_tokens":1,"cache_write_tokens":1,"cache_read_tokens":1}
+{"timestamp":"2026-09-01T00:10:00Z","session_id":"ctx-test","model":"claude-sonnet-5","model_scoped":true,"stream":"orchestrator","agent_type":null,"turns":4,"input_tokens":100,"output_tokens":100,"cache_write_tokens":100,"cache_read_tokens":936000}
+JSONL
+ctx_out=$(echo "{\"session_id\":\"ctx-test\",\"hook_event_name\":\"UserPromptSubmit\",\"prompt\":\"review these 4 files for correctness\"}" | MH_COST_METRICS_FILE="$ctx_fixture" bash "$HOOK" 2>/dev/null)
+python3 -c "import os; os.unlink('$ctx_fixture')" 2>/dev/null
+if printf '%s' "$ctx_out" | /usr/bin/grep -qF "orchestrator context now ~234K tokens/turn"; then
+  echo "  ✅ CONTENT: carried context per turn from fixture (dedup'd 936000/4 = ~234K tokens/turn)"
+  pass=$((pass + 1))
+else
+  echo "  ❌ CONTENT EXPECTED '~234K tokens/turn': <$(printf '%s' "$ctx_out" | head -c 300)>" >&2
+  fail=$((fail + 1))
+fi
 # No session_id / no metrics file yet -- graceful "no data" text, not a
 # hardcoded number and not a crash.
 no_data_out=$(echo "$(user_prompt_payload "go through these 5 files and tell me what they do")" | bash "$HOOK" 2>/dev/null)

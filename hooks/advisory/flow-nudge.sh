@@ -149,25 +149,37 @@ delegation_ratio_line() {
     echo "no delegation data yet this session"
     return
   fi
-  local totals orch sub total pct
+  local totals orch sub total pct cr turns ctx
+  # cr/turns: the orchestrator's carried context per turn — same formula as
+  # cost-report-dedup.js's "orchestrator context carried per turn" line
+  # (sum of dedup'd orchestrator cache_read_tokens / sum of their turns),
+  # scoped to this session. Computed in the same jq pass, so no extra spawn.
   totals=$(jq -nRc --arg sid "$sid" '
     [ inputs | try (fromjson | select(.model_scoped == true and .session_id == $sid)) ]
     | group_by([.stream, .model, .agent_type])
     | map(max_by(.timestamp))
     | { orch: ([.[] | select(.stream=="orchestrator") | (.input_tokens+.output_tokens+.cache_write_tokens+.cache_read_tokens)] | add // 0),
-        sub:  ([.[] | select(.stream=="subagent")     | (.input_tokens+.output_tokens+.cache_write_tokens+.cache_read_tokens)] | add // 0) }
+        sub:  ([.[] | select(.stream=="subagent")     | (.input_tokens+.output_tokens+.cache_write_tokens+.cache_read_tokens)] | add // 0),
+        cr:   ([.[] | select(.stream=="orchestrator") | (.cache_read_tokens // 0)] | add // 0),
+        turns:([.[] | select(.stream=="orchestrator") | (.turns // 0)] | add // 0) }
   ' "$mfile" 2>/dev/null)
   orch=$(jq -r '.orch // 0' <<< "$totals" 2>/dev/null)
   sub=$(jq -r '.sub // 0' <<< "$totals" 2>/dev/null)
+  cr=$(jq -r '.cr // 0' <<< "$totals" 2>/dev/null)
+  turns=$(jq -r '.turns // 0' <<< "$totals" 2>/dev/null)
   [[ "$orch" =~ ^[0-9]+$ ]] || orch=0
   [[ "$sub" =~ ^[0-9]+$ ]] || sub=0
+  [[ "$cr" =~ ^[0-9]+$ ]] || cr=0
+  [[ "$turns" =~ ^[0-9]+$ ]] || turns=0
   total=$(( orch + sub ))
   if (( total == 0 )); then
     echo "no delegation data yet this session"
     return
   fi
   pct=$(( sub * 100 / total ))
-  echo "this session's delegation ratio so far: ${pct}% of tokens went to subagents (${sub} subagent / ${orch} orchestrator, of ${total} total)"
+  ctx=""
+  (( turns > 0 )) && ctx="; orchestrator context now ~$(( (cr / turns + 500) / 1000 ))K tokens/turn"
+  echo "this session's delegation ratio so far: ${pct}% of tokens went to subagents (${sub} subagent / ${orch} orchestrator, of ${total} total)${ctx}"
 }
 
 # emit_delegation_nudge — the independent trigger's payload (GH #120). Does
