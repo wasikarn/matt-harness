@@ -19,11 +19,15 @@ The tracker appends JSON rows to `~/.local/share/kbg/metrics/costs.jsonl` — on
 `model_scoped: true`; each row re-derives cumulative totals from the full transcript
 (stateless). Row schema:
 
-`{ timestamp, session_id, transcript_path, model, model_scoped, stream, agent_type, role, turns, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cache_read_per_turn, returns, verify_tokens, verify_cache_read, verify_per_return, rate_verified, estimated_cost_usd }`
+`{ timestamp, session_id, transcript_path, model, model_scoped, dedup_usage, stream, agent_type, role, turns, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cache_read_per_turn, returns, verify_tokens, verify_cache_read, verify_per_return, rate_verified, estimated_cost_usd }`
 
 `role` (2026-09-03+) is the F9 brief's `[role: …]` tag read from the subagent's first
 message — `builder|validator|fixer|re-validator|research|other`, `unknown` when the brief
 carried no tag, `null` on orchestrator rows.
+
+`dedup_usage: true` (2026-09-04+) marks rows that count each API response once by
+`message.id`; rows without it counted one JSONL line per content block and run ~2.4x high on
+`turns`, tokens, and `verify_*` — not rewritten, see `references/schema-history.md`.
 
 `returns` / `verify_tokens` / `verify_cache_read` / `verify_per_return` (2026-09-04+) price
 the third handoff cost: main's own tokens from a subagent's return (`<task-notification>`)

@@ -326,6 +326,27 @@ row=$(tail -1 "$metrics_file" 2>/dev/null)
 assert "aggregates a multi-line transcript into one summed JSONL cost row" "$ok"
 trash "$fake_home" "$transcript" 2>/dev/null || true
 
+# Adversarial (2026-09-04): Claude Code writes one JSONL line per content block of one
+# API response, each repeating the same message.id + usage. Three lines with id m1
+# (100/50 each) must count once (turns 1, input 100, output 50); a fourth line with id
+# m2 (7/3) counts separately → turns 2, input 107, output 53, dedup_usage:true.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+dup='{"type":"assistant","message":{"id":"m1","model":"claude-sonnet-5","usage":{"input_tokens":100,"output_tokens":50,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}'
+{ printf '%s\n' "$dup" "$dup" "$dup"
+  printf '%s\n' '{"type":"assistant","message":{"id":"m2","model":"claude-sonnet-5","usage":{"input_tokens":7,"output_tokens":3,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}'; } > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "dedup"}))' "$transcript")
+printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" >/dev/null 2>&1
+rc=$?
+row=$(tail -1 "$fake_home/.local/share/kbg/metrics/costs.jsonl" 2>/dev/null)
+[[ "$rc" == "0" ]] \
+  && printf '%s' "$row" | /usr/bin/grep -q '"dedup_usage":true' \
+  && printf '%s' "$row" | /usr/bin/grep -q '"turns":2' \
+  && printf '%s' "$row" | /usr/bin/grep -q '"input_tokens":107' \
+  && printf '%s' "$row" | /usr/bin/grep -q '"output_tokens":53' && ok=1 || ok=0
+assert "same message.id repeated on 3 lines counts once (turns 2, input 107, output 53), dedup_usage:true" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
 # Adversarial: multi-MODEL transcript (two assistant lines, different `.message.model`)
 # must write ONE row PER MODEL, each model_scoped:true, each carrying only that
 # model's own tokens — not one summed row tagged with whichever model was last used

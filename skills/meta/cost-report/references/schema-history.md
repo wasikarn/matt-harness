@@ -149,3 +149,17 @@ first N-1 a zero window and the last absorbs the shared verify cost, so per-role
 over-read the last returner and under-read the rest. A multi-model main session repeats the
 fields on each model row. Rows before this date carry none of the fields and the Handoff
 cost section skips them.
+
+## `dedup_usage` — each API response counted once (2026-09-04)
+
+Claude Code writes one JSONL `assistant` line per content block, and every line of one
+API response repeats the same `message.id` and `message.usage`. Until this date both
+`emit_rows` and `build_verify_map` summed per line: measured across every session on disk,
+26,671 same-usage duplicate lines vs 489 differing — `turns` counted content blocks, not
+responses, and `turns`, `input_tokens`, `output_tokens`, `cache_*`, `verify_*` ran roughly
+2.4x high (~58% of window tokens were repeats). The hook now keeps the first line per
+(file, `message.id`); lines with no id (old transcripts) still count per line. `turns` now
+means "API responses". Rows written this way carry `dedup_usage: true`; rows without the
+field are inflated ~2.4x on those columns and are **not** rewritten (`costs.jsonl` is
+append-only, the report reads mixed rows) — the report header names the cutoff instead.
+Dollar totals on old rows are inflated by the same factor. Not in the dedup key.

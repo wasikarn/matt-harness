@@ -43,6 +43,9 @@ const d=fmtLocal(new Date(Date.now()-864e5));
 const sum=a=>a.reduce((s,r)=>s+cost(r),0);
 const f4=n=>"$"+n.toFixed(4);
 console.log("=== Cost summary ===");
+// dedup_usage (2026-09-04): rows without it summed one line per content block, ~2.4x high on turns/tokens/verify_*.
+const inflated=latest.filter(r=>r.dedup_usage!==true).length;
+if(inflated)console.log("note: "+inflated+" of "+latest.length+" rows predate dedup_usage (2026-09-04) — their turns/tokens/verify_* run ~2.4x high (per-line, not per-response)");
 console.log("today:     "+f4(sum(latest.filter(r=>day(r)===today))));
 console.log("yesterday: "+f4(sum(latest.filter(r=>day(r)===d))));
 const sessionIds=new Set(latest.map(r=>r.session_id||r.transcript_path||r.timestamp));
