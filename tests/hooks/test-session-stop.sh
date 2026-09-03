@@ -78,6 +78,29 @@ for _rule in $(/usr/bin/grep -rhoE "METHODOLOGY[^)]{0,40}Rule [0-9]+" "$ROOT/ski
 done
 assert "full METHODOLOGY.md still carries every cited 'Rule N' heading" "$ok"
 
+# Escape-safe root expansion: a plugin root containing sed's `&` and `|`
+# metacharacters must appear verbatim in the pointer path, with the doctrine
+# body intact (the former sed replacement corrupted or emptied it).
+WEIRD_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/kbg-ss-weird.XXXXXX")/'a&b|c'
+mkdir -p "$WEIRD_ROOT/docs"
+cp "$ROOT/docs/METHODOLOGY.md" "$WEIRD_ROOT/docs/METHODOLOGY.md"
+out=$(CLAUDE_PLUGIN_ROOT="$WEIRD_ROOT" bash "$DOCTRINE" 2>/dev/null)
+echo "$out" | /usr/bin/grep -qF "$WEIRD_ROOT/docs/METHODOLOGY.md" \
+  && echo "$out" | /usr/bin/grep -q 'Decision-sizing triad' \
+  && ! echo "$out" | /usr/bin/grep -q '\$CLAUDE_PLUGIN_ROOT' && ok=1 || ok=0
+assert "pointer path expands verbatim when plugin root contains & and |" "$ok"
+
+# No-marker fallback: a METHODOLOGY.md without `<!-- core-end -->` injects
+# whole (old shape) -- a below-marker phrase must appear.
+NOMARK_ROOT=$(mktemp -d "${TMPDIR:-/tmp}/kbg-ss-nomark.XXXXXX")
+mkdir -p "$NOMARK_ROOT/docs"
+/usr/bin/grep -v '^<!-- core-end -->$' "$ROOT/docs/METHODOLOGY.md" > "$NOMARK_ROOT/docs/METHODOLOGY.md"
+out=$(CLAUDE_PLUGIN_ROOT="$NOMARK_ROOT" bash "$DOCTRINE" 2>/dev/null)
+echo "$out" | /usr/bin/grep -q 'Decision-sizing triad' \
+  && echo "$out" | /usr/bin/grep -q 'Precedent before scoring' && ok=1 || ok=0
+assert "file without core-end marker injects whole (below-marker text present)" "$ok"
+rm -r "${WEIRD_ROOT%/*}" "$NOMARK_ROOT" 2>/dev/null || true
+
 out=$(env -u CLAUDE_PLUGIN_ROOT bash "$DOCTRINE" 2>/dev/null)
 rc=$?
 [[ "$rc" == "0" && -z "$out" ]] && ok=1 || ok=0

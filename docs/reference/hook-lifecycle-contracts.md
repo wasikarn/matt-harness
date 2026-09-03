@@ -75,7 +75,7 @@ of them requires a different model class than the maker and an advisory-only (ne
 
 | Event | Hook(s) | Type | Contract |
 |---|---|---|---|
-| SessionStart | `doctrine-bootstrap.sh` | FF / inferential | Inject `docs/METHODOLOGY.md` (decision-sizing triad + reasoning scaffold) into session context. Matcher-less. |
+| SessionStart | `doctrine-bootstrap.sh` | FF / inferential | Inject the core of `docs/METHODOLOGY.md` (everything above the `<!-- core-end -->` marker: decision-sizing triad + reasoning scaffold) into session context; the rest stays on disk behind pointer + `Read`. Matcher-less. |
 | SessionStart | `command-root-anchor.sh` | FF / computational | Bridge hook-only `${CLAUDE_PLUGIN_ROOT}` into the session as `${MH_PLUGIN_ROOT}` (via `CLAUDE_ENV_FILE`) so command markdown can reference bundled scripts portably. Matcher-less. |
 | UserPromptSubmit (*) | `flow-nudge.sh` | FF / inferential | Advisory: when the prompt looks like non-trivial engineering work, nudge `mattpocock-skills:grilling`, then the user types `/mattpocock-skills:to-spec` → `/mattpocock-skills:to-tickets` → `/mattpocock-skills:implement`. Never blocks. |
 | PreToolUse (Bash) | `irrecoverable.sh` | FF / computational | Deny irrecoverable Bash patterns (`rm -rf`, `push --force`, `--no-verify`, `reset --hard`, `clean -f`, `git worktree add -b <new-branch>` when sentinel is present). This is the sole enforcement point for the develop-only branching doctrine — see the WorktreeCreate note below. Emit `permissionDecision`. |

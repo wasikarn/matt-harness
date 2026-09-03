@@ -17,9 +17,9 @@ Before any non-trivial act, run:
 
 **Plan mode is the implementation checkpoint.** When the triad flags a one-way door or wide blast radius on a task that will edit code (multi-file, unfamiliar subsystem, ≥2 viable approaches, architectural), the "stop and get approval" step IS plan mode — suggest it strongly; enter it yourself only when the door is clearly one-way. Skip for trivial / mechanical changes. Full text: `Read` `$CLAUDE_PLUGIN_ROOT/docs/METHODOLOGY.md` section "Plan mode is the implementation checkpoint" before entering plan mode.
 
-**Pressure-test before committing.** Run the triad inline, then call `advisor()` before substantive work and before declaring done. A consequential decision closes with a **written revisit trigger and progress metric**, not just a verdict. Full text (grilling escalation, wizard candidates): section "Pressure-test before committing".
+**Pressure-test before committing.** Run the triad inline, then call `advisor()` before substantive work and before declaring done. A consequential decision closes with a **written revisit trigger and progress metric**, not just a verdict. Full text (grilling escalation): section "Pressure-test before committing".
 
-**disable-model-invocation surfaces are user-only.** A typed "go"/"yes" never lifts `disable-model-invocation: true`; hand the user the literal `/mh:<name>` (or `/mattpocock-skills:<name>`) to type themselves and stop. Full text: section "disable-model-invocation surfaces are user-only" before naming a disable-model-invocation skill.
+**disable-model-invocation surfaces are user-only.** A typed "go"/"yes" never lifts `disable-model-invocation: true`; hand the user the literal `/mh:<name>` (or `/mattpocock-skills:<name>`) to type themselves and stop. Full text (wizard candidates): section "disable-model-invocation surfaces are user-only" before naming a disable-model-invocation skill.
 
 ## Rule 2 — Match surface area to proven need
 
@@ -27,7 +27,7 @@ Don't build it until there's a real failure that demands it. Three similar lines
 
 ## Rule 3 — Interrogate the incoming claim before acting on it
 
-A requirement — or any incoming claim: a bug report, a spec, a task handoff — is a claim to test, not a truth to obey. Before code on any non-trivial task, read it critically — what's **ambiguous**, **missing** (error path, edge case, untestable acceptance criterion), **assumed** (riskiest assumption per Rule 1). Surface gaps as explicit questions — never fill silently with "probably means X"; for a deep structured pass, dispatch `mh:requirement-analyst`. **Reflex, not gate** — a one-line fix needs none; a multi-file feature or unfamiliar subsystem needs all of it. Feeds Rule 4 — you can't write a testable "done" for a claim you haven't interrogated. Which surface owns each claim type: `docs/reference/decision-doctrine-map.md`.
+A requirement — or any incoming claim: a bug report, a spec, a task handoff — is a claim to test, not a truth to obey. Before code on any non-trivial task, read it critically — what's **ambiguous**, **missing** (error path, edge case, untestable acceptance criterion), **assumed** (riskiest assumption per Rule 1). Surface gaps as explicit questions — never fill silently with "probably means X"; for a deep structured pass, dispatch `mh:requirement-analyst`. **Reflex, not gate** — a one-line fix needs none; a multi-file feature or unfamiliar subsystem needs all of it. Feeds Rule 4 — you can't write a testable "done" for a claim you haven't interrogated. Which surface owns each claim type: `docs/reference/decision-doctrine-map.md`. Full text (ambiguity sub-cues, cross-boundary dependency, idea/diff instances): section "Rule 3 — Requirements (lead instance)" in `$CLAUDE_PLUGIN_ROOT/docs/METHODOLOGY.md`, `Read` before scoping a requirement or reviewing a spec.
 
 ## Rule 4 — Define done. Loop until verified.
 
@@ -45,7 +45,7 @@ Decompose → route → verify → combine.
 
 ### Context economy — protect the main thread
 
-The scarce resource in a long session is not tokens, it's what the main thread is still carrying.
+The scarce resource in a long session is not tokens, it's what the main thread is still carrying. Tokens are billed once; context shapes every decision after it.
 
 - **What the main thread touches stays for the whole session; what a subagent touches doesn't.** Over ~3 files — reading or editing — or in territory you don't already know, send the work out with one narrow question and take back only the answer. A known-location one-line change still goes to a fixer agent. Main reads to decide, not to execute.
 - **Locate before you read.** Big file, one relevant section: grep for the line, then `Read` with `offset`/`limit`. Sibling files that share a shape: read one in full, grep the rest.
@@ -54,7 +54,7 @@ The scarce resource in a long session is not tokens, it's what the main thread i
 - **Never pull a raw agent transcript back into the main thread.** `Read` the artifact when you need the result.
 - **Before N fanned-out outputs feed one downstream synthesis/verifier call, reduce first — in code.** Drop malformed entries and exact-normalize-dedupe; fuzzy dedup can silently drop a claim from verification.
 
-Full text (combine ≠ blend, under-delegation accelerator, phase gates, enforcing-file rule, the zero-context-cost native tools `/btw` `/rewind` `/compact` `/mattpocock-skills:handoff`): section "Rule 13 — Orchestration shape (remaining bullets)" — `Read` before choosing a native tool over a subagent.
+Full text (combine ≠ blend, under-delegation accelerator, phase gates, enforcing-file rule, the zero-context-cost native tools `/btw` `/rewind` `/compact` `/mattpocock-skills:handoff`): section "Rule 13 — Orchestration shape (remaining bullets)" — `Read` before choosing a native tool over a subagent, combining N fanned-out results, or asserting a limit/gate in doctrine text.
 
 ## Rule 14 — Decision scoring (explainable decisions)
 
@@ -62,7 +62,7 @@ Every important decision — approve / reject / rank / recommend / optimize / va
 
 **What counts as important:** a decision Rule 1 flags (one-way door or wide blast radius), or one the user explicitly asked to be ranked, recommended, or compared. Everything else is routine and follows the terse default in `output-styles/crisp.md` — a one-line answer with the reason, no score.
 
-If data is insufficient to score a criterion, mark **ข้อมูลไม่เพียงพอ** and block on the operator — never guess the score. Full text (scoring bullets, precedent-before-scoring, `mh:score-decision`): section "Rule 14 — Decision scoring (scoring procedure)" — `Read` before scoring a ranked decision.
+If data is insufficient to score a criterion, mark **ข้อมูลไม่เพียงพอ** and block on the operator — never guess the score. Full text (scoring bullets, precedent-before-scoring, `mh:score-decision`): section "Rule 14 — Decision scoring (scoring procedure)" — `Read` before scoring any non-trivial decision (approve/reject/validate/rank).
 
 ## Governing constraint
 

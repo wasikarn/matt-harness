@@ -14,8 +14,15 @@ METHODOLOGY="${CLAUDE_PLUGIN_ROOT:-}/docs/METHODOLOGY.md"
 
 if [[ -f "$METHODOLOGY" ]]; then
   echo "<doctrine>"
+  # Literal index/substr splice, not sed/gsub: a root containing `&`, `|`,
+  # or `\` would corrupt or empty the doctrine through a replacement string;
+  # ENVIRON (not awk -v) also skips backslash-escape processing.
   sed -n '1,/^<!-- core-end -->$/p' "$METHODOLOGY" \
-    | sed -e '/^<!-- core-end -->$/d' -e "s|\\\$CLAUDE_PLUGIN_ROOT|${CLAUDE_PLUGIN_ROOT}|g"
+    | awk 'BEGIN { root = ENVIRON["CLAUDE_PLUGIN_ROOT"]; v = "$CLAUDE_PLUGIN_ROOT" }
+           /^<!-- core-end -->$/ { next }
+           { out = ""
+             while ((i = index($0, v)) > 0) { out = out substr($0, 1, i - 1) root; $0 = substr($0, i + length(v)) }
+             print out $0 }'
   echo "</doctrine>"
 fi
 

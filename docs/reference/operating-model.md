@@ -9,7 +9,8 @@ CLAUDE.md's repo-development guidance (contributor workflow, this machine's tool
 paths, etc.) — none of which a plugin user's session needs.
 
 **Doctrine injection:** `hooks/session/doctrine-bootstrap.sh` fires on SessionStart and injects
-`docs/METHODOLOGY.md` (decision-sizing triad + reasoning scaffold) into session context via
+the core of `docs/METHODOLOGY.md` (everything above the `<!-- core-end -->` marker: decision-sizing
+triad + reasoning scaffold) into session context — the rest stays on disk as pointer + `Read` — via
 `$CLAUDE_PLUGIN_ROOT` (the plugin install dir; the older `$CLAUDE_PLUGIN_DIR` name is not a real CC
 variable and expands empty).
 
