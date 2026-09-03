@@ -383,8 +383,8 @@ for _cf in "${_checks[@]}"; do
 done
 unset _cf
 
-# Split-integrity guard: exactly 63 fragments, each carrying one '# N.' header,
-# expected set = 1..67 minus {58, 59, 60, 63} (all four retired with their
+# Split-integrity guard: exactly 64 fragments, each carrying one '# N.' header,
+# expected set = 1..68 minus {58, 59, 60, 63} (all four retired with their
 # carrier skills — ideate-search deleted, wiki-ingest relocated to user scope
 # 2026-09-01; tiered-pipeline and ship-release deleted 2026-09-01, sweep #3;
 # numbers stay retired, never reused, so the explicit set below IS the

@@ -1,0 +1,2 @@
+# check-68 CRLF fixture: keep bytes verbatim, no line-ending normalization
+tests/skills/harness-audit/known-bad/check-68-good/agents/x.md -text

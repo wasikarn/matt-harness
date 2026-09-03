@@ -42,8 +42,8 @@ Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:84-112` and
 Focus" section):
 
 - Host-Claude scoring (Phase 2+3 run on the same model class as the Phase 1
-  generators) carries the LLM-judge-circularity caveat from `CLAUDE.md`'s
-  "Why — the unifying crux" (in the Architecture section).
+  generators) carries the LLM-judge-circularity caveat from `docs/reference/operating-model.md`'s
+  "Why — the unifying crux".
 - On the explicit-invocation path (via Step 1, self-judge skipped), stakes
   aren't classified — don't infer high-stakes from prompt wording like
   "critical"/"production"; that lexical-heuristic pattern is exactly what

@@ -158,8 +158,9 @@ agent_section=$(printf '%s' "$out" | awk '/=== By agent type/{f=1;next} /^$/{f=0
   && printf '%s' "$agent_section" | /usr/bin/grep -q '\$2.0000' \
   && ! printf '%s' "$agent_section" | /usr/bin/grep -q '1000' \
   && printf '%s' "$agent_section" | /usr/bin/grep -q '\$3.0000.*(unknown)$' \
-  && printf '%s' "$agent_section" | /usr/bin/grep -qE '\b7 tok  Explore$' && ok=1 || ok=0
-assert "By agent type shows the typed subagent row's \$2.0000 and the untyped subagent row as its own \$3.0000 (unknown) line, never the orchestrator's \$1000, with a tok column" "$ok"
+  && printf '%s' "$agent_section" | /usr/bin/grep -qE '\b7 tok  Explore$' \
+  && [[ "$(printf '%s\n' "$agent_section" | /usr/bin/grep -oE '\(unknown\)|Explore' | tr '\n' ' ')" == "(unknown) Explore " ]] && ok=1 || ok=0
+assert "By agent type shows the typed subagent row's \$2.0000 and the untyped subagent row as its own \$3.0000 (unknown) line, never the orchestrator's \$1000, with a tok column, ranked by cost desc ((unknown) \$3 above Explore \$2 despite reverse insertion order)" "$ok"
 trash "$fake_home" 2>/dev/null || true
 
 echo ""

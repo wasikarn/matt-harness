@@ -113,7 +113,7 @@ is a context-exhaustion backstop (not the primary gate).
 
 ## LLM-judge circularity (decay-perspective mirror)
 
-`CLAUDE.md`'s "Why — the unifying crux" (under its Architecture section) has a
+`docs/reference/operating-model.md`'s "Why — the unifying crux" has a
 load-bearing consequence for decay reasoning: **an inferential sensor shares
 a model class with the generator**, so it cannot be trusted to emit
 `permissionDecision`s — an LLM judging its own output is circular ("two
@@ -234,7 +234,7 @@ specified:
 
 - classifying criticality or "verifying reasoning" at runtime needs either
   an LLM doing the classifying (unverified reasoning gating reasoning —
-  the model grading itself, see `CLAUDE.md`'s "unifying crux") or
+  the model grading itself, see `docs/reference/operating-model.md`'s "unifying crux") or
   deterministic semantic understanding of free-form text (not buildable).
 - confidence-based gating uses model self-report as the gate signal — same
   crux, "two optimists agreeing."

@@ -24,7 +24,7 @@ this audits the diff after.
 ## Core Principles
 
 - **Maker ≠ checker.** The agent that implemented the plan cannot be the sole
-  grader of its own work — CLAUDE.md's own unifying crux. Phase 3 dispatches
+  grader of its own work — `docs/reference/operating-model.md`'s "unifying crux". Phase 3 dispatches
   fresh-context verifiers with no memory of the implementation session.
 - **Ground truth is the plan's text and the actual diff** — not a summary of
   what you remember doing. Re-derive the checklist from the plan text itself.
@@ -126,7 +126,7 @@ conform, open-item count) before the table, not after it.
 ## Named Model
 
 Phase 3's fresh-context dispatch is the verifier-separation / maker≠checker
-principle — CLAUDE.md's own unifying crux: an LLM judging its own output is
+principle — `docs/reference/operating-model.md`'s "unifying crux": an LLM judging its own output is
 circular. Phase 4's falsify-don't-rubber-stamp step is the scientific-method
 lens: a claim survives by surviving an attempt to disprove it, not by being
 asserted twice. Catalog + honesty caveat: read via Bash with

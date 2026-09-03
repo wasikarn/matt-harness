@@ -14,7 +14,7 @@ see `BOUNDARY.md` below for the live count.
 ## The 3 doctrine files (read in this order)
 
 1. [`METHODOLOGY.md`](METHODOLOGY.md) — staff-engineer behavioral doctrine (decision triad + reasoning scaffold). **Start here.** The only one auto-injected on every SessionStart, by `hooks/session/doctrine-bootstrap.sh` — no manual `@import` needed.
-2. `CLAUDE.md`'s Operating model (under its Architecture section) — the current operating model: computational deny-gates for the irrecoverable set (`hooks/gates/`), advisory sensors for the rest (`hooks/advisory/`), no autonomy flag, no maker-checker ship-gate, no model self-start. The L2–L5 autonomy ladder that previously lived here was retired in the v0.6.0 "reset: rebuild from scratch" cut — see CLAUDE.md's "Why — the unifying crux" for what replaced it (verifier-separation: an LLM judging its own output is circular, so gates stay deterministic shell, never a model). Read manually, not injected.
+2. `CLAUDE.md`'s Operating model (under its Architecture section) — the current operating model: computational deny-gates for the irrecoverable set (`hooks/gates/`), advisory sensors for the rest (`hooks/advisory/`), no autonomy flag, no maker-checker ship-gate, no model self-start. The L2–L5 autonomy ladder that previously lived here was retired in the v0.6.0 "reset: rebuild from scratch" cut — see `docs/reference/operating-model.md`'s "Why — the unifying crux" for what replaced it (verifier-separation: an LLM judging its own output is circular, so gates stay deterministic shell, never a model). Read manually, not injected.
 3. [`BOUNDARY.md`](../BOUNDARY.md) — auto-regenerated capability map (skills / agents / commands / hooks). Read manually, not injected.
 
 ## The 3 commands you'll use most
@@ -37,7 +37,7 @@ asks for explicit human approval before any edit to `hooks/gates/**`, `hooks/hoo
 auto-push ship-gate) that previously enforced this via a caged file list was retired in the v0.6.0
 reset; today's protection is this computational deny-gate, not a file-based cage. The invariant is
 load-bearing — the gate that authorizes a mutation or ship stays **computational, never a model**
-(see `CLAUDE.md`'s "Why — the unifying crux": an LLM judging its own output is circular —
+(see `docs/reference/operating-model.md`'s "Why — the unifying crux": an LLM judging its own output is circular —
 "two optimists agreeing").
 
 ## Recurring cadences (read once, never re-derive)

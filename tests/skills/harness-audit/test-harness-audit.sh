@@ -190,7 +190,9 @@ fi
 # "step by step", "double-check", "be extremely thorough" in the body and
 # budget_tokens: in frontmatter (4 INFOs); skill has "MUST ALWAYS" and
 # "scratchpad" (2 INFOs) = 6. Good fixture is the same frontmatter (minus
-# budget_tokens) with clean bodies.
+# budget_tokens) with clean bodies, plus CRLF line endings, "think step by
+# step" inside a ``` fence and "You MUST" inside backticks on the agent —
+# all three must stay silent.
 run_check 68 "$FIX/check-68-bad"
 if [ "$INFO_FOUND" -eq 6 ] && [ "$CRIT_FOUND" -eq 0 ]; then
   ok "check-68 bad fixture fires INFOs (info=$INFO_FOUND)"

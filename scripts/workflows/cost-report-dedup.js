@@ -63,7 +63,7 @@ const typed=latest.filter(r=>r.stream==="subagent");
 if(typed.length){
   console.log("\n=== By agent type (subagent spend only; rows tagged 2026-08-07+; tok = input+output, rank by it when rate unverified) ===");
   const m=new Map();for(const r of typed){const k=r.agent_type||"(unknown)";const p=m.get(k)||{c:0,t:0};p.c+=cost(r);p.t+=(Number(r.input_tokens)||0)+(Number(r.output_tokens)||0);m.set(k,p);}
-  for(const [k,v] of [...m.entries()].sort((a,b)=>b.c-a.c||b.t-a.t))console.log(f4(v.c).padStart(12)+"  "+String(v.t).padStart(10)+" tok  "+k);
+  for(const [k,v] of [...m.entries()].sort((a,b)=>b[1].c-a[1].c||b[1].t-a[1].t))console.log(f4(v.c).padStart(12)+"  "+String(v.t).padStart(10)+" tok  "+k);
 }
 console.log("\n=== Last 7 days ===");
 const days=new Map();for(const r of latest){const k=day(r);days.set(k,(days.get(k)||0)+cost(r));}

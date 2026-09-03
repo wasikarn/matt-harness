@@ -41,7 +41,7 @@ This is exactly why kbg references rather than adopts. A named model is a **fram
 scaffold and a shared word**, not a correctness mechanism. The harness's correctness comes
 from its *computational* feedback — the critical-hooks suite, the audit checks, the eval
 gate — not from invoking a mental model. Same posture as the LLM-judge-circularity rule
-(`CLAUDE.md`'s "Why — the unifying crux", under its Architecture section): **use a model to structure
+(`docs/reference/operating-model.md`'s "Why — the unifying crux"): **use a model to structure
 thinking; never cite "I applied model X" as evidence the work is right.**
 
 > **Do not open this catalog unprompted.** Reasoning models are framing scaffolds, not a

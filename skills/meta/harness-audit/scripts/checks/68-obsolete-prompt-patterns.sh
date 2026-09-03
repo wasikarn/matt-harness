@@ -32,9 +32,13 @@ for _f in "$CLAUDE_DIR"/agents/*.md "$CLAUDE_DIR"/skills/[!_]*/SKILL.md "$CLAUDE
   # check 57's `*/skills/harness-audit/*` glob also swallows every fixture
   # under tests/skills/harness-audit/, which is why it has no fixture test.
   [ "$(basename "$(dirname "$_f")")" = "harness-audit" ] && continue
-  # Split frontmatter (between the first two `---` lines) from body.
-  _fm=$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm' "$_f")
-  _body=$(awk 'NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{fm=0; next} !fm' "$_f")
+  # Split frontmatter (between the first two `---` lines) from body. CRLF
+  # files get `\r` stripped first so the `---` fence still matches. Body
+  # drops fenced code blocks (``` ... ```) and inline `backtick` spans — a
+  # quoted example of a pattern is not the pattern.
+  _fm=$(awk '{sub(/\r$/,"")} NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{exit} fm' "$_f")
+  _body=$(awk '{sub(/\r$/,"")} NR==1 && $0=="---"{fm=1; next} fm && $0=="---"{fm=0; next} fm{next}
+    /^[[:space:]]*```/{fence=!fence; next} fence{next} {gsub(/`[^`]*`/,"")} 1' "$_f")
   for _pat in \
     'step[- ]by[- ]step|model reasons step-by-step unprompted; delete' \
     '\b[Yy]ou must\b|\b[Ii]t is (critical|essential|imperative)\b|\bthis is critical\b|pressure language; state the rule plainly' \

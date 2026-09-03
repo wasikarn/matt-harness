@@ -221,7 +221,7 @@ DQ chain to see if any element is weak.
 
 The Slingshot Group “Decision Bias” slide highlights four biases that map
 cleanly onto the ladder; Automation Bias is a fifth, added from this harness's
-own operating model (CLAUDE.md's "unifying crux" — a model can't grade its own
+own operating model (`docs/reference/operating-model.md`'s "unifying crux" — a model can't grade its own
 work). Use them as a cross-check at the rung where each one is most dangerous.
 
 | Bias | Threatened rung | Slingshot-style guard | English counter |

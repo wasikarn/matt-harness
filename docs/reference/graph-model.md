@@ -53,8 +53,8 @@ actually has:
 - `hooks/gates/*.sh` — deterministic shell checks (Bash pattern matching, git state, task
   `agent_type` field) that a model cannot talk its way past. `task-complete-separation.sh` is
   the clearest instance: a subagent's `agent_type` is fixed at spawn and can't self-declare
-  `completed` — only the main session can, closing the maker-grades-own-work loop (CLAUDE.md's
-  "unifying crux," under its Architecture section).
+  `completed` — only the main session can, closing the maker-grades-own-work loop (`docs/reference/operating-model.md`'s
+  "unifying crux").
 - `harness-audit`'s deterministic checks and the fixture-based improve/optimize loop's live
   re-verification step (re-running a fixed prompt against the edited surface and diffing the
   result) are the closest thing kbg has to a held-out eval set.
