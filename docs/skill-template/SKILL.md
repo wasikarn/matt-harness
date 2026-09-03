@@ -64,7 +64,7 @@ One-line summary of what this skill does and why it exists.
 Input Contract / Output Format / Failure Modes" rule was retired 2026-06-16
 (audit #31.1) — it manufactured byte-identical filler across 29/37 skills.
 Include a section ONLY where the skill has a real I/O contract worth stating
-(CLAUDE.md's "Adding or removing a surface" section). Default copy = frontmatter + title +
+(`docs/reference/adding-a-surface.md`). Default copy = frontmatter + title +
 When-to-use. Delete what you don't fill in. -->
 
 ## Input Contract

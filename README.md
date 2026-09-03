@@ -471,7 +471,7 @@ git config core.hooksPath git-hooks
 ### Adding a component
 
 The authoritative step-by-step (fleet-count sync, `BOUNDARY.md` regen, and the
-cache-refresh ordering gotcha) is CLAUDE.md's "Adding or removing a surface". The short
+cache-refresh ordering gotcha) is `docs/reference/adding-a-surface.md`. The short
 version:
 
 1. Create the file, following the pattern of an existing component in the same directory.
@@ -489,6 +489,6 @@ tool (not bundled with this plugin) that turns a corpus into a queryable knowled
 Run `/graphify .` to build one for this repo; `graphify query "<question>"` /
 `graphify path "A" "B"` / `graphify explain "X"` then answer structural questions (who calls
 what, what enforces a given doctrine) that complement, rather than replace, this repo's own
-`qmd`-based research flow (CLAUDE.md's "graphify" section has the full division of labor).
+`qmd`-based research flow (`docs/reference/graphify-vs-qmd.md` has the full division of labor).
 `graphify-out/` is gitignored: the graph goes stale within hours of any commit, so regenerate
 it on demand instead of trusting a checked-in snapshot.
