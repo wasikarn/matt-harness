@@ -36,7 +36,7 @@ _norm_nows="$(printf '%s' "$_norm" | tr -d '[:space:]')"
 # here as literal characters -- "gi`true`t" or "gi$(true)t" never contains
 # a contiguous "git" substring under either normalization pass above, so
 # the case below would otherwise exit 0 and fully bypass this DENY gate on
-# a real `git push --force`-shaped command (confirmed live 2026-09-03:
+# a real ` git push --force`-shaped command (confirmed live 2026-09-03:
 # rc=0, python3 never spawned). Same conservative-deferral direction as the
 # sibling GH #125 fix in verifier-protect.sh (any raw backslash forces that
 # fast path to defer): detect the PRESENCE of a substitution marker on the
@@ -91,6 +91,7 @@ _HEREDOC_RE = re.compile(r"<<(-)?\s*([" + SQ + r"\"]?)([^\s" + SQ + r"\"]+)\2")
 # not strip it (checked against the segment of the line BEFORE "<<", i.e.
 # the command the heredoc is stdin for, not the body that follows).
 _INTERPRETER_RE = re.compile(r"\b(bash|sh|zsh|dash|ksh|python3?|python2|perl|ruby|node|nodejs|osascript)\b")
+_ANSI_C_QUOTE_RE = re.compile(r"\$" + SQ + r"((?:[^" + SQ + r"\\]|\\.)*)" + SQ)
 
 def _strip_heredocs(cmd):
     # Heredoc bodies are literal data until the closing delimiter line, not
@@ -135,6 +136,104 @@ def _strip_heredocs(cmd):
             # than never stripping at all.
             out.extend(lines[body_start:i])
     return "\n".join(out)
+
+def _normalize_ansi_c_quotes(cmd):
+    # shlex does not understand ANSI-C quoting ($SQ...SQ) -- it splits on the
+    # bare $ instead of treating the whole span as one token, so a spliced
+    # argv0 like $SQ\x74SQ (SQ = single quote) never reassembles into the
+    # decoded character it resolves to in real bash.
+    #
+    # This file own dispatch logic below compares argv0 by EXACT STRING
+    # (argv0 == "git", argv0 in ("rm", ...)), unlike verifier-protect.sh own
+    # _normalize_ansi_c_quotes (a boundary-only rewrite: $SQ...SQ becomes a
+    # plain SQ...SQ token, escapes left raw) -- that boundary-only version is
+    # enough for a write-target scanner that only needs correct token EDGES,
+    # but insufficient here: re-wrapping "$SQ\x74SQ" as "SQ\x74SQ" still
+    # yields the literal token "gi\x74", which can never equal "git". Proven
+    # empirically 2026-09-03: porting the boundary-only version verbatim
+    # left "gi$SQ\x74SQ push --force" allowed (rc=0) -- this file needs the
+    # escape actually RESOLVED, not just re-quoted, so this version diverges
+    # from verifier-protect.sh on purpose (sync-seam note: the two files
+    # normalize-step comment near the top of this file no longer applies to
+    # this function -- only to the shared stdin-capture/fast-path prefix).
+    #
+    # Bounded escape set, matching what a git/rm/dd argv0 splice realistically
+    # needs: \xHH (hex), \nnn (1-3 octal digits), and the standard single-char
+    # escapes \n \t \r \\ \SQ \DQ. Anything else (\a \b \e \cX \uHHHH, ...)
+    # falls through as its raw two literal characters, same as before -- a
+    # full ANSI-C decoder is out of scope; those spellings are not realistic
+    # argv0-splice vectors and an unhandled one just stays a literal
+    # (non-matching, safe-direction) token.
+    #
+    # A literal SQ byte can appear in the DECODED result two ways: an
+    # explicit \SQ escape, or an octal/hex escape that happens to resolve to
+    # SQ (\047 or \x27, both decimal 39). Either way, the byte cannot sit
+    # inside the SQ...SQ wrapper this function returns -- there is no escape
+    # mechanism inside single quotes -- so the decoded text is scanned a
+    # SECOND time (after all escapes are resolved, not mid-scan) and any SQ
+    # byte found is spliced into the standard bash idiom: close the quote,
+    # emit an escaped literal quote OUTSIDE quotes, reopen a new quoted span.
+    # Skipping this second pass and only checking the raw \SQ spelling (the
+    # boundary-only version own approach) would miss the octal/hex spellings
+    # and leave an unbalanced quote, which throws off _newlines_to_seps own
+    # quote-tracking scanner downstream: it opens in_squote at the first SQ
+    # and, since the string never closes, stays in_squote for the rest of
+    # the command, silently swallowing every following newline/write with no
+    # separator inserted.
+    #
+    # A decoded newline (from \n, \012, or \x0a) must also stay INSIDE the
+    # SQ...SQ wrapper, not emitted bare -- composition order already
+    # guarantees this (this function runs BEFORE _newlines_to_seps below),
+    # but only because the return value stays fully quoted: an unquoted
+    # decoded newline would otherwise be read by _newlines_to_seps as a real
+    # statement separator and split one command window (e.g. a single
+    # "git commit -m $SQ...SQ" call) into two.
+    OCTAL = "01234567"
+    HEXDIGITS = "0123456789abcdefABCDEF"
+    SIMPLE = {"n": "\n", "t": "\t", "r": "\r", "\\": "\\", SQ: SQ, DQ: DQ}
+    def _decode_ansi_c(m):
+        body = m.group(1)
+        decoded = []
+        i, n = 0, len(body)
+        while i < n:
+            c = body[i]
+            if c == "\\" and i + 1 < n:
+                nxt = body[i + 1]
+                if nxt in SIMPLE:
+                    decoded.append(SIMPLE[nxt])
+                    i += 2
+                elif nxt == "x":
+                    j, digits = i + 2, ""
+                    while j < n and len(digits) < 2 and body[j] in HEXDIGITS:
+                        digits += body[j]
+                        j += 1
+                    if digits:
+                        decoded.append(chr(int(digits, 16)))
+                        i = j
+                    else:
+                        decoded.append(body[i:i + 2])
+                        i += 2
+                elif nxt in OCTAL:
+                    j, digits = i + 1, ""
+                    while j < n and len(digits) < 3 and body[j] in OCTAL:
+                        digits += body[j]
+                        j += 1
+                    decoded.append(chr(int(digits, 8) & 0xFF))
+                    i = j
+                else:
+                    decoded.append(body[i:i + 2])
+                    i += 2
+            else:
+                decoded.append(c)
+                i += 1
+        spliced = []
+        for ch in decoded:
+            if ch == SQ:
+                spliced.append(SQ + "\\" + SQ + SQ)
+            else:
+                spliced.append(ch)
+        return SQ + "".join(spliced) + SQ
+    return _ANSI_C_QUOTE_RE.sub(_decode_ansi_c, cmd)
 
 cmd = _strip_heredocs(d["tool_input"].get("command", ""))
 
@@ -262,6 +361,207 @@ def _newlines_to_seps(s):
             i += 1
     return "".join(out)
 
+# Command-substitution placeholder pass (GH #129). A backtick/$(...)/${...}
+# span vanishes in real bash once its (possibly empty) output splices into
+# the surrounding text -- "gi`true`t" IS "git" once bash evaluates it -- but
+# shlex has no concept of this and treats the backticks/parens/braces as
+# literal characters, so a spliced argv0 like this survives tokenization as
+# its own garbled token and evades every exact-match check below (argv0 ==
+# "git", sub == "push", ...). _normalize_ansi_c_quotes above closes the same
+# family of bypass for $SQ...SQ quoting by actually RESOLVING the escape;
+# resolving what a substitution actually expands to would mean running a
+# subshell, which no gate in this file should ever do -- so this closes it
+# differently, by blanking the whole substitution span to one placeholder
+# byte (PH) instead. PH is added to the shlex wordchars used below so it
+# fuses into the surrounding literal text as ONE token instead of splitting
+# it, and any FINAL argv0/subcommand token that still contains PH is
+# duplicate-classified across every dangerous candidate name downstream
+# (KNOWN_DANGEROUS / KNOWN_GIT_SUBS) instead of trusting the garbled token
+# literally.
+#
+# Fixed-point iteration (not one pass) handles nesting: "$(echo $(date))"
+# blanks the innermost $(date) on pass 1, leaving "$(echo PH)", then blanks
+# that on pass 2. Capped at 5 iterations -- a habit-guard has no business
+# looping on adversarial nesting depth, and 5 covers every realistic
+# hand-typed case.
+#
+# Named residual, deliberately not fixed here: this regex cannot cross a
+# paren INSIDE $(...) -- it stops at the first unescaped one -- so
+# "gi$( (true) )t" and "gi$(f() { :; }; f)t" (both valid bash resolving to
+# "git") are NOT caught by this pass. Closing that would need a
+# depth-counting scanner (main-exec-guard.sh own _inner_cmds does this) --
+# deliberately out of scope: this pass stays a mechanical regex
+# substitution, not a parser, matching every other fix in this bug family
+# today.
+#
+# Named non-goal, also deliberately not fixed here: splicing a FLAG inside
+# an already-correctly-dispatched branch (e.g. --for<PH>ce defeating the
+# --force detection once "git push" is already correctly identified) is out
+# of scope for this pass -- the duplication below only re-derives WHICH
+# candidate name/subcommand a garbled dispatch token might be, it does not
+# re-scan already-clean flag tokens for embedded placeholders.
+#
+# Blanking the span must not DISCARD its body. Before this whole fix,
+# "(" and ")" were already in OPERATORS (see below), so a bare $(...) split
+# its content into its OWN window and got scanned like any other command --
+# "$ (git push --force)" already denied today, with no placeholder pass
+# involved at all. A blank-only substitution would erase that body instead
+# of just fusing the splice, silently turning a working deny into an allow
+# (found live 2026-09-03 auditing this exact fix). So every backtick/$(...)
+# body is collected as it is blanked, and re-appended after the fixed-point
+# loop as its own ";"-joined statement -- restoring the original
+# window-scan coverage on top of the new fusion/duplication behavior.
+# ${...} bodies are deliberately NOT collected: that form is a parameter
+# expansion (a variable reference), not a command -- re-appending its body
+# as a statement would treat a variable NAME as if it were a command line,
+# a false-positive shape this pass has no reason to invent.
+#
+# Re-appending a body must not fire on a substitution-looking span that
+# real bash would never evaluate at all. A SINGLE-quoted span suppresses
+# every expansion -- single-quoted prose mentioning $ (git push --force) is
+# inert text, never a command, in real bash. DOUBLE-quoted substitutions do
+# NOT get this treatment: bash really does expand $(...) inside double
+# quotes (e.g. "gi$(true)t" resolves to "git", a live splice vector), so a
+# double-quoted span keeps going through the normal blank-and-collect path.
+#
+# Telling those two apart needs REAL shell quote state, not a regex. The
+# first version here matched a SQ...SQ span as its own regex alternative,
+# tried FIRST so Python own leftmost-first alternation would consume a
+# whole single-quoted run before any $(...) / backtick alternative got a
+# chance to match inside it. That still just pairs literal single-quote
+# BYTES wherever they fall, with no notion of whether they are really
+# opening/closing a shell quote or sitting inert inside a DOUBLE-quoted
+# string -- an ordinary English contraction (a single-quote byte used as
+# a shorthand mark, e.g. spelling "it is" or "is not" in shortened form)
+# breaks it in both directions when it sits inside real double quotes,
+# confirmed live 2026-09-03:
+#   - a chain that double-quote-echoes a shortened "it is", then a real
+#     $(true) splice fusing a spliced git argv0 ahead of push --force,
+#     then double-quote-echoes a shortened "is not": the two shorthand
+#     marks (both inside real double quotes, so neither is a real shell
+#     quote boundary) paired up ACROSS the genuine $(...) splice, so the
+#     regex swallowed the whole span as inert single-quoted data and never
+#     blanked the splice at all -- a live bypass, the real force-push goes
+#     through.
+#   - the same double-quote-echoed shorthand "it is", followed by a git
+#     commit whose -m value is a REAL single-quoted argument that merely
+#     mentions a $(...) span in its text: the stray shorthand mark shifted
+#     the pairing so that real single-quoted -m argument was no longer
+#     matched as one span, and the $(...) text inside it got wrongly
+#     collected as a live command -- a false deny of inert commit-message
+#     text.
+# Same root cause both times (a flat regex reasoning about quote state),
+# same fix both times, so this uses the ALREADY-proven mechanism from
+# _newlines_to_seps above instead of patching the regex a third time: one
+# left-to-right character scan carrying real in_squote/in_dquote state and
+# the same backslash-escape parity (\$, \`, \", \\ only mean anything
+# inside double quotes; any \X is a literal pair when unquoted; nothing is
+# special inside single quotes, which close on the very next single-quote
+# byte no matter what it sits next to). A single-quote can only OPEN when
+# not already inside a double-quoted string -- a single-quote byte has no
+# special meaning inside "..." in real bash, so it is just an ordinary
+# character there, not a quote toggle. $(...)/`...`/${...} are only ever
+# recognized as live substitution starts when the scan is unquoted or
+# inside a double-quoted string, matching real bash exactly and never
+# crossing into a genuine single-quoted span no matter what punctuation
+# that span holds.
+#
+# Named residual, deliberately not fixed here: the same false-positive
+# shape can occur inside a "#" COMMENT ("# see also: $ (git push --force)"
+# is never executed in real bash) -- left alone since a false DENY is this
+# file own accepted safe direction (see the fast-path comments above), and
+# closing it would mean tracking comment state here too, the same
+# parser-not-regex step this whole pass is deliberately avoiding (comment
+# state is intentionally NOT tracked in the scan below either).
+PH = "\x01"
+def _blank_substitutions(s):
+    bodies = []
+
+    # One left-to-right pass: blanks every unnested backtick/$(...)/${...}
+    # span it finds THIS pass to PH, collecting backtick/$(...) bodies
+    # (never ${...} -- a parameter expansion, not a command) into the
+    # shared `bodies` list. Nesting ("$(echo $(date))") is NOT handled in
+    # one pass -- same non-nesting residual as the old regex, an inner
+    # "(" before the matching ")" aborts the match at that position, same
+    # as `[^()]*` failing to cross it -- so the caller re-runs this to a
+    # fixed point instead of teaching this scan to depth-count parens.
+    def _scan_once(s):
+        out = []
+        in_squote = in_dquote = False
+        i, n = 0, len(s)
+        while i < n:
+            c = s[i]
+            if in_squote:
+                out.append(c)
+                if c == SQ:
+                    in_squote = False
+                i += 1
+                continue
+            if in_dquote:
+                if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`"):
+                    out.append(c); out.append(s[i + 1])
+                    i += 2
+                    continue
+                if c == DQ:
+                    out.append(c)
+                    in_dquote = False
+                    i += 1
+                    continue
+                # else: ordinary char while in_dquote, including a bare
+                # apostrophe (no special meaning here) -- fall through to
+                # the shared substitution-start check below, since
+                # $(...)/`...`/${...} ARE live inside double quotes.
+            else:
+                if c == SQ:
+                    in_squote = True
+                    out.append(c); i += 1
+                    continue
+                if c == DQ:
+                    in_dquote = True
+                    out.append(c); i += 1
+                    continue
+                if c == "\\" and i + 1 < n:
+                    out.append(c); out.append(s[i + 1])
+                    i += 2
+                    continue
+                # else: fall through to the shared substitution-start check.
+            if c == "`":
+                j = s.find("`", i + 1)
+                if j != -1:
+                    bodies.append(s[i + 1:j])
+                    out.append(PH)
+                    i = j + 1
+                    continue
+            elif c == "$" and s[i + 1:i + 2] == "(":
+                j = i + 2
+                while j < n and s[j] not in "()":
+                    j += 1
+                if j < n and s[j] == ")":
+                    bodies.append(s[i + 2:j])
+                    out.append(PH)
+                    i = j + 1
+                    continue
+            elif c == "$" and s[i + 1:i + 2] == "{":
+                j = i + 2
+                while j < n and s[j] not in "{}":
+                    j += 1
+                if j < n and s[j] == "}":
+                    out.append(PH)
+                    i = j + 1
+                    continue
+            out.append(c)
+            i += 1
+        return "".join(out)
+
+    for _ in range(5):
+        new = _scan_once(s)
+        if new == s:
+            break
+        s = new
+    if bodies:
+        s = s + " ; " + " ; ".join(bodies)
+    return s
+
 # shlex.split() only recognizes ;/&&/||/|/& as separators when whitespace
 # already surrounds them -- "echo hi;rm -rf x" tokenized as one glued word
 # "hi;rm", so the second command in the chain never had its own argv0
@@ -275,9 +575,31 @@ def _newlines_to_seps(s):
 # pattern for their own write-target detection.
 OPERATORS = {";", "&&", "||", "|", "&", "(", ")", "{", "}"}
 try:
-    tokens = list(shlex.shlex(_newlines_to_seps(cmd), posix=True, punctuation_chars=True))
+    lex = shlex.shlex(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd))), posix=True, punctuation_chars=True)
+    lex.wordchars += PH
+    tokens = list(lex)
 except ValueError:
-    tokens = cmd.split()
+    # No apostrophes in this block: it lives inside the bash single-quoted
+    # python3 -c wrapper below, and a literal apostrophe closes that string
+    # early (same constraint noted further down near _bundled_force).
+    #
+    # An unbalanced quote SURVIVING the placeholder-blank pass raises here --
+    # e.g. a backtick-wrapped apostrophe-bearing body blanks to something
+    # like "giPHt push --force ; " plus that body re-appended bare (the
+    # substitution BODY, put back by _blank_substitutions so it stays
+    # scannable), and the loose apostrophe inside the re-appended body
+    # leaves an unclosed quote. The old fallback re-tokenized cmd.split()
+    # on the RAW, PRE-BLANKING string -- PH was never in it, so a spliced
+    # argv0 built this way can never equal "git" and the whole GH #129
+    # mechanism went inert, ALLOWing a real force-push once bash evaluates
+    # the inner failing subshell to empty (confirmed live 2026-09-03: rc=0,
+    # no python re-classification at all). Same bypass shape via the
+    # dollar-paren substitution form. Matching this file own
+    # malformed-payload stance a few lines up (deny on ambiguity rather
+    # than guess at a second fallback tokenizer): a command this file
+    # cannot safely parse is denied, not silently allowed -- this gate has
+    # no "ask" outcome, so deny is the fail-closed option available.
+    deny("could not safely tokenize command for pattern matching (unbalanced quote/substitution) - confirm with user first")
 windows, cur = [], []
 for tok in tokens:
     if tok in OPERATORS:
@@ -291,6 +613,15 @@ if cur:
 
 def basename(p):
     return p.rsplit("/", 1)[-1]
+
+# Candidate names for the placeholder-splice duplication (GH #129 Step 3):
+# the exact set of argv0 basenames, and separately git subcommands, that any
+# downstream check in this file actually dispatches on by exact string
+# match. A garbled token containing PH cannot equal any of these directly,
+# so every candidate is tried in turn instead of trusting the garbled
+# literal.
+KNOWN_DANGEROUS = ("rm", "find", "git", "dd", "mysql", "psql", "sqlite3", "mariadb")
+KNOWN_GIT_SUBS = ("push", "reset", "clean", "restore", "checkout", "switch", "branch", "stash", "commit", "add", "worktree")
 
 for w in windows:
     if not w:
@@ -407,231 +738,266 @@ for w in windows:
         if j < len(rest):
             argv0, rest = basename(rest[j]), rest[j + 1:]
 
-    if argv0 == "rm":
-        # Lowercase before matching. "rm -Rf" and "rm -R -f" bypassed
-        # the lowercase-only "r"/"f" substring check (found 2026-07-01).
-        flags = "".join(t for t in rest if t.startswith("-")).lower()
-        if "r" in flags and "f" in flags:
-            deny("rm -rf detected — " + delete_hint())
+    for argv0 in (KNOWN_DANGEROUS if PH in argv0 else (argv0,)):
+        if argv0 == "rm":
+            # Lowercase before matching. "rm -Rf" and "rm -R -f" bypassed
+            # the lowercase-only "r"/"f" substring check (found 2026-07-01).
+            # Only a SHORT bundled cluster (-rf, -fr, -Rf, lone -r / -f, ...)
+            # contributes per-CHARACTER; a LONG option only counts on an
+            # exact spelling match against rms real long flags. The old
+            # check joined every "-"-looking token -- long options included
+            # -- into one string and tested bare letter membership across
+            # the whole thing, so a long flag whose plain-English spelling
+            # happens to contain both letters (e.g. "--before=1", from
+            # "before") false-positived as rm -rf the moment the GH #129
+            # candidate duplication started running this check against
+            # arbitrary unrelated commands (confirmed live 2026-09-03:
+            # "$(which node) --before=1" wrongly denied).
+            has_r = has_f = False
+            for t in rest:
+                if t.startswith("--"):
+                    has_r = has_r or t == "--recursive"
+                    has_f = has_f or t == "--force"
+                elif t.startswith("-") and len(t) > 1:
+                    body = t[1:].lower()
+                    has_r = has_r or "r" in body
+                    has_f = has_f or "f" in body
+            if has_r and has_f:
+                deny("rm -rf detected — " + delete_hint())
 
-    if argv0 == "find" and ("-exec" in rest or "-execdir" in rest) and "rm" in [basename(t) for t in rest]:
-        deny("find -exec/-execdir rm detected — destructive delete; " + delete_hint())
-    if argv0 == "find" and "-delete" in rest:
-        deny("find -delete detected — destructive delete; " + delete_hint())
+        if argv0 == "find" and ("-exec" in rest or "-execdir" in rest) and "rm" in [basename(t) for t in rest]:
+            deny("find -exec/-execdir rm detected — destructive delete; " + delete_hint())
+        if argv0 == "find" and "-delete" in rest:
+            deny("find -delete detected — destructive delete; " + delete_hint())
 
-    if argv0 == "git" and rest:
-        # --no-verify skips pre-commit/pre-push hooks — block it on any git
-        # command, multi-line safe (checked per window, not against the
-        # loop-leak `tokens` which only held the last line — found v0.36.0
-        # audit: a --no-verify on an earlier line bypassed the old global
-        # check). Git-specific so `echo "--no-verify"` does not false-positive.
-        if "--no-verify" in w:
-            deny("--no-verify bypasses safety hooks")
-        # -c core.hooksPath=<path> (split "-c core.hooksPath=X" or joined
-        # "-ccore.hooksPath=X") re-points git at a different hooks dir —
-        # the same bypass as --no-verify, just spelled as a config
-        # override. Only a non-empty value trips it: "=" with nothing after
-        # is not a meaningful re-point.
-        hooks_path_val = None
-        for idx, t in enumerate(w):
-            if t == "-c" and idx + 1 < len(w) and w[idx + 1].startswith("core.hooksPath="):
-                hooks_path_val = w[idx + 1].split("=", 1)[1]
-            elif t.startswith("-c") and t[2:].startswith("core.hooksPath="):
-                hooks_path_val = t[2:].split("=", 1)[1]
-        if hooks_path_val:
-            deny("-c core.hooksPath=<path> re-points git at a different hooks dir — same bypass as --no-verify")
-        # Walk past leading global flags before the subcommand so a prefix
-        # like `git -C /repo push --force` (or `git -Cpath push --force`,
-        # `git --no-pager push --force`) does not set sub="-C"/"--no-pager"
-        # and silently bypass the push/worktree gates (found v0.36.0 audit).
-        # The WorktreeCreate event does NOT fire for Bash-invoked worktree
-        # creation, so this Bash-side guard is the only thing blocking
-        # `git -C . worktree add -b newbranch`.
-        GIT_VALUE_GLOBALS = {"-C", "-c", "--git-dir", "--work-tree", "--config-env"}
-        i = 0
-        while i < len(rest) and rest[i].startswith("-"):
-            t = rest[i]
-            if t in GIT_VALUE_GLOBALS:
-                i += 2  # bare value-taking global → skip flag + its value
-                continue
-            # combined form carrying the value in the same token
-            # (-Cpath, --git-dir=path, --config-env=name=val) → skip 1
-            if (t.startswith("-C") and t != "-C") or \
-               t.startswith(("--git-dir=", "--work-tree=", "--config-env=")):
-                i += 1
-                continue
-            i += 1  # any other leading flag (non-value global: --no-pager, -p, …)
-        if i >= len(rest):
-            continue  # only global flags, no subcommand — safe no-op
-        sub, args = rest[i], rest[i + 1:]
-        # drop the value token after a free-text flag so message
-        # content (e.g. "commit -m ...rm -rf...") is never pattern-
-        # matched.
-        scan, skip = [], False
-        for t in args:
-            if skip:
-                skip = False
-                continue
-            if t in ("-m", "--message"):
-                skip = True
-                continue
-            scan.append(t)
+        if argv0 == "git" and rest:
+            # --no-verify skips pre-commit/pre-push hooks — block it on any git
+            # command, multi-line safe (checked per window, not against the
+            # loop-leak `tokens` which only held the last line — found v0.36.0
+            # audit: a --no-verify on an earlier line bypassed the old global
+            # check). Git-specific so `echo "--no-verify"` does not false-positive.
+            if "--no-verify" in w:
+                deny("--no-verify bypasses safety hooks")
+            # -c core.hooksPath=<path> (split "-c core.hooksPath=X" or joined
+            # "-ccore.hooksPath=X") re-points git at a different hooks dir —
+            # the same bypass as --no-verify, just spelled as a config
+            # override. Only a non-empty value trips it: "=" with nothing after
+            # is not a meaningful re-point.
+            hooks_path_val = None
+            for idx, t in enumerate(w):
+                if t == "-c" and idx + 1 < len(w) and w[idx + 1].startswith("core.hooksPath="):
+                    hooks_path_val = w[idx + 1].split("=", 1)[1]
+                elif t.startswith("-c") and t[2:].startswith("core.hooksPath="):
+                    hooks_path_val = t[2:].split("=", 1)[1]
+            if hooks_path_val:
+                deny("-c core.hooksPath=<path> re-points git at a different hooks dir — same bypass as --no-verify")
+            # Walk past leading global flags before the subcommand so a prefix
+            # like ` git -C /repo push --force` (or ` git -Cpath push --force`,
+            # ` git --no-pager push --force`) does not set sub="-C"/"--no-pager"
+            # and silently bypass the push/worktree gates (found v0.36.0 audit).
+            # The WorktreeCreate event does NOT fire for Bash-invoked worktree
+            # creation, so this Bash-side guard is the only thing blocking
+            # `git -C . worktree add -b newbranch`.
+            GIT_VALUE_GLOBALS = {"-C", "-c", "--git-dir", "--work-tree", "--config-env"}
+            i = 0
+            while i < len(rest) and rest[i].startswith("-"):
+                t = rest[i]
+                if t in GIT_VALUE_GLOBALS:
+                    i += 2  # bare value-taking global → skip flag + its value
+                    continue
+                # combined form carrying the value in the same token
+                # (-Cpath, --git-dir=path, --config-env=name=val) → skip 1
+                if (t.startswith("-C") and t != "-C") or \
+                   t.startswith(("--git-dir=", "--work-tree=", "--config-env=")):
+                    i += 1
+                    continue
+                i += 1  # any other leading flag (non-value global: --no-pager, -p, …)
+            if i >= len(rest):
+                continue  # only global flags, no subcommand — safe no-op
+            sub, args = rest[i], rest[i + 1:]
+            # drop the value token after a free-text flag so message
+            # content (e.g. "commit -m ...rm -rf...") is never pattern-
+            # matched.
+            scan, skip = [], False
+            for t in args:
+                if skip:
+                    skip = False
+                    continue
+                if t in ("-m", "--message"):
+                    skip = True
+                    continue
+                scan.append(t)
 
-        if sub == "push" and any(
-            t in ("-f", "--force") or (t.startswith("--force") and not t.startswith("--force-with-lease"))
-            or (t.startswith("-") and not t.startswith("--") and "f" in t)
-            or t.startswith("+")  # "+refspec" force-pushes without a -f/--force flag
-            for t in scan
-        ):
-            deny("git push --force overwrites remote history — needs explicit user approval (use --force-with-lease for the safe variant)")
-        if sub == "reset" and "--hard" in scan:
-            deny("git reset --hard discards uncommitted work — confirm with user first")
-        if sub == "clean" and any(t.startswith("-") and "f" in t for t in scan):
-            deny("git clean -f deletes untracked files — confirm with user first")
-        # git restore is the modern checkout -- replacement. The default mode
-        # (and --worktree) targets the WORKTREE → discards changes, unrecoverable.
-        # --staged (without --worktree) targets the INDEX → recoverable (re-stage
-        # with git add), so it is allowed. Unlike checkout, `git restore <path>`
-        # is NEVER a branch switch (no ambiguity), so a worktree-targeting
-        # pathspec is always destructive.
-        if sub == "restore":
-            has_pathspec = ("." in scan or "--" in scan or
-                            any(not t.startswith("-") for t in scan))
-            targets_worktree = "--worktree" in scan or "--staged" not in scan
-            if has_pathspec and targets_worktree:
-                deny("git restore discards working-tree changes — confirm with user first")
-        # Bundled short flags: "-qf" means -q -f, and an exact-token check like
-        # `t in ("-f", "--force")` misses it (2026-08-17 bug sweep, live-verified
-        # bypass). Stop scanning a cluster at a value-taking flag letter
-        # (checkout -b/-B, switch -c/-C) so "-bfoo"/"-cfoo" is not misread as
-        # -f hiding inside the branch-name argument. No apostrophes in this
-        # block: it lives inside the bash single-quoted python3 -c wrapper
-        # below, and a literal apostrophe closes that string early.
-        def _bundled_force(t, stop_chars):
-            if not (t.startswith("-") and not t.startswith("--")):
-                return False
-            for ch in t[1:]:
-                if ch in stop_chars:
+            for sub in (KNOWN_GIT_SUBS if PH in sub else (sub,)):
+                if sub == "push" and any(
+                    t in ("-f", "--force") or (t.startswith("--force") and not t.startswith("--force-with-lease"))
+                    or (t.startswith("-") and not t.startswith("--") and "f" in t)
+                    or t.startswith("+")  # "+refspec" force-pushes without a -f/--force flag
+                    for t in scan
+                ):
+                    deny("git push --force overwrites remote history — needs explicit user approval (use --force-with-lease for the safe variant)")
+                if sub == "reset" and "--hard" in scan:
+                    deny("git reset --hard discards uncommitted work — confirm with user first")
+                # Same short-vs-long flag boundary the push check above
+                # already draws: a SHORT bundled cluster (starts with "-",
+                # not "--") contributes per-character, a LONG option only
+                # counts on an EXACT "--force" match. The old check was bare
+                # letter-containment against the whole token,
+                # which also matched an unrelated long flag whose spelling
+                # happens to contain the letter f -- "--find-renames" and
+                # "--format=fuller" both false-positived as git clean -f the
+                # moment the GH #129 candidate duplication ran this check
+                # against a garbled subcommand that was really diff/show,
+                # not clean (confirmed live 2026-09-03).
+                if sub == "clean" and any(
+                    t == "--force" or (t.startswith("-") and not t.startswith("--") and "f" in t)
+                    for t in scan
+                ):
+                    deny("git clean -f deletes untracked files — confirm with user first")
+                # git restore is the modern checkout -- replacement. The default mode
+                # (and --worktree) targets the WORKTREE → discards changes, unrecoverable.
+                # --staged (without --worktree) targets the INDEX → recoverable (re-stage
+                # with git add), so it is allowed. Unlike checkout, `git restore <path>`
+                # is NEVER a branch switch (no ambiguity), so a worktree-targeting
+                # pathspec is always destructive.
+                if sub == "restore":
+                    has_pathspec = ("." in scan or "--" in scan or
+                                    any(not t.startswith("-") for t in scan))
+                    targets_worktree = "--worktree" in scan or "--staged" not in scan
+                    if has_pathspec and targets_worktree:
+                        deny("git restore discards working-tree changes — confirm with user first")
+                # Bundled short flags: "-qf" means -q -f, and an exact-token check like
+                # `t in ("-f", "--force")` misses it (2026-08-17 bug sweep, live-verified
+                # bypass). Stop scanning a cluster at a value-taking flag letter
+                # (checkout -b/-B, switch -c/-C) so "-bfoo"/"-cfoo" is not misread as
+                # -f hiding inside the branch-name argument. No apostrophes in this
+                # block: it lives inside the bash single-quoted python3 -c wrapper
+                # below, and a literal apostrophe closes that string early.
+                def _bundled_force(t, stop_chars):
+                    if not (t.startswith("-") and not t.startswith("--")):
+                        return False
+                    for ch in t[1:]:
+                        if ch in stop_chars:
+                            return False
+                        if ch == "f":
+                            return True
                     return False
-                if ch == "f":
-                    return True
-            return False
-        # checkout: "--"/"." = discard (existing); 2+ nonflag = tree-ish +
-        # path (e.g. `git checkout HEAD~1 file`, overwrites worktree from an
-        # old commit — unrecoverable). 1 nonflag stays allowed: it may be a
-        # legit branch switch (found v0.36.0 audit: HEAD~1+file was missed).
-        if sub == "checkout" and ("--" in scan or "." in scan or
-                                    len([t for t in scan if not t.startswith("-")]) >= 2 or
-                                    any(t in ("-f", "--force") or _bundled_force(t, ("b", "B")) for t in scan)):
-            deny("git checkout -- / git checkout . / git checkout -f / git checkout <tree> <file> discards working-tree changes — confirm with user first")
-        if sub == "switch" and any(t in ("-f", "--force", "--discard-changes") or _bundled_force(t, ("c", "C")) for t in scan):
-            deny("git switch --force discards working-tree changes — confirm with user first")
-        if sub == "branch" and (
-            any(t == "-D" or (t.startswith("-") and not t.startswith("--") and "D" in t) for t in scan)
-            or ("--delete" in scan and "--force" in scan)
-        ):
-            deny("git branch -D / --delete --force force-deletes a branch, discarding unmerged commits — confirm with user first")
-        if sub == "stash" and args and args[0] in ("drop", "clear"):
-            deny("git stash drop/clear discards stashed changes — confirm with user first")
-        if sub == "commit" and "--amend" in scan:
-            deny("git commit --amend rewrites history — confirm with user first")
-        if sub == "add" and any(t in ("-A", "--all", ".") for t in scan):
-            deny("git add -A/. stages everything — stage files by name instead")
-        if sub == "worktree" and args and args[0] == "add":
-            # kbg single-branch doctrine gate. This is the ONLY enforcement
-            # point for the doctrine — a prior companion gate on the native
-            # WorktreeCreate event (worktree-create-block.sh) was removed
-            # 2026-07-31: it read tool_name/tool_input, fields that event
-            # never actually sends (confirmed against code.claude.com/docs/en/hooks
-            # raw HTML), so its deny logic was dead code, and independent of
-            # that bug, registering ANY hook on WorktreeCreate replaces the
-            # Claude Code default worktree creation and requires the hook
-            # to emit the resulting path — this one never did, so it was
-            # silently breaking every legitimate WorktreeCreate-triggered
-            # worktree (isolation:"worktree", claude --worktree, background
-            # sessions) in every repo running this plugin. See
-            # docs/research/official-docs-audit-2026-07-31.md. This Bash-side
-            # check is unaffected: the dedicated WorktreeCreate event never
-            # fires for Bash-invoked `git worktree add` in the first place
-            # (verified against the same docs), so it was never part of the
-            # broken mechanism.
-            #
-            # Find the new-branch name. The git-worktree-add argv
-            # order is flexible — the -b flag may come before or
-            # after the path. Scan ALL args for the -b/-B/--branch
-            # flag pair. If found, capture the value. If absent, no
-            # new branch is being created (existing branch checkout
-            # via positional commit-ish) — allow.
-            branch_name = None
-            for i, t in enumerate(args):
-                if t in ("-b", "-B", "--branch") and i + 1 < len(args):
-                    branch_name = args[i + 1]
-                    break
-                # joined forms: -bBRANCH, -BBRANCH, --branch=BRANCH
-                if (t.startswith("-b") and t != "-b") or (t.startswith("-B") and t != "-B"):
-                    branch_name = t[2:]
-                    break
-                if t.startswith("--branch="):
-                    branch_name = t.split("=", 1)[1]
-                    break
-            if branch_name is not None and branch_name != "develop":
-                # Resolve project root: CLAUDE_PROJECT_DIR env first,
-                # then walk up from cwd looking for .git OR sentinel.
-                # Expand-not-rename (T10 #89): accept BOTH the old
-                # .kbg-no-worktree and new .mh-no-worktree sentinel names,
-                # indefinitely -- a sentinel file in some OTHER repo is
-                # invisible to this one, so there is no way to force every
-                # other repo to rename when this repo does.
-                _SENTINEL_NAMES = (".kbg-no-worktree", ".mh-no-worktree")
-                root = os.environ.get("CLAUDE_PROJECT_DIR") or ""
-                if not root:
-                    d = os.getcwd() or "/"
-                    for _ in range(16):
-                        if d in ("", "/"):
+                # checkout: "--"/"." = discard (existing); 2+ nonflag = tree-ish +
+                # path (e.g. `git checkout HEAD~1 file`, overwrites worktree from an
+                # old commit — unrecoverable). 1 nonflag stays allowed: it may be a
+                # legit branch switch (found v0.36.0 audit: HEAD~1+file was missed).
+                if sub == "checkout" and ("--" in scan or "." in scan or
+                                            len([t for t in scan if not t.startswith("-")]) >= 2 or
+                                            any(t in ("-f", "--force") or _bundled_force(t, ("b", "B")) for t in scan)):
+                    deny("git checkout -- / git checkout . / git checkout -f / git checkout <tree> <file> discards working-tree changes — confirm with user first")
+                if sub == "switch" and any(t in ("-f", "--force", "--discard-changes") or _bundled_force(t, ("c", "C")) for t in scan):
+                    deny("git switch --force discards working-tree changes — confirm with user first")
+                if sub == "branch" and (
+                    any(t == "-D" or (t.startswith("-") and not t.startswith("--") and "D" in t) for t in scan)
+                    or ("--delete" in scan and "--force" in scan)
+                ):
+                    deny("git branch -D / --delete --force force-deletes a branch, discarding unmerged commits — confirm with user first")
+                if sub == "stash" and args and args[0] in ("drop", "clear"):
+                    deny("git stash drop/clear discards stashed changes — confirm with user first")
+                if sub == "commit" and "--amend" in scan:
+                    deny("git commit --amend rewrites history — confirm with user first")
+                if sub == "add" and any(t in ("-A", "--all", ".") for t in scan):
+                    deny("git add -A/. stages everything — stage files by name instead")
+                if sub == "worktree" and args and args[0] == "add":
+                    # kbg single-branch doctrine gate. This is the ONLY enforcement
+                    # point for the doctrine — a prior companion gate on the native
+                    # WorktreeCreate event (worktree-create-block.sh) was removed
+                    # 2026-07-31: it read tool_name/tool_input, fields that event
+                    # never actually sends (confirmed against code.claude.com/docs/en/hooks
+                    # raw HTML), so its deny logic was dead code, and independent of
+                    # that bug, registering ANY hook on WorktreeCreate replaces the
+                    # Claude Code default worktree creation and requires the hook
+                    # to emit the resulting path — this one never did, so it was
+                    # silently breaking every legitimate WorktreeCreate-triggered
+                    # worktree (isolation:"worktree", claude --worktree, background
+                    # sessions) in every repo running this plugin. See
+                    # docs/research/official-docs-audit-2026-07-31.md. This Bash-side
+                    # check is unaffected: the dedicated WorktreeCreate event never
+                    # fires for Bash-invoked `git worktree add` in the first place
+                    # (verified against the same docs), so it was never part of the
+                    # broken mechanism.
+                    #
+                    # Find the new-branch name. The git-worktree-add argv
+                    # order is flexible — the -b flag may come before or
+                    # after the path. Scan ALL args for the -b/-B/--branch
+                    # flag pair. If found, capture the value. If absent, no
+                    # new branch is being created (existing branch checkout
+                    # via positional commit-ish) — allow.
+                    branch_name = None
+                    for i, t in enumerate(args):
+                        if t in ("-b", "-B", "--branch") and i + 1 < len(args):
+                            branch_name = args[i + 1]
                             break
-                        try:
-                            if os.path.isdir(os.path.join(d, ".git")) or \
-                               any(os.path.isfile(os.path.join(d, _s)) for _s in _SENTINEL_NAMES):
-                                root = d
-                                break
-                        except Exception:
-                            pass
-                        parent = os.path.dirname(d)
-                        if parent == d:
+                        # joined forms: -bBRANCH, -BBRANCH, --branch=BRANCH
+                        if (t.startswith("-b") and t != "-b") or (t.startswith("-B") and t != "-B"):
+                            branch_name = t[2:]
                             break
-                        d = parent
-                sentinel = ""
-                if root:
-                    for _s in _SENTINEL_NAMES:
-                        _cand = os.path.join(root, _s)
-                        if os.path.isfile(_cand):
-                            sentinel = _cand
+                        if t.startswith("--branch="):
+                            branch_name = t.split("=", 1)[1]
                             break
-                if sentinel:
-                    # No allowlist: any new non-develop branch via worktree
-                    # is denied in a sentinel repo. (The former review-pr
-                    # detached-worktree allowlist was removed with the
-                    # review pipeline, 2026-08-24 #82 — it was dead code
-                    # anyway: this branch only runs when -b/-B/--branch is
-                    # present, and the allowlist required its absence.)
-                    deny("git worktree add -b new-branch blocked by matt-harness doctrine "
-                         "(no new non-develop branches via worktree; single branch develop only); "
-                         "use detached worktrees, develop, or an existing branch. "
-                         "Remove /.kbg-no-worktree or /.mh-no-worktree to allow")
+                    if branch_name is not None and branch_name != "develop":
+                        # Resolve project root: CLAUDE_PROJECT_DIR env first,
+                        # then walk up from cwd looking for .git OR sentinel.
+                        # Expand-not-rename (T10 #89): accept BOTH the old
+                        # .kbg-no-worktree and new .mh-no-worktree sentinel names,
+                        # indefinitely -- a sentinel file in some OTHER repo is
+                        # invisible to this one, so there is no way to force every
+                        # other repo to rename when this repo does.
+                        _SENTINEL_NAMES = (".kbg-no-worktree", ".mh-no-worktree")
+                        root = os.environ.get("CLAUDE_PROJECT_DIR") or ""
+                        if not root:
+                            d = os.getcwd() or "/"
+                            for _ in range(16):
+                                if d in ("", "/"):
+                                    break
+                                try:
+                                    if os.path.isdir(os.path.join(d, ".git")) or \
+                                       any(os.path.isfile(os.path.join(d, _s)) for _s in _SENTINEL_NAMES):
+                                        root = d
+                                        break
+                                except Exception:
+                                    pass
+                                parent = os.path.dirname(d)
+                                if parent == d:
+                                    break
+                                d = parent
+                        sentinel = ""
+                        if root:
+                            for _s in _SENTINEL_NAMES:
+                                _cand = os.path.join(root, _s)
+                                if os.path.isfile(_cand):
+                                    sentinel = _cand
+                                    break
+                        if sentinel:
+                            # No allowlist: any new non-develop branch via worktree
+                            # is denied in a sentinel repo. (The former review-pr
+                            # detached-worktree allowlist was removed with the
+                            # review pipeline, 2026-08-24 #82 — it was dead code
+                            # anyway: this branch only runs when -b/-B/--branch is
+                            # present, and the allowlist required its absence.)
+                            deny("git worktree add -b new-branch blocked by matt-harness doctrine "
+                                 "(no new non-develop branches via worktree; single branch develop only); "
+                                 "use detached worktrees, develop, or an existing branch. "
+                                 "Remove /.kbg-no-worktree or /.mh-no-worktree to allow")
 
-    if argv0 == "dd" and any(t.startswith("of=/dev/") for t in rest):
-        deny("dd writing to a raw device — irrecoverable disk-level destruction")
+        if argv0 == "dd" and any(t.startswith("of=/dev/") for t in rest):
+            deny("dd writing to a raw device — irrecoverable disk-level destruction")
 
-    if argv0 in ("mysql", "psql", "sqlite3", "mariadb"):
-        # SQL genuinely lives inside -e/-c values, unlike git free-text
-        # messages — deliberately DO scan inside those here. The check
-        # is restricted to known-dangerous statements.
-        # TABLE is optional in TRUNCATE grammar (MySQL/MariaDB/Postgres all
-        # accept bare "TRUNCATE tbl_name") — matching only "TRUNCATE TABLE"
-        # let a fully destructive bare TRUNCATE through undetected.
-        if re.search(r"DROP\s+(TABLE|DATABASE|SCHEMA)|TRUNCATE\s+(TABLE\s+)?\w",
-                     " ".join(rest), re.IGNORECASE):
-            deny("destructive SQL (DROP TABLE/DATABASE/SCHEMA or TRUNCATE) detected — confirm with user first")
+        if argv0 in ("mysql", "psql", "sqlite3", "mariadb"):
+            # SQL genuinely lives inside -e/-c values, unlike git free-text
+            # messages — deliberately DO scan inside those here. The check
+            # is restricted to known-dangerous statements.
+            # TABLE is optional in TRUNCATE grammar (MySQL/MariaDB/Postgres all
+            # accept bare "TRUNCATE tbl_name") — matching only "TRUNCATE TABLE"
+            # let a fully destructive bare TRUNCATE through undetected.
+            if re.search(r"DROP\s+(TABLE|DATABASE|SCHEMA)|TRUNCATE\s+(TABLE\s+)?\w",
+                         " ".join(rest), re.IGNORECASE):
+                deny("destructive SQL (DROP TABLE/DATABASE/SCHEMA or TRUNCATE) detected — confirm with user first")
 
 sys.exit(0)
 '

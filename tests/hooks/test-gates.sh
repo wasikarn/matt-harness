@@ -281,6 +281,143 @@ test_deny  "$IRRECOVERABLE" "whitespace-less continuation inside a double-quoted
   "$(bash_payload $'git push "--for\\\nce" origin develop')"
 test_deny  "$IRRECOVERABLE" "trailing # comment on the same line does not hide the command before it" \
   "$(bash_payload 'git push origin develop --force # not a real flag, just a comment')"
+
+# ANSI-C ($'...') quoting resolves escape sequences in real bash -- $'\x74'
+# literally IS the character "t", so "gi$'\x74'" IS "git" once bash evaluates
+# it, same zero-width-splice family as the backtick/$(...)/${x} bypasses
+# tested under the fast-path section below, but this one survives even the
+# real python3 tokenizer (shlex has no concept of $'...' quoting and splits
+# on the bare $ instead of treating the whole span as one token). Fix is
+# _normalize_ansi_c_quotes, composed BEFORE _newlines_to_seps (same relative
+# order verifier-protect.sh uses for its own same-named function) since
+# _newlines_to_seps own quote tracking would otherwise toggle on the bare
+# quote inside $'\x74' first and silently no-op the normalization. Note this
+# file own version actually RESOLVES the escape (\x74 -> "t") rather than
+# just re-quoting it -- a boundary-only port (verifier-protect.sh own
+# version, sufficient for its write-target scanner) leaves argv0 as the
+# literal token "gi\x74", which can never equal "git" under this file own
+# exact-string argv0 checks; proven live 2026-09-03 with the token dump
+# ['gi\\x74', 'push', '--force', ...] before the escape-resolving version was
+# written. Confirmed live: rc=0 (allowed) before either fix.
+test_deny "$IRRECOVERABLE" "ANSI-C quoted argv0 splice (gi\$'\x74' push --force, was a bypass)" \
+  "$(bash_payload "gi\$'\\x74' push --force origin develop")"
+# Negative control 1: an ordinary single-quoted argument (no \$'...' form,
+# never enters the ANSI-C regex at all) must stay correctly classified --
+# not a force-push, must still allow.
+test_allow "$IRRECOVERABLE" "ordinary single-quoted commit message unaffected by ANSI-C normalization" \
+  "$(bash_payload "git commit -m 'a normal message'")"
+# Negative control 2: a REAL \$'...' payload that DOES enter the new decode
+# path -- a commit message with an embedded \n escape. Must both (a) not
+# false-deny (a plain commit is not a dangerous pattern) and (b) not get
+# window-split: the decoded newline must stay INSIDE the returned quoted
+# span, or _newlines_to_seps below would read it as a real statement
+# separator and split one "git commit -m \$'...'" window into two.
+test_allow "$IRRECOVERABLE" "ANSI-C commit message with embedded \\n stays one window, not force-push (real decode-path exercise)" \
+  "$(bash_payload $'git commit -m $\'line1\\nline2\'')"
+
+# GH #129: a command-substitution splice (backtick or \$(...)) vanishes in
+# real bash once its output splices into the surrounding text -- \`gi\`true\`t\`
+# IS \`git\` once bash evaluates it -- but until now it survived shlex
+# tokenization as literal characters, splitting the argv0/subcommand apart
+# and evading every exact-match check below. Fixed via a placeholder pass
+# (_blank_substitutions) that blanks the substitution span to one byte
+# BEFORE shlex runs, then re-fuses it into the surrounding token via
+# lex.wordchars, then duplicate-classifies any FINAL argv0/subcommand that
+# still carries the placeholder across every candidate name the downstream
+# checks actually dispatch on (KNOWN_DANGEROUS / KNOWN_GIT_SUBS) instead of
+# trusting the garbled literal. See hooks/gates/irrecoverable.sh for the
+# full mechanism comment.
+test_deny "$IRRECOVERABLE" "argv0-level backtick splice (gi\`true\`t push --force, GH #129)" \
+  "$(bash_payload 'gi`true`t push --force origin develop')"
+test_deny "$IRRECOVERABLE" "git-subcommand-level backtick splice (git pu\`true\`sh --force, clean argv0 but spliced sub, GH #129)" \
+  "$(bash_payload 'git pu`true`sh --force')"
+test_deny "$IRRECOVERABLE" "argv0-level \$(...) splice, different KNOWN_DANGEROUS candidate (gi\$(true)t reset --hard, GH #129)" \
+  "$(bash_payload 'gi$(true)t reset --hard')"
+# Negative controls: the duplication must not over-deny.
+test_allow "$IRRECOVERABLE" "substitution in an ARGUMENT, not the dispatch token (ls \$(pwd)) -- argv0 stays clean, never enters duplication" \
+  "$(bash_payload 'ls $(pwd)')"
+test_allow "$IRRECOVERABLE" "substitution IS the whole dispatch token but resolves to a benign subcommand (\$(which git) status)" \
+  "$(bash_payload '$(which git) status')"
+test_allow "$IRRECOVERABLE" "substitution IS the dispatch token, candidate set has no dangerous match (\$(command -v ls) -la)" \
+  "$(bash_payload '$(command -v ls) -la')"
+test_allow "$IRRECOVERABLE" "argv0-level \$(...) splice resolving to a benign git subcommand (gi\$(true)t status, proves duplication does not over-deny)" \
+  "$(bash_payload 'gi$(true)t status')"
+test_allow "$IRRECOVERABLE" "ordinary bare \$VAR usage stays untouched by the placeholder pass (git push \$REMOTE \$BRANCH)" \
+  "$(bash_payload 'git push $REMOTE $BRANCH')"
+# advisor-caught regression (same GH #129 fix): blanking a substitution SPAN
+# must not DISCARD its body. Before this whole fix, \$(...) content sat
+# between the "(" / ")" operators (both in OPERATORS), so it was split into
+# its OWN window and scanned like any other command -- \`\$(git push --force)\`
+# already denied today. A blank-only placeholder pass would erase that body
+# instead of just fusing the splice, silently turning a working deny into an
+# allow. Fix: _blank_substitutions collects each backtick/\$(...) body (not
+# \${...} -- that is a parameter expansion, not a command) as it blanks the
+# span, then re-appends the collected bodies as extra ";"-joined statements
+# so they still land in their own window downstream.
+test_deny "$IRRECOVERABLE" "substitution BODY is the dangerous command, not just the dispatch token (echo \$(git push --force), was silently allowed by a blank-only pass)" \
+  "$(bash_payload 'echo $(git push --force)')"
+test_allow "$IRRECOVERABLE" "re-appended substitution body is ordinary commit-message prose, not a command (git commit -m \"\$(cat msg.txt)\") -- proves body re-append does not false-deny" \
+  "$(bash_payload 'git commit -m "$(cat msg.txt)"')"
+# advisor-caught second regression, found live in THIS session when a test
+# script literally containing this shape tripped the just-fixed gate on
+# itself: a SINGLE-quoted \$(...) span is inert in real bash (single quotes
+# suppress every expansion), but the body-append fix above has no notion of
+# quoting and would extract "git push --force" from inside the quotes
+# anyway, manufacturing a live-looking statement out of prose and denying a
+# harmless commit message. Fixed by matching a whole SQ...SQ span as its
+# own regex alternative FIRST, so it is consumed and passed through
+# unchanged before any substitution alternative can match inside it.
+# DOUBLE-quoted substitutions must NOT get this treatment -- bash really
+# does expand \$(...) inside double quotes, so a double-quoted splice stays
+# a live vector and must still be caught.
+test_allow "$IRRECOVERABLE" "single-quoted \$(...) is inert prose, must not be extracted and re-denied (git commit -m single-quote prose mentioning \$(git push --force))" \
+  "$(bash_payload "git commit -m 'prose mentioning \$(git push --force)'")"
+test_deny "$IRRECOVERABLE" "double-quoted argv0 splice stays a live vector, not given the single-quote passthrough (\"gi\$(true)t\" push --force)" \
+  "$(bash_payload '"gi$(true)t" push --force')"
+
+# Adversarial-review follow-up on the GH #129 fix (two bugs, 2026-09-03):
+#
+# Bug 1 (critical bypass): an unbalanced quote inside a blanked
+# substitution BODY (a single apostrophe is enough) makes the shlex
+# construction below raise ValueError. The old except handler fell back to
+# tokenizing cmd.split() on the RAW, PRE-BLANKING string -- PH was never in
+# it, so a spliced argv0 like this can never equal "git" and the whole
+# GH #129 mechanism went inert, ALLOWing a real `git push --force` once
+# bash evaluates the inner failing subshell to empty. Fixed by denying
+# closed on that parse failure instead of guessing at a raw fallback.
+test_deny "$IRRECOVERABLE" "backtick splice with an apostrophe inside the body defeats the old raw cmd.split() fallback (gi\`it's\`t push --force, was silently ALLOWed)" \
+  "$(bash_payload $'gi`it\'s`t push --force')"
+test_deny "$IRRECOVERABLE" "\$(...) splice with an apostrophe inside the body, same bypass shape (gi\$(it's)t push --force, was silently ALLOWed)" \
+  "$(bash_payload $'gi$(it\'s)t push --force')"
+
+# Bug 2 (false-DENY): the KNOWN_DANGEROUS/KNOWN_GIT_SUBS candidate
+# duplication runs every candidate's check against the SAME rest/scan
+# tokens, and two of those checks were bare letter-containment against a
+# whole joined-flags string rather than a real flag-boundary test -- so an
+# ordinary long flag whose plain-English spelling happens to contain the
+# right letters tripped them. Fixed by requiring an exact long-option match
+# ("--recursive"/"--force") or a genuinely short bundled cluster before
+# counting a letter.
+test_allow "$IRRECOVERABLE" "substitution dispatch token resolving to a benign command, long flag falsely read as rm -rf (\$(which node) --before=1, was a false DENY)" \
+  "$(bash_payload '$(which node) --before=1')"
+test_allow "$IRRECOVERABLE" "git diff splice, long flag falsely read as git clean -f (git di\$(true)ff --find-renames, was a false DENY)" \
+  "$(bash_payload 'git di$(true)ff --find-renames')"
+test_allow "$IRRECOVERABLE" "git show splice, long flag falsely read as git clean -f (git sh\$(true)ow --format=fuller, was a false DENY)" \
+  "$(bash_payload 'git sh$(true)ow --format=fuller')"
+
+# Second adversarial-review follow-up (2026-09-03): the _SQ_SPAN regex used
+# to detect inert single-quoted text paired literal apostrophe CHARACTERS
+# wherever they fell, with zero notion of real shell quote state. An
+# ordinary English contraction sitting inside a DOUBLE-quoted string (its
+# apostrophe is not a real shell quote boundary at all) shifted the
+# pairing in both directions. Fixed by replacing the regex with a real
+# left-to-right quote-state scan (same technique _newlines_to_seps already
+# uses above).
+test_deny "$IRRECOVERABLE" "contraction apostrophes inside double quotes pair up ACROSS a real \$(...) splice, hiding it as inert single-quoted data (was a live bypass)" \
+  "$(bash_payload $'echo "it\'s" ; gi$(true)t push --force ; echo "isn\'t"')"
+test_allow "$IRRECOVERABLE" "same stray contraction apostrophe shifts pairing so a REAL single-quoted -m argument is no longer matched as one span (was a false DENY of inert commit-message text)" \
+  "$(bash_payload $'echo "it\'s" ; git commit -m \'see $(git push --force)\'')"
+
 test_allow "$IRRECOVERABLE" "git push --force-with-lease (safe variant)" \
   "$(bash_payload 'git push --force-with-lease origin develop')"
 test_allow "$IRRECOVERABLE" "git push --force-with-lease with refspec (still safe)" \
