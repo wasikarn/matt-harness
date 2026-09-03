@@ -205,6 +205,38 @@ out=$( (cd "$WS" && echo "$bashpayload_ansic" \
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "ANSI-C \$'...' quoted target -> deny exit 2 (not a silent bypass)" "$ok"
 
+# Fresh-context re-verification found (2026-09-03) a regression in _normalize_ansi_c_quotes()
+# itself, introduced by the GH #124 quote-tracking rewrite of _newlines_to_seps() above: for an
+# ANSI-C string containing an escaped internal quote, e.g. $'a\'b', the old naive rewrap (wrap
+# the raw captured text in plain quotes) produced 'a\'b' -- an UNBALANCED string with 3 raw quote
+# bytes and no legitimate close. _newlines_to_seps' own quote-tracking scanner then opens
+# in_squote at the first quote, never finds a real closing quote, and stays in_squote for the
+# rest of the command -- silently swallowing every following newline/write with NO separator
+# inserted at all. Confirmed against real bash first (bash -x and a real cp): $'a\'b' evaluates
+# to the 3-char string a'b, IDENTICAL to the bash splice idiom 'a'\''b' (single quotes have no
+# escape mechanism, so a literal quote can only be spliced in this way). Fixed by decoding the
+# captured \' unit into that splice idiom instead of copying it raw -- confirmed live against the
+# unfixed gate: bash_write_targets() yielded zero targets for the command below (silent bypass).
+ANSIC_ESCQUOTE_CMD=$(printf 'echo $%sa\\%sb%s\ncp evil.sh repo1/f.txt' "'" "'" "'")
+bashpayload_ansiescquote=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$ANSIC_ESCQUOTE_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_ansiescquote" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "ANSI-C \$'a\\'b' (escaped internal quote) + write after it -> deny exit 2 (not silently allowed)" "$ok"
+
+# Adversarial re-verification (2026-09-03, final review before ship): TWO separate ANSI-C
+# strings on the same line, each with its own escaped internal quote. This targets the decode's
+# own regex boundary -- does _ANSI_C_QUOTE_RE's per-match capture correctly stop at each string's
+# own closing quote, or does the first escaped-quote's greedy consumption bleed across into the
+# second string's opening $'? Confirmed against real bash first (bash -x): both strings decode
+# independently (a'b and c'd), and the trailing write still executes as a separate statement.
+ANSIC_TWOSEG_CMD=$(printf "echo \$%sa\\\\%sb%s \$%sc\\\\%sd%s\ncp evil.sh repo1/f.txt" "'" "'" "'" "'" "'" "'")
+bashpayload_ansitwoseg=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$ANSIC_TWOSEG_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_ansitwoseg" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "two ANSI-C strings on one line, each with an escaped quote, + write after -> deny exit 2" "$ok"
+
 # Regression test (found + fixed 2026-08-04, round 2 -- caught by a genuine
 # subagent_type:kbg:silent-failure-hunter re-verification dispatch after the
 # round-1 fix landed): shlex treats a bare newline as ordinary whitespace, and
@@ -232,6 +264,35 @@ out=$( (cd "$WS" && echo "$bashpayload_hyphenhd" \
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "hyphenated heredoc delimiter + write statement after it -> deny exit 2 (not silently eaten)" "$ok"
 
+# GH #124 (2026-09-03): _newlines_to_seps() used to preserve a real backslash-newline
+# continuation as a literal two-char "\<newline>" pair, on the theory that shlex's own
+# posix-mode escape handling deals with it harmlessly. It doesn't: shlex drops only the
+# backslash, leaving the newline glued onto whatever token follows -- e.g.
+# "sed \<newline>-i" tokenizes to ['sed', '\n-i'], not ['sed', '-i']. That broke every
+# exact-match/startswith idiom guard in bash_write_targets() whose target token can sit
+# right after a continuation: sed/perl's -i detection, and even argv0 itself when a
+# continuation splits it. Confirmed against real bash first (bash -x): both commands
+# below execute identically to their continuation-free form, with the write actually
+# landing. Confirmed live against the unfixed gate: bash_write_targets() yielded zero
+# targets for either, so main() never called classify() at all (silent exit 0). Fixed by
+# removing the backslash-newline pair ENTIRELY instead of restoring it, matching bash's
+# own line-continuation semantics (same fix pattern as GH #122/#123's char-by-char
+# parsers in irrecoverable.sh/main-exec-guard.sh, applied here to this file's
+# placeholder-substitution version instead).
+SEDI_GLUE_CMD=$(printf 'sed \\\n-i -e s/x/y/ repo1/f.txt')
+bashpayload_sedi=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$SEDI_GLUE_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_sedi" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "GH #124: sed -i split by backslash-newline continuation onto the -i flag -> deny exit 2 (was a silent bypass)" "$ok"
+
+TEE_GLUE_CMD=$(printf 'true && \\\ntee repo1/f.txt')
+bashpayload_teeglue=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$TEE_GLUE_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_teeglue" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "GH #124: argv0 itself (tee) split by backslash-newline continuation -> deny exit 2 (was a silent bypass)" "$ok"
+
 # Round-3 regression tests (found 2026-08-04 by a genuine subagent_type:kbg:silent-failure-hunter
 # re-verification dispatch after the round-2 fix landed -- one of the two is a regression in
 # round-2's OWN fix, the same failure shape as round-2 finding a regression in round-1's fix).
@@ -258,6 +319,38 @@ out=$( (cd "$WS" && echo "$bashpayload_benign" \
   | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "comment mentioning a workspace-looking path, no real write -> exit 0 (not a false deny)" "$ok"
+
+# Reviewer-found regression in the GH #124 fix above (2026-09-03): _newlines_to_seps() is a
+# context-blind regex substitution -- it has no idea whether a backslash-newline sits inside a
+# real bash "#" comment. In real bash a comment always ends at the very next literal newline no
+# matter what precedes it (comments get zero escape processing), so a backslash right before
+# that newline has NO continuation effect there. The post-#124-fix code did not know this and
+# fully erased the pair anyway (cmd.replace(placeholder, "")), deleting the only newline that
+# would have terminated the comment for the downstream shlex.shlex(..., commenters='#') reader --
+# swallowing the write statement that followed into the same comment window. Confirmed against
+# real bash first (bash -x): the write executes for real, right after the comment line. Confirmed
+# live against the unfixed gate: bash_write_targets() yielded zero targets (silent bypass) --
+# WORSE than pre-#124, which at least left the newline in place and denied.
+COMMENT_CONT_CMD=$(printf 'echo hello #comment \\\ncp evil.sh repo1/f.txt')
+bashpayload_commentcont=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$COMMENT_CONT_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_commentcont" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "backslash right before a comment-terminating newline -> deny exit 2 (not swallowed into the comment)" "$ok"
+
+# Side-effect probe: a separate, PRE-EXISTING windowing gap the same reviewer flagged, older
+# than GH #124 -- TWO backslashes right before a comment-terminating newline. No continuation is
+# even possible inside a comment (POSIX comments get zero escape processing, so the backslash
+# COUNT is irrelevant there), but the same context-blind regex only matches the LAST backslash +
+# newline as one "continuation" pair and erases it anyway, again eating the separator. Real bash
+# still executes the write on the next line regardless of backslash count before the
+# comment-ending newline.
+COMMENT_2BS_CMD=$(printf 'echo hello #comment \\\\\ncp evil.sh repo1/f.txt')
+bashpayload_comment2bs=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$COMMENT_2BS_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_comment2bs" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "two backslashes before a comment-terminating newline -> deny exit 2 (pre-existing windowing gap)" "$ok"
 
 # Finding 2: an unquoted \$VAR or ~ redirect target was never expanded before os.path.abspath() --
 # '\$' isn't in shlex's default wordchars (splits '\$HOME/x' into '\$' + 'HOME/x') and even a
@@ -309,6 +402,44 @@ CASES = [
     ("comment contains fake redirect symbol", "ls -la # see > repo1/notes.txt for details", None, set()),
     ("# inside quotes is not a comment", 'echo "value#tag" > repo1/out.txt', {"repo1/out.txt"}, None),
     ("benign no-write command", "git status && ls repo1/", None, set()),
+    # GH #124: a real backslash-newline continuation used to survive into shlex as a
+    # literal 2-char pair, which shlex partially un-escapes (drops the backslash, keeps
+    # the newline glued onto the next token) -- breaking any exact-match/startswith check
+    # whose token sits right after the continuation.
+    ("sed -i split by continuation onto the -i flag (GH #124)",
+     "sed \\\n-i -e s/x/y/ repo1/target.txt", {"repo1/target.txt"}, None),
+    ("argv0 itself (tee) split by continuation (GH #124)",
+     "true && \\\ntee repo1/target.txt", {"repo1/target.txt"}, None),
+    ("dd of= prefix split by continuation (GH #124)",
+     "dd if=/dev/zero \\\nof=repo1/target.txt", {"repo1/target.txt"}, None),
+    # Reviewer-found regression in the GH #124 fix: a backslash right before a
+    # comment-terminating newline has no continuation effect in real bash (comments end
+    # at the very next literal newline no matter what), but the post-#124 regex erased
+    # the pair anyway, eating the only newline that would have closed the comment.
+    ("backslash before a comment-terminating newline (post-#124 regression)",
+     "echo hello #comment \\\ncp evil.sh repo1/target.txt", {"repo1/target.txt"}, None),
+    # Same class, pre-existing (older than GH #124): TWO backslashes before a
+    # comment-terminating newline. Backslash count is irrelevant inside a comment, but
+    # the regex still matched the last backslash+newline as one pair and erased it.
+    ("two backslashes before a comment-terminating newline (pre-existing windowing gap)",
+     "echo hello #comment \\\\\ncp evil.sh repo1/target.txt", {"repo1/target.txt"}, None),
+    # ANSI-C escaped-internal-quote regression (fresh-context re-verification, 2026-09-03):
+    # _normalize_ansi_c_quotes() used to copy the raw $'...' escape sequence verbatim and
+    # slap plain quotes around it, producing an unbalanced 'a\'b' for $'a\'b' -- which threw
+    # _newlines_to_seps' own quote-tracking scanner into a permanent in_squote state, eating
+    # the write statement below with zero separator. Fixed by decoding the escaped quote into
+    # the bash 'a'\''b' splice idiom (ground-truthed identical to $'a\'b' in real bash).
+    ("ANSI-C escaped internal quote spliced into a balanced quote idiom",
+     "echo $'a\\'b'\ncp secret.txt repo1/target.txt", {"repo1/target.txt"}, None),
+    # Companion: a plain $'...' with NO escaped quote must keep behaving exactly as before
+    # the fix (guards against overcorrection breaking the common, already-working case).
+    ("plain ANSI-C quote with no escaped quote still works",
+     "echo $'plain text'\ncp secret.txt repo1/target.txt", {"repo1/target.txt"}, None),
+    # Primary use case: the escaped quote sits INSIDE the write TARGET itself (not just
+    # incidental text before it) -- $'repo1/we\'ird.txt' decodes to the literal filename
+    # repo1/we'ird.txt, same as real bash.
+    ("ANSI-C escaped quote inside the write target itself",
+     "cp secret.txt $'repo1/we\\'ird.txt'", {"repo1/we'ird.txt"}, None),
 ]
 
 fails = 0

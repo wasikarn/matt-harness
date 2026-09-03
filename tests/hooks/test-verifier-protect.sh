@@ -81,6 +81,54 @@ BATTERY=(
   "comment mentions a protected-looking path, no real write|cp a.sh b.sh # update hooks/gates/x.sh|noask"
   "comment contains a fake redirect symbol|ls -la # see > hooks/gates/notes.txt for details|noask"
   "write on same line before a trailing comment, target NOT protected|cp a.sh /tmp/b.sh # note|noask"
+  # GH #124 (2026-09-03): _newlines_to_seps() used to preserve a real backslash-newline
+  # continuation as a literal "\<newline>" pair, on the theory that shlex handles it
+  # harmlessly on its own. It does not: shlex's posix-mode escape handling drops only the
+  # backslash, leaving the newline glued onto whatever token follows -- e.g.
+  # "sed \<newline>-i" tokenizes to "\n-i", not "-i". That silently broke this generator's
+  # own exact-match/startswith idiom guards (sed/perl -i detection, and even argv0 itself
+  # when a continuation splits it), the same shape as GH #122/#123's top-level flag
+  # checks. Confirmed against real bash first: both commands below execute identically to
+  # their continuation-free form. Confirmed live against the unfixed gate: bash_write_
+  # targets() yielded zero targets for either, a silent allow on a write that really does
+  # land on a verifier surface. Fixed by removing the backslash-newline pair entirely.
+  "sed -i split by continuation onto the -i flag (GH #124)|$(printf 'sed \\\n-i -e s/x/y/ hooks/gates/irrecoverable.sh')|ask"
+  "argv0 itself (tee) split by continuation (GH #124)|$(printf 'true && \\\ntee hooks/gates/irrecoverable.sh')|ask"
+  # Reviewer-found regression in the GH #124 fix (2026-09-03): _newlines_to_seps() is a
+  # context-blind regex substitution -- it has no idea whether a backslash-newline sits
+  # inside a real bash "#" comment. In real bash a comment always ends at the very next
+  # literal newline no matter what precedes it (comments get zero escape processing), so
+  # a backslash right before that newline has NO continuation effect there. The
+  # post-#124-fix code did not know this and fully erased the pair anyway, deleting the
+  # only newline that would have terminated the comment for the downstream
+  # shlex.shlex(..., commenters=#) reader -- swallowing the write statement that followed
+  # into the same comment window. Confirmed against real bash first (bash -x): the write
+  # executes for real, right after the comment line. Confirmed live against the unfixed
+  # gate: rc=0, no output -- a silent allow, WORSE than pre-#124, which at least denied.
+  "backslash before a comment-terminating newline (post-#124 regression)|$(printf 'echo hello #comment \\\ncp evil.sh hooks/gates/irrecoverable.sh')|ask"
+  # Same class, PRE-EXISTING (older than GH #124): TWO backslashes before a
+  # comment-terminating newline. Backslash count is irrelevant inside a comment (no
+  # escape processing happens there at all), but the regex only matches the LAST
+  # backslash + newline as one pair and erases it anyway, again eating the separator.
+  "two backslashes before a comment-terminating newline (pre-existing windowing gap)|$(printf 'echo hello #comment \\\\\ncp evil.sh hooks/gates/irrecoverable.sh')|ask"
+  # ANSI-C escaped-internal-quote regression (fresh-context re-verification, 2026-09-03):
+  # _normalize_ansi_c_quotes() used to copy the raw $'...' escape sequence verbatim and
+  # slap plain quotes around it, producing an unbalanced 'a\'b' for $'a\'b' -- which threw
+  # _newlines_to_seps' own quote-tracking scanner into a permanent in_squote state, eating
+  # the write statement below with zero separator inserted. Confirmed against real bash
+  # first (bash -x and a real cp): $'a\'b' evaluates to the 3-char string a'b, IDENTICAL to
+  # the bash splice idiom 'a'\''b' (single quotes have no escape mechanism, so a literal
+  # quote can only be spliced in this way). Confirmed live against the unfixed gate: rc=0,
+  # no output -- a silent allow. Fixed by decoding the escaped quote into that splice idiom.
+  "ANSI-C escaped internal quote, write after (fresh-context re-verification)|$(printf 'echo $%sa\\%sb%s\ncp evil.sh hooks/gates/irrecoverable.sh' "'" "'" "'")|ask"
+  # Companion: a plain $'...' with NO escaped quote, write on the next line, must keep
+  # behaving exactly as before the fix (guards against overcorrection breaking the common,
+  # already-working case).
+  "plain ANSI-C quote with no escaped quote, write after|$(printf 'echo $%splain text%s\ncp evil.sh hooks/gates/irrecoverable.sh' "'" "'")|ask"
+  # Primary use case: the escaped quote sits INSIDE the write TARGET itself, resolving into
+  # a verifier path -- $'hooks/gates/we\'ird.sh' decodes to the literal filename
+  # hooks/gates/we'ird.sh, same as real bash.
+  "ANSI-C escaped quote inside the write target itself|$(printf 'cp evil.sh $%shooks/gates/we\\%sird.sh%s' "'" "'" "'")|ask"
 )
 
 for row in "${BATTERY[@]}"; do

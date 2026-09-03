@@ -172,6 +172,12 @@ def _newlines_to_seps(s):
             i += 1
             continue
         if dquote:
+            if c == "\\" and i + 1 < n and s[i + 1] == "\n":
+                # real continuation inside a double-quoted string: bash
+                # strips backslash-newline here too, same full removal as
+                # the unquoted case below -- nothing appended.
+                i += 2
+                continue
             if c == "\\" and i + 1 < n:
                 out.append(c); out.append(s[i + 1])
                 i += 2
@@ -182,12 +188,21 @@ def _newlines_to_seps(s):
                 word_start = False
             i += 1
             continue
+        if c == "\\" and i + 1 < n and s[i + 1] == "\n":
+            # real line continuation: bash removes the backslash AND the
+            # newline entirely, joining the two lines with nothing between
+            # them -- so nothing is appended here (word_start left
+            # untouched, same as before: a continuation does not count as
+            # "having typed something"). GH #123, twin of GH #122
+            # (irrecoverable.sh, 33651372) -- the old pass-through left a
+            # stray "\n" that shlex glued onto the very next token.
+            i += 2
+            continue
         if c == "\\" and i + 1 < n:
             nxt = s[i + 1]
             out.append(c); out.append(nxt)
+            word_start = False
             i += 2
-            if nxt != "\n":
-                word_start = False
             continue
         if c == SQ:
             squote = True

@@ -138,6 +138,7 @@ PROTECTED_REASON = (
 # all). SQ builds one at runtime wherever a regex or replacement needs to
 # match or emit a quote character.
 SQ = chr(39)
+DQ = chr(34)
 
 # Ported from worktree-guard.py 2026-08-04, after a subagent_type
 # mh:silent-failure-hunter re-verification dispatch confirmed this generator
@@ -151,7 +152,6 @@ SQ = chr(39)
 # just word characters.
 _HEREDOC_RE = re.compile(r"<<(-)?\s*([" + SQ + r"\"]?)([^\s" + SQ + r"\"]+)\2")
 _ANSI_C_QUOTE_RE = re.compile(r"\$" + SQ + r"((?:[^" + SQ + r"\\]|\\.)*)" + SQ)
-_LINE_CONT_RE = re.compile(r"\\\n")
 # A heredoc feeding an interpreter (bash <<EOF, python3 <<EOF, ...) is
 # executable code, not inert data -- stripping it would let a write inside
 # the body silently skip bash_write_targets below. Checked against the
@@ -199,22 +199,156 @@ def _normalize_ansi_c_quotes(cmd):
     # bare $ instead of treating the whole span as one token. Rewriting to a
     # plain quoted token fixes token BOUNDARIES, which is all this generator
     # needs (not a full backslash-escape reimplementation).
-    return _ANSI_C_QUOTE_RE.sub(lambda m: SQ + m.group(1) + SQ, cmd)
+    #
+    # One escape needs real handling anyway: a captured backslash-SQ pair
+    # (an escaped literal quote inside $SQ...SQ). Naively re-wrapping the raw
+    # captured text embeds a raw SQ byte inside what is now a plain SQ...SQ
+    # token — an unbalanced string that later throws off _newlines_to_seps
+    # own quote-tracking scanner: it opens in_squote at the first SQ and,
+    # since the string never closes, stays in_squote for the rest of the
+    # command, silently swallowing every following newline/write with no
+    # separator inserted. A plain SQ...SQ token can never contain a literal
+    # quote at all — there is no escape mechanism inside single quotes — so
+    # any backslash-SQ pair in the captured body is spliced out into the
+    # standard bash idiom instead: close the quote, emit an escaped literal
+    # quote OUTSIDE quotes, reopen a new quoted span. Every other
+    # backslash-escape pair is left as its raw two literal characters, same
+    # as before — full ANSI-C escape decoding stays out of scope, and none
+    # of those other pairs can reintroduce a quote-balance break since none
+    # of them contain a literal SQ byte.
+    def _decode_ansi_c(m):
+        body = m.group(1)
+        out = []
+        i, n = 0, len(body)
+        while i < n:
+            if body[i] == "\\" and i + 1 < n:
+                if body[i + 1] == SQ:
+                    out.append(SQ + "\\" + SQ + SQ)
+                else:
+                    out.append(body[i:i + 2])
+                i += 2
+            else:
+                out.append(body[i])
+                i += 1
+        return SQ + "".join(out) + SQ
+    return _ANSI_C_QUOTE_RE.sub(_decode_ansi_c, cmd)
 
 
 def _newlines_to_seps(cmd):
     # A bare newline separates Bash statements exactly like semicolon does,
     # but shlex treats \n as ordinary whitespace, so a write-only statement
     # on any line but the first is invisible to every argv0-dispatch branch
-    # below. Insert a separator AFTER each non-continuation newline (never in
-    # place of it) — keeping the real newline matters because the default
-    # comment handling stops consuming at the next literal newline; replacing
-    # every newline outright would let a single # anywhere swallow the rest
-    # of the command as one comment.
-    placeholder = "\x00"
-    cmd = _LINE_CONT_RE.sub(placeholder, cmd)
-    cmd = cmd.replace("\n", "\n; ")
-    return cmd.replace(placeholder, "\\\n")
+    # below. Insert a separator AFTER each real newline (never in place of
+    # it) -- keeping the real newline matters because the default comment
+    # handling stops consuming at (and consumes) the next literal newline;
+    # replacing every newline outright would leave no newline anywhere, so a
+    # single # anywhere in the command would swallow the rest of it as one
+    # comment (confirmed exploitable 2026-08-04, shipped in v0.68.172). A
+    # backslash immediately before the newline is a real bash line
+    # continuation OUTSIDE a comment or single-quoted string (same logical
+    # statement, not a separator) -- bash removes BOTH characters entirely,
+    # joining the two physical lines with nothing between them, so this does
+    # the same (full removal).
+    #
+    # A REGEX substitution over the raw string cannot make that call
+    # correctly, because it has no notion of quote or comment state: a bash
+    # hash comment always ends at the very next literal newline no matter
+    # what precedes it (comments get zero escape processing at all --
+    # backslash count is irrelevant there), so a backslash right before that
+    # newline has NO continuation effect inside a comment, and single-quoted
+    # content must pass through completely untouched (no continuation
+    # stripping at all -- bash treats every character between quotes as
+    # literal, backslash included). A prior version of this function used
+    # exactly such a context-blind regex substitution and, after the GH #124
+    # full-removal fix, erased a backslash-newline pair sitting inside a hash
+    # comment too -- deleting the only newline that would have terminated the
+    # comment for the downstream shlex reader, and swallowing the write
+    # statement that followed into the same comment window (confirmed live
+    # 2026-09-03, a fresh-context review of the #124 fix: a comment ending in
+    # a trailing backslash right before its terminating newline, followed by
+    # a real write on the next line, silently yielded zero write targets --
+    # worse than pre-#124, which at least preserved the newline and asked).
+    # The same context-blindness also already mishandled a backslash-newline
+    # pair preceded by ANOTHER backslash (e.g. two backslashes right before a
+    # comment-terminating newline) even before GH #124 existed, since the
+    # regex matches only the last backslash + newline as one continuation
+    # pair and does not know it is inside a comment either.
+    #
+    # Ported char-by-char, quote-and-comment-aware from irrecoverable.sh
+    # function of the same name (GH #122/#123 fix for the identical shape at
+    # that file own top-level flag checks) -- this generator needed the same
+    # scan, one level deeper inside its own idiom dispatch (sed/perl -i
+    # detection, dd of= prefix matching, even an argv0 split across a
+    # continuation) -- all still closed by full removal here, same as the
+    # regex version own GH #124 fix. Double-quoted content still gets the
+    # same full-removal continuation treatment bash itself applies there, but
+    # a hash inside double quotes is never a comment marker.
+    out = []
+    in_squote = in_dquote = in_comment = False
+    i, n = 0, len(cmd)
+    while i < n:
+        c = cmd[i]
+        if in_comment:
+            if c == "\n":
+                # comment ends at the literal newline, same as bash -- emit
+                # the same separator a normal newline gets so the window
+                # that follows still splits off correctly.
+                out.append(c); out.append(";"); out.append(" ")
+                in_comment = False
+            else:
+                out.append(c)
+            i += 1
+            continue
+        if in_squote:
+            out.append(c)
+            if c == SQ:
+                in_squote = False
+            i += 1
+            continue
+        if in_dquote:
+            if c == "\\" and i + 1 < n and cmd[i + 1] == "\n":
+                # real continuation inside a double-quoted string: bash
+                # strips backslash-newline here too (same full removal as
+                # the unquoted case below), so nothing is appended.
+                i += 2
+                continue
+            if c == "\\" and i + 1 < n and cmd[i + 1] in (DQ, "\\", "$", "`"):
+                out.append(c); out.append(cmd[i + 1])
+                i += 2
+                continue
+            out.append(c)
+            if c == DQ:
+                in_dquote = False
+            i += 1
+            continue
+        # unquoted, not in a comment
+        if c == SQ:
+            in_squote = True
+            out.append(c); i += 1
+        elif c == DQ:
+            in_dquote = True
+            out.append(c); i += 1
+        elif c == "\\" and i + 1 < n and cmd[i + 1] == "\n":
+            # real line continuation: bash removes the backslash AND the
+            # newline entirely, joining the two lines with nothing at all
+            # between them -- so nothing is appended here (GH #124).
+            i += 2
+        elif c == "\\" and i + 1 < n:
+            # any other backslash-escaped pair -- consumed together so the
+            # escaped character is never re-examined as an unescaped
+            # hash/quote marker.
+            out.append(c); out.append(cmd[i + 1])
+            i += 2
+        elif c == "#":
+            in_comment = True
+            out.append(c); i += 1
+        elif c == "\n":
+            out.append(c); out.append(";"); out.append(" ")
+            i += 1
+        else:
+            out.append(c)
+            i += 1
+    return "".join(out)
 
 
 def _diff_targets(path):

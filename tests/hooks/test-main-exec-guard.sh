@@ -172,6 +172,24 @@ DENY_CMDS=(
   'npm test' 'ls; rm f' 'sudo ls' 'echo "$(rm x)"' 'rtk proxy rm x' 'echo a#; rm x'
   'cat <<EOF' 'echo "unbalanced' 'cat f | tee g' 'git status | xargs rm'
   $'git status # comment \\\ngit push origin develop --force'
+  # GH #123: main-exec-guard.sh's own twin of GH #122 (fixed in
+  # irrecoverable.sh, 33651372). A backslash-newline continuation with NO
+  # leading whitespace on the continuation line bypassed sed -i detection.
+  # Real bash removes the backslash AND the newline entirely, joining the two
+  # physical lines with nothing between them, so "sed \" + newline +
+  # "-i s/x/y/ f" is identical to "sed -i s/x/y/ f" to bash. The old
+  # _newlines_to_seps left the newline character attached to whatever
+  # followed instead of fully removing it; shlex then glued that residual
+  # "\n" onto the very next token, producing "\n-i" instead of "-i", which
+  # check_sed's startswith("-") flag scan missed entirely -- confirmed live
+  # 2026-09-03: exit 0 (allowed) before this fix.
+  $'sed \\\n-i s/x/y/ f'
+  # Adjacent shapes a narrow patch to just the unquoted branch could still
+  # miss: the identical defect lived in the dquote branch too (bash strips
+  # backslash-newline inside a double-quoted string the same way), and a
+  # continuation immediately followed by another backslash-escaped char.
+  $'sed "\\\n-i" s/x/y/ f'
+  $'sed \\\n\\-i s/x/y/ f'
 )
 for c in "${DENY_CMDS[@]}"; do
   run 1 "$(bash_payload "$c")"
