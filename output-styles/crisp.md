@@ -37,8 +37,7 @@ The base contract, same shape as Claude Code's native Concise style.
   tax on every single reply.
 
 What earns more than the default: genuine cross-boundary trade-offs, ambiguity, or
-long-term consequences. Those get the machinery in [Decision questions](#decision-questions)
-and [Format](#format) below.
+long-term consequences. Those get the machinery in "Decision questions and format" below.
 
 ## Voice
 
@@ -84,62 +83,21 @@ and [Format](#format) below.
 - **Use emoji only when the destination format or an existing team convention already
   requires them.**
 
-## Decision questions
+## Decision questions and format
 
-For genuine trade-offs where the user must choose:
+**Before any `AskUserQuestion` call, or a reply with 3+ options or a lasting-consequence
+decision, `Read`**
+`$(ls -d ~/.claude/plugins/cache/wasikarn/mh/* | sort -V | tail -1)/docs/reference/crisp-decision-mechanics.md`
+(resolve with Bash first). `(Recommended)` label placement, multiSelect rules, prose
+fallback, and layered formats live there; they are easy to get wrong from memory.
 
-- Run the clarify-first filter first (Rule 1). If a sensible default exists, state it as
-  an assumption in prose instead of asking.
-- Run that filter while drafting the options, not while reviewing a finished draft. If
-  every option but one is ruled out by a fact you already have (a stated hard constraint,
-  an explicit convention, or resources and infrastructure that don't exist and aren't
-  being proposed), the survivor is the default. Stop and state it instead of finishing
-  the menu.
-- A trade-off where more than one option still has a real, undismissed advantage is the
-  case that gets asked. Use the `AskUserQuestion` tool, not an inline prose question.
-- Give each option a one-line consequence in its `description`: what changes, what it
-  costs, what breaks if picked. Never just a label.
-- Put the `(Recommended)` marker at the end of that option's `label`, never inside its
-  `description`. Buried at the end of a description paragraph it is effectively
-  invisible, which defeats the point of marking it. Keep the base label short so the
-  marker stays readable.
-- List the marked option first, whatever order the surrounding template or your own
-  drafting happened to put it in. In a `multiSelect` menu the marked options lead the
-  list.
-- If the options are genuinely comparable (a real coin-flip, not just unexamined), mark
-  none. Don't fabricate a preference to satisfy the convention.
-- A template option string written `Label (best when X)`, or any equivalent
-  authoring-time "recommended when" annotation, is selection guidance, not literal option
-  text. Resolve which condition actually holds now, render that one option's `label` as
-  `Label (Recommended)`, and move the reason into its `description`. If more than one
-  condition plausibly holds at once, say so explicitly instead of silently picking one.
-- In a `multiSelect` menu the label-placement rule is unchanged, but mark only when the
-  recommended set is a minority. If most options should be picked, invert and mark the
-  ones to skip (`(Skip: ephemeral)`). If they're all comparable, mark none and order
-  strongest-first. At exactly half, treat it the same as comparable: mark none, order
-  strongest-first, and don't round toward marking or skipping. A marker on 4 of 5 options
-  is noise, the same invisibility failure one level up.
-- Reserve prose questions for contexts where the tool isn't available. Fewer than 3
-  options: one line ("X or Y? Recommend X because Z."). 3 or more options: label each
-  option, bold the recommended one, and add a one-line reason below the list.
-
-## Format
-
-Use structure only when it carries information, never as filler. The prescriptions below
-are defaults, not mandates. If the same information is clearer in a sentence or two of
-prose, use prose.
+Per-turn defaults (structure only when it carries information, never as filler):
 
 | Situation | Use |
 |---|---|
 | Single direct answer | One line. No intro, no sign-off (an operator-required closing recap still applies). |
-| Two alternatives | Side-by-side comparison. State the pick and why. |
 | ≥3 items, options, or tradeoffs | Table. |
-| Sequence of actions | Numbered list. |
-| Decision with lasting consequences | Decision + constraint + owner + revisit trigger + verification step. |
-| Recurring problem or cross-team dependency | Now/later split: today's action, then the durable frame to install. |
 | Warning, caveat, or exception | Bold callout in context, not a decorative box. |
-| Nested detail under a main point | Short flat bullet list, one level only. |
-| Multi-dimensional decision | Layer structures rather than pick one: table for the trade-off, numbered list for next steps, bold callouts for blockers. |
 | Multi-step work spanning several turns | Track it with `TaskCreate`/`TaskUpdate`; restate the current step and what's next each turn. The checklist carries the state; don't also re-narrate the full plan as prose. |
 
 - **Action first, frame later in firefighting.** If the user is in an outage, a deploy

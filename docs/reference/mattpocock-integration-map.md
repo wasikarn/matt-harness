@@ -53,7 +53,7 @@ citations.)
 | grill-me | user | routed — `docs/reference/decision-doctrine-map.md`'s "Requirement → build" row names it for a live batched interview; `agents/requirement-analyst.md`'s boundary line distinguishes it from analyzing an already-written requirement (batched grilling interview) |
 | grilling | model | `hooks/advisory/flow-nudge.sh` spec-chain entry + base plan-first route, `README.md`. Same main-session-only rule as `mattpocock-skills:code-review` (#118): its research step dispatches a sub-agent, which `agent-recursion-guard.sh` denies from inside a dispatched subagent |
 | handoff | user | `BOUNDARY.md`'s generated route (`skills/inventory/scripts/inventory-boundary.sh`) |
-| teach | user | routed — `output-styles/crisp.md`'s "teach the durable frame" bullet names it as the on-demand tool for turning a one-off explanation into something durable and reusable |
+| teach | user | routed — `docs/reference/crisp-decision-mechanics.md`'s "Recurring problem or cross-team dependency" Format row (the durable frame to install) is the touchpoint; the skill is the on-demand tool for turning a one-off explanation into something durable and reusable |
 | to-questionnaire | user | routed — `docs/reference/decision-doctrine-map.md`'s "Requirement → build" row names it for turning a settled decision into a written stakeholder questionnaire |
 | wait-what | user | `output-styles/crisp.md`'s repair bullet (re-pitch last reply) |
 | writing-for-agents | model | root `CLAUDE.md`'s Skill authoring doctrine section, `docs/skill-authoring-conventions.md` (canonical authoring doctrine; renamed from writing-great-skills in matt v1.2.0) |
