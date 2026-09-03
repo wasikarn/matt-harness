@@ -150,16 +150,26 @@ over-read the last returner and under-read the rest. A multi-model main session 
 fields on each model row. Rows before this date carry none of the fields and the Handoff
 cost section skips them.
 
-## `dedup_usage` — each API response counted once (2026-09-04)
+## `dedup_usage` + `usage_pick` — each API response counted once, last line wins (2026-09-04)
 
 Claude Code writes one JSONL `assistant` line per content block, and every line of one
-API response repeats the same `message.id` and `message.usage`. Until this date both
-`emit_rows` and `build_verify_map` summed per line: measured across every session on disk,
-26,671 same-usage duplicate lines vs 489 differing — `turns` counted content blocks, not
-responses, and `turns`, `input_tokens`, `output_tokens`, `cache_*`, `verify_*` ran roughly
-2.4x high (~58% of window tokens were repeats). The hook now keeps the first line per
-(file, `message.id`); lines with no id (old transcripts) still count per line. `turns` now
-means "API responses". Rows written this way carry `dedup_usage: true`; rows without the
-field are inflated ~2.4x on those columns and are **not** rewritten (`costs.jsonl` is
-append-only, the report reads mixed rows) — the report header names the cutoff instead.
-Dollar totals on old rows are inflated by the same factor. Not in the dedup key.
+API response shares the same `message.id`. Until this date both `emit_rows` and
+`build_verify_map` summed per line — `turns` counted content blocks, not responses, and
+`turns`, `input_tokens`, `output_tokens`, `cache_*`, `verify_*` ran roughly 2.4x high.
+v0.68.639 kept the **first** line per (file, `message.id`); that fixed the inflation but
+the first line carries a streaming placeholder `output_tokens` and the last line the final
+count — measured across every transcript on disk (119,013 ids; a script that grouped lines
+by `message.id` and compared first vs last vs max usage): 92,431 same-usage duplicate
+lines vs 33,695 differing per id, last == max on 100% of the differing ids, and first-line
+`output_tokens` sat 38.6% under the last line corpus-wide (up to 92% on subagent files).
+Input/cache columns differed by <1%. v0.68.641 keeps the **last** line per id; lines with
+no id (old transcripts) still count per line. `turns` means "API responses".
+
+Three eras, told apart by the two fields (rows are **not** rewritten — `costs.jsonl` is
+append-only, the report reads mixed rows and names the counts in its header):
+
+- neither field: pre-.639, `turns`/tokens/`verify_*` and dollars ~2.4x high.
+- `dedup_usage: true` without `usage_pick`: .639-era, `output_tokens` ~39% low (output is
+  5x input price, so `estimated_cost_usd` is biased low).
+- `dedup_usage: true` + `usage_pick: "last"`: current. `dedup_usage` stays on new rows so
+  the existing filter keeps working. Neither field is in the dedup key.

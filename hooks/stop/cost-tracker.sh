@@ -100,32 +100,39 @@ build_type_map() {
 # array, same as the role capture in build_type_map.
 # `v` sums input + cache_write + output (cache_write IS fresh input under prompt
 # caching; raw input_tokens is ~2/turn), `c` keeps cache_read separate — the rent,
-# not the work. Claude Code writes one JSONL line per content block and repeats the
-# same `message.id` + `usage` on each, so tokens are added once per id (`seen`); the
-# window-close check still runs on every line since the Agent tool_use block can sit
-# on a later line of the same response. Lines with no id count per line (old
-# transcripts). Output: {"<agent-id>": [{v,c}, ...]} — one entry per return (the same
-# agent can notify more than once). Fail-open: any parse error → {}.
+# not the work. Claude Code streams one JSONL line per content block of one response,
+# all sharing `message.id`; the FIRST line carries a placeholder `output_tokens`, the
+# LAST the final count (measured 2026-09-04 over 119,013 ids: last == max on 100% of
+# differing ids; keeping the first line undercounted output 38.6%). So the last-seen
+# usage per id is held in `pend` and flushed into the window it belongs to (`pw`) when
+# the id changes or at EOF; the window-close check still runs on every line since the
+# Agent tool_use block can sit on a later line of the same response. Lines with no id
+# count per line (old transcripts). Output: {"<agent-id>": [{v,c}, ...]} — one entry
+# per return (the same agent can notify more than once). Fail-open: any parse error → {}.
 build_verify_map() {
-  jq -nRc 'reduce (inputs | try fromjson | select(.type == "user" or .type == "assistant")) as $l
-    ({cur: null, m: {}, seen: {}};
+  jq -nRc '
+    def usage_v: (.input_tokens // 0) + (.cache_creation_input_tokens // 0) + (.output_tokens // 0);
+    def flush: if .pend != null and .pw != null and (.m[.pw.id] | length) > 0
+      then .m[.pw.id][.pw.i].v += (.pend | usage_v) | .m[.pw.id][.pw.i].c += (.pend.cache_read_input_tokens // 0) else . end
+      | .pend = null | .pw = null | .pid = null;
+    reduce (inputs | try fromjson | select(.type == "user" or .type == "assistant")) as $l
+    ({cur: null, m: {}, pend: null, pw: null, pid: null};
      if $l.type == "user" then
        ($l.message.content | if type == "string" then . else ([.[]? | .text? // empty] | join("")) end) as $txt
        | (($txt | select(startswith("<task-notification>"))
            | capture("<task-id>(?<id>[^<]+)</task-id>") | .id) // null) as $id
-       | if $id then .cur = $id | .m[$id] += [{v: 0, c: 0}]
-         elif ($l.message.content | type) == "string" then .cur = null
+       | if $id then flush | .cur = $id | .m[$id] += [{v: 0, c: 0}]
+         elif ($l.message.content | type) == "string" then flush | .cur = null
          else . end
-     elif .cur != null and ($l.message.usage != null) then
-       .cur as $id | ((.m[$id] | length) - 1) as $i | ($l.message.id // null) as $mid
-       | if $mid != null and .seen[$mid] then . else
-           (if $mid != null then .seen[$mid] = true else . end)
-           | .m[$id][$i].v += (($l.message.usage.input_tokens // 0) + ($l.message.usage.cache_creation_input_tokens // 0) + ($l.message.usage.output_tokens // 0))
-           | .m[$id][$i].c += ($l.message.usage.cache_read_input_tokens // 0)
-         end
+     elif ($l.message.usage != null) and (.cur != null or (($l.message.id // null) != null and $l.message.id == .pid)) then
+       ($l.message.id // null) as $mid
+       | if $mid == null or $mid != .pid then flush else . end
+       | if .cur != null then .pw = {id: .cur, i: ((.m[.cur] | length) - 1)} else . end
+       | .pend = $l.message.usage | .pid = $mid
+       | if $mid == null then flush else . end
        | if (($l.message.content // []) | arrays | any(.type == "tool_use" and .name == "Agent")) then .cur = null else . end
      else . end)
-    | .m' "$1" 2>/dev/null || printf '{}'
+    | flush | .m' "$1" 2>/dev/null || printf '{}'
 }
 
 # emit_rows <stream-label> <type-map-json> <transcript-file>...
@@ -144,11 +151,14 @@ build_verify_map() {
 # turns are dropped before grouping, not priced at a guessed rate — this hook only
 # tracks claude-* spend.
 #
-# One API response spans several JSONL lines (one per content block), each repeating
-# the same `message.id` and `message.usage` — measured 2026-09-04 across every session
-# on disk: 26,671 same-usage duplicate lines vs 489 differing, ~2.4x inflation. The
-# first line per (file, message.id) is kept, so `turns` = API responses; lines with no
-# id (old transcripts) still count per line. Rows carry `dedup_usage: true` from then on.
+# One API response spans several JSONL lines (one per content block) sharing one
+# `message.id` — measured 2026-09-04 across every session on disk (119,013 ids):
+# 92,431 same-usage duplicate lines vs 33,695 differing per id. Summing per line ran
+# ~2.4x high; keeping the FIRST line per id (v0.68.639) undercounted output_tokens
+# 38.6% — the first line carries a streaming placeholder, the last the final count
+# (last == max on 100% of differing ids). The LAST line per (file, message.id) is
+# kept, so `turns` = API responses; lines with no id (old transcripts) still count
+# per line. Rows carry `dedup_usage: true` + `usage_pick: "last"` from then on.
 emit_rows() {
   local stream="$1" typemap="$2"; shift 2
   (( $# )) || return 0
@@ -167,11 +177,10 @@ emit_rows() {
         r: ($typemap[input_filename].r // null),
         id: (.message.id // null),
         f: input_filename } ]
-    | reduce .[] as $x ({seen: {}, out: []};
+    | reduce .[] as $x ({byid: {}, out: []};
         if $x.id == null then .out += [$x]
-        elif .seen[$x.f + "\u0000" + $x.id] then .
-        else .seen[$x.f + "\u0000" + $x.id] = true | .out += [$x] end)
-    | .out
+        else .byid[$x.f + "\u0000" + $x.id] = $x end)
+    | .out + (.byid | [.[]])
     | group_by([.m, .t, .r])
     | map(([.[].f] | unique | map($typemap[.].v // []) | add // []) as $w
       | {
@@ -208,7 +217,7 @@ emit_rows() {
       else ($sonnet_rate + {v:false}) end;
     .[] | . as $u | ($u | rate) as $r |
     { timestamp: $ts, session_id: $sid, transcript_path: $tp, model: $u.model,
-      model_scoped: true, dedup_usage: true, stream: $stream, agent_type: $u.agent_type, role: $u.role, turns: $u.turns,
+      model_scoped: true, dedup_usage: true, usage_pick: "last", stream: $stream, agent_type: $u.agent_type, role: $u.role, turns: $u.turns,
       input_tokens: $u.input_tokens, output_tokens: $u.output_tokens,
       cache_write_tokens: $u.cache_write_tokens, cache_read_tokens: $u.cache_read_tokens,
       cache_read_per_turn: (if $u.turns > 0 then ($u.cache_read_tokens / $u.turns | round) else 0 end),

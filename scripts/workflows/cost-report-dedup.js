@@ -43,9 +43,13 @@ const d=fmtLocal(new Date(Date.now()-864e5));
 const sum=a=>a.reduce((s,r)=>s+cost(r),0);
 const f4=n=>"$"+n.toFixed(4);
 console.log("=== Cost summary ===");
-// dedup_usage (2026-09-04): rows without it summed one line per content block, ~2.4x high on turns/tokens/verify_*.
+// Two eras (2026-09-04): rows without dedup_usage summed one line per content block, ~2.4x high on
+// turns/tokens/verify_*; dedup_usage rows without usage_pick:"last" (v0.68.639) kept the first line per
+// message.id, whose output_tokens is a streaming placeholder — ~39% low on output_tokens.
 const inflated=latest.filter(r=>r.dedup_usage!==true).length;
+const outLow=latest.filter(r=>r.dedup_usage===true&&r.usage_pick!=="last").length;
 if(inflated)console.log("note: "+inflated+" of "+latest.length+" rows predate dedup_usage (2026-09-04) — their turns/tokens/verify_* run ~2.4x high (per-line, not per-response)");
+if(outLow)console.log("note: "+outLow+" of "+latest.length+" rows predate usage_pick:\"last\" (v0.68.641) — their output_tokens (and cost) run ~39% low (first line per response, not last)");
 console.log("today:     "+f4(sum(latest.filter(r=>day(r)===today))));
 console.log("yesterday: "+f4(sum(latest.filter(r=>day(r)===d))));
 const sessionIds=new Set(latest.map(r=>r.session_id||r.transcript_path||r.timestamp));
