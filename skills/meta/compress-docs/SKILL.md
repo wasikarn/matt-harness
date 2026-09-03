@@ -16,7 +16,7 @@ fresh set of eyes remembering to diff-check the result each time.
 
 **Not a caveman-grammar port.** `caveman-compress`'s own compression rules drop articles and lean
 on fragments — that's the caveman skill's job (talk terser), and it directly conflicts with
-`output-styles/crisp.md`'s "don't sacrifice grammar for brevity" rule. What's adapted here is
+the grammar-over-brevity rule (`~/.claude/CLAUDE.md` "Communication Style": terse-but-broken is a defect). What's adapted here is
 the *safety pattern* (verify byte-exact preservation of code/links, bounded retry, abort clean on
 failure) — the actual compression technique is kbg's own established practice: cut duplication and
 filler, keep full sentences.

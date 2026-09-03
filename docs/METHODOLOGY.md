@@ -69,7 +69,7 @@ When Acceptance Criteria already exist for the task, they ARE the testable terms
 
 ### Dispatched-agent claims need one checkable fact (prose-only — see Rule 13's citation convention)
 
-A subagent's own "nothing found" or "shipped clean" report is not verification — it's the maker grading its own work one level removed, the same circularity `docs/reference/operating-model.md`'s "unifying crux" note names. Before treating a dispatched agent's negative or completion claim as done, it must cite at least one independently-checkable fact (a file path, a line, a command's actual output) — not just its own prose confidence. `orchestrate`'s Structured Verdict enforces this only for verdicts carrying findings; a clean `findings: []` is the gap this line targets.
+A subagent's own "nothing found" or "shipped clean" report is not verification — it's the maker grading its own work one level removed, the same circularity `docs/reference/operating-model.md`'s "unifying crux" note names. Before treating a dispatched agent's negative or completion claim as done, it must cite at least one independently-checkable fact (a file path, a line, a command's actual output) — not just its own prose confidence. `orchestrate`'s Structured Verdict enforces this for verdicts carrying findings and for scope conformance (`scope_ok` / `unexpected_files`); a clean `findings: []` is the gap this line targets.
 
 ### Claim accuracy in commit messages and CHANGELOG entries
 
@@ -100,7 +100,7 @@ carrying. Tokens are billed once; context shapes every decision after it.
 - **Before N fanned-out outputs feed one downstream synthesis/verifier call, reduce first — in code.** Drop malformed entries and exact-normalize-dedupe before that call ever reads them. Exact-normalize only — fuzzy dedup can silently drop a claim from verification.
 - **Reach for the zero-context-cost native tools before hand-engineering the same effect.**
   - `/btw` answers a side question without ever entering conversation history.
-  - `/rewind` (or double-tap `Esc`) restores conversation/code to a checkpoint, or summarizes from/up-to a selected point, without a full compact — but only edits made through Claude's own editing tools are tracked: Bash-driven writes and background subagent work aren't. Use git for those.
+  - `/rewind` (or double-tap `Esc`) restores conversation/code to a checkpoint, or summarizes from/up-to a selected point, without a full compact — but only edits made through Claude's own editing tools are tracked: Bash-driven writes and subagent work aren't (only a foreground `context: fork` skill restores). Use git for those.
   - `/compact <instructions>` (e.g. `/compact Focus on the API changes`) steers what a compaction keeps instead of accepting the default squeeze.
   - Ending a session mid-thread on unfinished work → `/mattpocock-skills:handoff` writes resumable state, so the next session (or `mh:learn`) doesn't start from zero.
 
