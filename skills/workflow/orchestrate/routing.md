@@ -2,6 +2,39 @@
 
 On-demand companion to `SKILL.md` and `reference.md`. Load when triaging a task set: the three prioritization matrices, the agent-fleet mapping, and the worked triage example. Split out of `reference.md` 2026-09-03 (`docs/research/orchestrate-cost-optimization-2026-09-03.md`, candidate #1).
 
+## Step 0.5 — route rubric
+
+Runs after `SKILL.md`'s Step 0 grouping and before the matrices below. The matrices place an item (its *disposition*); this rubric turns the placed item into the Route cell's *execution shape* — it does not re-rank. Spec: `docs/research/delegation-criteria-field-survey-2026-09-04.md` (Merged decision rubric, G3/G8).
+
+**Inputs** — score all seven first. Any input unknown → `ข้อมูลไม่เพียงพอ`, the route is blocked (Rule 14; same zero-basis line as the Insufficient-data fallback below — generate the signal, then re-score).
+
+| # | Input | How to read it |
+|---|---|---|
+| I1 | Context pollution | yes if the intermediate material main won't reuse is >~1K tokens, or >~3 files, or unknown territory (Rule 13) |
+| I2 | Bulk / independence | count independent pieces *after* Step 0; any shared file = not independent |
+| I3 | Verifiability | deterministic command / scored rubric / judgment only (Rule 4) |
+| I4 | Reversibility / blast radius | Rule 1 triad; one-way door or wide radius → important |
+| I5 | Dependency shape | one chain / DAG / independent |
+| I6 | Wrong-answer cost vs handoff cost | handoff ≈ brief 1–2K + worker ~10K + verify + re-read; if verify ≈ redo, delegation buys only the gate |
+| I7 | Open-item load | in-flight agents + unverified returns + pending NEEDS-DECISIONs ≤ what main verifies in one turn |
+
+**Routes** — first matching row wins.
+
+| Route | Condition | Enforcement |
+|---|---|---|
+| **drop / defer** | I4 one-way door undecided → `NEEDS-DECISION` to the user; or Value×Risk "avoid" / Eisenhower "neither" with a re-open condition | doctrine (`SKILL.md` Output Format) |
+| **do in main** | only METHODOLOGY Rule 13's "Main retains" list — never execution | gate (`hooks/gates/main-exec-guard.sh`) |
+| **single-agent** (fast path) | `SKILL.md` Single-agent fast path, all four conditions (1 file, 1 behavior; <30 lines; I3 deterministic; not auth) | doctrine (`SKILL.md`) |
+| **single-agent: solver** | I5 = one dependent chain that fits one context; I3 ≠ deterministic — one foreground worker, `Why` required in the F9 brief | doctrine (ADR 0012, `f9-template.md`) |
+| **sequential** | ≥2 files or ≥1 test; or I5 = DAG with an upstream contract — Builder→Validator chain | doctrine (`validation-chain.md`), gate on completion (`task-complete-separation.sh`) |
+| **parallel** (read-only / verifier wave) | I2 ≥2 independent read-only pieces or a diverse-lens panel; no I7 breach; cap 5, prefer 2-4; a narrower speculative duplicate is allowed past Deadline | doctrine (`SKILL.md` fan-out cap); nested spawn blocked by gate (`agent-recursion-guard.sh`) |
+| **parallel** (writer wave) | I2 ≥2 with disjoint FILES YOU OWN after Step 0, I5 independent, idempotent output; on Deadline/STOP the worker reports owned files touched; AskUserQuestion gate before dispatch | doctrine + advised by hook (`hooks/advisory/flow-nudge.sh`); gates on what the writer may do, none on compensation |
+| **single-agent: advisor** | I3 = judgment and I4 = important → one stronger-model read-only consult (`advisor()`, Rule 1) before committing | doctrine only |
+
+Security override and the matrices' own Path words still apply — the rubric names the shape, the Output Format's four leading words (`single-agent` / `parallel` / `sequential` / `drop`) stay the Route cell's first word; `solver` and `advisor` are `: descriptor` qualifiers, not new values.
+
+**Main model assumption.** This harness's main runs Claude Fable 5.1. The Builder→Validator chain (`validation-chain.md`) and the delegation nudge (`hooks/advisory/flow-nudge.sh`) are aligned with the Fable 5.1 prompting guide — fresh-context verifier subagents beat self-critique. Under an Opus 5 main both invert (that guide: remove verification scaffolding, do not use subagents to verify). If main's model changes, revisit `validation-chain.md` and `flow-nudge.sh` before anything else (`docs/research/orchestrate-t-shape-analysis-2026-09-04.md`, Disputes, last row).
+
 ## Full routing tables
 
 ### Eisenhower (Urgency × Important)

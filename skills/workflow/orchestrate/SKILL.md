@@ -104,7 +104,7 @@ rebuild the same picture of the code; that duplication is invisible in every mat
 **Overlapping file ownership is a consolidation signal, not a reason to add an agent** — when
 `FILES YOU OWN` lists overlap, the split was wrong, not the coordination. (Source: "cognitive
 locality", *The
-Orchestrator's Tax* — `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`.)
+Orchestrator's Tax* — `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`.) Then run `routing.md`'s Step 0.5 route rubric (inputs I1–I7 → execution shape) on the grouped set before picking a matrix.
 
 - **Eisenhower (Urgency × Important)** — real-world work with genuine time pressure (deadlines, people waiting, incidents).
 - **Impact × Effort** — backlog with no real urgency. If everything is "not urgent," urgency is a degenerate axis — switch.
