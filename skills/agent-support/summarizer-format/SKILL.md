@@ -10,7 +10,7 @@ effort: medium
 
 # Summarizer Output Format & Compression Reference
 
-Extracted from `agents/summarizer.md` (2026-08-18, harness-audit check 51 threshold) to keep
+Split out of `agents/summarizer.md` for file size to keep
 the agent body under 20,000 chars. Loaded via that agent's `skills:` frontmatter field (preloaded
 at spawn, independent of the Skill tool — `summarizer` carries no `Skill` tool grant) — this file
 is background reference material, not a separately-triggered pass. Read it alongside
@@ -82,6 +82,23 @@ summary: ...
 tl;dr: ...
 summary: ...
 ```
+
+## Quoting source text
+
+When a phrase is carried over from the source word-for-word, mark it as a quotation; everything
+else is in your own words. One illustrative example:
+
+```
+source (excerpt): "The vendor has not confirmed the fix ships in 4.2; our own test on the
+release candidate still reproduces the timeout."
+
+tl;dr: The 4.2 fix is unconfirmed — our RC test still reproduces the timeout.
+summary: Two facts, both still open: the vendor "has not confirmed the fix ships in 4.2", and
+the team's own test on the release candidate still reproduces the timeout.
+```
+
+Why this is right: the one phrase kept verbatim is quoted, the rest is synthesized, and neither
+hedge ("not confirmed", "still reproduces") gained certainty.
 
 ## Anti-Patterns
 

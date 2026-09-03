@@ -24,7 +24,7 @@ for review itself (`mattpocock-skills:code-review`) or merge (`mh:ship-merge`).
 - **Triage before fix.** Phase 2 gates Phase 4 — don't edit code until classifications are user-approved, avoiding fixing things that should've been wontfix and skipping things that should've been fixed.
 - **Use gh CLI.** All GitHub ops via `gh`, never raw `curl` (per repo convention + memory `feedback_prefer_gh_cli_for_github`).
 - **Delegate bugs.** Phase 4 routes bug-shaped comments to `mattpocock-skills:diagnosing-bugs` instead of a plain fixer-agent edit — gets the full feedback-loop → reproduce → minimise → hypothesise → regression-test discipline.
-- **Use TodoWrite.** Track phases + per-thread state so the user sees triage decisions + sha mapping at any point.
+- **Track state with `TaskCreate`/`TaskUpdate`.** Phases + per-thread state, so the user sees triage decisions + sha mapping at any point.
 
 ---
 

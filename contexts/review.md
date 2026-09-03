@@ -10,15 +10,6 @@ Focus: Quality, security, maintainability
 - Defer, don't absorb: security → `security-reviewer`, swallowed errors/bad fallbacks → `silent-failure-hunter`, language idiom → `typescript-reviewer`, framework-specific → `nextjs-reviewer`, a pre-code plan → `plan-reviewer`.
 - A review that comes back clean isn't the end of it — a fresh adversarial pass (`blind-spot-hunter`) catches what a shared blind spot hides. Clean is a verdict from a second pair of eyes, not the absence of a finding.
 
-## Review Checklist
-- [ ] Logic errors
-- [ ] Edge cases
-- [ ] Error handling
-- [ ] Security (injection, auth, secrets)
-- [ ] Performance
-- [ ] Readability
-- [ ] Test coverage
-
 ## Output Format
 Group findings by severity (Critical / Important / Minor), each with file:line and a fix.
 

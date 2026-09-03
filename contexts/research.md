@@ -10,13 +10,6 @@ Focus: Understanding before acting
 - No edits — this is a read-only frame. Produce a brief, not a change.
 - Name the riskiest assumption and the one fact that would flip the conclusion (Rule 1) before calling the research done.
 
-## Research Process
-1. Understand the question
-2. Explore relevant code/docs
-3. Form a hypothesis
-4. Verify with evidence
-5. Summarize findings
-
 Broad codebase fan-out goes through a dispatched search agent, not inline reads (Rule 13).
 
 ## Output

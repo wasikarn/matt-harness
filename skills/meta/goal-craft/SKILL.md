@@ -112,5 +112,5 @@ Output:
 
 ## Don't duplicate canon
 
-- METHODOLOGY Rule 14 ("score, not feel") and the fake-done-guard doctrine (arXiv 2606.09863; formerly harness-audit check 34, deleted 2026-08-25 ticket 87 after `commands/ship/` was retired) own the falsifiability principle; this skill is the `/goal`-shaped composition tool for it.
-- `goal-spec` (retired `a518ad1`, orphaned from `c35afcc`) owned the same Goal/Done-when/Never-touch discipline for a persistent, multi-session `PROMPT.md` read by a human before a loop starts. This skill covers the narrower case `/goal` needs: a single inline string, no file, no pre-loop human review of the condition itself (goal-spec's PROMPT.md was read by a human before the loop started; `/goal` isn't) — which is exactly why the one-way-door screen exists here and never existed in `goal-spec`. The persistent-file, multi-session case stays covered by `ship`/`recursive-improve`, not re-created here.
+- METHODOLOGY Rule 14 ("score, not feel") and the fake-done-guard doctrine (arXiv 2606.09863) own the falsifiability principle; this skill is the `/goal`-shaped composition tool for it.
+- This skill covers only the single inline `/goal` string — no file, and no human reads the condition before the loop starts, which is why the one-way-door screen exists here. The persistent-file, multi-session case is `recursive-improve`'s, not re-created here.

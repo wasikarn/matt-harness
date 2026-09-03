@@ -24,11 +24,8 @@ session*. The store already exists (Claude Code's file-based memory system, `mem
   Code ships an ambient, always-on memory feature (`autoMemoryEnabled`, `/memory`): the model
   saves memory files directly, no per-write confirmation, whenever an in-the-moment trigger fires
   (a correction just happened, a preference was stated). That's the same store, same format, same
-  `MEMORY.md` index this skill writes to — verified against `code.claude.com/docs/en/memory` and,
-  empirically, this project's own transcripts (132 memory files across 53 sessions in this repo's
-  own store vs. `/mh:learn` itself invoked in 3 sessions here, as of 2026-07-20 — the native path
-  still accounts for the large majority of writes, and a quality spot-check of several
-  ambiently-written files found them well-structured, non-duplicative, correctly filtered).
+  `MEMORY.md` index this skill writes to (`code.claude.com/docs/en/memory`); in this repo's own
+  store the native path accounts for the large majority of writes.
   Native ambient capture is real, it works, and kbg cannot gate, disable-per-write, or reroute it —
   it's a Claude Code platform feature, not a kbg surface.
 - **What this skill actually adds: the retrospective, whole-transcript sweep.** Native ambient
@@ -70,15 +67,10 @@ session*. The store already exists (Claude Code's file-based memory system, `mem
    ambient capture already thins the middle of a long session; the tail and the corrections are
    where cross-turn value concentrates). Read only the matched line ranges plus their surrounding
    context, not the full file. (ponytail: a hard byte cap + grep pre-filter, not smarter chunking —
-   upgrade only if a real run shows this misses too much. A 2026-08-17 deep-audit already caught
-   one real miss and closed it here: the original pattern anchored the trigger words to right after
-   a literal `"`, which only matches text starting a JSON string — real corrections are usually
-   mid-message, so on a live 4MB transcript it returned 16 matches and 0 were genuine user
-   corrections, all false positives from prose/tool-descriptions elsewhere in the file. Restricting
-   to `"type":"user"` lines and dropping the `"`-anchor fixed recall on the same transcript;
-   precision is still loose — a pasted document inside a user turn can still match — accepted
-   because a pre-filter's job is to bound the read, not achieve perfect precision, and losing a
-   real correction to a too-narrow filter is worse than reading a few extra irrelevant lines.)
+   upgrade only if a real run shows this misses too much. Keep the `"type":"user"` restriction
+   and don't anchor the trigger words to the start of a JSON string — real corrections sit
+   mid-message; precision is deliberately loose, since losing a real correction to a too-narrow
+   filter is worse than reading a few extra lines.)
    Either way, extract things that are
    **durable + non-obvious + reusable next session**, weighting repetition and cross-turn arcs over
    one-shot moments (native ambient capture already catches the obvious in-the-moment correction —

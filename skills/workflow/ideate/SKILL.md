@@ -21,12 +21,10 @@ answer — so don't pay that cost when a direct answer is better. Run this gate 
 
 **Step 0. Cost + convergence warning check.**
 
-An `<ideate-budget status="warning">` block means the daily threshold is crossed; an
-`<ideate-convergence status="warning">` block means recent runs on similar problems are
-converging. Either one: **don't auto-fire from Step 2** — let the self-judge gate abort and
-answer directly. If Step 1 matches (explicit `mh:ideate`), still proceed to Phase 1 but surface
-the warning in the brief. (kbg ships no producer for either block currently — check for one
-before relying on Step 0 seeing it; capture-side status: the "Session frame rotation" section.)
+If an `<ideate-budget status="warning">` or `<ideate-convergence status="warning">` block is
+present in context, don't auto-fire from Step 2 — answer directly; on an explicit `mh:ideate`
+(Step 1) still proceed, but surface the warning in the brief. No hook produces either block
+today, so this step is usually a no-op.
 
 **Step 1. Explicit invocation check.**
 
@@ -55,9 +53,7 @@ A SessionStart hook may inject `<ideate-rotation index="N">` with 5 frame names 
 those (already covers the 1-wild minimum, rotated vs. prior sessions). If absent, fall back
 to [Picking frames](#picking-frames). Step 0's convergence capture side (SessionEnd embedding
 hook + `convergence.sh`) is **not currently wired** (removed in the reset) — treat
-convergence as advisory-only until rebuilt. (The former `mh:ideate-search` companion skill was
-deleted 2026-09-01: its `ideate-memory` qmd collection and capture hook never existed on any
-machine, so it dead-ended every query.) Mechanics: `references/provenance.md`'s "Advisory
+convergence as advisory-only until rebuilt. Mechanics: `references/provenance.md`'s "Advisory
 hooks — full mechanics" section.
 
 ## 2-wave fan-out (load-bearing)

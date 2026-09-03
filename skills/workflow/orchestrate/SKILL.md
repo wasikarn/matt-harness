@@ -10,8 +10,7 @@ effort: high
 > **Subagent self-check:** If you were dispatched as a sub-agent for a specific task, **do not
 > re-orchestrate.** Return your scoped output (a `done-when` artifact, a `Report:` block, or
 > your done-criterion evidence) to the parent. The parent owns the prioritization + dispatch
-> loop; you own one well-bounded deliverable. This preamble mirrors obra/superpowers'
-> `<SUBAGENT-STOP>` convention (MINE-1 from 2026-06-12 ledger row).
+> loop; you own one well-bounded deliverable.
 
 Turn a pile of work into a prioritized plan, then route each item to the cheapest correct executor. The main agent allocates; sub-agents do the heavy lifting. Prioritizing produces a **plan** — executing it, especially via write-capable agents, needs the user's go-ahead.
 
@@ -64,21 +63,16 @@ Bounded fan-out — cap history & rationale section):
 
 **Cross-references:** this contract is enforced at your dispatch boundary — clamp the work-list to the cap before spawning, and pre-trim oversized lists at plan time.
 
-## Guardrails are brakes; GH #120 added the accelerator
+## Brakes and the one accelerator
 
-Every mechanism this fleet has for delegation — the fan-out cap above, `AskUserQuestion`
-friction on a write-capable dispatch, `agent-recursion-guard.sh` — stops over-delegation. None
-of them push the orchestrator to delegate more when it's hoarding work inline instead. That
-asymmetry was a real, named gap (docs/METHODOLOGY.md Rule 13's own note on this) until GH #120
-shipped `hooks/advisory/flow-nudge.sh`'s independent delegation-ratio trigger: a prompt naming
->~3 files, or a files-plural noun co-occurring with a breadth word, fires it whether or not an
-IMPL verb is also present — closing the exact gap where the line used to live only inside the
-IMPL-gated plan-mode heredoc and so never fired on read/research-heavy hoarding. The nudge names
-the session's actual orchestrator:subagent token ratio (from `hooks/stop/cost-tracker.sh`'s
-`costs.jsonl`) and points at the F9 spawn-prompt template above, not a bare "delegate more" line
-— raising delegation *rate* without raising delegation *scoping quality* has made results worse
-elsewhere (Claude Code issue #40339). Still advisory, not a gate: the hook is enforced to fire,
-whether the model acts on it stays prose-only, same as the plan-mode nudge it lives beside.
+The fan-out cap above, `AskUserQuestion` friction on a write-capable dispatch, and
+`agent-recursion-guard.sh` all stop over-delegation. The one push in the other direction is
+`hooks/advisory/flow-nudge.sh`: a prompt naming >~3 files, or a files-plural noun next to a
+breadth word, fires it whether or not an implementation verb is present. It reports the
+session's actual orchestrator:subagent token ratio (from `hooks/stop/cost-tracker.sh`'s
+`costs.jsonl`) and points at the F9 spawn-prompt template — not a bare "delegate more" line,
+because raising delegation *rate* without raising scoping quality makes results worse. Advisory,
+not a gate: the hook fires deterministically; whether the model acts on it is prose-only.
 
 **The other direction is settled, not a checklist.** The top-level session plans, dispatches,
 verifies, and decides; it never executes. What it keeps: the "Main retains" section in

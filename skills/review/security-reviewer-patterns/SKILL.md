@@ -10,7 +10,7 @@ effort: xhigh
 
 # Security-Reviewer Concrete Patterns Reference
 
-Extracted from `agents/security-reviewer.md` (2026-08-18, harness-audit check 51 threshold) to
+Split out of `agents/security-reviewer.md` for file size to
 keep the agent body under 20,000 chars. Loaded via that agent's `skills:` frontmatter field
 (preloaded at spawn, independent of the Skill tool — `security-reviewer` carries no `Skill` tool
 grant) — this file is the code-example reference, not a separately-triggered pass. Read it

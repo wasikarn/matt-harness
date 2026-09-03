@@ -140,10 +140,7 @@ Emit a single JSON object on **stdout**. No prose before or after. The host pars
 process ("here's my analysis," "scores incorporated"), no trailing caveat, no closing summary in
 any language. A judgment call worth explaining belongs inside the JSON itself (e.g. `provocation`
 or a sketch's own prose), not appended as free-standing text outside it. The host parses this
-output programmatically; a wrapped or annotated response is a parsing risk, not just noise — the
-same failure class another fresh-context verifier agent had to harden against after a confirmed
-real incident (2026-07-30: that agent produced multi-paragraph prose around its own schema on a
-live single-shot run, not a hypothetical).
+output programmatically; a wrapped or annotated response is a parse failure, not just noise.
 
 ## Procedure
 

@@ -26,6 +26,5 @@ Read-only posture-setter — it loads a frame, it does not run a workflow or edi
 - **Skills** are the heavier mode entry-points that *do the work* (`mattpocock-skills:research`, `mattpocock-skills:code-review`, `mh:backend-patterns`); `mh:frame` just sets the frame.
 - **output-styles** (`crisp`) set the *voice register*; `mh:frame` sets the *task posture*. Orthogonal — combine them freely.
 
-> Renamed from `/context` (v0.4.6) — it shadowed Claude Code's built-in `/context`
-> (token-usage view), making the built-in unreachable. `mh:frame` is kbg's working-frame
-> loader; the built-in `/context` is unaffected by it.
+> Not the same thing as Claude Code's built-in `/context` (token-usage view) — `mh:frame` is
+> kbg's working-frame loader and leaves the built-in untouched.
