@@ -22,23 +22,13 @@ or the `EnterPlanMode` tool) and present a plan before editing. **Default to
 suggesting it strongly** — the user keeps control (they Shift+Tab or approve the
 plan); enter it yourself only when the door is clearly one-way or the user signals
 they're unsure of the approach. Skip entirely for trivial / known-small-fix /
-mechanical changes (rename, typo, doc tweak). Matching effort to stakes cuts both
-ways — under-planning a one-way door and over-planning a typo are the same error.
+mechanical changes (rename, typo, doc tweak).
 
-Once inside plan mode, the analysis is the deliverable, not a formality before the
-real work starts. Read the files the task touches and trace the actual flow before
-drafting — a plan built from the request text alone, without opening the code, is a
-guess wearing a plan's shape. For a multi-file or architectural change, dispatch
-`mh:code-architect` for the blueprint (pattern analysis, layer-direction check,
-DI-style check, test-impact check) — it does that same reading systematically
-rather than ad hoc, and its output format (Design Decisions, Trade-offs, Build
-Sequence, Risks, Success Criteria) is the plan. Two adjacent, narrower matt-skill
-tools are worth reaching for mid-blueprint without displacing `mh:code-architect`'s
-own role: `mattpocock-skills:codebase-design` when the vocabulary is deep-module
-design specifically, not the whole blueprint, and `/mattpocock-skills:improve-codebase-architecture`
-for a whole-repo architecture pass rather than one feature's blueprint.
-Call `advisor()` before presenting the plan, not only before implementing it — the
-plan is what the user spends their review cycle on.
+Once inside plan mode, the analysis is the deliverable: read the files the task
+touches and trace the actual flow before drafting, and call `advisor()` before
+presenting the plan, not only before implementing it. Which surface owns the
+blueprint (`mh:code-architect` and its narrower matt-skill neighbours):
+`docs/reference/decision-doctrine-map.md`, "Task/requirement → plan authoring".
 
 ### Pressure-test before committing
 
@@ -48,11 +38,11 @@ For a genuinely hard or contested call where `advisor()`-level pressure-testing 
 
 ### disable-model-invocation surfaces are user-only
 
-A command or skill carrying `disable-model-invocation: true` cannot be invoked by the model, period — this covers both irreversible-external actions (merging a PR, transitioning a ticket) and actions gated purely for timing/user-control even when they're read-only (e.g. a memory search the user must explicitly ask for). A "go"/"yes" typed in chat is confirmation, not user-invocation — it does not clear the block, and attempting the call anyway just face-plants on the tool error. When one of these is the right next step, say so and stop: tell the user the literal string to type themselves — `/mh:<name>` or, for a DMI-gated matt skill (e.g. `/mattpocock-skills:ask-matt`, `/mattpocock-skills:to-spec`, `/mattpocock-skills:handoff`), the equivalent `/mattpocock-skills:<name>` form — plugin skills and plugin commands are namespaced the same way; verified against code.claude.com/docs/en/skills, 2026-08-31 — never imply you'll do it once they confirm.
+A command or skill carrying `disable-model-invocation: true` cannot be invoked by the model — irreversible-external actions and timing-gated read-only ones alike. A "go"/"yes" typed in chat is confirmation, not user-invocation. When one is the right next step, tell the user the literal string to type themselves (`/mh:<name>`, or `/mattpocock-skills:<name>` for a DMI-gated matt skill) and stop.
 
 A human-only multi-step procedure that would otherwise require the user to type out each step by hand is a candidate for `mattpocock-skills:wizard`, which generates the walkthrough instead.
 
-This section is mirrored in the operator's global `~/.claude/CLAUDE.md` (kept self-contained here on purpose — this file ships inside the plugin and must read standalone for anyone who installs it, not just this operator). If you edit the rule here, the global copy needs the matching edit too.
+Full rule with sourcing: the operator's global `~/.claude/CLAUDE.md`, "Disable-Model-Invocation Surfaces" — that copy loads in every project; this one ships with the plugin. Edit both together.
 
 ## Rule 2 — Match surface area to proven need
 
@@ -62,7 +52,7 @@ Don't build it until there's a real failure that demands it. Three similar lines
 
 A requirement — or any incoming claim: a bug report, a spec, a task handoff — is a claim to test, not a truth to obey. It's optimized to sound right on the surface, not to survive an edge case.
 
-**Requirements (lead instance):** before code on any non-trivial task, read it critically — what's **ambiguous** (vague verbs, undefined roles, no actor), **missing** (error path, edge case, untestable acceptance criterion), **assumed** (riskiest assumption per Rule 1, unowned cross-boundary dependency). Surface gaps as explicit questions — never fill silently with "probably means X". For a deep structured pass, dispatch `mh:requirement-analyst`; for a live batched interview with a stakeholder, `/mattpocock-skills:grill-me` runs it, and for turning a settled decision into a written stakeholder questionnaire, `/mattpocock-skills:to-questionnaire` does that.
+**Requirements (lead instance):** before code on any non-trivial task, read it critically — what's **ambiguous** (vague verbs, undefined roles, no actor), **missing** (error path, edge case, untestable acceptance criterion), **assumed** (riskiest assumption per Rule 1, unowned cross-boundary dependency). Surface gaps as explicit questions — never fill silently with "probably means X". For a deep structured pass, dispatch `mh:requirement-analyst`.
 
 The same discipline applies to any incoming claim — a bug report before you fix it, an idea before you spec it, a diff before you merge it. See `docs/reference/decision-doctrine-map.md` for which surface owns each.
 
@@ -75,11 +65,11 @@ After acting: check against those terms. If not met, loop — don't declare done
 
 When Acceptance Criteria already exist for the task, they ARE the testable terms — verify the change against each one individually, not just against the overall goal.
 
-**Bug fixes: failing test first.** Same red/green discipline as `mattpocock-skills:tdd`'s own always-on-floor practice — this is Rule 4's "testable terms," made concrete for the bug-fix case; for an actual live bug (not a known one-line fix), dispatch `mattpocock-skills:diagnosing-bugs` rather than iterating inline. mh-specific fallback: if an automated test isn't practical (e.g. missing infra), show a minimal repro step failing before the fix and passing after — never skipped silently. Match rigor to stakes per Rule 1: a one-line typo needs none of this; any bug with a reproducible failure mode does.
+**Bug fixes: failing test first.** Same red/green discipline as `mattpocock-skills:tdd`; for an actual live bug (not a known one-line fix), dispatch `mattpocock-skills:diagnosing-bugs` rather than iterating inline. mh-specific fallback: if an automated test isn't practical (e.g. missing infra), show a minimal repro step failing before the fix and passing after — never skipped silently. Match rigor to stakes per Rule 1: a one-line typo needs none of this; any bug with a reproducible failure mode does.
 
 ### Dispatched-agent claims need one checkable fact (prose-only — see Rule 13's citation convention)
 
-A subagent's own "nothing found" or "shipped clean" report is not verification — it's the maker grading its own work one level removed, the same circularity `docs/reference/operating-model.md`'s "unifying crux" note names. Before treating a dispatched agent's negative or completion claim as done, it must cite at least one independently-checkable fact (a file path, a line, a command's actual output) — not just its own prose confidence. `orchestrate`'s Structured Verdict enforces this for verdicts carrying findings (each requires `file`/`line`) and for scope conformance (`scope_ok`/`unexpected_files`) — but a clean pass (`findings: []`) has nothing to check, which is exactly the gap this line targets: a clean "nothing found," inside or outside orchestrate's chain, that nothing independently checks today.
+A subagent's own "nothing found" or "shipped clean" report is not verification — it's the maker grading its own work one level removed, the same circularity `docs/reference/operating-model.md`'s "unifying crux" note names. Before treating a dispatched agent's negative or completion claim as done, it must cite at least one independently-checkable fact (a file path, a line, a command's actual output) — not just its own prose confidence. `orchestrate`'s Structured Verdict enforces this only for verdicts carrying findings; a clean `findings: []` is the gap this line targets.
 
 ### Claim accuracy in commit messages and CHANGELOG entries
 
@@ -91,8 +81,8 @@ Decompose → route → verify → combine.
 
 - **Combine ≠ blend.** When N sub-agent outputs feed one synthesis call, surface agreement and conflict explicitly and drop malformed entries by a stated rule — never by the synthesizing model's own unaided judgment (prose-only — see `docs/reference/operating-model.md`, "Same crux, N-worker fan-in," for the enforcing detail and the code-vs-instruction distinction).
 - Orchestrators delegate; they never implement — enforced by `hooks/gates/main-exec-guard.sh` when `MH_MAIN_EXEC_GUARD=1` (denies the top-level session's Write/Edit/MultiEdit/NotebookEdit and mutating Bash; plan, memory, and scratchpad paths are exempt; off by default, `log` counts without denying). Decision record: ADR 0012 (`docs/research/adr-0012-main-plans-dispatches-never-executes.md`).
-  - **Main retains:** plan and design; dispatch (Agent tool, F9 spawn-prompt template); read code and files to decide what's next; verify a subagent's returned score/verdict, never redo the work; adjudicate conflicting results and merge; manage the task list (`TaskCreate`/`TaskUpdate`); ask the user a clarifying question before dispatching; write its own plan files, the memory store, and the session scratchpad. A skill invoked from the top-level session whose steps write files or run mutating commands routes those steps through a dispatched agent, not directly.
-- **Under-delegation has one accelerator:** `hooks/advisory/flow-nudge.sh` fires on any prompt naming >~3 files (or a files-plural noun with a breadth word), reports the session's orchestrator:subagent token ratio from `costs.jsonl`, and points at the F9 spawn-prompt template — because raising delegation rate without raising scoping quality makes results worse. The fan-out cap, `AskUserQuestion` friction, and `agent-recursion-guard.sh` are the brakes. Whether the model acts on the nudge is prose-only.
+  - **Main retains:** plan and design; dispatch (Agent tool, F9 spawn-prompt template); read code and files to decide what's next; verify a subagent's returned score/verdict, never redo the work; adjudicate conflicting results and merge; manage the task list (`TaskCreate`/`TaskUpdate`); ask the user a clarifying question before dispatching; write its own plan files, the memory store, and the session scratchpad.
+- **Under-delegation has one accelerator:** `hooks/advisory/flow-nudge.sh` fires on prompts naming >~3 files and points at the F9 spawn-prompt template; the fan-out cap and `agent-recursion-guard.sh` are the brakes. Whether the model acts on the nudge is prose-only.
 - A dispatched sub-agent must not re-orchestrate — return scoped output to the parent. Enforced by harness-audit check 41 (`41-agent-tool-grant-must-not-include-agent.sh`).
 - Phase gates: a sub-agent can never self-mark a task complete (enforced by `gate:task:complete-separation`); Quality never ships without passing Orchestration's review (prose-only — no check blocks a skipped review).
 - Any line in this file or CLAUDE.md that asserts a limit or gate must name its enforcing file, or say "(prose-only)" if none exists — an unenforced "non-negotiable" reads as a computational guarantee it isn't.
@@ -100,25 +90,23 @@ Decompose → route → verify → combine.
 ### Context economy — protect the main thread
 
 The scarce resource in a long session is not tokens, it's what the main thread is still
-carrying. Tokens are billed once; context shapes every decision after it, and a bigger
-window doesn't help — it just lets unused material pile higher before anyone notices.
+carrying. Tokens are billed once; context shapes every decision after it.
 
 - **What the main thread touches stays for the whole session; what a subagent touches doesn't.** Over ~3 files — reading or editing — or in territory you don't already know, send the work out with one narrow question and take back only the answer. A known-location one-line change still goes to a fixer agent (a short-form F9 dispatch). What main reads stays for the session — main reads to decide, not to execute.
 - **Locate before you read.** Big file, one relevant section: grep for the line, then `Read` with `offset`/`limit`. Don't pull a whole file in to find a paragraph. Sibling files that share a shape (specs, fixtures, tests): read one in full, grep the rest.
 - **Delegate by what a task needs to understand, not by how many tasks there are.** Work sharing a subsystem, a file set, or a convention belongs to one agent — splitting it just makes each one rebuild the same picture of the code. Fewer, better-grouped agents beats more agents; there is no minimum.
 - **Big output goes to a file; return the path.** Content relayed through the orchestrator is copied twice and then carried forever.
 - **Never pull a raw agent transcript back into the main thread.** Answer status from what you already know; `Read` the artifact when you need the result.
-- **Before N fanned-out outputs feed one downstream synthesis/verifier call, reduce first — in code.** Drop malformed entries and exact-normalize-dedupe before that call ever reads them. Distinct from "big output to file" above (protects the orchestrator's own context) and from "combine ≠ blend" above (protects correctness) — this one protects the downstream call's own billed/compute input. Fuzzy/semantic dedup risks false-merges (a claim silently dropped from verification) — exact-normalize only, unless a real run shows literal near-dupes slipping through unmerged.
+- **Before N fanned-out outputs feed one downstream synthesis/verifier call, reduce first — in code.** Drop malformed entries and exact-normalize-dedupe before that call ever reads them. Exact-normalize only — fuzzy dedup can silently drop a claim from verification.
 - **Reach for the zero-context-cost native tools before hand-engineering the same effect.**
-  - `/btw` answers a side question without ever entering conversation history (confirmed against `code.claude.com/docs/en/best-practices.md`, 2026-08-20: "the answer never enters conversation history, so you can check a detail without growing context").
-  - `/rewind` (or double-tap `Esc`) restores conversation/code to a checkpoint, or summarizes from/up-to a selected point, without a full compact — but only direct file edits made through Claude's own editing tools are tracked, so Bash-driven writes (`git commit`/`push`, `inventory-witness.sh`'s output redirect, `memory-lint.py --auto-archive`'s file moves) aren't; and of subagent work only a foreground `context: fork` skill (`background: false`, not the default) restores — `git grep "context: fork"` finds zero live carriers in this repo, so every `orchestrate` dispatch that writes files is unrestorable by rewind. Use git for both (confirmed against `code.claude.com/docs/en/checkpointing.md`, 2026-08-20).
+  - `/btw` answers a side question without ever entering conversation history.
+  - `/rewind` (or double-tap `Esc`) restores conversation/code to a checkpoint, or summarizes from/up-to a selected point, without a full compact — but only edits made through Claude's own editing tools are tracked: Bash-driven writes and background subagent work aren't. Use git for those.
   - `/compact <instructions>` (e.g. `/compact Focus on the API changes`) steers what a compaction keeps instead of accepting the default squeeze.
   - Ending a session mid-thread on unfinished work → `/mattpocock-skills:handoff` writes resumable state, so the next session (or `mh:learn`) doesn't start from zero.
 
 This is the point of subagents — not that they run in parallel, but that they keep
 disposable reasoning disposable. Parallelism is a side effect, not the objective.
-(Source: *The Orchestrator's Tax*, martinfowler.com 2026-07-16 — gap analysis and kbg's
-own measurements in `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`.)
+(Source: *The Orchestrator's Tax*, martinfowler.com 2026-07-16; `docs/research/orchestrator-tax-gap-analysis-2026-08-07.md`.)
 
 ## Rule 14 — Decision scoring (explainable decisions)
 
@@ -133,7 +121,7 @@ Every important decision — approve / reject / rank / recommend / optimize / va
 - A rank/recommend verdict names the runner-up and why it lost — a pick with no stated alternative is unfalsifiable.
 - Evidence > assumption · measurement > feeling · verification > opinion.
 - If data is insufficient to score a criterion, mark **ข้อมูลไม่เพียงพอ** and block on the operator — never guess the score.
-- **Precedent before scoring** (prose-only): for a non-trivial decision, query `qmd` (the project's memory + research collections) with the scenario first, and cite the query string + hit — or `no precedent found for "<query>"` — as evidence; an uncited "no precedent" doesn't count. A settled precedent with no new evidence means cite it instead of re-litigating. (Adapted from semantica-agi/semantica's `find_precedents`.)
+- **Precedent before scoring** (prose-only): for a non-trivial decision, query `qmd` (the project's memory + research collections) with the scenario first, and cite the query string + hit — or `no precedent found for "<query>"` — as evidence; an uncited "no precedent" doesn't count. A settled precedent with no new evidence means cite it instead of re-litigating.
 
 The `mh:score-decision` skill applies the rubric as a structured artifact when a decision needs a formal, traceable verdict.
 

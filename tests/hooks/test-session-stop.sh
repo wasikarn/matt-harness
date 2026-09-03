@@ -51,8 +51,8 @@ rc=$?
 # pass on an empty/rotted injection (silent doctrine-content rot). "Decision-sizing
 # triad" is Rule 1's heading in docs/METHODOLOGY.md — its presence proves the
 # body was injected, not just the wrapper.
-[[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '<!-- mh:doctrine-bootstrap -->' \
-  && echo "$out" | /usr/bin/grep -q '<!-- /mh:doctrine-bootstrap -->' \
+[[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '<doctrine>' \
+  && echo "$out" | /usr/bin/grep -q '</doctrine>' \
   && echo "$out" | /usr/bin/grep -q 'Decision-sizing triad' && ok=1 || ok=0
 assert "injects METHODOLOGY.md wrapped in markers when plugin root is valid" "$ok"
 

@@ -6,9 +6,9 @@ set -uo pipefail
 METHODOLOGY="${CLAUDE_PLUGIN_ROOT:-}/docs/METHODOLOGY.md"
 
 if [[ -f "$METHODOLOGY" ]]; then
-  echo "<!-- mh:doctrine-bootstrap -->"
+  echo "<doctrine>"
   cat "$METHODOLOGY"
-  echo "<!-- /mh:doctrine-bootstrap -->"
+  echo "</doctrine>"
 fi
 
 # Required-companion-plugin preflight. Several of kbg's own skills, commands,
