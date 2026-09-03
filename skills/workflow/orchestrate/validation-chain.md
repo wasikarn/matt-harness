@@ -8,7 +8,7 @@ Supplementary detail for `SKILL.md`'s Validation chain (builder → validator �
 
 The 4-step validation pipeline from article `team-orchestration`, adapted to the task board polyfill. Every non-trivial write should be a chain, not a single dispatch — **non-trivial** = ≥2 files changed OR ≥1 test file touched. Below that, run a single dispatch; the chain's coordination overhead isn't worth it (Rule 2). The board makes the ordering observable and resumable across sessions.
 
-This is the file-based counterpart to the `TaskCreate + addBlockedBy` protocol described above in this file. `addBlockedBy` enforces ordering in an external task system; `depends_on` + `kbg_recompute_blocked` enforces it in the local `board.json`.
+This is the file-based counterpart to the `TaskCreate + addBlockedBy` protocol described below (Concept). `addBlockedBy` enforces ordering in an external task system; `depends_on` + `kbg_recompute_blocked` enforces it in the local `board.json`.
 
 ### Concept
 
