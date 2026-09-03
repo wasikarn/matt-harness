@@ -135,7 +135,7 @@ Present the allocation as a table, then a one-line disposition summary.
 
 Summary: `N dispatched, M deferred, K dropped — <one-line why for each non-dispatched>`.
 
-The Route cell's leading word MUST be one of the four values above — never copy a `routing.md` Path-column word (`schedule`, `delegate`, `avoid`, `do last`) straight in; Path names the matrix's *disposition*, Route names the *execution shape* once applied. Translate: `schedule`/`delegate to a later wave` → `parallel`/`sequential` (whichever shape it'll actually take), Status `deferred`; `avoid` → `drop`, Status `dropped`; `delegate` (now) → `parallel`/`sequential`, Status `dispatched`. No clean translation = the item needs its own judgment call, not a mechanical copy.
+The Route cell's leading word MUST be one of the four values above — never copy a `routing.md` Path-column word (`schedule`, `delegate`, `avoid`, `do last`) straight in. Path→Route translation table: `routing.md`'s "Route cell → descriptor" section; read it whenever a Path word is about to land in a Route cell.
 
 A `deferred` or `dropped` Status carries its re-open condition in the row's notes — the concrete event or evidence that brings the item back (a date, a dependency landing, a metric crossing a line). A drop with no re-open condition is a silent forever-no the user never agreed to.
 
