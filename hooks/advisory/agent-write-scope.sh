@@ -97,6 +97,13 @@
 #     unrecorded_paths both null) rather than reading empty stdout as
 #     "nothing staged."
 #
+# Post-ship fix (independent deep-audit finding, 2026-09-04): the short-flag
+# scanner above had no equivalent handling for a LONG flag's value given as a
+# separate token -- `git commit --message --all` was misread as setting -a
+# (git actually consumes --all as --message's value; the tracked-modified
+# effect never happens). See `_LONG_VALUE_FLAGS` in `_commit_has_all_flag()`
+# below for the fix and its own live-verification notes.
+#
 # Non-goals, named not solved (see the plan): builder-stages/main-commits
 # attribution split (this keys on the COMMITTING agent_id, not the staging
 # actor); a path committed that was created via Bash redirect/mv/build
@@ -258,6 +265,28 @@ _VALUE_FLAGS = set("mcCFt")
 # git commit short flags whose value, if given, is ONLY ever attached in the
 # same token -- they never pull a separate following token.
 _OPT_VALUE_FLAGS = set("Su")
+# git commit LONG flags that take a MANDATORY value: when given as a
+# separate bare token (not the already-unambiguous --opt=value form), git
+# consumes the immediately following token as the value of that option --
+# so a bare --all right after one of these is the value, not the real -a
+# flag. Confirmed live 2026-09-04 via `git commit --dry-run --short <flag>
+# --all -m x` in a scratch repo for every entry below: a tracked-but-unstaged
+# modification stayed unstaged (proving --all was swallowed as the value,
+# never read as -a), whether parsing that flag then succeeded (--message,
+# --date, --template, --fixup, --squash, --trailer) or fataled on "--all"
+# being an invalid value for that flag (--file, --author, --cleanup,
+# --reuse-message, --reedit-message, --pathspec-from-file, --unified,
+# --inter-hunk-context) -- either way --all was already consumed, not left
+# for git to read as a bare flag. --gpg-sign/-S and --untracked-files/-u are
+# NOT in this set: confirmed live the same way that they only ever take an
+# attached (`=`) value under the git optional-value convention -- `--gpg-sign
+# --all` and `--untracked-files --all` both left --all read as the real -a
+# flag (modification went staged).
+_LONG_VALUE_FLAGS = {
+    "--message", "--file", "--author", "--date", "--template", "--cleanup",
+    "--reuse-message", "--reedit-message", "--fixup", "--squash",
+    "--pathspec-from-file", "--trailer", "--unified", "--inter-hunk-context",
+}
 
 def _commit_has_all_flag(tokens):
     has_all = False
@@ -270,7 +299,14 @@ def _commit_has_all_flag(tokens):
             has_all = True
             i += 1
             continue
-        if t.startswith("--") or not t.startswith("-") or len(t) < 2:
+        if t.startswith("--"):
+            name = t.split("=", 1)[0]
+            if name in _LONG_VALUE_FLAGS and "=" not in t:
+                i += 2  # separate-token value: consume it, do not parse it
+            else:
+                i += 1
+            continue
+        if not t.startswith("-") or len(t) < 2:
             i += 1
             continue
         j = 1

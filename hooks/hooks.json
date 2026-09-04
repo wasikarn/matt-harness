@@ -103,7 +103,7 @@
       {
         "id": "advisory:agent-write-scope-recorder",
         "matcher": "Write|Edit|MultiEdit|NotebookEdit",
-        "description": "Sensor (not a gate), issue #137 rev 4: records the normalized repo-root-relative path of every file a subagent writes (agent_id present), one JSONL line per call, to ~/.local/share/kbg/mh-agent-writes/<safe-agent-id>.jsonl -- the write-set the companion advisory:agent-write-scope-enforcer PreToolUse(Bash) enforcer leg reads back on a git commit. Always exits 0; no-op when agent_id is absent (main session). Tier: minimal, NOT async -- an async recorder could journal AFTER the enforcer leg's commit check already ran and silently corrupt the write-set it is supposed to produce. Tier must stay minimal (never kill-switched): a disabled recorder silently corrupts the enforcer leg's write-set data, not just its own coverage.",
+        "description": "Sensor (not a gate), issue #137 rev 4: records the normalized repo-root-relative path of every file a subagent writes (agent_id present), one JSONL line per call, to ~/.local/share/kbg/mh-agent-writes/<safe-agent-id>.jsonl -- the write-set the companion advisory:agent-write-scope-enforcer PreToolUse(Bash) enforcer leg reads back on a git commit. Always exits 0; no-op when agent_id is absent (main session). Tier: minimal, NOT async -- an async recorder could journal AFTER the enforcer leg's commit check already ran and silently corrupt the write-set it is supposed to produce. Tier must stay minimal (immune to MH_HOOK_PROFILE filtering -- still disableable by id via MH_DISABLED_HOOKS, same as any hook): a disabled recorder silently corrupts the enforcer leg's write-set data, not just its own coverage.",
         "hooks": [
           {
             "type": "command",

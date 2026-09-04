@@ -185,6 +185,47 @@ ok=1
   ok=0
 check "enforcer: git commit -ma gives -m the value \"a\" (does NOT set -a) -> C.txt excluded" "$ok"
 
+# --- C2. long-form flags given as a separate token: git commit's own
+# convention consumes the immediately following bare token as a mandatory-
+# value long option's value (not the `--opt=value` form, which is already
+# unambiguous). Confirmed live in a scratch repo before asserting here, same
+# technique as -am/-ma above (independent deep-audit finding on #137). ---
+run_gate "$GB" "$(bash_payload "wB3" 'git commit --message --all')"
+ok=1
+[ "$rc" -eq 0 ] &&
+  tail -n1 "$JOURNAL" | jq -e \
+    '(.committed_paths | index("D.txt")) != null and (.committed_paths | index("C.txt")) == null' \
+    >/dev/null 2>&1 &&
+  ok=0
+check "enforcer: git commit --message --all -- --all consumed as --message's value, -a NOT set -> C.txt excluded (the bug case)" "$ok"
+
+run_gate "$GB" "$(bash_payload "wB4" 'git commit --message=--all')"
+ok=1
+[ "$rc" -eq 0 ] &&
+  tail -n1 "$JOURNAL" | jq -e \
+    '(.committed_paths | index("D.txt")) != null and (.committed_paths | index("C.txt")) == null' \
+    >/dev/null 2>&1 &&
+  ok=0
+check "enforcer: git commit --message=--all -- already-unambiguous = form, literal string is the message not a flag -> C.txt excluded" "$ok"
+
+run_gate "$GB" "$(bash_payload "wB5" 'git commit --all')"
+ok=1
+[ "$rc" -eq 0 ] &&
+  tail -n1 "$JOURNAL" | jq -e \
+    '(.committed_paths | index("D.txt")) != null and (.committed_paths | index("C.txt")) != null' \
+    >/dev/null 2>&1 &&
+  ok=0
+check "enforcer: git commit --all (bare, standalone) still sets -a -> C.txt included (regression guard)" "$ok"
+
+run_gate "$GB" "$(bash_payload "wB6" 'git commit --all --message foo')"
+ok=1
+[ "$rc" -eq 0 ] &&
+  tail -n1 "$JOURNAL" | jq -e \
+    '(.committed_paths | index("D.txt")) != null and (.committed_paths | index("C.txt")) != null' \
+    >/dev/null 2>&1 &&
+  ok=0
+check "enforcer: git commit --all --message foo -- --all before a separate-token value flag still sets -a (order-independence)" "$ok"
+
 # --- D. false positive: -a mentioned only in a quoted commit message must
 # not be read as the real -a flag ---
 run_gate "$GB" "$(bash_payload "wJ" 'git commit -m "explain the -a flag here"')"
