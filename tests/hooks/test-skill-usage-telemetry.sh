@@ -291,14 +291,74 @@ tools: Read
 body
 EOF
 
+# #136 fix 1 fixtures: a pre-rename kbg:-prefixed row must count toward the
+# CURRENT mh: surface (renamed-skill/renamed-agent), but a DIFFERENT
+# plugin's row with a colliding stem must NOT (collision-skill/collision-agent)
+# -- the discriminating case a naive split(":")[-1] would get wrong.
+mkdir -p "$DS_TMP/skills/renamed-skill" "$DS_TMP/skills/collision-skill" "$DS_TMP/skills/preloaded-skill"
+cat >"$DS_TMP/skills/renamed-skill/SKILL.md" <<'EOF'
+---
+name: renamed-skill
+description: "test fixture, only invoked under the pre-rename kbg: prefix"
+---
+body
+EOF
+cat >"$DS_TMP/skills/collision-skill/SKILL.md" <<'EOF'
+---
+name: collision-skill
+description: "test fixture, a DIFFERENT plugin's x:collision-skill row exists and must not count"
+---
+body
+EOF
+cat >"$DS_TMP/skills/preloaded-skill/SKILL.md" <<'EOF'
+---
+name: preloaded-skill
+description: "test fixture, preloaded via an agent's skills: frontmatter, never invoked directly"
+---
+body
+EOF
+
+cat >"$DS_TMP/agents/renamed-agent.md" <<'EOF'
+---
+name: renamed-agent
+description: "test fixture, only invoked under the pre-rename kbg: prefix"
+tools: Read
+---
+body
+EOF
+cat >"$DS_TMP/agents/collision-agent.md" <<'EOF'
+---
+name: collision-agent
+description: "test fixture, a DIFFERENT plugin's x:collision-agent row exists and must not count"
+tools: Read
+---
+body
+EOF
+cat >"$DS_TMP/agents/preload-host-agent.md" <<'EOF'
+---
+name: preload-host-agent
+description: "test fixture, preloads mh:preloaded-skill via frontmatter"
+tools: Read
+skills:
+  - mh:preloaded-skill
+---
+body
+EOF
+
 DS_SKILLS_LEDGER="$DS_TMP/skill-usage.jsonl"
 DS_COSTS_LEDGER="$DS_TMP/costs.jsonl"
 DS_NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 DS_DAY60="$(date -u -v-60d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d '60 days ago' +%Y-%m-%dT%H:%M:%SZ)"
-echo "{\"ts\":\"$DS_NOW\",\"session_id\":\"z\",\"skill\":\"mh:active-skill\",\"plugin\":\"mh\"}" >"$DS_SKILLS_LEDGER"
+{
+  echo "{\"ts\":\"$DS_NOW\",\"session_id\":\"z\",\"skill\":\"mh:active-skill\",\"plugin\":\"mh\"}"
+  echo "{\"ts\":\"$DS_NOW\",\"session_id\":\"z2\",\"skill\":\"kbg:renamed-skill\",\"plugin\":\"kbg\"}"
+  echo "{\"ts\":\"$DS_NOW\",\"session_id\":\"z3\",\"skill\":\"x:collision-skill\",\"plugin\":\"x\"}"
+} >"$DS_SKILLS_LEDGER"
 {
   echo "{\"timestamp\":\"$DS_NOW\",\"session_id\":\"z\",\"stream\":\"subagent\",\"agent_type\":\"mh:active-agent\"}"
   echo "{\"timestamp\":\"$DS_DAY60\",\"session_id\":\"z\",\"stream\":\"subagent\",\"agent_type\":\"mh:stale-agent\"}"
+  echo "{\"timestamp\":\"$DS_NOW\",\"session_id\":\"z2\",\"stream\":\"subagent\",\"agent_type\":\"kbg:renamed-agent\"}"
+  echo "{\"timestamp\":\"$DS_NOW\",\"session_id\":\"z3\",\"stream\":\"subagent\",\"agent_type\":\"x:collision-agent\"}"
 } >"$DS_COSTS_LEDGER"
 
 ds_out=$(python3 "$HEALTH_PY" --last 100 --root "$DS_TMP" --skills "$DS_SKILLS_LEDGER" --costs "$DS_COSTS_LEDGER" 2>/dev/null)
@@ -324,6 +384,35 @@ else
   fail=$((fail + 1))
 fi
 
+if ! echo "$ds_out" | /usr/bin/grep -qE '\| skill \| mh:renamed-skill \|' \
+   && ! echo "$ds_out" | /usr/bin/grep -qE '\| agent \| mh:renamed-agent \|'; then
+  echo "  ✅ #136 FIX 1 ALIAS: a pre-rename kbg:-prefixed row counts as alive for the current mh: surface (skill + agent)"
+  pass=$((pass + 1))
+else
+  echo "  ❌ expected mh:renamed-skill/mh:renamed-agent to be alive via the kbg: alias, got:" >&2
+  echo "$ds_out" >&2
+  fail=$((fail + 1))
+fi
+
+if echo "$ds_out" | /usr/bin/grep -qE '\| skill \| mh:collision-skill \|' \
+   && echo "$ds_out" | /usr/bin/grep -qE '\| agent \| mh:collision-agent \|'; then
+  echo "  ✅ #136 FIX 1 NEGATIVE CASE: a different plugin's x:collision-skill/x:collision-agent row does NOT mark the mh: counterpart alive"
+  pass=$((pass + 1))
+else
+  echo "  ❌ expected mh:collision-skill/mh:collision-agent to still be listed dead (no cross-plugin leak), got:" >&2
+  echo "$ds_out" >&2
+  fail=$((fail + 1))
+fi
+
+if echo "$ds_out" | /usr/bin/grep -qE '\| skill \| mh:preloaded-skill \| preloaded-by: preload-host-agent'; then
+  echo "  ✅ #136 FIX 2 PRELOADED-BY LABEL: a skill only reachable via an agent's skills: frontmatter is labeled, not left blank"
+  pass=$((pass + 1))
+else
+  echo "  ❌ expected mh:preloaded-skill to carry 'preloaded-by: preload-host-agent', got:" >&2
+  echo "$ds_out" >&2
+  fail=$((fail + 1))
+fi
+
 if echo "$ds_out" | /usr/bin/grep -qE '\| skill \| mh:manual-skill \| manual-only'; then
   echo "  ✅ MANUAL-ONLY LABEL: disable-model-invocation skill is noted, not just listed bare"
   pass=$((pass + 1))
@@ -345,17 +434,59 @@ fi
 ds_json=$(python3 "$HEALTH_PY" --json --last 100 --root "$DS_TMP" --skills "$DS_SKILLS_LEDGER" --costs "$DS_COSTS_LEDGER" 2>/dev/null)
 if echo "$ds_json" | jq -e '
      .dead_surfaces.plugin == "mh"
-     and (.dead_surfaces.dead_skills | map(.name) | sort) == ["mh:dead-skill", "mh:manual-skill"]
+     and (.dead_surfaces.dead_skills | map(.name) | sort) ==
+         ["mh:collision-skill", "mh:dead-skill", "mh:manual-skill", "mh:preloaded-skill"]
      and (.dead_surfaces.dead_skills[] | select(.name == "mh:manual-skill") | .manual_only) == true
-     and (.dead_surfaces.dead_agents | map(.name) | sort) == ["mh:dead-agent", "mh:stale-agent"]
+     and (.dead_surfaces.dead_skills[] | select(.name == "mh:preloaded-skill") | .preloaded_by) == ["preload-host-agent"]
+     and (.dead_surfaces.dead_agents | map(.name) | sort) ==
+         ["mh:collision-agent", "mh:dead-agent", "mh:preload-host-agent", "mh:stale-agent"]
      and .dead_surfaces.hooks.count == 2
      and .dead_surfaces.hooks.source_missing == true
+     and .dead_surfaces.skills_source_missing == false
+     and .dead_surfaces.costs_source_missing == false
    ' >/dev/null 2>&1; then
-  echo "  ✅ JSON PAYLOAD: --json carries dead_surfaces with matching skills/agents/hooks content"
+  echo "  ✅ JSON PAYLOAD: --json carries dead_surfaces with matching skills/agents/hooks content (incl. #136 fix 1/2/3 fields)"
   pass=$((pass + 1))
 else
   echo "  ❌ --json dead_surfaces payload didn't match expected shape, got:" >&2
   echo "$ds_json" >&2
+  fail=$((fail + 1))
+fi
+
+# #136 fix 3: a missing ledger must report "source missing", never a fabricated
+# dead-list -- both markdown and --json paths, both ledgers.
+ds_missing_skills_md=$(python3 "$HEALTH_PY" --last 100 --root "$DS_TMP" --skills "$DS_TMP/no-such-skills.jsonl" --costs "$DS_COSTS_LEDGER" 2>/dev/null)
+if echo "$ds_missing_skills_md" | /usr/bin/grep -q "skills: source missing:" \
+   && ! echo "$ds_missing_skills_md" | /usr/bin/grep -qE '[0-9]+ dead skill\(s\)'; then
+  echo "  ✅ #136 FIX 3 SKILLS MISSING (markdown): 'source missing', never a fabricated 'N dead skill(s)'"
+  pass=$((pass + 1))
+else
+  echo "  ❌ expected 'skills: source missing:' and no fabricated dead-skill count, got:" >&2
+  echo "$ds_missing_skills_md" >&2
+  fail=$((fail + 1))
+fi
+
+ds_missing_costs_md=$(python3 "$HEALTH_PY" --last 100 --root "$DS_TMP" --skills "$DS_SKILLS_LEDGER" --costs "$DS_TMP/no-such-costs.jsonl" 2>/dev/null)
+if echo "$ds_missing_costs_md" | /usr/bin/grep -q "agents: source missing:" \
+   && ! echo "$ds_missing_costs_md" | /usr/bin/grep -qE '[0-9]+ dead agent\(s\)'; then
+  echo "  ✅ #136 FIX 3 COSTS MISSING (markdown): 'source missing', never a fabricated 'N dead agent(s)' (worst bug: whole fleet reported dead)"
+  pass=$((pass + 1))
+else
+  echo "  ❌ expected 'agents: source missing:' and no fabricated dead-agent count, got:" >&2
+  echo "$ds_missing_costs_md" >&2
+  fail=$((fail + 1))
+fi
+
+ds_missing_costs_json=$(python3 "$HEALTH_PY" --json --last 100 --root "$DS_TMP" --skills "$DS_SKILLS_LEDGER" --costs "$DS_TMP/no-such-costs.jsonl" 2>/dev/null)
+if echo "$ds_missing_costs_json" | jq -e '
+     .dead_surfaces.costs_source_missing == true and .dead_surfaces.dead_agents == null
+     and .dead_surfaces.skills_source_missing == false and (.dead_surfaces.dead_skills | length) > 0
+   ' >/dev/null 2>&1; then
+  echo "  ✅ #136 FIX 3 COSTS MISSING (--json): dead_agents is null, not a fabricated full-fleet dead list; --json honors the same guard as markdown"
+  pass=$((pass + 1))
+else
+  echo "  ❌ --json with a missing costs ledger should carry dead_agents: null, got:" >&2
+  echo "$ds_missing_costs_json" >&2
   fail=$((fail + 1))
 fi
 

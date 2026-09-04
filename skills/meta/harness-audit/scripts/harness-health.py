@@ -17,6 +17,12 @@ import sys
 
 DEFAULT_COSTS = os.path.expanduser("~/.local/share/kbg/metrics/costs.jsonl")
 DEFAULT_SKILLS = os.path.expanduser("~/.local/share/kbg/metrics/skill-usage.jsonl")
+# The plugin was renamed kbg -> mh; the live ledgers still carry thousands of
+# pre-rename kbg:-prefixed rows inside any realistic lookback window. Admit
+# both prefixes as "this fleet" when matching ledger rows to fleet surfaces
+# (#136 fix 1) -- current plugin name is unioned in at call sites so a future
+# rename doesn't need a code change here.
+PLUGIN_ALIASES = {"mh", "kbg"}
 # This file lives at <root>/skills/meta/harness-audit/scripts/harness-health.py —
 # 4 parents up from its own containing dir reaches the fleet root, in both a
 # dotfiles checkout and a flat repo checkout (the file's position relative to
@@ -209,6 +215,39 @@ def scan_agents(root):
     )
 
 
+def scan_skill_preloads(root):
+    # A skill listed in an agent's `skills:` frontmatter is preloaded into
+    # that agent's context directly -- it never goes through a model-issued
+    # Skill tool call, so it can never appear in skill-usage.jsonl and is
+    # always "dead" by invocation count alone (#136 fix 2). Map full skill
+    # name -> [agent stem, ...] so the dead-surface panel can label it
+    # instead of leaving the note empty.
+    agents_dir = os.path.join(root, "agents")
+    preloads = {}
+    if not os.path.isdir(agents_dir):
+        return preloads
+    for fn in sorted(os.listdir(agents_dir)):
+        path = os.path.join(agents_dir, fn)
+        if not (fn.endswith(".md") and os.path.isfile(path)):
+            continue
+        fm = _frontmatter(path)
+        if fm is None:
+            continue
+        in_list = False
+        for line in fm.splitlines():
+            if re.match(r'^skills:\s*$', line):
+                in_list = True
+                continue
+            if not in_list:
+                continue
+            m = re.match(r'^\s*-\s*(\S+)\s*$', line)
+            if m:
+                preloads.setdefault(m.group(1), []).append(fn[:-3])
+            else:
+                in_list = False
+    return preloads
+
+
 def count_hooks(root):
     # Mirrors checks/01-fleet-count.sh: *.sh/*.py under <root>/hooks,
     # excluding __pycache__ paths and leading-underscore filenames. Total
@@ -226,55 +265,102 @@ def count_hooks(root):
     return count
 
 
-def compute_dead_surfaces(root, skill_rows, costs_path):
+def compute_dead_surfaces(root, skill_rows, costs_path, skills_path):
+    # Both ledger paths are checked with os.path.isfile before computing
+    # anything for that surface type -- a missing ledger must never silently
+    # read as "0 active rows" -> "every fleet surface is dead" (#136 fix 3).
+    # This function is the single source of truth for both the markdown and
+    # --json render paths (main() passes both through here), so neither can
+    # bypass the check the other honors.
     plugin = get_plugin_name(root)
-    counts, _skipped = count_skill_usage(skill_rows)
-    active_skills = {skill for (p, skill), (_n7, n30) in counts.items()
-                      if p == plugin and n30 > 0}
+    aliases = PLUGIN_ALIASES | {plugin}
 
-    cutoff30 = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=30)).isoformat(
-        timespec="milliseconds").replace("+00:00", "Z")
-    prefix = f"{plugin}:"
-    active_agents = set()
-    for r in load_rows(costs_path):  # unfiltered — own fixed 30d window, like the skill panel
-        ts, agent_type = r.get("timestamp"), r.get("agent_type")
-        if (r.get("stream") == "subagent" and isinstance(agent_type, str)
-                and agent_type.startswith(prefix) and isinstance(ts, str) and ts >= cutoff30):
-            active_agents.add(agent_type)
+    skills_missing = not os.path.isfile(skills_path)
+    dead_skills = None
+    if not skills_missing:
+        counts, _skipped = count_skill_usage(skill_rows)
+        active_skills = set()
+        for (p, skill_full), (_n7, n30) in counts.items():
+            if p not in aliases or n30 <= 0:
+                continue
+            stem = skill_full.split(":", 1)[1] if ":" in skill_full else skill_full
+            active_skills.add(f"{plugin}:{stem}")  # normalize pre-rename rows to current prefix
+        preloads = scan_skill_preloads(root)
+        rows = [(f"{plugin}:{bare}", manual_only, preloads.get(f"{plugin}:{bare}"))
+                for bare, manual_only in scan_skills(root)
+                if f"{plugin}:{bare}" not in active_skills]
+        rows.sort(key=lambda t: t[0])
+        dead_skills = rows
 
-    dead_skills = sorted(
-        (f"{plugin}:{bare}", manual_only) for bare, manual_only in scan_skills(root)
-        if f"{plugin}:{bare}" not in active_skills)
-    dead_agents = sorted(
-        f"{plugin}:{stem}" for stem in scan_agents(root)
-        if f"{plugin}:{stem}" not in active_agents)
+    costs_missing = not os.path.isfile(costs_path)
+    dead_agents = None
+    if not costs_missing:
+        cutoff30 = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=30)).isoformat(
+            timespec="milliseconds").replace("+00:00", "Z")
+        active_agents = set()
+        for r in load_rows(costs_path):  # unfiltered — own fixed 30d window, like the skill panel
+            ts, agent_type = r.get("timestamp"), r.get("agent_type")
+            if not (r.get("stream") == "subagent" and isinstance(agent_type, str)
+                    and isinstance(ts, str) and ts >= cutoff30 and ":" in agent_type):
+                continue
+            a_prefix, a_stem = agent_type.split(":", 1)
+            if a_prefix in aliases:
+                active_agents.add(f"{plugin}:{a_stem}")  # normalize pre-rename rows too
+        dead_agents = sorted(
+            f"{plugin}:{stem}" for stem in scan_agents(root)
+            if f"{plugin}:{stem}" not in active_agents)
 
     return {
         "root": root,
         "plugin": plugin,
-        "dead_skills": [{"name": n, "manual_only": m} for n, m in dead_skills],
-        "dead_agents": [{"name": n} for n in dead_agents],
+        "dead_skills": (None if dead_skills is None else
+                         [{"name": n, "manual_only": m, "preloaded_by": p} for n, m, p in dead_skills]),
+        "skills_path": skills_path,
+        "skills_source_missing": skills_missing,
+        "dead_agents": None if dead_agents is None else [{"name": n} for n in dead_agents],
+        "costs_path": costs_path,
+        "costs_source_missing": costs_missing,
         "hooks": {"count": count_hooks(root), "source_missing": True},
     }
 
 
-def render_dead_surfaces(root, skill_rows, costs_path):
-    dead = compute_dead_surfaces(root, skill_rows, costs_path)
-    print(f"\n## Dead surfaces (0 invocations in last 30d)\nfleet root: {dead['root']}\n")
+def render_dead_surfaces(root, skill_rows, costs_path, skills_path):
+    dead = compute_dead_surfaces(root, skill_rows, costs_path, skills_path)
+    print(f"\n## Dead surfaces (0 logged invocations in last 30d)\nfleet root: {dead['root']}\n")
+    print("Coverage note: counts model-issued Skill-tool calls and subagent Task "
+          "invocations only. A skill preloaded via an agent's `skills:` frontmatter, "
+          "invoked by a typed `/plugin:name` slash command, or run directly as a "
+          "script leaves no row in either ledger and will show here even when it "
+          "runs constantly.\n")
+
     ds, da = dead["dead_skills"], dead["dead_agents"]
-    if not ds and not da:
+    if ds is None:
+        print(f"skills: source missing: {dead['skills_path']} — dead-skill list not computed")
+    if da is None:
+        print(f"agents: source missing: {dead['costs_path']} — dead-agent list not computed")
+
+    ds_rows, da_rows = ds or [], da or []
+    if ds is not None and da is not None and not ds_rows and not da_rows:
         print("0 dead skill(s), 0 dead agent(s) — every fleet surface was invoked in the last 30d")
-    else:
+    elif ds_rows or da_rows:
         print("| type | name | note |")
         print("|---|---|---|")
-        for row in ds:
-            note = "manual-only (disable-model-invocation)" if row["manual_only"] else ""
-            print(f"| skill | {row['name']} | {note} |")
-        for row in da:
+        for row in ds_rows:
+            notes = []
+            if row["manual_only"]:
+                notes.append("manual-only (disable-model-invocation)")
+            if row["preloaded_by"]:
+                notes.append("preloaded-by: " + ", ".join(row["preloaded_by"]))
+            print(f"| skill | {row['name']} | {'; '.join(notes)} |")
+        for row in da_rows:
             print(f"| agent | {row['name']} | |")
+
     print(f"\nhooks: {dead['hooks']['count']} hook(s) in fleet — no invocation ledger exists, "
           f"source missing (see issue #136)")
-    print(f"\n**{len(ds)} dead skill(s) · {len(da)} dead agent(s)** — "
+
+    skills_summary = f"{len(ds_rows)} dead skill(s)" if ds is not None else "skills source missing"
+    agents_summary = f"{len(da_rows)} dead agent(s)" if da is not None else "agents source missing"
+    print(f"\n**{skills_summary} · {agents_summary}** — "
           f"INFO only: usage evidence for a future deletion sweep, never auto-deletes.")
 
 
@@ -297,15 +383,18 @@ def main():
     if args.json:
         print(json.dumps({"ledger": args.costs, "sessions": rows,
                            "skills_ledger": args.skills, "skill_usage": skill_rows,
-                           "dead_surfaces": compute_dead_surfaces(args.root, skill_rows, args.costs)},
+                           "dead_surfaces": compute_dead_surfaces(args.root, skill_rows, args.costs, args.skills)},
                           indent=2, default=str))
         return 0
+    exit_code = 0
     if not rows and not os.path.isfile(args.costs):
-        print(f"ERROR: ledger not found: {args.costs}", file=sys.stderr); return 1
-    render_cost(rows, args.costs)
+        print(f"ERROR: cost ledger not found: {args.costs}", file=sys.stderr)
+        exit_code = 1  # cost panel specifically can't be served — other panels below still can
+    else:
+        render_cost(rows, args.costs)
     render_skill_usage(skill_rows, args.skills)
-    render_dead_surfaces(args.root, skill_rows, args.costs)
-    return 0
+    render_dead_surfaces(args.root, skill_rows, args.costs, args.skills)
+    return exit_code
 
 
 if __name__ == "__main__":
