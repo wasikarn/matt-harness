@@ -493,6 +493,55 @@ assert_ask "work-volume budget exhausted, NON-merge tail -> still ask (pins the 
 assert_ask "modest realistic wrapper chain (sudo+nice+env, far under budget) -> ask (real dispatch present, 8th-round fix must not disturb this)" 'sudo nice -n 5 env FOO=bar gh pr merge 123'
 assert_noask "modest realistic wrapper chain (sudo+nice+env, far under budget), no merge dispatch -> noask (8th-round fix must not over-ask)" 'sudo nice -n 5 env FOO=bar gh pr view 123'
 
+# --- GH #140: unbounded shlex tokenize cost on an oversized raw command
+# string -- a SEPARATE, upstream issue from the _UNWRAP_WORK_BUDGET fix
+# above (that one bounds _unwrap_all's own state-exploration cost; this one
+# bounds the shlex.shlex(..., punctuation_chars=True) tokenize call at line
+# ~451, and its shlex.split() ValueError fallback, which run BEFORE
+# _unwrap_all ever sees a token and had no cap of their own). Cost is
+# superlinear in the length of a single long token. Measured live against
+# this exact file (single token appended ahead of a real "; gh pr merge
+# 123", python3 cold-start included): 100,000 chars ~0.22s, 150,000
+# ~0.38s, 200,000 ~0.54s, 300,000 ~0.91s -- a 700,000-char payload blows
+# straight past a 2s timeout pre-fix (confirmed live: rc=124). This also
+# retires the residual "pre-existing linear text-processing cost over a
+# multi-megabyte payload" the 8th-round fix's own comment left explicitly
+# unbounded (~1.15s at 200,000 repeats there) -- a 150,000-char cap now
+# bounds that too.
+LEN_PAD=$(python3 -c "print('A' * 700000)")
+
+len_start=$(date +%s)
+len_out=$(payload_bash "echo $LEN_PAD ; gh pr merge 123" | timeout 2 bash "$GATE" 2>/dev/null)
+len_rc=$?
+len_elapsed=$(( $(date +%s) - len_start ))
+len_ask=1; echo "$len_out" | /usr/bin/grep -q '"permissionDecision": "ask"' && len_ask=0
+len_ok=1
+if [ "$len_rc" -eq 0 ] && [ "$len_elapsed" -le 2 ] && [ "$len_ask" -eq 0 ]; then len_ok=0; fi
+check "oversized single-token command ahead of a real gh pr merge still asks within a strict 2s bound (GH #140 length cap)" "$len_ok"
+
+# Direction-pinning: the SAME oversized padding ahead of a NON-merge tail
+# (the literal substring "merge" only appears in a trailing "#" comment,
+# which shlex's own default comment-stripping discards before the trio
+# check ever runs) must ALSO ask, fast -- proving the LENGTH CAP fired on
+# size alone, not a real gh/pr/merge trio match that happened to still
+# resolve inside the timeout. A cap-exceeded path that fell through to "no
+# match, allow" would wrongly resolve this one to noask instead.
+len_benign_start=$(date +%s)
+len_benign_out=$(payload_bash "echo $LEN_PAD ; gh pr view 123 # merge notes" | timeout 2 bash "$GATE" 2>/dev/null)
+len_benign_rc=$?
+len_benign_elapsed=$(( $(date +%s) - len_benign_start ))
+len_benign_ask=1; echo "$len_benign_out" | /usr/bin/grep -q '"permissionDecision": "ask"' && len_benign_ask=0
+len_benign_ok=1
+if [ "$len_benign_rc" -eq 0 ] && [ "$len_benign_elapsed" -le 2 ] && [ "$len_benign_ask" -eq 0 ]; then len_benign_ok=0; fi
+check "oversized padding, NON-merge tail -> still asks fast (pins the length cap, not a trio match, GH #140)" "$len_benign_ok"
+
+# Negative control: a realistic, modestly-sized legitimate command -- well
+# under the cap -- must still resolve CORRECTLY (noask here: argv0 is git,
+# not gh, so the trio check never matches regardless of the "gh pr merge"
+# substring inside the quoted commit message). Proves the cap does not
+# false-positive on ordinary usage merely for being longer than trivial.
+assert_noask "realistic longer commit message mentioning gh pr merge in prose, well under the GH #140 length cap -> still noask" 'git commit -m "Add detailed changelog entry describing the upcoming gh pr merge process and rollback steps for this release"'
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

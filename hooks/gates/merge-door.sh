@@ -442,6 +442,34 @@ def _blank_substitutions(s):
 # verifier-protect.sh / worktree-guard.py, which already use this
 # pattern for their own write-target detection.
 OPERATORS = {";", "&&", "||", "|", "&", "(", ")", "{", "}"}
+
+_CMD_LEN_CAP = 150_000
+# GH #140: the shlex.shlex(..., punctuation_chars=True) call below (and its
+# shlex.split() ValueError fallback) has no length cap of its own, and its
+# cost is superlinear in the length of a single long token -- not merely
+# proportional to total input length. Measured fresh against this exact
+# file, single token appended ahead of a real "gh pr merge", python3
+# cold-start included: 100,000 chars ~0.22s, 150,000 ~0.38s, 200,000
+# ~0.54s, 300,000 ~0.91s -- a 700,000-char payload blows straight past a
+# 2s timeout. Checked separately: many short tokens summing to the same
+# total length stay fast (roughly linear) -- the blowup tracks the longest
+# single token, not raw input length. A total-length cap still bounds the
+# worst case either way, since no single token can exceed the total. Same
+# cap value as irrecoverable.sh/verifier-protect.sh/worktree-guard.py, so
+# all four gates bound this identical shlex cost the same way. This also
+# retires the residual unbounded cost that sibling commit 7b37691e own
+# _UNWRAP_WORK_BUDGET fix left explicitly open for this exact tokenize
+# call. This file own primary mechanism is emit_ask (see module docstring)
+# -- fail toward ASKING, not a silent allow, matching the existing
+# fallback ValueError handling a few lines below.
+if len(cmd) > _CMD_LEN_CAP:
+    emit_ask(
+        "merge-door: command too long to safely tokenize (%d chars, cap %d) "
+        "-- approve it manually, or use mh:ship-merge for the reviewed path."
+        % (len(cmd), _CMD_LEN_CAP)
+    )
+    sys.exit(0)
+
 try:
     # _blank_substitutions must run BEFORE shlex ever sees the command:
     # without it, an unresolved "(...)" span gets read by punctuation_chars

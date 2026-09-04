@@ -940,6 +940,56 @@ out=$( (cd "$WS" && echo "$(payload_bash "$SED_NOFLAG_CMD")" \
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "sed with no -i is not a write, exit 0 no output (noask negative control, full pipeline)" "$ok"
 
+# --- GH #140: unbounded shlex tokenize cost on an oversized raw command
+# string inside bash_write_targets()'s shlex.shlex(..., punctuation_chars=True)
+# call (and its shlex.split() ValueError fallback) -- no length cap anywhere
+# upstream, cost superlinear in the length of a single long token. Measured
+# live against this exact file (single token appended to a real redirect
+# into the guarded checkout, python3 cold-start included): 100,000 chars
+# ~0.20s, 150,000 ~0.37s, 200,000 ~0.53s, 300,000 ~0.88s -- a 700,000-char
+# payload blows straight past a 2s timeout pre-fix (confirmed live: rc=124,
+# via main()'s existing `try: targets = list(bash_write_targets(cmd)) except
+# ValueError` region -- the cap below must land INSIDE that region, not the
+# separate top-level `except Exception: return 0` used only for malformed
+# JSON, or a cap trip would silently ALLOW instead of denying). timeout
+# pattern copied from test-merge-door.sh's own DoS regression battery
+# (commit 7b37691e).
+LEN_PAD=$(python3 -c "print('A' * 700000)")
+
+start=$(date +%s)
+out=$( (cd "$WS" && echo "$(payload_bash "echo $LEN_PAD > repo1/f.txt")" \
+  | timeout 2 env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null)
+rc=$?
+elapsed=$(( $(date +%s) - start ))
+ok=1
+if [ "$rc" -eq 2 ] && [ "$elapsed" -le 2 ]; then ok=0; fi
+check "oversized single-token write to the guarded main checkout still denies within a strict 2s bound (GH #140 length cap)" "$ok"
+
+# Direction-pinning: the same oversized padding targeting a path OUTSIDE the
+# guarded workspace entirely (classify() would return None here, i.e. a real
+# tokenize would eventually ALLOW) must instead deny fast -- proving the
+# LENGTH CAP fired on size alone before classify() is ever reached, matching
+# this file's own no-"ask"-mechanism, fail-to-DENY convention. A cap that
+# fell through to the unrelated `except Exception: return 0` handler would
+# wrongly resolve this one to a silent allow instead.
+start=$(date +%s)
+out=$( (cd "$WS" && echo "$(payload_bash "echo $LEN_PAD > $TMP/outside.txt")" \
+  | timeout 2 env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null)
+rc=$?
+elapsed=$(( $(date +%s) - start ))
+ok=1
+if [ "$rc" -eq 2 ] && [ "$elapsed" -le 2 ]; then ok=0; fi
+check "oversized padding, target OUTSIDE the guarded workspace -> still denies fast (pins the cap, not classify(), GH #140)" "$ok"
+
+# Negative control: a realistic, modestly-sized legitimate write outside the
+# guarded workspace -- well under the cap -- must still resolve to a clean
+# allow. Proves the cap does not false-positive on ordinary usage merely for
+# being longer than trivial.
+out=$( (cd "$WS" && echo "$(payload_bash "echo hello > $TMP/outside2.txt")" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "realistic modestly-sized write outside the workspace, well under the GH #140 length cap -> still allows" "$ok"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="

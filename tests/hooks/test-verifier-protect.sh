@@ -736,6 +736,52 @@ out=$(payload_bash "$F4CMD" | bash "$GUARD" 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "Mid-flag splice regression guard: benign 10k-\${ python heredoc still allows -> exit 0, no output" "$ok"
 
+# --- GH #140: unbounded shlex tokenize cost on an oversized raw command
+# string inside bash_write_targets()'s shlex.shlex(..., punctuation_chars=True)
+# call (and its shlex.split() ValueError fallback) -- no length cap anywhere
+# upstream, cost superlinear in the length of a single long token. Measured
+# live against this exact file (single token appended to a real redirect
+# into hooks/gates/, python3 cold-start included): 100,000 chars ~0.23s,
+# 150,000 ~0.37s, 200,000 ~0.55s, 250,000 ~0.71s, 300,000 ~0.92s -- a
+# 700,000-char payload blows straight past a 2s timeout pre-fix (confirmed
+# live: rc=124). timeout pattern copied from test-merge-door.sh's own DoS
+# regression battery (commit 7b37691e).
+LEN_PAD=$(python3 -c "print('A' * 700000)")
+
+start=$(date +%s)
+out=$(payload_bash "echo $LEN_PAD > hooks/gates/x.sh" | timeout 2 bash "$GUARD" 2>/dev/null)
+rc=$?
+elapsed=$(( $(date +%s) - start ))
+ask=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ask=0
+ok=1
+if [ "$rc" -eq 0 ] && [ "$elapsed" -le 2 ] && [ "$ask" -eq 0 ]; then ok=0; fi
+check "oversized single-token write to hooks/gates/ still asks within a strict 2s bound (GH #140 length cap)" "$ok"
+
+# Direction-pinning: the same oversized padding forced through to python3
+# (a stray backslash defers the fast-path exactly like GH #125's own
+# continuation-parity guard, unrelated to this fix) but targeting a
+# NON-protected path (/tmp/output.txt) must ALSO ask, fast -- proving the
+# LENGTH CAP fired on size alone, not a real is_gate_path() match that just
+# happened to still finish inside the timeout. A cap that fell through to
+# "no candidate yielded, allow" on this path would wrongly resolve this one
+# to a silent allow instead.
+start=$(date +%s)
+out=$(payload_bash "echo hi \\ $LEN_PAD > /tmp/output.txt" | timeout 2 bash "$GUARD" 2>/dev/null)
+rc=$?
+elapsed=$(( $(date +%s) - start ))
+ask=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ask=0
+ok=1
+if [ "$rc" -eq 0 ] && [ "$elapsed" -le 2 ] && [ "$ask" -eq 0 ]; then ok=0; fi
+check "oversized padding, NON-protected target -> still asks fast (pins the cap, not a real path match, GH #140)" "$ok"
+
+# Negative control: a realistic, modestly-sized legitimate command -- well
+# under the cap -- must still resolve to a clean allow (exit 0, no output).
+# Proves the cap does not false-positive on ordinary usage merely for being
+# longer than trivial.
+out=$(payload_bash 'echo "some normal medium length text describing output" > /tmp/output.txt' | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "realistic modestly-sized command, well under the GH #140 length cap -> still allows" "$ok"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="

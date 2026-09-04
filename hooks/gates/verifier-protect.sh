@@ -647,11 +647,42 @@ def _has_raw_subst(tok):
     # should happen).
     return "`" in tok or "$(" in tok or "${" in tok
 
+_CMD_LEN_CAP = 150_000
+# GH #140: the shlex.shlex(..., punctuation_chars=True) call below (and its
+# shlex.split() ValueError fallback) has no length cap of its own, and its
+# cost is superlinear in the length of a single long token -- not merely
+# proportional to total input length. Measured fresh against this exact
+# file, single token appended ahead of a real redirect into hooks/gates/,
+# python3 cold-start included: 100,000 chars ~0.23s, 150,000 ~0.37s,
+# 200,000 ~0.55s, 250,000 ~0.71s, 300,000 ~0.92s -- a 700,000-char payload
+# blows straight past a 2s timeout. Checked separately: many SHORT tokens
+# summing to the same total length stay fast (roughly linear) -- the
+# blowup tracks the longest SINGLE token, not raw input length. A
+# total-length cap still bounds the worst case either way, since no single
+# token can exceed the total, even though it is more conservative than
+# strictly necessary for the many-short-tokens shape. 150,000 was picked to
+# keep worst-case added latency comfortably under half a second while
+# being enormously generous relative to a real single-line Bash command
+# (essentially never anywhere near this size -- a few hundred characters is
+# already a very long one, and even an extreme case rarely reaches a few
+# thousand). Checked here against the RAW cmd this function receives
+# (before _strip_heredocs/_normalize_ansi_c_quotes/_blank_substitutions run
+# on it below) -- irrecoverable.sh and merge-door.sh check their own cmd
+# after that preprocessing already ran at module scope, so the exact string
+# measured differs slightly by file; all four still bound the same
+# downstream shlex cost, which is what matters. This gate own primary
+# mechanism is emit_ask (see module docstring) -- fail toward ASKING, not a
+# silent allow, matching every other ambiguous-input path here. Raising
+# lets the existing top-level except Exception: emit_ask(...) handle it,
+# the same route line ~695 own ValueError re-raise already uses for a
+# genuinely malformed command.
 def bash_write_targets(cmd):
     """Yield candidate file paths the Bash command writes to or deletes.
     Bounded idiom set: redirects, tee, rm, trash, sed -i, perl -i,
     cp/mv/install, dd, rsync, tar -x, patch, git apply/am. Not an
     adversarial sandbox."""
+    if len(cmd) > _CMD_LEN_CAP:
+        raise ValueError("command too long to safely tokenize (%d chars, cap %d)" % (len(cmd), _CMD_LEN_CAP))
     orig_cmd = cmd
     cmd = _blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(_strip_heredocs(cmd))))
     # No except ValueError / cmd.split() fallback on the BLANKED string on

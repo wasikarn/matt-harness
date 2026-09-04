@@ -878,6 +878,49 @@ test_deny  "$IRRECOVERABLE" "git worktree add --detach -b (disguised new-branch 
 test_deny  "$IRRECOVERABLE" "non-string command payload triggers the fail-closed backstop (exit 2, not fail-open)" \
   '{"tool_name":"Bash","tool_input":{"command":["rm","-rf","/x"]}}'
 
+# --- GH #140: unbounded shlex tokenize cost on an oversized raw command
+# string. shlex.shlex(..., punctuation_chars=True) (and its shlex.split()
+# ValueError fallback) has no length cap anywhere upstream, and its cost is
+# superlinear in the length of a single long token. Measured live against
+# this exact file (single token appended to a real "git push --force",
+# python3 cold-start included): 100,000 chars ~0.22s, 150,000 ~0.38s,
+# 200,000 ~0.54s, 300,000 ~0.90s, 400,000 ~1.38s -- a 700,000-char payload
+# blows straight past a 2s timeout pre-fix (confirmed live: rc=124). This
+# gate has no "ask" outcome (see its own header comments), so the fix
+# denies on an oversized command -- the same fail-closed direction as every
+# other ambiguous-input path here. timeout pattern copied from
+# test-merge-door.sh's own DoS regression battery (commit 7b37691e).
+_len_pad=$(python3 -c "print('A' * 700000)")
+
+_rc=$(bash_payload "git push --force origin $_len_pad" | timeout 2 bash "$IRRECOVERABLE" 2>/dev/null; echo $?)
+if [[ "$_rc" == "2" ]]; then
+  echo "  ✅ DENY (<2s): oversized single-token dangerous command still denies (GH #140 length cap)"
+  pass=$((pass + 1))
+else
+  echo "  ❌ DENY EXPECTED (<2s) but got exit $_rc: oversized dangerous command (GH #140 length cap)" >&2
+  fail=$((fail + 1))
+fi
+
+# Direction-pinning: the SAME oversized padding on a BENIGN tail (git status
+# matches no deny pattern at all) must ALSO deny fast -- proving the LENGTH
+# CAP fired on size alone, not a real pattern match that just happened to
+# still finish inside the timeout (a pattern-match-only path would resolve
+# this one to ALLOW, since nothing here is dangerous).
+_rc=$(bash_payload "git status $_len_pad" | timeout 2 bash "$IRRECOVERABLE" 2>/dev/null; echo $?)
+if [[ "$_rc" == "2" ]]; then
+  echo "  ✅ DENY (<2s): oversized BENIGN-tail command still denies -- pins the cap, not a pattern match (GH #140)"
+  pass=$((pass + 1))
+else
+  echo "  ❌ DENY EXPECTED (<2s) but got exit $_rc: oversized benign-tail command (GH #140 length cap)" >&2
+  fail=$((fail + 1))
+fi
+
+# Negative control: a realistic, modestly-sized legitimate command -- well
+# under the cap -- must still ALLOW. Proves the cap does not false-positive
+# on ordinary usage merely for being longer than trivial.
+test_allow "$IRRECOVERABLE" "realistic longer commit message, well under the GH #140 length cap -> still allows" \
+  "$(bash_payload 'git commit -m "Implement feature X with detailed rationale covering edge cases and rollback plan for the release"')"
+
 echo ""
 echo "=== verifier-protect Bash gate (redirect/tee/sed-i writes to verifier surfaces) ==="
 VP_BASH="$ROOT/hooks/gates/verifier-protect.sh"

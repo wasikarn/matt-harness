@@ -631,6 +631,35 @@ def _blank_substitutions(s):
 # from verifier-protect.sh / worktree-guard.py, which already use this
 # pattern for their own write-target detection.
 OPERATORS = {";", "&&", "||", "|", "&", "(", ")", "{", "}"}
+
+# GH #140: shlex.shlex(..., punctuation_chars=True) below (and its
+# shlex.split() ValueError fallback further down) has no length cap of its
+# own, and its cost is superlinear in the length of a single long token --
+# not merely proportional to total input length. Measured fresh against
+# this exact file, single token appended to a real "git push --force",
+# python3 cold-start included: 100,000 chars ~0.22s, 150,000 ~0.38s,
+# 200,000 ~0.54s, 300,000 ~0.90s, 400,000 ~1.38s -- a 700,000-char payload
+# blows straight past a 2s timeout. Checked separately: many SHORT tokens
+# summing to the same 150,000-char total stayed fast (~0.14s, essentially
+# just python3 cold-start) -- the blowup tracks the longest SINGLE token,
+# not raw input length. A total-length cap still bounds the worst case
+# either way, since no single token can exceed the total length, even
+# though it is more conservative than strictly necessary for the
+# many-short-tokens shape. 150,000 was picked to keep worst-case added
+# latency comfortably under half a second while being enormously generous:
+# a real single-line Bash command is essentially never anywhere near this
+# size -- a few hundred characters is already a very long one, and even an
+# extreme case (a huge inline SQL statement, a long list of glob-expanded
+# paths) rarely reaches a few thousand. This file has no "ask" outcome (see
+# its own header/comments), so the fix denies on an oversized command --
+# the same fail-closed direction every other ambiguous-input path here
+# already takes -- and fires on length ALONE, before either the primary
+# shlex call or its fallback ever runs, regardless of whether the command
+# is otherwise dangerous.
+_CMD_LEN_CAP = 150_000
+if len(cmd) > _CMD_LEN_CAP:
+    deny("command too long to safely tokenize (" + str(len(cmd)) + " chars, cap " + str(_CMD_LEN_CAP) + ") - confirm with user first")
+
 try:
     lex = shlex.shlex(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd))), posix=True, punctuation_chars=True)
     lex.wordchars += PH

@@ -664,11 +664,31 @@ def _git_apply_am_targets(rest):
                 yield os.path.join(directory, target) if directory else target
 
 
+_CMD_LEN_CAP = 150_000
+# GH #140: the shlex.shlex(..., punctuation_chars=True) call below (and its
+# shlex.split() ValueError fallback) has no length cap of its own, and its
+# cost is superlinear in the length of a single long token -- not merely
+# proportional to total input length. Measured fresh against this exact
+# file, single token appended ahead of a real write target, python3
+# cold-start included: 100,000 chars ~0.20s, 150,000 ~0.37s, 200,000
+# ~0.53s, 300,000 ~0.88s -- a 700,000-char payload blows straight past a
+# 2s timeout. Checked separately: many short tokens summing to the same
+# total length stay fast (roughly linear) -- the blowup tracks the longest
+# single token, not raw input length. A total-length cap still bounds the
+# worst case either way, since no single token can exceed the total. Same
+# cap value as irrecoverable.sh/verifier-protect.sh/merge-door.sh, so all
+# four gates bound this identical shlex cost the same way. Raising here
+# propagates to main()'s existing `except ValueError: ... return 2` deny
+# path (see below) -- this file's Bash path has no ask outcome, so deny is
+# the fail-closed option available, same direction as the existing
+# ValueError handling for a genuinely malformed command.
 def bash_write_targets(cmd):
     """Yield candidate file paths a Bash command writes to. Ported from
     verifier-protect.sh's generator of the same name (bounded idiom set:
     redirects, tee, sed -i, cp/mv/install, rsync, tar -x, patch, git apply/am,
     dd of=; not an adversarial sandbox)."""
+    if len(cmd) > _CMD_LEN_CAP:
+        raise ValueError("command too long to safely tokenize (%d chars, cap %d)" % (len(cmd), _CMD_LEN_CAP))
     raw_cmd = cmd
     cmd = _blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(_strip_heredocs(cmd))))
     lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
