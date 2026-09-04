@@ -280,11 +280,25 @@ touch "$DS_TMP/hooks/session/foo.sh" "$DS_TMP/hooks/stop/bar.py"
 touch "$DS_TMP/hooks/__pycache__/baz.py"   # excluded: __pycache__
 touch "$DS_TMP/hooks/_ignored.sh"          # excluded: leading underscore
 
+mkdir -p "$DS_TMP/agents"
+cat >"$DS_TMP/agents/stale-agent.md" <<'EOF'
+---
+name: stale-agent
+description: "test fixture, invoked 60d ago -- outside the 30d window"
+tools: Read
+---
+body
+EOF
+
 DS_SKILLS_LEDGER="$DS_TMP/skill-usage.jsonl"
 DS_COSTS_LEDGER="$DS_TMP/costs.jsonl"
 DS_NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+DS_DAY60="$(date -u -v-60d +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u -d '60 days ago' +%Y-%m-%dT%H:%M:%SZ)"
 echo "{\"ts\":\"$DS_NOW\",\"session_id\":\"z\",\"skill\":\"mh:active-skill\",\"plugin\":\"mh\"}" >"$DS_SKILLS_LEDGER"
-echo "{\"timestamp\":\"$DS_NOW\",\"session_id\":\"z\",\"stream\":\"subagent\",\"agent_type\":\"mh:active-agent\"}" >"$DS_COSTS_LEDGER"
+{
+  echo "{\"timestamp\":\"$DS_NOW\",\"session_id\":\"z\",\"stream\":\"subagent\",\"agent_type\":\"mh:active-agent\"}"
+  echo "{\"timestamp\":\"$DS_DAY60\",\"session_id\":\"z\",\"stream\":\"subagent\",\"agent_type\":\"mh:stale-agent\"}"
+} >"$DS_COSTS_LEDGER"
 
 ds_out=$(python3 "$HEALTH_PY" --last 100 --root "$DS_TMP" --skills "$DS_SKILLS_LEDGER" --costs "$DS_COSTS_LEDGER" 2>/dev/null)
 
@@ -296,6 +310,15 @@ if echo "$ds_out" | /usr/bin/grep -qE '\| skill \| mh:dead-skill \|' \
   pass=$((pass + 1))
 else
   echo "  ❌ expected mh:dead-skill + mh:dead-agent listed, mh:active-skill/active-agent absent, got:" >&2
+  echo "$ds_out" >&2
+  fail=$((fail + 1))
+fi
+
+if echo "$ds_out" | /usr/bin/grep -qE '\| agent \| mh:stale-agent \|'; then
+  echo "  ✅ AGENT 30d CUTOFF: a row present in costs.jsonl but 60d old still counts as dead (not just 'any row = active')"
+  pass=$((pass + 1))
+else
+  echo "  ❌ expected mh:stale-agent (60d-old costs row, outside the 30d window) to be listed dead, got:" >&2
   echo "$ds_out" >&2
   fail=$((fail + 1))
 fi
@@ -323,7 +346,7 @@ if echo "$ds_json" | jq -e '
      .dead_surfaces.plugin == "mh"
      and (.dead_surfaces.dead_skills | map(.name) | sort) == ["mh:dead-skill", "mh:manual-skill"]
      and (.dead_surfaces.dead_skills[] | select(.name == "mh:manual-skill") | .manual_only) == true
-     and (.dead_surfaces.dead_agents | map(.name)) == ["mh:dead-agent"]
+     and (.dead_surfaces.dead_agents | map(.name) | sort) == ["mh:dead-agent", "mh:stale-agent"]
      and .dead_surfaces.hooks.count == 2
      and .dead_surfaces.hooks.source_missing == true
    ' >/dev/null 2>&1; then
