@@ -233,10 +233,7 @@ _ANCHOR_RE = re.compile(
 # adversarial review pass; this split keeps the outer scan byte-for-byte
 # identical to its pre-#121 behavior and confines the new anchor rule to
 # exactly the text it is true for.
-_ANCHOR_RE_BODY = re.compile(
-    r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(?:\S*/)?claude\b",
-    re.MULTILINE,
-)
+_ANCHOR_RE_BODY = re.compile(_ANCHOR_RE.pattern, re.MULTILINE)
 _FLAG_RE = re.compile(r"-p\b|--print\b|--agent\b|--bg\b")
 # Quote-aware tail scan (deep-audit, 2026-08-31): a flat char-class exclusion
 # treats ANY &/;/| as end-of-invocation, including one sitting inside a
