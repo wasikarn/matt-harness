@@ -246,10 +246,6 @@ def _newlines_to_seps(s):
 # is a quote boundary, either masking a live splice or falsely flagging
 # inert single-quoted text as live.
 #
-# No apostrophes anywhere in this python3 -c block: it lives inside the
-# bash single-quoted wrapper below, and a literal apostrophe closes that
-# string early.
-#
 # Fixed-point iteration (capped at 5 passes), kept as defense-in-depth: the
 # $(...)/${...} closer-search below depth-counts same-type brackets (GH
 # #139), so a same-type nested span ("$(echo $(date))") already resolves
@@ -712,8 +708,8 @@ _UNWRAP_WORK_BUDGET = 5_000_000
 # the compacted-retry call the driving loop below can make for the SAME
 # window (see _drop_bare_vanish_tokens) -- a per-call budget would let an
 # attacker multiply total allowed work by the number of ";"-separated
-# windows packed into one command. A fresh python3 -c process is spawned
-# per gate invocation (see the top of this file), so this naturally resets
+# windows packed into one command. A fresh python3 process is spawned per
+# gate invocation (see the top of this file), so this naturally resets
 # to 0 for every new Bash tool call -- no explicit reset needed.
 _UNWRAP_WORK_USED = [0]
 

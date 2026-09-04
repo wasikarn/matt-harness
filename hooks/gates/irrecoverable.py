@@ -633,10 +633,6 @@ try:
     lex.wordchars += PH
     tokens = list(lex)
 except ValueError:
-    # No apostrophes in this block: it lives inside the bash single-quoted
-    # python3 -c wrapper below, and a literal apostrophe closes that string
-    # early (same constraint noted further down near _bundled_force).
-    #
     # Two different things raise here, and they need different handling.
     #
     # (1) An unbalanced quote SURVIVING the placeholder-blank pass -- e.g. a
@@ -1125,9 +1121,7 @@ for w in windows:
                 # `t in ("-f", "--force")` misses it (2026-08-17 bug sweep, live-verified
                 # bypass). Stop scanning a cluster at a value-taking flag letter
                 # (checkout -b/-B, switch -c/-C) so "-bfoo"/"-cfoo" is not misread as
-                # -f hiding inside the branch-name argument. No apostrophes in this
-                # block: it lives inside the bash single-quoted python3 -c wrapper
-                # below, and a literal apostrophe closes that string early.
+                # -f hiding inside the branch-name argument.
                 def _bundled_force(t, stop_chars):
                     if not (t.startswith("-") and not t.startswith("--")):
                         return False

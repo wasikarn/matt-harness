@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import sys, json, os, shlex, re
 
-# lib_dir is argv[1] -- $(dirname "$0")/lib, appended below where this
-# python3 -c block is invoked. $0-based resolution because
+# lib_dir is argv[1] -- $(dirname "$0")/lib, passed by the bash wrapper's
+# invocation of this script. $0-based resolution because
 # CLAUDE_PLUGIN_ROOT can be empty in some invocation contexts; $0
 # cannot, since bash sets it from the literal command that ran this file.
 sys.path.insert(0, sys.argv[1])
@@ -15,10 +15,10 @@ PROTECTED_REASON = (
     "the code that judges it without your approval."
 )
 
-# No literal single-quote character appears anywhere below (the whole script
-# body is wrapped in a bash single-quoted string, which cannot contain one at
-# all). SQ builds one at runtime wherever a regex or replacement needs to
-# match or emit a quote character.
+# SQ and DQ hold the single- and double-quote characters via chr(), built
+# at runtime wherever a regex or replacement needs to match or emit a
+# quote character -- kept from when this ran inside a bash single-quoted
+# wrapper; harmless now that this is a plain file.
 SQ = chr(39)
 DQ = chr(34)
 # Command-substitution blanking placeholder (GH #129, ported from
