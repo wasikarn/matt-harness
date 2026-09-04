@@ -445,6 +445,54 @@ dos_ok=1
 if [ "$dos_rc" -eq 0 ] && [ "$dos_elapsed" -le 10 ] && [ "$dos_ask" -eq 0 ]; then dos_ok=0; fi
 check "chained ambiguous wrapper flags (30x env -u\$(true)) completes within a generous ceiling and still asks -- polynomial, not exponential (6th-round DoS fix)" "$dos_ok"
 
+# 8th-round fix (2026-09-04, live DoS confirmed still exploitable after
+# round 6/7): round 6 bounded the DISTINCT state count but not the total
+# WORK spent discovering them -- an independent adversarial measurement
+# found 1600 repeats of this exact chain took 9.7s, 2000 took 19.3s, 3000
+# took 76.6s, and 4000 took 192.2s (3.2 minutes), with no cap anywhere in
+# this file. Fixed by a process-wide work-volume budget inside _unwrap_all
+# (_UNWRAP_WORK_BUDGET, currently 5,000,000) that trips at ~195-200 repeats
+# of this chain -- 1600 repeats below is ~8x past the trip point, previously
+# the single slowest measured case this suite can practically assert a tight
+# bound on. _window_is_merge_dispatch asks immediately when the budget is
+# exhausted, before even looking at whatever candidates were already found,
+# so this must complete FAST now (well under a second in practice; the 2s
+# bound below is generous headroom, not the actual target) and still ask.
+budget_chain_cmd="$(printf 'env -u$(true) %.0s' $(seq 1 1600))gh pr merge 123"
+budget_start=$(date +%s)
+budget_out=$(payload_bash "$budget_chain_cmd" | timeout 2 bash "$GATE" 2>/dev/null)
+budget_rc=$?
+budget_elapsed=$(( $(date +%s) - budget_start ))
+budget_ask=1; echo "$budget_out" | /usr/bin/grep -q '"permissionDecision": "ask"' && budget_ask=0
+budget_ok=1
+if [ "$budget_rc" -eq 0 ] && [ "$budget_elapsed" -le 2 ] && [ "$budget_ask" -eq 0 ]; then budget_ok=0; fi
+check "work-volume budget: 1600x env -u\$(true) chain (previously measured 9.7s, well past the ~200-repeat trip point) completes within a strict 2s bound and still asks -- fail-to-ask on budget exhaustion (8th-round fix)" "$budget_ok"
+
+# Direction-pinning test: the assertion above alone does not prove the
+# budget-exhaustion PATH is what fired -- the payload's tail is a real
+# "gh pr merge 123", so a DFS that happens to still reach that tail before
+# tripping the budget would append it to finals and the trio check would
+# ask anyway, passing this suite even if a future round wrongly changed
+# exhaustion to return (finals, False) (silent "no match" -> allow). Using
+# the SAME oversized chain but a NON-merge tail closes that gap: pre-fix
+# this was noask (after ~9s+, since the full unwrap eventually resolves and
+# finds no gh/pr/merge trio); post-fix it must be ask, FAST, purely because
+# _window_is_merge_dispatch returns True the instant budget_exceeded is
+# True -- before ever looking at finals, regardless of what candidates a
+# truncated scan did or did not turn up.
+budget_benign_cmd="$(printf 'env -u$(true) %.0s' $(seq 1 1600))gh pr view 123"
+assert_ask "work-volume budget exhausted, NON-merge tail -> still ask (pins the fail-to-ask direction: an exhaustion path that fell through to 'no match' would wrongly noask here, 8th-round fix)" "$budget_benign_cmd"
+
+# Negative control (task spec): a legitimate-shaped, modestly-sized wrapper
+# chain -- many orders of magnitude under the budget -- must still resolve
+# CORRECTLY, not just fast: ask when a real merge dispatch sits at the end,
+# noask when it does not. Proves the budget does not cause a false-ask (or
+# a false-noask) on any realistic input; nobody chains sudo+nice+env around
+# an ordinary command in practice, and this is still tiny next to the
+# ~195-200 repeats needed to even approach the budget.
+assert_ask "modest realistic wrapper chain (sudo+nice+env, far under budget) -> ask (real dispatch present, 8th-round fix must not disturb this)" 'sudo nice -n 5 env FOO=bar gh pr merge 123'
+assert_noask "modest realistic wrapper chain (sudo+nice+env, far under budget), no merge dispatch -> noask (8th-round fix must not over-ask)" 'sudo nice -n 5 env FOO=bar gh pr view 123'
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

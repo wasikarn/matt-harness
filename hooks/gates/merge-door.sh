@@ -699,6 +699,16 @@ def _wrapper_stop_positions(rest, classify):
             frontier |= (nxt - seen)
     return stops
 
+_UNWRAP_WORK_BUDGET = 5_000_000
+# Process-wide, not reset per call: shared across every window AND across
+# the compacted-retry call the driving loop below can make for the SAME
+# window (see _drop_bare_vanish_tokens) -- a per-call budget would let an
+# attacker multiply total allowed work by the number of ";"-separated
+# windows packed into one command. A fresh python3 -c process is spawned
+# per gate invocation (see the top of this file), so this naturally resets
+# to 0 for every new Bash tool call -- no explicit reset needed.
+_UNWRAP_WORK_USED = [0]
+
 def _unwrap_all(argv0, rest):
     # Returns every (argv0, rest) state reachable by fully resolving
     # PREFIX_WRAPPERS unwrapping, branching at each ambiguous flag found
@@ -713,34 +723,81 @@ def _unwrap_all(argv0, rest):
     # real "gh pr merge 123" hung past a 15s timeout; 26 repeats hung
     # past 60s. Every state here is (argv0, a SUFFIX of the top-level
     # rest), and a list of length n has only n+1 distinct suffixes, so
-    # the DISTINCT STATE COUNT is linear in token count -- the blowup was
-    # pure re-computation of the same states, not genuine branching
-    # growth. seen_states turns this into an ordinary bounded graph
-    # traversal: each distinct state is expanded exactly once instead of
-    # exponentially many times (confirmed: the previously-hanging
-    # 24-repeat chain now completes in well under a second, see
-    # tests/hooks/test-merge-door.sh).
+    # the DISTINCT STATE COUNT is linear in token count -- seen_states
+    # turns this into an ordinary bounded graph traversal, each distinct
+    # state expanded exactly once instead of exponentially many times.
+    # This remains true and is unaffected by the 8th-round fix below --
+    # it is about the number of DISTINCT states, not the total work spent
+    # discovering them.
     #
-    # 7th-round correction (2026-09-04): state count being linear does NOT
-    # make the total work linear -- _wrapper_stop_positions itself is not
-    # memoized, and it does O(remaining length) work every time a
-    # newly-discovered state calls it, so total work summed across all
-    # ~n states is polynomial (roughly O(n^2)-O(n^3)), not linear.
-    # Independently measured: 1600 repeats of the same chain takes about
-    # 10s -- a massive practical improvement over the 60s+ hang at just
-    # 26 repeats pre-fix, but not a linear bound. A several-thousand-
-    # token wrapper chain reaching multi-second delays is not a proven
-    # need worth chasing further (this correction is comment-only, no
-    # code change). This does not change WHICH candidates are reachable
-    # -- skipping an already-expanded state only skips re-deriving
-    # finals that were already added the first time that exact state was
-    # reached, so the union of reachable finals is identical with or
-    # without memoization.
+    # 7th-round correction (2026-09-04) -- SUPERSEDED, see 8th round below:
+    # this round claimed linear state count made the remaining cost "a
+    # several-thousand-token wrapper chain reaching multi-second delays,
+    # not a proven need worth chasing further." That severity call was
+    # wrong. This is a SYNCHRONOUS PreToolUse gate blocking every Bash tool
+    # call, and a fresh adversarial measurement found: 1600 repeats of the
+    # same chain takes 9.7s, 2000 takes 19.3s, 3000 takes 76.6s, and 4000
+    # takes 192.2s (3.2 minutes) -- with no cap anywhere in this file. A
+    # ~64KB payload hanging the gate for over 3 minutes was not "not worth
+    # chasing further."
+    #
+    # 8th-round fix (2026-09-04): total work is polynomial for two separate
+    # reasons, not one -- (a) total states.pop() iterations are O(n^2) (a
+    # triangular number: many different ambiguous predecessor branches
+    # "fan in" onto the same later suffix before seen_states discards the
+    # duplicate), and (b) the _wrapper_stop_positions call each DISTINCT
+    # state makes, plus the states.append(..., r[i+1:]) slice made for every
+    # stop position it returns, costs O(len(r)) apiece -- summing to O(n^3)
+    # overall (confirmed via cProfile). Capping just the NUMBER of
+    # states.pop() iterations is NOT sufficient on its own: a single popped
+    # state with a large "r" can already cost O(len(r)^2) inside the
+    # stops-loop of just ONE iteration, before a pop-count check between iterations
+    # ever gets a chance to fire (measured directly: even a 1-pop budget
+    # still took ~15s at 50000 repeats, because the stops-loop inside that
+    # ONE iteration was the slow part, not the number of iterations run).
+    # Fixed by budgeting WORK VOLUME instead of pop count -- charging
+    # len(r)+1 before processing a popped state (this pays for both the
+    # tuple(r) memo-key conversion and the _wrapper_stop_positions call)
+    # and len(r)-i before each candidate append/slice inside the stops
+    # loop, checked BEFORE the corresponding expensive operation runs, so
+    # exceeding the budget stops the algorithm from ever PERFORMING the
+    # operation that would have paid for it, not just from looping again.
+    # len() is O(1) on a list, so every check is cheap no matter how large
+    # an adversarial "r" already is.
+    #
+    # _UNWRAP_WORK_BUDGET = 5,000,000 was picked empirically. It trips at
+    # around 195-200 repeats of the "env -u$(true) " chain -- about 6-7x
+    # the 30-repeat chain the existing DoS regression test below already
+    # exercises (over 200x in raw work units: that test consumes ~21,944),
+    # and nowhere near a real command, which never chains anywhere close to
+    # 195 env/sudo/nice wrappers around one gh pr merge. Worst-case
+    # wall-clock time to REACH the budget was measured directly at repeat
+    # counts from 200 up through 4000 (the previously-hanging range) and
+    # stayed at ~35-40ms throughout -- confirming the cap bounds time by
+    # budget, not by input size. Pushed further out to 200,000 repeats
+    # (a multi-megabyte payload), total time was ~1.15s, but that residual
+    # is pre-existing linear text-processing cost this file already pays
+    # elsewhere over a huge raw string (shlex/regex passes unrelated to and
+    # untouched by this fix) -- the contribution from _unwrap_all itself
+    # stays flat at the ~35-40ms figure regardless.
+    #
+    # Exhaustion returns budget_exceeded=True alongside whatever finals
+    # were already found -- the caller (_window_is_merge_dispatch) MUST ask
+    # immediately on that signal, before even looking at finals, since a
+    # truncated traversal can under-report real candidates and must never
+    # be read as "no candidates matched, allow" (same fail-to-ask-on-doubt
+    # direction this whole file already takes everywhere else). This does
+    # not change WHICH candidates are found on any input that stays under
+    # budget -- skipping an already-seen state still only skips re-deriving
+    # finals already added the first time, same as before this round.
     states = [(argv0, rest)]
     seen_states = set()
     finals = []
     while states:
         a, r = states.pop()
+        _UNWRAP_WORK_USED[0] += len(r) + 1
+        if _UNWRAP_WORK_USED[0] > _UNWRAP_WORK_BUDGET:
+            return finals, True
         key = (a, tuple(r))
         if key in seen_states:
             continue
@@ -750,8 +807,11 @@ def _unwrap_all(argv0, rest):
             continue
         classify = _WRAPPER_CLASSIFY.get(a, _generic_classify)
         for i in _wrapper_stop_positions(r, classify):
+            _UNWRAP_WORK_USED[0] += len(r) - i
+            if _UNWRAP_WORK_USED[0] > _UNWRAP_WORK_BUDGET:
+                return finals, True
             states.append((basename(r[i]), r[i + 1:]))
-    return finals
+    return finals, False
 
 def _window_is_merge_dispatch(w):
     # Runs the unwrap-then-trio-check pipeline against one window and
@@ -761,6 +821,13 @@ def _window_is_merge_dispatch(w):
     # the raw one.
     if not w:
         return False
+    _unwrap_finals, _unwrap_budget_exceeded = _unwrap_all(basename(w[0]), w[1:])
+    if _unwrap_budget_exceeded:
+        # 8th-round fix: never fall through to the trio check below on a
+        # truncated traversal -- ask now regardless of what finals already
+        # contains, so a budget-cut-short scan can never be silently read
+        # as "no gh pr merge found here, allow".
+        return True
     # GH #129-shaped duplication (ported from irrecoverable.sh, adapted to
     # 3 dispatch positions): this gate dispatches on argv0 AND the two
     # tokens right after it ("pr"/"merge"), so a splice landing on any of
@@ -769,7 +836,7 @@ def _window_is_merge_dispatch(w):
     # tried as-is), and any resulting combination that completes the
     # ("gh", "pr", "merge") trio counts as a match. Checked against EVERY
     # unwrap candidate from _unwrap_all -- ask if any one of them matches.
-    for argv0, rest in _unwrap_all(basename(w[0]), w[1:]):
+    for argv0, rest in _unwrap_finals:
         if len(rest) >= 2:
             GH, PR, MERGE = "gh", "pr", "merge"
             argv0_c = (GH,) if (PH in argv0 or _has_raw_subst(argv0)) else (argv0,)
