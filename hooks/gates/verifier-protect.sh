@@ -453,6 +453,27 @@ def _newlines_to_seps(cmd):
     return "".join(out)
 
 
+# GH #139: work budget for the depth-counting closer-search inside
+# _blank_substitutions below, charged per character the search itself
+# walks -- ported from irrecoverable.sh own identical fix. Without it, an
+# adversarial run of unclosed "$(" starts costs O(remaining length) EACH,
+# for O(length) starts -- O(n^2) total. Once spent, the while loop exits
+# with depth still non-zero, the same fallback-to-literal path an
+# already-unbalanced span already takes.
+#
+# GH #139 follow-up: that fallback-to-literal path is NOT safe on its own
+# when budget exhaustion (not a genuinely unbalanced span) is why it was
+# taken -- an un-blanked span is exactly the bypass shape this issue closed,
+# so an adversary could pad a real dangerous command with just enough
+# leading "$(" flood to burn the budget and hide the payload again. This
+# module-level flag (mutated in place, never rebound, so no "global" needed)
+# records that a search stopped BECAUSE the budget ran out -- checked once
+# right after _blank_substitutions runs below, before any token reaches
+# dispatch.
+_DEPTH_BUDGET_BLOWN = [False]
+_DEPTH_SCAN_BUDGET = 2_000_000
+
+
 def _blank_substitutions(cmd):
     # Command-substitution placeholder pass (GH #129, ported from
     # irrecoverable.sh -- see that file for the full rationale). A
@@ -485,18 +506,28 @@ def _blank_substitutions(cmd):
     # $(...) bodies are, so a real command hidden inside one still gets
     # scanned by the window loop below.
     #
-    # One accepted non-goal, out of scope for this pass: a paren nested
-    # inside a $(...) span (e.g. $(f() { :; }; f)) can defeat the fixed-point
-    # scan. (A prior note here claimed a placeholder landing mid-flag stays
-    # recognizable as a flag -- factually wrong, a splice can land mid-flag
-    # same as mid-keyword; removed 2026-09-04, see the full PH-removal fix in
-    # bash_write_targets below.)
+    # GH #139 fix (2026-09-04): a prior version of this comment named a
+    # paren nested inside a $(...) span (e.g. $(f() { :; }; f)) as a
+    # deliberately-out-of-scope residual that could defeat the fixed-point
+    # scan -- the closer-search used to stop at the FIRST "(" or ")" byte
+    # instead of the matching one, so a paren belonging to a subshell or
+    # function definition inside the span left its true end un-blanked.
+    # That claim is now wrong: the closer-search depth-counts same-type
+    # brackets (same technique main-exec-guard.sh own _inner_cmds already
+    # uses), so that example is caught. (A prior note here also claimed a
+    # placeholder landing mid-flag stays recognizable as a flag --
+    # factually wrong, a splice can land mid-flag same as mid-keyword;
+    # removed 2026-09-04, see the full PH-removal fix in bash_write_targets
+    # below.)
     bodies = []
 
     def _scan_once(s):
         out = []
         in_squote = in_dquote = in_comment = False
         i, n = 0, len(s)
+        # GH #139 work budget (see _DEPTH_SCAN_BUDGET above), shared across
+        # every $(...)/${...} closer-search this one _scan_once call makes.
+        depth_work_used = [0]
         while i < n:
             c = s[i]
             if in_comment:
@@ -560,21 +591,35 @@ def _blank_substitutions(cmd):
                     i = j + 1
                     continue
             elif c == "$" and s[i + 1:i + 2] == "(":
-                j = i + 2
-                while j < n and s[j] not in "()":
+                depth, j = 1, i + 2
+                while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
+                    depth_work_used[0] += 1
+                    if s[j] == "(":
+                        depth += 1
+                    elif s[j] == ")":
+                        depth -= 1
                     j += 1
-                if j < n and s[j] == ")":
-                    bodies.append(s[i + 2:j])
+                if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
+                    _DEPTH_BUDGET_BLOWN[0] = True
+                if not depth:
+                    bodies.append(s[i + 2:j - 1])
                     out.append(PH)
-                    i = j + 1
+                    i = j
                     continue
             elif c == "$" and s[i + 1:i + 2] == "{":
-                j = i + 2
-                while j < n and s[j] not in "{}":
+                depth, j = 1, i + 2
+                while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
+                    depth_work_used[0] += 1
+                    if s[j] == "{":
+                        depth += 1
+                    elif s[j] == "}":
+                        depth -= 1
                     j += 1
-                if j < n and s[j] == "}":
+                if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
+                    _DEPTH_BUDGET_BLOWN[0] = True
+                if not depth:
                     out.append(PH)
-                    i = j + 1
+                    i = j
                     continue
             out.append(c)
             i += 1
@@ -685,6 +730,14 @@ def bash_write_targets(cmd):
         raise ValueError("command too long to safely tokenize (%d chars, cap %d)" % (len(cmd), _CMD_LEN_CAP))
     orig_cmd = cmd
     cmd = _blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(_strip_heredocs(cmd))))
+    # GH #139 follow-up: see _DEPTH_BUDGET_BLOWN above -- a scan that could
+    # not finish leaves a span un-blanked, the same bypass shape this issue
+    # closed. Raising here (before shlex ever sees the possibly-corrupted
+    # string) routes to this file own existing top-level except Exception:
+    # emit_ask(...) the same way every other ambiguous-input path in this
+    # function already does.
+    if _DEPTH_BUDGET_BLOWN[0]:
+        raise ValueError("command too long to safely tokenize -- nested substitution exceeded depth-scan budget")
     # No except ValueError / cmd.split() fallback on the BLANKED string on
     # purpose (GH #129, same bypass shape already fixed in irrecoverable.sh):
     # tokenizing the raw pre-blanking string on a shlex failure re-exposes

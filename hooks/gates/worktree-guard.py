@@ -117,6 +117,24 @@ def _strip_heredocs(cmd):
 SQ = chr(39)
 DQ = chr(34)
 PH = "\x01"  # placeholder byte for a blanked command substitution -- see _blank_substitutions()
+# GH #139: work budget for the depth-counting closer-search inside
+# _blank_substitutions' _scan_once, charged per character the search itself
+# walks. Without it, an adversarial run of unclosed "$(" starts costs
+# O(remaining length) EACH, for O(length) starts -- O(n^2) total. Once
+# spent, the while loop exits with depth still non-zero, the same
+# fallback-to-literal path an already-unbalanced span already takes.
+#
+# GH #139 follow-up: that fallback-to-literal path is not safe on its own
+# when budget exhaustion (not a genuinely unbalanced span) is why it was
+# taken -- an un-blanked span is exactly the bypass shape this issue closed,
+# so an adversary could pad a real dangerous command with just enough
+# leading "$(" flood to burn the budget and hide the payload again. This
+# module-level flag (mutated in place, never rebound, so no "global" needed)
+# records that a search stopped because the budget ran out -- checked once
+# right after _blank_substitutions runs below, before any token reaches
+# dispatch.
+_DEPTH_BUDGET_BLOWN = [False]
+_DEPTH_SCAN_BUDGET = 2_000_000
 
 
 def _newlines_to_seps(cmd):
@@ -348,10 +366,12 @@ def _blank_substitutions(cmd):
     contains PH is duplicate-classified across every name in KNOWN_WRITE_CMDS
     downstream instead of trusting the garbled literal.
 
-    Fixed-point iteration (not one pass) handles nesting: "$(echo $(date))" blanks
-    the innermost $(date) on pass 1, leaving "$(echo PH)", then blanks that on pass
-    2. Capped at 5 iterations -- this gate has no business looping on adversarial
-    nesting depth, and 5 covers every realistic hand-typed case.
+    Fixed-point iteration, still capped at 5 passes: before the GH #139 fix
+    documented below, a genuinely nested same-type span ("$(echo $(date))") needed
+    two passes -- pass 1 blanked only the innermost $(date), leaving "$(echo PH)"
+    for pass 2 to finish. The depth-counting closer-search now resolves that case
+    in a single pass; the loop stays anyway as defense-in-depth and costs nothing
+    extra once a pass finds no further change.
 
     Blanking a span must not DISCARD its body. "(" and ")" are already grouping
     operators in bash_write_targets()'s own SEPS set, so a bare $(...) already splits
@@ -386,10 +406,17 @@ def _blank_substitutions(cmd):
     bash exactly and never crossing into a genuine single-quoted span no matter what
     punctuation that span holds.
 
-    Named residual, deliberately not fixed here (same as irrecoverable.sh): this
-    scan cannot cross a paren INSIDE $(...) in one pass -- it stops at the first
-    unescaped one -- so nested parens/functions inside a single $(...) rely on the
-    fixed-point iteration above, not a depth-counting scanner.
+    GH #139 fix (2026-09-04): a prior version of this comment named a paren
+    nested inside a $(...) span (a subshell or function definition, e.g.
+    "gi$(f() { :; }; f)t") as a residual, deliberately-unfixed gap -- the
+    closer-search below used to stop at the FIRST "(" or ")" byte instead of
+    the matching one, leaving the true end of the span un-blanked so the
+    reconstructed token never matched any KNOWN_WRITE_CMDS entry. That claim
+    is now wrong: the closer-search depth-counts same-type brackets (same
+    technique main-exec-guard.sh's own _inner_cmds already uses), so a
+    same-type nested span resolves within a single _scan_once call. The
+    fixed-point iteration above is kept anyway as defense-in-depth -- it
+    costs nothing extra when a pass finds no change and breaks immediately.
 
     A second class closed this round (2026-09-04, third cross-file review):
     a placeholder (or, on the ValueError-fallback path below, raw unresolved
@@ -427,6 +454,9 @@ def _blank_substitutions(cmd):
         out = []
         in_squote = in_dquote = in_comment = False
         i, n = 0, len(s)
+        # GH #139 work budget (see _DEPTH_SCAN_BUDGET above), shared across
+        # every $(...)/${...} closer-search this one _scan_once call makes.
+        depth_work_used = [0]
         while i < n:
             c = s[i]
             if in_comment:
@@ -481,21 +511,35 @@ def _blank_substitutions(cmd):
                     i = j + 1
                     continue
             elif c == "$" and s[i + 1:i + 2] == "(":
-                j = i + 2
-                while j < n and s[j] not in "()":
+                depth, j = 1, i + 2
+                while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
+                    depth_work_used[0] += 1
+                    if s[j] == "(":
+                        depth += 1
+                    elif s[j] == ")":
+                        depth -= 1
                     j += 1
-                if j < n and s[j] == ")":
-                    bodies.append(s[i + 2:j])
+                if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
+                    _DEPTH_BUDGET_BLOWN[0] = True
+                if not depth:
+                    bodies.append(s[i + 2:j - 1])
                     out.append(PH)
-                    i = j + 1
+                    i = j
                     continue
             elif c == "$" and s[i + 1:i + 2] == "{":
-                j = i + 2
-                while j < n and s[j] not in "{}":
+                depth, j = 1, i + 2
+                while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
+                    depth_work_used[0] += 1
+                    if s[j] == "{":
+                        depth += 1
+                    elif s[j] == "}":
+                        depth -= 1
                     j += 1
-                if j < n and s[j] == "}":
+                if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
+                    _DEPTH_BUDGET_BLOWN[0] = True
+                if not depth:
                     out.append(PH)
-                    i = j + 1
+                    i = j
                     continue
             out.append(c)
             i += 1
@@ -691,6 +735,13 @@ def bash_write_targets(cmd):
         raise ValueError("command too long to safely tokenize (%d chars, cap %d)" % (len(cmd), _CMD_LEN_CAP))
     raw_cmd = cmd
     cmd = _blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(_strip_heredocs(cmd))))
+    # GH #139 follow-up: see _DEPTH_BUDGET_BLOWN above -- a scan that could
+    # not finish leaves a span un-blanked, the same bypass shape this issue
+    # closed. Raising here propagates to main()'s existing
+    # `except ValueError: ... return 2` deny path, same fail-closed
+    # direction as the length cap a few lines up.
+    if _DEPTH_BUDGET_BLOWN[0]:
+        raise ValueError("command too long to safely tokenize -- nested substitution exceeded depth-scan budget")
     lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
     # '$' isn't in shlex's default wordchars, so an unquoted redirect
     # target like $HOME/foo splits into two tokens ('$', 'HOME/foo')

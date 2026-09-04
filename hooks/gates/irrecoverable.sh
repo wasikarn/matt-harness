@@ -397,20 +397,30 @@ def _newlines_to_seps(s):
 # (KNOWN_DANGEROUS / KNOWN_GIT_SUBS) instead of trusting the garbled token
 # literally.
 #
-# Fixed-point iteration (not one pass) handles nesting: "$(echo $(date))"
-# blanks the innermost $(date) on pass 1, leaving "$(echo PH)", then blanks
-# that on pass 2. Capped at 5 iterations -- a habit-guard has no business
-# looping on adversarial nesting depth, and 5 covers every realistic
-# hand-typed case.
+# Fixed-point iteration, still capped at 5 passes: before the GH #139 fix
+# below, a genuinely nested same-type span ("$(echo $(date))") needed two
+# passes -- pass 1 blanked only the innermost $(date), leaving "$(echo PH)"
+# for pass 2 to finish. The depth-counting closer-search now resolves that
+# case in a single pass. The loop stays anyway as defense-in-depth for any
+# residual multi-pass interaction this fix does not specifically target (a
+# placeholder one branch inserts can change what a later left-to-right scan
+# sees mid-string); it costs nothing extra on an already-stable string,
+# since the very next pass finds no change and breaks immediately.
 #
-# Named residual, deliberately not fixed here: this regex cannot cross a
-# paren INSIDE $(...) -- it stops at the first unescaped one -- so
+# GH #139 fix (2026-09-04): a prior version of this comment named
 # "gi$( (true) )t" and "gi$(f() { :; }; f)t" (both valid bash resolving to
-# "git") are NOT caught by this pass. Closing that would need a
-# depth-counting scanner (main-exec-guard.sh own _inner_cmds does this) --
-# deliberately out of scope: this pass stays a mechanical regex
-# substitution, not a parser, matching every other fix in this bug family
-# today.
+# "git") as a deliberately-out-of-scope residual, because the closer-search
+# below used to stop at the FIRST "(" or ")" byte instead of the matching
+# one -- a paren nested inside a $(...) span (a subshell, a function
+# definition) left the true end of the span un-blanked, so the reconstructed
+# token never equalled "git" and every downstream exact-match dispatch
+# missed it. That claim is now wrong: the closer-search depth-counts
+# same-type brackets (same technique main-exec-guard.sh own _inner_cmds
+# already used), so both examples above are caught. Still out of scope,
+# unchanged by this fix: a paren/brace hidden behind a DIFFERENT quote or
+# escape boundary inside the span (this scan already tracks quotes only at
+# the top level, not recursively inside a substitution body -- see the
+# ValueError-handler comment below for that documented limit).
 #
 # Mid-flag PH placement (e.g. --for<PH>ce) is NOT a non-goal -- a prior
 # version of this comment claimed it "garbles the flag name but stays
@@ -506,21 +516,55 @@ def _newlines_to_seps(s):
 # being collected; the newline join stops a real one recovered earlier
 # from being buried by a later comment.
 PH = "\x01"
+# GH #139: work budget for the depth-counting closer-search below, charged
+# per character the search itself walks. Without a cap, an adversarial run
+# of unclosed "$(" starts costs O(remaining length) EACH, for O(length)
+# starts -- O(n^2) total, measured at 65s for a 100,000-char payload, well
+# under this file own 150,000-char total-length cap a few hundred lines
+# down. Once spent, the while loop below exits with depth still non-zero --
+# the exact same fallback-to-literal path an already-unbalanced span takes
+# -- so this only bounds the COST of reaching that outcome, not the outcome
+# itself. Picked empirically: 2,000,000 keeps one _scan_once call under
+# ~0.15s even on a full-length adversarial flood.
+#
+# GH #139 follow-up: budget exhaustion alone is NOT safe to treat like an
+# ordinary unbalanced span. When the loop below stops early, the span is
+# left un-blanked, which is EXACTLY the condition that let a nested
+# construct defeat dispatch in the first place -- an adversary can pad a
+# real dangerous command with just enough leading "$(" flood (well under
+# the 150,000-char cap) to burn the budget, then rely on the un-blanked
+# fallback to hide the payload again. This module-level flag (mutated, not
+# rebound, so no "global" needed) records that the budget was actually the
+# reason a search stopped -- checked once after tokenization below, before
+# any dispatch -- so exhaustion denies instead of silently falling through
+# to literal. Stays True across both the primary and the ValueError-
+# fallback call this file makes (never reset): once a scan proves it could
+# not finish, the whole command is untrustworthy regardless of which path
+# produced the final token list.
+_DEPTH_BUDGET_BLOWN = [False]
+_DEPTH_SCAN_BUDGET = 2_000_000
 def _blank_substitutions(s):
     bodies = []
 
-    # One left-to-right pass: blanks every unnested backtick/$(...)/${...}
-    # span it finds THIS pass to PH, collecting backtick/$(...) bodies
-    # (never ${...} -- a parameter expansion, not a command) into the
-    # shared `bodies` list. Nesting ("$(echo $(date))") is NOT handled in
-    # one pass -- same non-nesting residual as the old regex, an inner
-    # "(" before the matching ")" aborts the match at that position, same
-    # as `[^()]*` failing to cross it -- so the caller re-runs this to a
-    # fixed point instead of teaching this scan to depth-count parens.
+    # One left-to-right pass: blanks every backtick/$(...)/${...} span it
+    # finds THIS pass to PH, collecting backtick/$(...) bodies (never
+    # ${...} -- a parameter expansion, not a command) into the shared
+    # `bodies` list. GH #139: the $(...)/${...} closer-search below
+    # depth-counts same-type brackets, so a same-type nested span
+    # ("$(echo $(date))", or a paren/brace-bearing construct like
+    # "$(f() { :; }; f)") resolves within this ONE pass -- the caller still
+    # re-runs this to a fixed point (a few lines down) as defense-in-depth,
+    # not because this pass itself needs a second look at same-type
+    # nesting anymore.
     def _scan_once(s):
         out = []
         in_squote = in_dquote = in_comment = False
         i, n = 0, len(s)
+        # GH #139 work budget (see _DEPTH_SCAN_BUDGET above), shared across
+        # every $(...)/${...} closer-search this one _scan_once call makes --
+        # not reset per search, or an adversarial run of unclosed starts
+        # would still pay full-length cost on each one individually.
+        depth_work_used = [0]
         while i < n:
             c = s[i]
             if in_comment:
@@ -580,21 +624,35 @@ def _blank_substitutions(s):
                     i = j + 1
                     continue
             elif c == "$" and s[i + 1:i + 2] == "(":
-                j = i + 2
-                while j < n and s[j] not in "()":
+                depth, j = 1, i + 2
+                while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
+                    depth_work_used[0] += 1
+                    if s[j] == "(":
+                        depth += 1
+                    elif s[j] == ")":
+                        depth -= 1
                     j += 1
-                if j < n and s[j] == ")":
-                    bodies.append(s[i + 2:j])
+                if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
+                    _DEPTH_BUDGET_BLOWN[0] = True
+                if not depth:
+                    bodies.append(s[i + 2:j - 1])
                     out.append(PH)
-                    i = j + 1
+                    i = j
                     continue
             elif c == "$" and s[i + 1:i + 2] == "{":
-                j = i + 2
-                while j < n and s[j] not in "{}":
+                depth, j = 1, i + 2
+                while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
+                    depth_work_used[0] += 1
+                    if s[j] == "{":
+                        depth += 1
+                    elif s[j] == "}":
+                        depth -= 1
                     j += 1
-                if j < n and s[j] == "}":
+                if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
+                    _DEPTH_BUDGET_BLOWN[0] = True
+                if not depth:
                     out.append(PH)
-                    i = j + 1
+                    i = j
                     continue
             out.append(c)
             i += 1
@@ -770,6 +828,14 @@ except ValueError:
                 tokens.extend(part.split())
     except ValueError:
         deny("could not safely tokenize command for pattern matching (unbalanced quote/substitution) - confirm with user first")
+
+# GH #139 follow-up: see _DEPTH_BUDGET_BLOWN above -- a scan that could not
+# finish leaves a span un-blanked, the same bypass shape this issue closed.
+# Checked once here, after both the primary and fallback paths above have
+# had their chance to run, before any token reaches dispatch.
+if _DEPTH_BUDGET_BLOWN[0]:
+    deny("command too long to safely tokenize (nested substitution exceeded depth-scan budget) - confirm with user first")
+
 windows, cur = [], []
 for tok in tokens:
     if tok in OPERATORS:

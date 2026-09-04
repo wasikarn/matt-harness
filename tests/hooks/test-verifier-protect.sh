@@ -518,6 +518,40 @@ out=$(payload_bash "$(printf 'echo "it%ss" ; c$(true)p evil.sh hooks/gates/x.sh'
 ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
 check "GH #129: English contraction adjacent to a real splice does not mask it -> ask" "$ok"
 
+# GH #139 (2026-09-04): the $(...)/${...} closer-search used to scan forward
+# for the FIRST "(" or ")" byte and treat that as the terminator -- not
+# depth-aware, so a paren nested INSIDE the span (a function definition)
+# aborted the match early, leaving the true end of the span un-blanked.
+# "c$(f() { :; }; f)p evil.sh hooks/gates/x.sh" really runs as
+# "cp evil.sh hooks/gates/x.sh" (the function body is a no-op, so the
+# substitution resolves to empty), but pre-fix the un-blanked "(", ")",
+# "{", "}" bytes fragment the shlex tokenization so no window's argv0 ever
+# reads "cp" -- confirmed live: allow (no ask) before this fix. Fixed by
+# depth-counting same-type brackets in the closer-search (same technique
+# irrecoverable.sh sibling GH #139 fix and main-exec-guard.sh own
+# _inner_cmds already use).
+out=$(payload_bash "$(printf 'c$(f() { :; }; f)p evil.sh hooks/gates/x.sh')" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "GH #139: nested function-construct inside \$(...) defeats the old first-byte closer-search, real bash resolves to cp targeting a protected path -> ask" "$ok"
+
+# Companion DoS check: depth-counting a closer-search that never balances
+# (an adversarial flood of unclosed "$(" starts) must stay bounded by a
+# work budget instead of costing O(remaining length) PER start -- O(n^2)
+# total (same fix/rationale as irrecoverable.sh, GH #139). Budget exhaustion
+# alone is NOT safe to read as "no protected-path target found, allow": that
+# fallback path leaves the span un-blanked, the exact bypass shape GH #139
+# closed, so an adversary could pad a real dangerous command with just
+# enough flood to burn the budget and hide the payload again. Fixed by a
+# _DEPTH_BUDGET_BLOWN flag that raises, routing to this file's existing
+# top-level except Exception: emit_ask -- so this must complete fast AND ask.
+depth_flood_cmd=$(python3 -c 'print("$(" * 50000)')
+depth_flood_start=$(date +%s)
+depth_flood_out=$(payload_bash "$depth_flood_cmd" | timeout 10 bash "$GUARD" 2>/dev/null); depth_flood_rc=$?
+depth_flood_elapsed=$(( $(date +%s) - depth_flood_start ))
+ok=1
+if [ "$depth_flood_rc" -eq 0 ] && echo "$depth_flood_out" | /usr/bin/grep -q '"permissionDecision": "ask"' && [ "$depth_flood_elapsed" -le 10 ]; then ok=0; fi
+check "GH #139: 50,000x unclosed \"\$(\" flood completes within a generous ceiling and asks (fail-closed budget-exhaustion fix)" "$ok"
+
 # 5-finding fix round (2026-09-04): comment-truncation join, quote-boundary
 # shlex ValueError containment, comment-state tracking in the substitution
 # scanner, tar mode_str/has_extract PH parity, patch -d/--directory parity.

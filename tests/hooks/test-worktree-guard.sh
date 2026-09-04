@@ -254,6 +254,45 @@ out=$( (cd "$WS" && echo "$bashpayload_spliceargv0" \
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "argv0 splice via \$(...) resolving to cp, writing inside the guarded workspace -> deny exit 2 (was a silent bypass)" "$ok"
 
+# GH #139 (2026-09-04): the $(...)/${...} closer-search used to scan forward
+# for the FIRST "(" or ")" byte and treat that as the terminator -- not
+# depth-aware, so a paren nested INSIDE the span (a function definition)
+# aborted the match early, leaving the true end of the span un-blanked.
+# "c$(f() { :; }; f)p evil.sh repo1/f.txt" really runs as
+# "cp evil.sh repo1/f.txt" (the function body is a no-op, so the
+# substitution resolves to empty), but pre-fix the un-blanked "(", ")",
+# "{", "}" bytes fragment the shlex tokenization so no window's argv0 ever
+# reads "cp" -- confirmed live: exit 0 (allow) before this fix. Fixed by
+# depth-counting same-type brackets in the closer-search (same technique
+# irrecoverable.sh sibling GH #139 fix and main-exec-guard.sh own
+# _inner_cmds already use).
+NESTED_PAREN_SPLICE_CMD='c$(f() { :; }; f)p evil.sh repo1/f.txt'
+bashpayload_nestedparensplice=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$NESTED_PAREN_SPLICE_CMD")
+out=$( (cd "$WS" && echo "$bashpayload_nestedparensplice" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "nested function-construct inside \$(...) defeats the old first-byte closer-search, real bash resolves to cp writing inside the guarded workspace -> deny exit 2 (GH #139, was a silent bypass)" "$ok"
+
+# Companion DoS check: depth-counting a closer-search that never balances
+# (an adversarial flood of unclosed "$(" starts) must stay bounded by a
+# work budget instead of costing O(remaining length) PER start -- O(n^2)
+# total (same fix/rationale as irrecoverable.sh, GH #139). Budget exhaustion
+# alone is NOT safe to read as "no write target found, allow": that fallback
+# path leaves the span un-blanked, the exact bypass shape GH #139 closed, so
+# an adversary could pad a real dangerous command with just enough flood to
+# burn the budget and hide the payload again. Fixed by a _DEPTH_BUDGET_BLOWN
+# flag that forces the fail-closed deny outcome instead (this file's Bash
+# path has no ask outcome) -- so this must complete fast AND deny.
+DEPTH_FLOOD_CMD=$(python3 -c 'print("$(" * 50000)')
+bashpayload_depthflood=$(python3 -c 'import json,sys; print(json.dumps({"tool_name":"Bash","tool_input":{"command":sys.argv[1]}}))' "$DEPTH_FLOOD_CMD")
+depth_flood_start=$(date +%s)
+out=$( (cd "$WS" && echo "$bashpayload_depthflood" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= timeout 10 python3 "$GUARD") 2>/dev/null); rc=$?
+depth_flood_elapsed=$(( $(date +%s) - depth_flood_start ))
+ok=1
+if [ "$rc" -eq 2 ] && [ "$depth_flood_elapsed" -le 10 ]; then ok=0; fi
+check "50,000x unclosed \"\$(\" flood completes within a generous ceiling and denies (GH #139 fail-closed budget-exhaustion fix)" "$ok"
+
 # Same bug family, the splice sits in the write TARGET instead of argv0: an unknown \${x}
 # parameter expansion blanks to the PH placeholder rather than resolving to empty (real bash
 # expands an unset \$x to ""), but the nearest EXISTING directory ancestor of the resulting

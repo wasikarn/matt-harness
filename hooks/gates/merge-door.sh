@@ -321,13 +321,35 @@ def _newlines_to_seps(s):
 # bash single-quoted wrapper below, and a literal apostrophe closes that
 # string early.
 #
-# Fixed-point iteration (capped at 5 passes) handles nesting
-# ("$(echo $(date))"). A dispatch-FLAG splice and a paren crossing INSIDE
-# $(...) are both out of scope here, same as in irrecoverable.sh -- this
-# pass only re-derives which candidate name a garbled DISPATCH token might
-# be, it does not re-scan already-clean flag/argument tokens, and it stays
-# a mechanical scan, not a parser. Bare $VAR/$@/$* are never touched.
+# Fixed-point iteration (capped at 5 passes), kept as defense-in-depth: the
+# $(...)/${...} closer-search below depth-counts same-type brackets (GH
+# #139), so a same-type nested span ("$(echo $(date))") already resolves
+# within a single pass -- the loop no longer carries that specific case, it
+# just costs nothing extra when a pass finds no change and breaks
+# immediately. A dispatch-FLAG splice is still out of scope here, same as
+# in irrecoverable.sh -- this pass only re-derives which candidate name a
+# garbled DISPATCH token might be, it does not re-scan already-clean flag/
+# argument tokens, and it stays a mechanical scan, not a parser. Bare
+# $VAR/$@/$* are never touched.
 PH = "\x01"
+# GH #139: work budget for the depth-counting closer-search below, charged
+# per character the search itself walks -- ported from irrecoverable.sh own
+# identical fix. Without it, an adversarial run of unclosed "$(" starts
+# costs O(remaining length) EACH, for O(length) starts -- O(n^2) total.
+# Once spent, the while loop below exits with depth still non-zero, the
+# same fallback-to-literal path an already-unbalanced span already takes.
+#
+# GH #139 follow-up: that fallback-to-literal path is NOT safe on its own
+# when budget exhaustion (not a genuinely unbalanced span) is why it was
+# taken -- an un-blanked span is exactly the bypass shape this issue closed,
+# so an adversary could pad a real dangerous command with just enough
+# leading "$(" flood to burn the budget and hide the payload again. This
+# module-level flag (mutated in place, never rebound, so no "global"
+# needed) records that a search stopped BECAUSE the budget ran out --
+# checked once after tokenization below, before any dispatch, so
+# exhaustion asks instead of silently falling through to literal.
+_DEPTH_BUDGET_BLOWN = [False]
+_DEPTH_SCAN_BUDGET = 2_000_000
 def _blank_substitutions(s):
     bodies = []
 
@@ -335,6 +357,9 @@ def _blank_substitutions(s):
         out = []
         in_squote = in_dquote = in_comment = False
         i, n = 0, len(s)
+        # GH #139 work budget (see _DEPTH_SCAN_BUDGET above), shared across
+        # every $(...)/${...} closer-search this one _scan_once call makes.
+        depth_work_used = [0]
         while i < n:
             c = s[i]
             if in_comment:
@@ -393,21 +418,35 @@ def _blank_substitutions(s):
                     i = j + 1
                     continue
             elif c == "$" and s[i + 1:i + 2] == "(":
-                j = i + 2
-                while j < n and s[j] not in "()":
+                depth, j = 1, i + 2
+                while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
+                    depth_work_used[0] += 1
+                    if s[j] == "(":
+                        depth += 1
+                    elif s[j] == ")":
+                        depth -= 1
                     j += 1
-                if j < n and s[j] == ")":
-                    bodies.append(s[i + 2:j])
+                if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
+                    _DEPTH_BUDGET_BLOWN[0] = True
+                if not depth:
+                    bodies.append(s[i + 2:j - 1])
                     out.append(PH)
-                    i = j + 1
+                    i = j
                     continue
             elif c == "$" and s[i + 1:i + 2] == "{":
-                j = i + 2
-                while j < n and s[j] not in "{}":
+                depth, j = 1, i + 2
+                while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
+                    depth_work_used[0] += 1
+                    if s[j] == "{":
+                        depth += 1
+                    elif s[j] == "}":
+                        depth -= 1
                     j += 1
-                if j < n and s[j] == "}":
+                if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
+                    _DEPTH_BUDGET_BLOWN[0] = True
+                if not depth:
                     out.append(PH)
-                    i = j + 1
+                    i = j
                     continue
             out.append(c)
             i += 1
@@ -528,6 +567,18 @@ except ValueError:
             "for the reviewed path."
         )
         sys.exit(0)
+
+# GH #139 follow-up: see _DEPTH_BUDGET_BLOWN above -- a scan that could not
+# finish leaves a span un-blanked, the same bypass shape this issue closed.
+# Checked once here, after either branch above has had its chance to run,
+# before any token reaches dispatch.
+if _DEPTH_BUDGET_BLOWN[0]:
+    emit_ask(
+        "merge-door: command too long to safely tokenize (nested substitution "
+        "exceeded depth-scan budget) -- approve it manually, or use "
+        "mh:ship-merge for the reviewed path."
+    )
+    sys.exit(0)
 
 def basename(p):
     return p.rsplit("/", 1)[-1]

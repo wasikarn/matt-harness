@@ -192,6 +192,40 @@ assert_ask "rest[1] splice resolving to merge -> ask (GH #129)" 'gh pr m$(true)e
 # splice marker is present somewhere in the window.
 assert_noask "argv0 spliced, resolves to a benign gh subcommand -> noask (GH #129 must not over-ask)" '$(which gh) pr view 123'
 
+# GH #139 (2026-09-04): the $(...)/${...} closer-search used to scan forward
+# for the FIRST "(" or ")" byte and treat that as the terminator -- not
+# depth-aware, so a paren nested INSIDE the span (a function definition)
+# aborted the match early, leaving the true end of the span un-blanked.
+# "g$(f() { :; }; f)h pr merge 123" really runs as "gh pr merge 123" (the
+# function body is a no-op, so the substitution resolves to empty), but
+# pre-fix the un-blanked "(", ")", "{", "}" bytes fragment the shlex
+# tokenization so no window's argv0 ever reads "gh" -- confirmed live:
+# noask before this fix. Fixed by depth-counting same-type brackets in the
+# closer-search (same technique irrecoverable.sh's sibling GH #139 fix and
+# main-exec-guard.sh's own _inner_cmds already use).
+assert_ask "nested function-construct inside \$(...) defeats the old first-byte closer-search, real bash resolves to gh pr merge (GH #139, was noask)" 'g$(f() { :; }; f)h pr merge 123'
+
+# Companion DoS check: depth-counting a closer-search that never balances
+# (an adversarial flood of unclosed "$(" starts) must stay bounded by a
+# work budget instead of costing O(remaining length) PER start -- O(n^2)
+# total (same fix/rationale as irrecoverable.sh, GH #139). Budget exhaustion
+# alone is NOT safe to read as "no gh/pr/merge trio found, noask": that
+# fallback path leaves the span un-blanked, the exact bypass shape GH #139
+# closed, so an adversary could pad a real dangerous command with just
+# enough flood to burn the budget and hide the payload again. Fixed by a
+# _DEPTH_BUDGET_BLOWN flag that forces the fail-closed ask outcome instead
+# (this file's primary mechanism is emit_ask) -- so this must complete fast
+# AND ask.
+depth_flood_cmd=$(python3 -c 'print("$(" * 50000)')
+depth_flood_start=$(date +%s)
+depth_flood_out=$(payload_bash "$depth_flood_cmd" | timeout 10 bash "$GATE" 2>/dev/null)
+depth_flood_rc=$?
+depth_flood_elapsed=$(( $(date +%s) - depth_flood_start ))
+depth_flood_ask=1; echo "$depth_flood_out" | /usr/bin/grep -q '"permissionDecision": "ask"' && depth_flood_ask=0
+depth_flood_ok=1
+if [ "$depth_flood_rc" -eq 0 ] && [ "$depth_flood_elapsed" -le 10 ] && [ "$depth_flood_ask" -eq 0 ]; then depth_flood_ok=0; fi
+check "50,000x unclosed \"\$(\" flood completes within a generous ceiling and asks (GH #139 fail-closed budget-exhaustion fix)" "$depth_flood_ok"
+
 # An English contraction sitting in an unrelated, earlier window must not
 # mask a real splice-based match later in the same input -- same shape as
 # the it-is-shaped bypass irrecoverable.sh own history already found for a

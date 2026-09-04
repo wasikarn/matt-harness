@@ -448,6 +448,44 @@ test_deny "$IRRECOVERABLE" "empty-substitution splice hides git clean -f's dash 
 test_allow "$IRRECOVERABLE" "substitution inside a quoted -m message value, not a bare flag position (git commit -m \"\$(cat msg.txt)\") -- must stay ALLOW" \
   "$(bash_payload 'git commit -m "$(cat msg.txt)"')"
 
+# GH #139 (2026-09-04): the $(...)/${...} closer-search used to scan forward
+# for the FIRST "(" or ")" byte and treat that as the terminator -- not
+# depth-aware, so a paren nested INSIDE the span (a subshell or function
+# definition) aborted the match early, leaving the true end of the span
+# un-blanked. "gi$(f() { :; }; f)t push --force" really runs as
+# "git push --force" (the function body is a no-op, so the substitution
+# resolves to empty), but pre-fix the un-blanked "(", ")", "{", "}" bytes
+# fragment the shlex tokenization so no window's argv0 ever reads "git" --
+# a total silent bypass, confirmed live: rc=0 (allow) before this fix.
+# Fixed by depth-counting same-type brackets in the closer-search (same
+# technique main-exec-guard.sh's own _inner_cmds already uses).
+test_deny "$IRRECOVERABLE" "nested function-construct inside \$(...) defeats the old first-byte closer-search, real bash resolves to git push --force (GH #139, was a silent bypass)" \
+  "$(bash_payload 'gi$(f() { :; }; f)t push --force origin develop')"
+
+# Companion DoS check for the same fix: depth-counting a closer-search that
+# never balances (an adversarial flood of unclosed "$(" starts) must stay
+# bounded by a work budget instead of costing O(remaining length) PER
+# start -- O(n^2) total. Measured pre-budget: 65s for a 100,000-char flood,
+# well under this file's own 150,000-char total-length cap. Budget
+# exhaustion alone is NOT safe to read as "no dangerous token found, allow":
+# that fallback path leaves the span un-blanked, the exact bypass shape
+# GH #139 closed, so an adversary could pad a real dangerous command with
+# just enough flood to burn the budget and hide the payload again. Fixed by
+# a _DEPTH_BUDGET_BLOWN flag that forces the fail-closed deny outcome
+# instead -- so this must complete fast AND deny.
+DEPTH_FLOOD_CMD=$(python3 -c 'print("$(" * 50000)')
+depth_flood_start=$(date +%s)
+depth_flood_out=$(bash_payload "$DEPTH_FLOOD_CMD" | timeout 10 bash "$IRRECOVERABLE" 2>/dev/null)
+depth_flood_rc=$?
+depth_flood_elapsed=$(( $(date +%s) - depth_flood_start ))
+if [[ "$depth_flood_rc" == "2" ]] && [ "$depth_flood_elapsed" -le 10 ]; then
+  echo "  ✅ DENY: 50,000x unclosed \"\$(\" flood completes within a generous ceiling (GH #139 fail-closed budget-exhaustion fix)"
+  pass=$((pass + 1))
+else
+  echo "  ❌ depth-scan work-budget expected fast deny but got rc=$depth_flood_rc elapsed=${depth_flood_elapsed}s out='$depth_flood_out'" >&2
+  fail=$((fail + 1))
+fi
+
 # GH #129 follow-up (2026-09-03): an adversarial review found the leading-PH
 # fix above was applied to some checks but not others, and a third bug class
 # (Layer 3 -- a standalone vanish token, not glued to anything, shifts every
