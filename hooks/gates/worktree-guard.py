@@ -389,15 +389,52 @@ def _blank_substitutions(cmd):
     Named residual, deliberately not fixed here (same as irrecoverable.sh): this
     scan cannot cross a paren INSIDE $(...) in one pass -- it stops at the first
     unescaped one -- so nested parens/functions inside a single $(...) rely on the
-    fixed-point iteration above, not a depth-counting scanner."""
+    fixed-point iteration above, not a depth-counting scanner.
+
+    A second class closed this round (2026-09-04, third cross-file review):
+    a placeholder (or, on the ValueError-fallback path below, raw unresolved
+    substitution syntax) landing MID-flag -- inside an already-dash-prefixed
+    flag body, e.g. "-$(true)i" -> "-\x01i" -- is invisible to a leading-only
+    t.lstrip(PH), which strips PH only from the very start of a string and
+    does nothing when the first character is the literal "-" instead. This
+    does NOT "stay recognizable as a flag" (an earlier version of this
+    comment claimed exactly that, and was wrong): every per-command flag
+    check downstream compares by exact string equality or a fixed prefix, so
+    the ungarbled flag simply fails to match anything and the check silently
+    misses it -- worse, several of these checks are the single outer gate
+    deciding whether their whole branch yields ANY targets at all, so a
+    mid-flag splice there is a full silent bypass, not a degraded one
+    (confirmed exploitable 2026-09-04: "sed -$(true)i -e s/x/y/ repo1/f.txt"
+    yielded zero targets while real bash executes it as "sed -i ...", an
+    in-place edit). Fixed by widening every such check from t.lstrip(PH) to
+    t.replace(PH, "") (strips PH from anywhere in the token, not just the
+    front) plus an _has_raw_subst() OR-clause on the outer gates for the
+    ValueError-fallback path, which never produces a PH byte to strip at
+    all.
+
+    Finding 5: a "#" starts a real bash comment that runs to the next literal
+    newline, and nothing inside one is live syntax -- a $(...)/backtick/${...}
+    span appearing only in a comment must not be matched and blanked here, or
+    (via the body re-append above) a merely-commented-out command gets treated
+    as a real statement. Ported verbatim from this file's own
+    _newlines_to_seps, which already tracks this state correctly: in_comment
+    checked first, above the quote branches (a comment has no quoting), pass
+    through unconditionally until the closing "\\n", entered on any unescaped
+    "#" seen while unquoted."""
     bodies = []
 
     def _scan_once(s):
         out = []
-        in_squote = in_dquote = False
+        in_squote = in_dquote = in_comment = False
         i, n = 0, len(s)
         while i < n:
             c = s[i]
+            if in_comment:
+                out.append(c)
+                if c == "\n":
+                    in_comment = False
+                i += 1
+                continue
             if in_squote:
                 out.append(c)
                 if c == SQ:
@@ -430,6 +467,10 @@ def _blank_substitutions(cmd):
                 if c == "\\" and i + 1 < n:
                     out.append(c); out.append(s[i + 1])
                     i += 2
+                    continue
+                if c == "#":
+                    in_comment = True
+                    out.append(c); i += 1
                     continue
                 # else: fall through to the shared substitution-start check.
             if c == "`":
@@ -466,7 +507,18 @@ def _blank_substitutions(cmd):
             break
         cmd = new
     if bodies:
-        cmd = cmd + " ; " + " ; ".join(bodies)
+        # A trailing "# comment" already in the command (cmd, re-scanned above)
+        # opens a shlex comment that swallows everything appended after it --
+        # "echo $(cp evil.sh repo1/f.txt)  # copy" recovers "cp evil.sh
+        # repo1/f.txt" as a body, but appending it after the trailing "# copy"
+        # buried the whole write inside that same still-open comment, with no
+        # separator to end it (shlex's default comment handling stops only at
+        # a literal newline, never at " ; ") -- silent bypass, confirmed
+        # 2026-09-03. A real "\n" before each appended body ends any open
+        # comment the same way a genuine bash newline would, then "; " starts
+        # a fresh statement -- same idiom this file's own _newlines_to_seps
+        # already uses for real newlines.
+        cmd = cmd + "\n; " + "\n; ".join(bodies)
     return cmd
 
 
@@ -498,6 +550,23 @@ def _diff_targets(path):
 KNOWN_WRITE_CMDS = ("tee", "sed", "perl", "cp", "mv", "install", "rsync", "tar",
                      "patch", "git", "dd")
 
+
+def _has_raw_subst(token):
+    """True if `token` still carries live, unblanked substitution syntax -- a
+    backtick, "$(", or "${". Deliberately narrow: a bare "$" alone (e.g. the
+    $PYTHON in "$PYTHON -m pytest") must NOT match, or every $VAR-prefixed
+    command would misfire the duplication loop below and false-deny. Needed
+    only on bash_write_targets()'s finding-6b ValueError fallback path: that
+    path's tokens come from raw_cmd, never run through _blank_substitutions,
+    so a spliced argv0 like "c$(true)p" keeps its literal substitution syntax
+    intact and never contains PH -- the PH-only duplication trigger below can
+    never fire on it by construction (confirmed exploitable 2026-09-03:
+    'echo ${y:-"a}b"} ; c$(true)p evil.sh target.txt' silently allowed a real
+    write). Inert on the normal (non-fallback) path: _blank_substitutions
+    already replaces this syntax with PH before argv0 is ever read there, so
+    this can only ever add a second reason to trigger, never a false one."""
+    return "`" in token or "$(" in token or "${" in token
+
 # Real single-letter tar operation/option letters (GNU tar short options). Used to
 # tell an old-style bundled flag cluster ("xvf") from an ordinary filename that
 # merely CONTAINS the letter "x" (e.g. "extract.sh", "fix.txt", "box.tar") -- a
@@ -525,9 +594,10 @@ def _drop_bare_vanish_tokens(rest):
     Returns a copy of `rest` with every bare-vanish token dropped -- a token
     counts as bare-vanish only when EVERY character in it is the placeholder
     byte (stripping PH from it leaves nothing), never a token that merely
-    contains PH glued to real content (a PH-prefixed flag/assignment from the
-    GH #129 fix, e.g. "$(true)-C" -> "\x01-C" -- those already resolve
-    correctly via lstrip(PH) and must not be dropped here)."""
+    contains PH glued to real content (a PH-prefixed or PH-mid-flag token
+    from the GH #129 / 2026-09-04 fixes, e.g. "$(true)-C" -> "\x01-C" or
+    "-$(true)i" -> "-\x01i" -- those already resolve correctly via
+    replace(PH, "") and must not be dropped here)."""
     return [t for t in rest if t.strip(PH) != ""]
 
 
@@ -536,17 +606,28 @@ def _tar_extract_targets(rest):
     scan), factored out of bash_write_targets' tar branch so the caller can
     run it against both the raw window and the bare-vanish-compacted one --
     see _drop_bare_vanish_tokens."""
-    mode_str = rest[0].lstrip(PH) if rest and not rest[0].lstrip(PH).startswith("--") else ""
+    # 2026-09-04 (third cross-file review): mode_str can carry PH mid-word,
+    # not just leading ("$(true)xvf" -> "\x01xvf" leading, but also
+    # "x$(true)vf" -> "x\x01vf" mid-word for a splice inside the flag
+    # cluster itself) -- replace(PH, "") strips it from anywhere, unlike the
+    # old leading-only lstrip(PH). The ValueError-fallback path never
+    # produces a PH byte at all (raw_cmd is tokenized directly, substitution
+    # syntax stays literal), so a mid-flag splice there survives as raw text
+    # no strip can remove -- _has_raw_subst() closes that path by treating
+    # any raw-subst-bearing token in `rest` as "could be extract mode,
+    # cannot rule it out" (same fail-closed posture as this file's Bash
+    # write-target fail-safe in main()).
+    mode_str = rest[0].replace(PH, "") if rest and not rest[0].replace(PH, "").startswith("--") else ""
     mode_body = mode_str.lstrip("-")
     has_extract = (
         bool(mode_body) and all(ch in _TAR_FLAG_CHARS for ch in mode_body)
         and "x" in mode_body
-    ) or any(t.lstrip(PH) == "--extract" for t in rest)
+    ) or any(t.replace(PH, "") == "--extract" for t in rest) or any(_has_raw_subst(t) for t in rest)
     if not has_extract:
         return
     yielded_dir = False
     for j, t in enumerate(rest):
-        dt = t.lstrip(PH)
+        dt = t.replace(PH, "")
         if dt in ("-C", "--directory") and j + 1 < len(rest):
             yield rest[j + 1]
             yielded_dir = True
@@ -564,10 +645,18 @@ def _git_apply_am_targets(rest):
     factored out of bash_write_targets' git branch so the caller can run it
     against both the raw window and the bare-vanish-compacted one -- see
     _drop_bare_vanish_tokens."""
+    # 2026-09-04: both checks widened the same way as sed/perl's -i gate --
+    # replace(PH, "") (not leading-only lstrip(PH)) for a mid-flag splice
+    # ("-$(true)C" -> "-\x01C"), plus _has_raw_subst() for the
+    # ValueError-fallback path, which never produces a PH byte at all. Both
+    # are true outer gates: missing either means the whole apply/am dispatch
+    # below never runs (no redundant nonflag fallback here).
     sub_idx, directory = 0, None
-    if len(rest) > 1 and rest[0].lstrip(PH) == "-C":
+    if len(rest) > 1 and (rest[0].replace(PH, "") == "-C" or _has_raw_subst(rest[0])):
         sub_idx, directory = 2, rest[1]
-    if len(rest) > sub_idx and rest[sub_idx].lstrip(PH) in ("apply", "am"):
+    if len(rest) > sub_idx and (
+        rest[sub_idx].replace(PH, "") in ("apply", "am") or _has_raw_subst(rest[sub_idx])
+    ):
         diff_args = [t for t in rest[sub_idx + 1:] if not t.startswith("-")]
         for t in diff_args:
             yield t
@@ -580,6 +669,7 @@ def bash_write_targets(cmd):
     verifier-protect.sh's generator of the same name (bounded idiom set:
     redirects, tee, sed -i, cp/mv/install, rsync, tar -x, patch, git apply/am,
     dd of=; not an adversarial sandbox)."""
+    raw_cmd = cmd
     cmd = _blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(_strip_heredocs(cmd))))
     lex = shlex.shlex(cmd, posix=True, punctuation_chars=True)
     # '$' isn't in shlex's default wordchars, so an unquoted redirect
@@ -590,16 +680,52 @@ def bash_write_targets(cmd):
     # blanked substitution span fuses into the surrounding literal text as
     # ONE token instead of splitting on it (see _blank_substitutions above).
     lex.wordchars += "$" + PH
-    tokens = list(lex)
-    # No except ValueError fallback here (GH #129 companion fix): an unbalanced
-    # quote/substitution that survives to this point is ambiguous input this
-    # generator cannot safely tokenize, and a naive cmd.split() fallback tokenizes
-    # the RAW, pre-fix string -- PH is never in it, so a spliced argv0 built this
-    # way can never match a KNOWN_WRITE_CMDS candidate and the whole mechanism goes
-    # inert (same bypass shape irrecoverable.sh closed the same way, 2026-09-03).
-    # The exception propagates to main()'s Bash-branch handling, which fails
-    # closed on it instead -- matching this file's own Bash-path convention of
-    # denying rather than guessing on ambiguous input.
+    try:
+        tokens = list(lex)
+    except ValueError:
+        # The ${...}/$(...)/`...` closer-search inside _blank_substitutions'
+        # _scan_once doesn't track quote state over the characters it skips
+        # while hunting for the closing brace/paren/backtick, so a span like
+        # ${x:-"a}b"} -- genuinely balanced bash, a default value containing a
+        # quoted "}" -- gets its closer matched at the FIRST "}" (inside the
+        # quote), leaving a dangling quote in the blanked cmd that this
+        # tokenizer then can't parse. That's this scanner's own artifact, not
+        # a real problem with the caller's command, so treat it as recoverable
+        # rather than fail closed on it the way GH #129 fail-closed cases do:
+        # re-probe the RAW, pre-blanking string (raw_cmd, captured above) with
+        # plain shlex.split -- no punctuation_chars, so it accepts ordinary
+        # balanced quoting this scanner's manual brace-matching cannot. If
+        # that ALSO raises ValueError, the command is genuinely malformed
+        # (e.g. an unterminated quote), not just mis-scanned, and this
+        # re-raises to propagate to main()'s existing fail-closed deny path,
+        # matching this file's own Bash-path convention of denying on
+        # ambiguous input. If it succeeds, fall back to a plain whitespace
+        # split of raw_cmd -- shlex.split's own result strips quoting and
+        # collapses PH-bearing spans, neither of which the SEPS-based windowing
+        # below can use, so it exists here only as the validity probe. The
+        # actual fallback tokens still need ";"/"&&"/"||"/"|"/"&" isolated as
+        # their own tokens even when not whitespace-padded (a plain
+        # raw_cmd.split() fuses "repo1/f.txt;" into one word, collapsing a
+        # multi-statement command into a single window and letting the
+        # nonflag[-1] fallback below grab a trailing token from a LATER
+        # statement instead of the real write target -- confirmed 2026-09-03:
+        # "cp evil.sh repo1/f.txt; echo ${x:-\"a}b\"}" silently dropped the
+        # real cp target this way, a fail-open on a deny-gate). "{"/"}" are
+        # deliberately excluded from this split -- they appear inside
+        # ${...} spans (like the case above) far more often than as real
+        # brace-group operators in the commands this generator sees, and
+        # splitting on them there shreds the very token this whole fallback
+        # exists to recover. Accepted residual: this split doesn't honor
+        # quoting, so a separator INSIDE a quoted argument (cp 'a;b' x)
+        # splits where real bash wouldn't -- a false-positive shape (an extra,
+        # spurious window), not a missed target.
+        shlex.split(raw_cmd)
+        tokens = []
+        for chunk in re.split(r"(&&|\|\||;|\||&)", raw_cmd):
+            if chunk in ("&&", "||", ";", "|", "&"):
+                tokens.append(chunk)
+            else:
+                tokens.extend(chunk.split())
     # "(", ")", "{", "}" are grouping operators, not just tokens -- a subshell
     # "(cp x y)" or brace group "{ cp x y; }" never gets its window split at the
     # grouping boundary without them, so "(" or "{" becomes argv0 instead of the
@@ -672,44 +798,64 @@ def bash_write_targets(cmd):
         # nothing and the whole idiom chain went inert. When PH is present, run
         # the entire dispatch chain once per KNOWN_WRITE_CMDS candidate name
         # instead of once against the untrustable literal; when absent, run it
-        # once as before against the real argv0.
-        for argv0 in (KNOWN_WRITE_CMDS if PH in argv0 else (argv0,)):
+        # once as before against the real argv0. _has_raw_subst(argv0) widens
+        # this same trigger for tokens that never get PH at all -- see that
+        # helper's own docstring for which path needs it and why.
+        for argv0 in (KNOWN_WRITE_CMDS if (PH in argv0 or _has_raw_subst(argv0)) else (argv0,)):
             if argv0 == "tee":
                 for t in nonflag:
                     yield t
             elif argv0 in ("sed", "perl"):
-                # PH-prefixed flag (e.g. $(true)-i -> PH-i) must still count as
-                # -i -- strip a leading PH before every flag test below. A
-                # command substitution resolving to empty sits IMMEDIATELY
-                # before the flag's dash in real bash and simply vanishes
-                # (`sed $(true)-i ...` really runs as `sed -i ...`), but PH is
-                # a literal non-empty placeholder byte, so every startswith("-")
-                # / exact-equality test below silently missed it before this
-                # fix (confirmed exploitable 2026-09-03, same shape closed the
-                # same day in verifier-protect.sh/irrecoverable.sh for their
-                # own -i detection).
-                if any(t.lstrip(PH) in ("-i", "--in-place") or t.lstrip(PH) == "-i" for t in rest) or \
-                   any(t.lstrip(PH).startswith("-i") and t.lstrip(PH) != "-i" for t in rest):
+                # PH-anywhere flag (e.g. $(true)-i -> PH-i, or -$(true)i ->
+                # -PHi) must still count as -i -- strip PH from anywhere in
+                # the token before every flag test below, not just the
+                # front. A command substitution resolving to empty vanishes
+                # entirely in real bash wherever it sits (`sed $(true)-i`
+                # and `sed -$(true)i` both really run as `sed -i ...`), but
+                # PH is a literal non-empty placeholder byte, so a
+                # leading-only lstrip(PH) missed the mid-flag case: "-\x01i"
+                # doesn't start with PH (it starts with "-"), so lstrip(PH)
+                # is a no-op there and every startswith("-i")/exact-equality
+                # test below silently missed it -- confirmed exploitable
+                # 2026-09-04 (third cross-file review), the same "leading-
+                # only" gap already closed 2026-09-03 for the PH-prefixed
+                # form. replace(PH, "") fixes both shapes at once. The
+                # ValueError-fallback path never produces a PH byte at all
+                # (raw_cmd is tokenized directly, substitution syntax stays
+                # literal, e.g. "-$(true)i" stays exactly that), so
+                # _has_raw_subst() closes that path the same way it already
+                # does for argv0 and the Bash write-target fail-safe in
+                # main() -- this is the single outer gate for the entire
+                # branch, so missing either shape yielded zero targets, not
+                # a degraded one.
+                if any(t.replace(PH, "") in ("-i", "--in-place") for t in rest) or \
+                   any(t.replace(PH, "").startswith("-i") and t.replace(PH, "") != "-i" for t in rest) or \
+                   any(_has_raw_subst(t) for t in rest):
                     skipnext = False
                     for t in rest:
                         if skipnext:
                             skipnext = False
                             continue
-                        if t.lstrip(PH) in ("-e", "--expression"):
+                        if t.replace(PH, "") in ("-e", "--expression"):
                             skipnext = True
                             continue
-                        if not t.lstrip(PH).startswith("-") and t not in ("-", ""):
+                        if not t.replace(PH, "").startswith("-") and t not in ("-", ""):
                             yield t
             elif argv0 in ("cp", "mv", "install"):
-                # PH-prefixed flag (e.g. $(true)-t -> PH-t) must still count as
-                # -t -- strip a leading PH before every flag test below, same
-                # fix and same root cause as sed/perl -i above (confirmed
-                # exploitable 2026-09-03: without this, PH-t fell through every
-                # branch below to the nonflag[-1] fallback, landing on a source
-                # arg instead of the real destination directory).
+                # PH-anywhere flag (e.g. $(true)-t -> PH-t, or -$(true)t ->
+                # -PHt) must still count as -t -- strip PH from anywhere in
+                # the token before every flag test below (replace(PH, ""),
+                # not leading-only lstrip(PH) -- 2026-09-04, same mid-flag
+                # gap closed the same way as sed/perl -i above), same root
+                # cause as sed/perl -i above (confirmed exploitable
+                # 2026-09-03/04: without this, a PH-bearing -t token fell
+                # through every branch below to the nonflag[-1] fallback,
+                # landing on a source arg instead of the real destination
+                # directory -- a wrong-target confusion, not a full silent
+                # bypass, since nonflag[-1] still yields something).
                 tgt = None
                 for j, t in enumerate(rest):
-                    dt = t.lstrip(PH)
+                    dt = t.replace(PH, "")
                     if dt in ("-t", "--target-directory") and j + 1 < len(rest):
                         tgt = rest[j + 1]
                         break
@@ -751,15 +897,15 @@ def bash_write_targets(cmd):
                 # flag before "x" is checked for -- same bare-letter-
                 # containment-to-real-flag-membership fix irrecoverable.sh
                 # already needed for its own rm/git clean flag checks.
-                # PH-prefixed mode string (e.g. $(true)-xvf -> PH-xvf, or the
-                # no-dash legacy form $(true)xvf -> PHxvf) must still count as
-                # extract -- strip a leading PH before every test below, same
-                # root cause and same fix as sed/perl -i and cp/mv/install -t
-                # above. Unlike those, this splice shape doesn't need a literal
-                # dash immediately after PH: legacy tar mode strings are bare
-                # words with no dash at all, so the leading PH can sit directly
-                # in front of the flag letters too (confirmed exploitable
-                # 2026-09-03, both forms).
+                # PH-anywhere mode string (leading "$(true)-xvf" -> PH-xvf,
+                # no-dash legacy "$(true)xvf" -> PHxvf, or MID-flag
+                # "-x$(true)vf" -> "-xPHvf") must still count as extract --
+                # _tar_extract_targets uses replace(PH, "") (anywhere in the
+                # token, not just the front) plus _has_raw_subst() for the
+                # ValueError-fallback path, which never produces a PH byte
+                # at all -- same root cause and same fix as sed/perl -i and
+                # cp/mv/install -t above (confirmed exploitable 2026-09-03
+                # for the leading/no-dash shapes, 2026-09-04 for mid-flag).
                 #
                 # A bare-vanish token (e.g. "$(true)" as its own word, not
                 # glued to anything -- see _drop_bare_vanish_tokens) vanishes
@@ -771,9 +917,9 @@ def bash_write_targets(cmd):
                 # all -- not even the "." implicit-cwd fallback (confirmed
                 # exploitable 2026-09-03). Running the same check a second
                 # time against the compacted list (rest_compacted) closes
-                # this without touching the already-correct PH-glued-flag
-                # handling above, which only needs lstrip(PH), not
-                # compaction.
+                # this without touching the already-correct PH-anywhere-flag
+                # handling above, which only needs replace(PH, "") /
+                # _has_raw_subst(), not compaction.
                 for target in _tar_extract_targets(rest):
                     yield target
                 if rest_compacted != rest:
@@ -799,14 +945,18 @@ def bash_write_targets(cmd):
                 # (classify() is a per-repo verdict, not per-filename).
                 # --directory=X bundles flag and value into ONE token, so a
                 # PH-disguised prefix hides the whole value -- that form alone
-                # needs the lstrip(PH) fix (confirmed exploitable 2026-09-03).
+                # needs the replace(PH, "") fix (confirmed exploitable
+                # 2026-09-03; also mid-flag-safe for 2026-09-04's "-$(true)d..."
+                # shape, though this branch already degrades gracefully via
+                # the unconditional nonflag yield below rather than a full
+                # silent bypass).
                 directory = None
                 for j, t in enumerate(rest):
                     if t in ("-o", "--output") and j + 1 < len(rest):
                         yield rest[j + 1]
                     if t in ("-d", "--directory") and j + 1 < len(rest):
                         directory = rest[j + 1]
-                    dt = t.lstrip(PH)
+                    dt = t.replace(PH, "")
                     if dt.startswith("--directory="):
                         directory = dt[len("--directory="):]
                 for t in nonflag:
@@ -824,13 +974,17 @@ def bash_write_targets(cmd):
                 # version of this fix dispatched into the branch correctly but
                 # still resolved the diff's own relative path against the hook's
                 # cwd, missing the actual -C directory entirely.
-                # PH-prefixed -C (e.g. $(true)-C -> PH-C) must still count as
-                # -C -- strip a leading PH before the exact-equality test,
-                # same root cause as sed/perl -i above. Unlike patch's -d
-                # above, there is no redundant nonflag fallback here: the
-                # entire apply/am dispatch below is gated behind this one
-                # check succeeding, so a bypass here yields nothing at all,
-                # not just an unjoined path (confirmed exploitable 2026-09-03).
+                # PH-anywhere -C (leading "$(true)-C" -> PH-C, or MID-flag
+                # "-$(true)C" -> "-PHC") must still count as -C --
+                # _git_apply_am_targets uses replace(PH, "") (anywhere in
+                # the token) plus _has_raw_subst() for the
+                # ValueError-fallback path, same root cause as sed/perl -i
+                # above. Unlike patch's -d above, there is no redundant
+                # nonflag fallback here: the entire apply/am dispatch below
+                # is gated behind this one check succeeding, so a bypass
+                # here yields nothing at all, not just an unjoined path
+                # (confirmed exploitable 2026-09-03 leading, 2026-09-04
+                # mid-flag).
                 #
                 # A bare-vanish token (e.g. "$(true)" as its own word, not
                 # glued to anything -- see _drop_bare_vanish_tokens) vanishes
@@ -843,22 +997,40 @@ def bash_write_targets(cmd):
                 # yielding nothing at all (confirmed exploitable 2026-09-03).
                 # Running the same check a second time against the compacted
                 # list (rest_compacted) closes this without touching the
-                # already-correct PH-glued "-C" handling above, which only
-                # needs lstrip(PH), not compaction.
+                # already-correct PH-anywhere "-C" handling above, which
+                # only needs replace(PH, "") / _has_raw_subst(), not
+                # compaction.
                 for target in _git_apply_am_targets(rest):
                     yield target
                 if rest_compacted != rest:
                     for target in _git_apply_am_targets(rest_compacted):
                         yield target
             elif argv0 == "dd":
-                # PH-prefixed of= (e.g. $(true)of= -> PHof=) must still count
-                # as of= -- strip a leading PH before the prefix test, same
-                # root cause as every other site above even though this one
-                # isn't a dash flag (confirmed exploitable 2026-09-03).
+                # PH-anywhere of= (leading "$(true)of=" -> PHof=, or MID-flag
+                # "o$(true)f=" -> "oPHf=") must still count as of= --
+                # replace(PH, "") strips it from anywhere, same root cause as
+                # every other site above even though this one isn't a dash
+                # flag (confirmed exploitable 2026-09-03 leading, 2026-09-04
+                # mid-flag). Like sed/perl and tar/git above (and unlike
+                # cp/mv/install/patch, which fall back to a plain nonflag
+                # yield), this branch has NO fallback at all: a token whose
+                # of= prefix this cannot recognize yields nothing, full stop.
+                # The ValueError-fallback path never produces a PH byte
+                # (raw_cmd tokenized directly, substitution syntax stays
+                # literal), so replace(PH, "") alone cannot help there --
+                # yield the raw token itself when it carries unresolved
+                # substitution syntax, same fail-closed posture as this
+                # file's Bash write-target fail-safe in main(): the raw
+                # "$(...)"/"${...}"/backtick text riding along in the
+                # candidate trips that fail-safe's own _has_raw_subst()
+                # check downstream and denies, rather than this branch
+                # silently dropping the whole dd invocation.
                 for t in rest:
-                    dt = t.lstrip(PH)
+                    dt = t.replace(PH, "")
                     if dt.startswith("of=") and not dt.startswith("of=/dev/"):
                         yield dt[len("of="):]
+                    elif _has_raw_subst(t):
+                        yield t
 
 
 def classify(fp):
@@ -962,6 +1134,32 @@ def main():
             # really points inside the guarded workspace never matches
             # classify()'s WORKSPACE check (confirmed 2026-08-04).
             expanded = os.path.expandvars(os.path.expanduser(p))
+            # Fail-safe, ported from verifier-protect.sh's equivalent Bash-branch
+            # check and widened with _has_raw_subst the same way the GH #129 argv0
+            # duplication trigger above was: a yielded target can still carry PH
+            # (a blanked splice landed INSIDE the target, e.g. "cp evil.sh
+            # $(true)<path>/target.txt") or raw, unblanked substitution syntax
+            # (a target that only reached here via the finding-6b ValueError
+            # fallback, which tokenizes raw_cmd and never runs
+            # _blank_substitutions at all -- same blind spot _has_raw_subst
+            # already closed for argv0). Either way `expanded` is not the real
+            # runtime path, and letting it through is worse than the false-deny
+            # this trades for: a leading PH byte makes os.path.abspath() treat an
+            # otherwise-absolute guarded path as RELATIVE, reparenting it under
+            # this hook's own cwd so it can never match under(fp, WORKSPACE) --
+            # classify() then silently returns None (confirmed exploitable
+            # 2026-09-03, no quote-crossing trick even needed: PH alone, on the
+            # ordinary primary path, was enough). Deny rather than resolve a
+            # string this file cannot trust, matching this file's own Bash-path
+            # convention (no "ask" outcome here, see module docstring).
+            if PH in expanded or _has_raw_subst(expanded):
+                print(
+                    "⛔ Bash write target still carries unresolved substitution "
+                    "syntax after tokenization (cannot safely confirm it does not "
+                    "resolve into a guarded path) — confirm with user first",
+                    file=sys.stderr,
+                )
+                return 2
             result = classify(os.path.abspath(expanded))
             if result is not None:
                 repo, top, why, _ = result

@@ -518,6 +518,224 @@ out=$(payload_bash "$(printf 'echo "it%ss" ; c$(true)p evil.sh hooks/gates/x.sh'
 ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
 check "GH #129: English contraction adjacent to a real splice does not mask it -> ask" "$ok"
 
+# 5-finding fix round (2026-09-04): comment-truncation join, quote-boundary
+# shlex ValueError containment, comment-state tracking in the substitution
+# scanner, tar mode_str/has_extract PH parity, patch -d/--directory parity.
+
+# Finding 1 (comment-truncation silent bypass): the old
+# `cmd + " ; " + " ; ".join(bodies)` join let a hash earlier in the string
+# (including one inside an EARLIER recovered body) start a shlex comment
+# that silently swallowed everything appended after it. Fixed by leading
+# each appended body with a real newline instead of a plain " ; ".
+out=$(payload_bash 'echo $(cp evil.sh hooks/gates/x2f1.sh)  # copy' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Finding 1: a trailing comment after a recovered body no longer swallows it -> ask" "$ok"
+
+out=$(payload_bash 'echo $(: #x) $(cp evil.sh hooks/gates/y1.sh)' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Finding 1: a hash embedded INSIDE an earlier recovered body does not swallow a later one -> ask" "$ok"
+
+# Finding 4 (quote-boundary-crossing span match): the ${...}/$(...)/backtick
+# closer-search in _blank_substitutions scans forward without tracking quote
+# state for characters it skips over. A span crossing a real quote (common
+# in an interpreter heredoc embedding a JSON/Python literal with a stray
+# ${, which _strip_heredocs deliberately never strips) can desync quote
+# tracking and leave the blanked string unbalanced even though the ORIGINAL
+# command was valid -- shlex.shlex(...) then raised ValueError, turning a
+# benign command into a hard ask. Fixed by falling back to a separator-aware
+# split of the ORIGINAL (pre-blanking) command when it alone parses cleanly.
+F4CMD=$(printf 'python3 - <<PY\nd = {"10k unmatched ${ (20KB)": "${ "*10000,\n}\nprint(d)\nPY')
+out=$(payload_bash "$F4CMD" | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "Finding 4: \${ span crossing a real quote in a benign heredoc no longer hard-fails -> exit 0, no output" "$ok"
+
+# A genuinely malformed command (unbalanced before blanking too) must still
+# get this file's existing fail-safe ask -- the fix must distinguish
+# self-inflicted corruption from real malformation, not blanket-suppress it.
+out=$(payload_bash 'echo "genuinely unbalanced' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Finding 4: a genuinely malformed command (unbalanced before blanking too) still gets the fail-safe ask" "$ok"
+
+# Reviewer follow-up (2026-09-04): a naive whitespace .split() fallback is
+# itself exploitable -- it glues a compound command into one token stream
+# with no separator awareness, so a real write placed AFTER a ; (or
+# &&/||/&), glued tight against it with no surrounding whitespace, never
+# surfaces as its own window and its argv0 never gets checked at all.
+# Confirmed live against the naive-split version of this fix before
+# correcting it: rc=0, no output -- a silent allow, worse than the ask this
+# whole branch exists to give instead. Fixed by splitting on the same
+# separators the window-builder recognizes (finding ";" etc. regardless of
+# adjacent whitespace, unlike .split()) before naive-word-splitting each
+# plain segment in between.
+out=$(payload_bash 'echo ${y:-"a}b"};cp evil.sh hooks/gates/probe4c.sh' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Finding 4: a real write glued tight after a separator, following a quote-corrupting span, is not lost by the fallback -> ask" "$ok"
+
+# Reviewer follow-up #2 (2026-09-04): the Finding-4 fallback tokenizes the
+# ORIGINAL, never-blanked command string, so a spliced dispatch token
+# reaching that path still carries its literal substitution syntax (e.g.
+# "c$(true)p") -- it never contains the PH placeholder byte. The GH #129
+# splice-duplication trigger is gated purely on "PH in argv0", so it never
+# fired on this path and a spliced argv0 sailed through unrecognized.
+# Confirmed live before the _has_raw_subst fix: rc=0, no output -- a silent
+# allow. Fixed by widening the duplication trigger to also catch a token
+# still carrying raw backtick/$(/${syntax (a narrow, ONE-TOKEN check, not a
+# bare "$" scan -- that would misfire on an ordinary $VAR-shaped token).
+# This combined "quote-crossing span forces the fallback + a splice in the
+# fallback's own output" cell was never in this suite before, which is
+# exactly why it shipped.
+out=$(payload_bash 'echo ${y:-"a}b"} ; c$(true)p evil.sh hooks/gates/x.sh' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Finding 4: a spliced argv0 (c\$(true)p) surviving into the fallback path is still duplicate-checked -> ask" "$ok"
+
+# Same shape, dangerous command BEFORE the quote-crossing span instead of
+# after -- the fix must not be positionally lucky.
+out=$(payload_bash 'c$(true)p evil.sh hooks/gates/x2.sh ; echo ${y:-"a}b"}' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Finding 4: a spliced argv0 BEFORE the quote-crossing span is still duplicate-checked -> ask" "$ok"
+
+# Negative controls: the widened trigger must not start over-asking on
+# ordinary command substitutions that resolve to a harmless op or target.
+out=$(payload_bash '$(which git) status' | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "Finding 4 negative control: \$(which git) status -> exit 0, no output" "$ok"
+
+out=$(payload_bash '$(command -v ls) -la' | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "Finding 4 negative control: \$(command -v ls) -la -> exit 0, no output" "$ok"
+
+out=$(payload_bash 'c$(true)p /tmp/a /tmp/b' | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "Finding 4 negative control: spliced cp to a non-guarded path -> exit 0, no output" "$ok"
+
+out=$(payload_bash 'ls $(pwd)' | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "Finding 4 negative control: ls \$(pwd) -> exit 0, no output" "$ok"
+
+out=$(payload_bash 'echo "$HOME/x"' | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "Finding 4 negative control: bare \$VAR (no raw substitution syntax) does not trigger the widened check -> exit 0, no output" "$ok"
+
+# Finding 5 (comment-state not tracked in the substitution scanner): the
+# inner scanner tracked quote state but not comment state, so a
+# substitution-shaped string sitting inside a real hash comment still got
+# matched and its body collected as a live command, raising a false ask on
+# an innocent command.
+out=$(payload_bash "$(printf 'cp a.sh b.sh # see also: $(cp evil.sh hooks/gates/z1.sh)\necho done')" | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "Finding 5: a substitution-shaped string inside a real comment is not matched as a live command -> exit 0, no output" "$ok"
+
+# Finding 9 (tar mode_str/has_extract missing .lstrip(PH)): not exploitable
+# as a silent allow today (a PH byte does not remove the "x" the loose
+# containment check looks for), but a PH-disguised LONG flag whose name
+# happens to contain "x" for reasons unrelated to extraction (e.g.
+# --exclude) was incorrectly treated as an extract-mode indicator by the
+# unstripped rest[0]/mode_str read, producing a false ask on an ordinary
+# tar CREATE run from inside a protected directory.
+out=$( (cd "$ROOT/hooks/gates" && payload_bash 'tar $(true)--exclude=foo -cf archive.tar somedir' | bash "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "Finding 9: PH-disguised --exclude long flag no longer misread as extract mode -> exit 0, no output" "$ok"
+
+# Finding 10 (patch branch missing -d/--directory): the patch branch had
+# -o/--output but no -d/--directory relocation, unlike worktree-guard.py's
+# structurally identical branch. A diff whose own +++ b/<path> target
+# carries no protected-path substring at all was silently allowed even when
+# --directory= relocates it into one.
+DIFF10="${TMPDIR:-/tmp}/kbg-vp-finding10.diff"
+printf -- '--- a/newfile10.sh\n+++ b/newfile10.sh\n@@ -1,1 +1,1 @@\n-x\n+evil\n' > "$DIFF10"
+out=$(payload_bash "patch --directory=hooks/gates -p1 < $DIFF10" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Finding 10: patch --directory= relocates an otherwise-unrecognizable diff target -> ask" "$ok"
+
+out=$(payload_bash "patch --directory=/tmp/harmless_dir -p1 < $DIFF10" | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "Finding 10 negative control: --directory= pointing away from a protected surface -> exit 0, no output" "$ok"
+
+# Finding A (2026-09-04 sweep): the final target-path check for cp/mv/
+# install/etc ("PH in expanded or is_gate_path(expanded)") had the same
+# PH-blindness as the argv0-duplication trigger -- a target token that
+# reached here via the Finding-4 fallback with raw substitution syntax
+# straddling the protected-path text (e.g. "hoo$(true)ks/gates/x.sh")
+# carries no PH and no contiguous "hooks/gates" substring either, so
+# neither disjunct fired. Confirmed live before the fix: rc=0, no output --
+# a silent allow. Fixed by widening to "PH in expanded or
+# _has_raw_subst(expanded) or is_gate_path(expanded)".
+out=$(payload_bash 'echo ${y:-"a}b"} ; cp evil.sh hoo$(true)ks/gates/x.sh' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Finding A: a raw-subst target path straddling the protected substring is still caught -> ask" "$ok"
+
+# Systematic sweep (2026-09-04): a single safety-net loop over every token
+# in each fallback-reached window now yields any token still carrying raw
+# substitution syntax as its own candidate, closing 5 confirmed-live
+# flag-detection gaps in one place (sed/perl -i, cp/mv/install -t, tar -C,
+# git -C + apply/am, dd of=) instead of patching each site's PH-stripping
+# logic individually. Each payload below was confirmed live (rc=0, no
+# output) before the safety net; each must now ask.
+
+out=$(payload_bash 'echo ${y:-"a}b"} ; sed $(true)-i -e s/x/y/ hooks/gates/z.sh' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Safety net (a): sed with a raw-subst-disguised -i flag -> ask" "$ok"
+
+out=$(payload_bash 'echo ${y:-"a}b"} ; cp $(true)-t hooks/gates/ evil.sh' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Safety net (b): cp with a raw-subst-disguised -t flag -> ask" "$ok"
+
+out=$(payload_bash 'echo ${y:-"a}b"} ; tar -xf archive.tar $(true)-C hooks/gates/' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Safety net (c): tar with a raw-subst-disguised -C flag -> ask" "$ok"
+
+DIFFSAFE="${TMPDIR:-/tmp}/kbg-vp-safetynet-git.diff"
+printf -- '--- a/irrecoverable.sh\n+++ b/irrecoverable.sh\n@@ -1,1 +1,1 @@\n-x\n+evil\n' > "$DIFFSAFE"
+out=$(payload_bash "echo \${y:-\"a}b\"} ; git \$(true)-C /tmp apply $DIFFSAFE" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Safety net (d): git with a raw-subst-disguised -C flag ahead of apply -> ask" "$ok"
+
+out=$(payload_bash 'echo ${y:-"a}b"} ; dd if=/dev/zero $(true)of=hooks/gates/probeX.sh bs=1' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Safety net (e): dd with a raw-subst-disguised of= flag -> ask" "$ok"
+
+# Mid-flag PH splice (2026-09-04, cross-file review): a splice landing MID-
+# flag (-$(true)i, -$(true)t), not just leading, survives primary-path
+# blanking as a PH byte INSIDE the token (-PHi / -PHt). The prior fix only
+# used t.lstrip(PH), which strips the left edge only, so a mid-flag splice
+# left every flag-match check False -- for sed/perl this also failed the
+# OUTER if-gate above the whole yield block, so the branch yielded NOTHING,
+# a total silent bypass, not just one missed check. Confirmed live before
+# this fix: both rc=0, no output.
+out=$(payload_bash 'sed -$(true)i -e s/x/y/ hooks/gates/z.sh' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Mid-flag splice: sed -\$(true)i (splice after the dash, before the letter) -> ask" "$ok"
+
+out=$(payload_bash 'cp -$(true)t hooks/gates/ evil.sh' | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Mid-flag splice: cp -\$(true)t (real destination hooks/gates/ recovered, not nonflag[-1]) -> ask" "$ok"
+
+out=$(payload_bash "git -\$(true)C hooks/gates apply ${TMPDIR:-/tmp}/kbg-vp-safetynet-git.diff" | bash "$GUARD" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Mid-flag splice: git -\$(true)C (outer gate above apply/am dispatch no longer fails closed) -> ask" "$ok"
+
+# Negative controls: an ordinary, non-spliced flag must not start over-
+# asking now that flag checks use .replace(PH, "") instead of .lstrip(PH).
+out=$(payload_bash 'sed -i -e s/x/y/ /tmp/harmless.txt' | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "Mid-flag splice negative control: plain sed -i on a harmless path -> exit 0, no output" "$ok"
+
+out=$(payload_bash 'cp -t /tmp/dest/ /tmp/src.txt' | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "Mid-flag splice negative control: plain cp -t to a harmless dir -> exit 0, no output" "$ok"
+
+out=$(payload_bash 'dd if=/dev/zero of=/tmp/harmless.bin bs=1' | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "Mid-flag splice negative control: plain dd of= to a harmless path -> exit 0, no output" "$ok"
+
+# Regression guard (2026-09-04): re-confirm the benign-heredoc case from the
+# Finding 4 test above still allows after this round's widening -- this is
+# the exact shape that broke once already this session (KNOWN_WRITE_VERBS
+# gating, previous round) when a check got too broad.
+out=$(payload_bash "$F4CMD" | bash "$GUARD" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "Mid-flag splice regression guard: benign 10k-\${ python heredoc still allows -> exit 0, no output" "$ok"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="

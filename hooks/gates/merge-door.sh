@@ -84,7 +84,9 @@ if not isinstance(d, dict) or not isinstance(d.get("tool_input"), dict):
     sys.exit(0)
 
 SQ = chr(39)
+DQ = chr(34)
 _HEREDOC_RE = re.compile(r"<<(-)?\s*([" + SQ + r"\"]?)([^\s" + SQ + r"\"]+)\2")
+_ANSI_C_QUOTE_RE = re.compile(r"\$" + SQ + r"((?:[^" + SQ + r"\\]|\\.)*)" + SQ)
 _INTERPRETER_RE = re.compile(r"\b(bash|sh|zsh|dash|ksh|python3?|python2|perl|ruby|node|nodejs|osascript)\b")
 
 def _strip_heredocs(cmd):
@@ -118,7 +120,65 @@ def _strip_heredocs(cmd):
             out.extend(lines[body_start:i])
     return "\n".join(out)
 
-cmd = _strip_heredocs(d["tool_input"].get("command", ""))
+def _normalize_ansi_c_quotes(cmd):
+    # shlex does not understand ANSI-C quoting ($SQ...SQ, SQ = single quote)
+    # -- it splits on the bare $ instead of treating the whole span as one
+    # token, so a spliced argv0 like $SQ\x68SQ (decodes to "h") never
+    # reassembles into the character it resolves to in real bash. This file
+    # own dispatch checks compare tokens by EXACT STRING ("gh"/"pr"/"merge"),
+    # so the span must be resolved, not just re-quoted. Ported verbatim
+    # (decode logic and regex unchanged) from the same-named function in
+    # verifier-protect.sh -- read that file for the full rationale (bounded
+    # \xHH/\nnn/simple-escape decode set, the SQ-inside-decoded-text
+    # re-splice, why a decoded newline must stay inside the quote wrapper).
+    OCTAL = "01234567"
+    HEXDIGITS = "0123456789abcdefABCDEF"
+    SIMPLE = {"n": "\n", "t": "\t", "r": "\r", "\\": "\\", SQ: SQ, DQ: DQ}
+    def _decode_ansi_c(m):
+        body = m.group(1)
+        decoded = []
+        i, n = 0, len(body)
+        while i < n:
+            c = body[i]
+            if c == "\\" and i + 1 < n:
+                nxt = body[i + 1]
+                if nxt in SIMPLE:
+                    decoded.append(SIMPLE[nxt])
+                    i += 2
+                elif nxt == "x":
+                    j, digits = i + 2, ""
+                    while j < n and len(digits) < 2 and body[j] in HEXDIGITS:
+                        digits += body[j]
+                        j += 1
+                    if digits:
+                        decoded.append(chr(int(digits, 16)))
+                        i = j
+                    else:
+                        decoded.append(body[i:i + 2])
+                        i += 2
+                elif nxt in OCTAL:
+                    j, digits = i + 1, ""
+                    while j < n and len(digits) < 3 and body[j] in OCTAL:
+                        digits += body[j]
+                        j += 1
+                    decoded.append(chr(int(digits, 8) & 0xFF))
+                    i = j
+                else:
+                    decoded.append(body[i:i + 2])
+                    i += 2
+            else:
+                decoded.append(c)
+                i += 1
+        spliced = []
+        for ch in decoded:
+            if ch == SQ:
+                spliced.append(SQ + "\\" + SQ + SQ)
+            else:
+                spliced.append(ch)
+        return SQ + "".join(spliced) + SQ
+    return _ANSI_C_QUOTE_RE.sub(_decode_ansi_c, cmd)
+
+cmd = _normalize_ansi_c_quotes(_strip_heredocs(d["tool_input"].get("command", "")))
 
 # Insert a literal ";" after each real newline (not in place of it, so a
 # following "#" comment still stops there) -- a backslash immediately
@@ -150,12 +210,11 @@ cmd = _strip_heredocs(d["tool_input"].get("command", ""))
 # backslashes before a newline pairs off into literal characters, so the
 # newline stays a real separator -- confirmed live 2026-09-03, GH #133),
 # matching the posix escaping shlex does on its own and this function
-# downstream (shlex.shlex(..., commenters="#") default). SQ is the
-# single-quote constant already defined above; DQ is its double-quote
-# counterpart, scoped here since nothing else in this file needs it.
+# downstream (shlex.shlex(..., commenters="#") default). SQ and DQ are the
+# single- and double-quote constants defined near the top of this file
+# (DQ also used by _normalize_ansi_c_quotes above).
 # Ported VERBATIM (state-machine body unchanged) from the same-named
 # function in irrecoverable.sh.
-DQ = chr(34)
 def _newlines_to_seps(s):
     out = []
     in_squote = in_dquote = in_comment = False
@@ -274,10 +333,22 @@ def _blank_substitutions(s):
 
     def _scan_once(s):
         out = []
-        in_squote = in_dquote = False
+        in_squote = in_dquote = in_comment = False
         i, n = 0, len(s)
         while i < n:
             c = s[i]
+            if in_comment:
+                # A "#" starts a real bash comment here (Finding 5,
+                # 2026-09-04, same in_comment tracking _newlines_to_seps
+                # above already uses) -- everything until the next literal
+                # newline is inert commentary, not a live substitution, even
+                # when it is shaped like one ("$(gh pr merge 123)" inside a
+                # "# ..." note must never be collected into bodies).
+                if c == "\n":
+                    in_comment = False
+                out.append(c)
+                i += 1
+                continue
             if in_squote:
                 out.append(c)
                 if c == SQ:
@@ -309,6 +380,10 @@ def _blank_substitutions(s):
                 if c == "\\" and i + 1 < n:
                     out.append(c); out.append(s[i + 1])
                     i += 2
+                    continue
+                if c == "#":
+                    in_comment = True
+                    out.append(c); i += 1
                     continue
             if c == "`":
                 j = s.find("`", i + 1)
@@ -344,7 +419,14 @@ def _blank_substitutions(s):
             break
         s = new
     if bodies:
-        s = s + " ; " + " ; ".join(bodies)
+        # A real "\n" (not just " ; ") leads each appended body: shlex own
+        # default comment-stripping (commenters="#") reads to the next
+        # LITERAL newline, not to a " ; " separator -- a bare "#" anywhere
+        # earlier in s (including one embedded inside an already-recovered
+        # body) would otherwise make shlex silently discard everything from
+        # that "#" onward, appended bodies included, with no decision
+        # emitted at all (Finding 1, 2026-09-04).
+        s = s + "\n; " + "\n; ".join(bodies)
     return s
 
 # shlex.split() only recognizes ;/&&/||/|/& as separators when whitespace
@@ -369,34 +451,119 @@ try:
     lex = shlex.shlex(_blank_substitutions(_newlines_to_seps(cmd)), posix=True, punctuation_chars=True)
     lex.wordchars += PH
     tokens = list(lex)
+    windows, cur = [], []
+    for tok in tokens:
+        if tok in OPERATORS:
+            if cur:
+                windows.append(cur)
+            cur = []
+        else:
+            cur.append(tok)
+    if cur:
+        windows.append(cur)
 except ValueError:
-    # This file has no deny outcome -- ask is the only fail-closed option
-    # available. The old fallback re-tokenized cmd.split() on the raw,
-    # PRE-BLANKING string -- PH was never in it, so a spliced dispatch
-    # token built this way could never match a candidate, making the whole
-    # placeholder mechanism inert (the exact bypass shape already found and
-    # fixed in irrecoverable.sh own GH #129 work).
-    emit_ask(
-        "merge-door: could not safely tokenize this command (unbalanced "
-        "quote or substitution) -- approve it manually, or use mh:ship-merge "
-        "for the reviewed path."
-    )
-    sys.exit(0)
-windows, cur = [], []
-for tok in tokens:
-    if tok in OPERATORS:
-        if cur:
-            windows.append(cur)
-        cur = []
-    else:
-        cur.append(tok)
-if cur:
-    windows.append(cur)
+    # Finding 4 (2026-09-04): the ${...}/$(...)/backtick closer-search in
+    # _blank_substitutions above scans forward for a terminating char
+    # without tracking quote state for characters it skips over -- a span
+    # crossing a real quote (an everyday idiom like ${x:-"a}b"}) desyncs
+    # the toggle, and the blanked string above can come out quote-unbalanced
+    # even when the ORIGINAL command was perfectly valid. Since the old
+    # cmd.split() fallback was already removed (a real bypass for a
+    # genuinely malformed command, GH #129), this ValueError can no longer
+    # tell "blanking broke a valid command" apart from "the command really
+    # is malformed" -- so check which one this is: shlex.split(cmd) on the
+    # ORIGINAL, pre-blanking string (ansi-c-normalized and heredoc-stripped
+    # already, nothing else) as a pure validity predicate. If it parses,
+    # the corruption was self-inflicted by blanking; fall back to
+    # tokenizing that original string instead of asking blind. A naive
+    # whitespace split has no separator awareness, so a dangerous SECOND
+    # command in a ";"/"&&"/"||"/"&" chain would never get its own
+    # dispatch-token checked -- the exact bypass this file own
+    # punctuation_chars=True windowing exists to close -- so split on the
+    # same separator set instead (braces excluded on purpose: they show up
+    # far more often inside ${...} than as a real brace group) and tokenize
+    # each piece with shlex.split() individually, feeding the result
+    # through the same per-window dispatch below. If the original string
+    # also fails to parse, it really is malformed -- keep this file
+    # existing ask response.
+    try:
+        shlex.split(cmd)
+        windows = []
+        for piece in re.split(r"(&&|\|\||;|\||&)", cmd):
+            if piece in ("&&", "||", ";", "|", "&") or not piece.strip():
+                continue
+            windows.append(shlex.split(piece))
+    except ValueError:
+        emit_ask(
+            "merge-door: could not safely tokenize this command (unbalanced "
+            "quote or substitution) -- approve it manually, or use mh:ship-merge "
+            "for the reviewed path."
+        )
+        sys.exit(0)
 
 def basename(p):
     return p.rsplit("/", 1)[-1]
 
 PREFIX_WRAPPERS = {"env", "command", "nohup", "nice", "time", "sudo"}
+
+def _has_raw_subst(t):
+    # Follow-up fix (2026-09-04, cross-file review) to the Finding-4 fallback
+    # below: a token reaching the trio-dispatch check through that fallback
+    # is built from the ORIGINAL, never-blanked command text -- it can never
+    # carry a PH byte, so the PH-only duplication gate the trio check uses
+    # never fires on that path, and a spliced argv0 like g$(true)h sails
+    # through unrecognized (confirmed live: an unbalanced-quote span forcing
+    # the fallback, followed by a "; g$(true)h pr merge 123" second command,
+    # exited 0 with no ask). Narrow on purpose: only a literal backtick,
+    # "$(", or "${" substring in THIS ONE token -- never a bare "$", which
+    # would misfire on every ordinary "$PYTHON -m pytest"-shaped command and
+    # cause a false ask where none should happen.
+    return "`" in t or "$(" in t or "${" in t
+
+_RAW_SUBST_SPAN_RE = re.compile(r"`[^`]*`|\$\([^()]*\)|\$\{[^{}]*\}")
+
+def _reveal(t):
+    # PH-site sweep follow-up (2026-09-04): a first pass at this fix tried
+    # bolting `elif _has_raw_subst(rest[i]): i += 1` onto each branch below,
+    # treating any raw-subst-bearing token as one opaque flag to skip -- but
+    # that breaks a VALUE-TAKING flag whose own token carries a leading
+    # raw-subst prefix (e.g. sudo/env "-u"): "sudo $(true)-u alice gh pr
+    # merge 123" resolves in real bash to "sudo -u alice gh pr merge 123",
+    # where "-u" must ALSO consume "alice" as its value -- but the bolt-on
+    # only skipped the "$(true)-u" token itself, leaving "alice" to be
+    # misread as the wrapped command own argv0, missing the real trio one
+    # position later (confirmed live, silent allow).
+    #
+    # A second pass at this fix stripped only a LEADING placeholder run
+    # (.lstrip(PH)) and a LEADING raw-subst span, mirroring the old
+    # PH-only code -- but a TRAILING placeholder inside a SHORT flag (e.g.
+    # "-u" + a substitution that resolves to empty, glued as one token) is
+    # exactly as live: "sudo -u$(true) alice gh pr merge 123" blanks on the
+    # PRIMARY path to "-uPH", and the bundled-flag length check right below
+    # (`m.end() < len(t[1:])`) misreads that leftover placeholder byte as a
+    # REAL bundled character -- deciding the value is already attached to
+    # this token when it is not, so the loop skips only 1 token instead of
+    # 2 and misses "alice", shifting the trio-check off target (confirmed
+    # live 2026-09-04, a 4th cross-file reviewer, all 4 shapes -- sudo -u/
+    # -g, nice -n, env -u -- silently allowed). A raw-subst version of the
+    # exact same trailing shape is equally live once forced through the
+    # Finding-4 fallback ("sudo -u$(true) alice ..." reached via a
+    # quote-crossing prefix, confirmed live).
+    #
+    # Fixed by removing every PH byte and every raw substitution span
+    # WHEREVER it occurs in the token, not just a leading run -- this
+    # changes what the length comparisons downstream actually measure
+    # (verified against the live payload above, not assumed from the flag
+    # name matching alone: "-uPH" -> "-u" makes t[1:] == "u" instead of
+    # "uPH", so the bundled-flag length check correctly reports nothing
+    # left over and takes the value-taking branch). A token built entirely
+    # from PH/substitution syntax (a standalone vanish, e.g. a lone
+    # "$(true)" token) reveals to "", which correctly falls through to the
+    # existing "else: break" in every branch below and relies on the
+    # separate _drop_bare_vanish_tokens compacted retry, same as before --
+    # this function only ever removes vanish markers, it does not decide
+    # whether the surrounding wrapper logic keeps unwrapping.
+    return _RAW_SUBST_SPAN_RE.sub("", t.replace(PH, ""))
 
 # Same leading-PH-erases-flag-shape bypass as the dispatch-trio duplication
 # above (ported from irrecoverable.sh own GH #129 fix), found live in this
@@ -412,12 +579,180 @@ PREFIX_WRAPPERS = {"env", "command", "nohup", "nice", "time", "sudo"}
 # one token so the real gh/pr/merge trio sitting one position later never
 # lines up with the checked positions, and the ask silently does not fire
 # (confirmed live 2026-09-03: env/sudo/nice/generic-wrapper splices this
-# shape all silently allowed). Stripping a leading placeholder before every
-# shape test below assumes the conservative (still-a-wrapper-token)
-# resolution -- same direction as the rm -rf fix in irrecoverable.sh -- so a
-# token that becomes flag-shaped or VAR=value-shaped once the substitution
-# is assumed empty is treated as that flag/assignment and skipped, keeping
-# the unwrap loop aligned on the real wrapped command.
+# shape all silently allowed). _reveal() (defined above) resolves this for
+# the ordinary flag/assignment shapes: it assumes the substitution vanishes
+# and removes the marker wherever it sits in the token, then every classify
+# function below tests the SAME revealed shape a plain, unspliced token
+# would have had.
+LONG_VALUE_FLAGS = {"--user", "--group"}
+
+def _env_classify(rest, i):
+    # Returns the SET of index positions the env unwrap scan could
+    # continue from after consuming rest[i], or None if rest[i] is not
+    # flag/assignment-shaped at all (i.e. it is the wrapped command).
+    # Exact "-u" is the only value-taking flag env models -- see the
+    # ambiguity note on _sudo_classify below for why a token that
+    # underwent a real substitution removal (raw != t) branches into BOTH
+    # candidates instead of picking one.
+    raw = rest[i]
+    t = _reveal(raw)
+    if t == "-u" and i + 1 < len(rest):
+        return {i + 1, i + 2} if raw != t else {i + 2}
+    if t.startswith("-"):
+        return {i + 1}
+    if "=" in t and t.split("=", 1)[0].isidentifier():
+        return {i + 1}
+    return None
+
+def _nice_classify(rest, i):
+    t = _reveal(rest[i])
+    if not t.startswith("-"):
+        return None
+    if t == "-n" and i + 1 < len(rest):
+        raw = rest[i]
+        return {i + 1, i + 2} if raw != t else {i + 2}
+    return {i + 1}
+
+def _sudo_classify(rest, i):
+    # sudo -u/-g (short or long) select the effective identity and take a
+    # value. Handles space-joined, "="-joined long form, and attached
+    # short form ("-ualice") in one pass, PLUS bundled short flags where
+    # u/g sits anywhere in a combined token -- standard getopt
+    # short-option semantics: once a value-taking character is hit,
+    # everything after it in that same token is the value for that flag,
+    # and only an empty remainder falls through to the next token. So
+    # "-nu alice" (n takes no value, u is last in the token) reads
+    # "alice" as the value for -u, taken from the next token -- but
+    # "-un alice" (u first, "n" left over in the same token) reads the
+    # attached "n" as the value for -u, so "alice" is the real wrapped
+    # command, not a value (deep-audit 2026-08-28, issue #115).
+    #
+    # 5th-round fix (2026-09-04): whether the value sits in THIS token
+    # (attached) or the NEXT one (separate) is genuinely ambiguous when
+    # this token carries a substitution -- "-u$(true)" and "-u$(id -un)"
+    # both reveal to the identical "-u", but the first resolves to empty
+    # (value is the NEXT token) and the second resolves to something
+    # real fused onto the flag (value is attached, the wrapped command is
+    # the NEXT token instead). No comparison on the revealed text can
+    # tell these apart -- the information genuinely is not in the token
+    # (confirmed live both ways: a length-heuristic fix for one direction
+    # silently broke the other, 2026-09-04). Rather than pick a side, a
+    # token that actually had something removed (raw != t) returns BOTH
+    # candidate continuations, same as the dispatch-trio duplication
+    # mechanism above tries every candidate a spliced token might
+    # resolve to -- the caller asks if EITHER path reaches a real gh pr
+    # merge dispatch. This can over-ask on an ambiguous flag combined
+    # with a real dispatch further down a candidate path that would not
+    # actually occur in real bash -- deliberate and correct for an
+    # ask-gate (same fail-closed-on-ambiguity stance the other 3 sibling
+    # files already take), not a bug to narrow away.
+    #
+    # Other sudo flags that also take a value (-p, -C, -R, -T, -U) are
+    # not modeled here -- a bundle mixing one of those with u/g (e.g.
+    # "-pu") is an accepted non-goal, same tier as the
+    # habit-guard-not-adversarial-sandbox stance this file already takes
+    # in its header comment above.
+    raw = rest[i]
+    t = _reveal(raw)
+    bare = t.split("=", 1)[0]
+    if bare in LONG_VALUE_FLAGS:
+        return {i + 1} if "=" in t else {min(i + 2, len(rest))}
+    if t.startswith("--"):
+        return {i + 1}
+    if t.startswith("-") and len(t) > 1:
+        m = re.search(r"[ug]", t[1:])
+        if m:
+            if raw != t:
+                return {i + 1, min(i + 2, len(rest))}
+            attached = m.end() < len(t[1:])
+            return {i + 1} if attached else {min(i + 2, len(rest))}
+        return {i + 1}
+    return None
+
+def _generic_classify(rest, i):  # command, nohup, time -- bare flags only
+    return {i + 1} if _reveal(rest[i]).startswith("-") else None
+
+_WRAPPER_CLASSIFY = {"env": _env_classify, "nice": _nice_classify, "sudo": _sudo_classify}
+
+def _wrapper_stop_positions(rest, classify):
+    # Explores every index position reachable by repeatedly applying
+    # classify() from position 0, branching whenever classify() returns
+    # more than one candidate (the ambiguous-substitution case above).
+    # Returns the SET of positions where classify() says "not a flag" --
+    # each is a candidate start of the wrapped command.
+    seen = set()
+    frontier = {0}
+    stops = set()
+    while frontier:
+        i = frontier.pop()
+        if i in seen:
+            continue
+        seen.add(i)
+        if i >= len(rest):
+            continue  # ran off the end on this branch -- no wrapped
+                       # command reachable this way, drop it (matches the
+                       # original single-path "if i >= len(rest): break")
+        nxt = classify(rest, i)
+        if nxt is None:
+            stops.add(i)
+        else:
+            frontier |= (nxt - seen)
+    return stops
+
+def _unwrap_all(argv0, rest):
+    # Returns every (argv0, rest) state reachable by fully resolving
+    # PREFIX_WRAPPERS unwrapping, branching at each ambiguous flag found
+    # along the way (see _sudo_classify above) -- normally a list of one,
+    # more only when an ambiguous substitution was actually present.
+    #
+    # 6th-round fix (2026-09-04, live DoS confirmed): a CHAIN of several
+    # ambiguous wrapper flags in a row branches at each one, and without
+    # memoization the SAME (argv0, rest) state gets rediscovered and fully
+    # re-expanded from multiple different branches, compounding into
+    # exponential work -- "env -u$(true) " repeated 24 times before a
+    # real "gh pr merge 123" hung past a 15s timeout; 26 repeats hung
+    # past 60s. Every state here is (argv0, a SUFFIX of the top-level
+    # rest), and a list of length n has only n+1 distinct suffixes, so
+    # the DISTINCT STATE COUNT is linear in token count -- the blowup was
+    # pure re-computation of the same states, not genuine branching
+    # growth. seen_states turns this into an ordinary bounded graph
+    # traversal: each distinct state is expanded exactly once instead of
+    # exponentially many times (confirmed: the previously-hanging
+    # 24-repeat chain now completes in well under a second, see
+    # tests/hooks/test-merge-door.sh).
+    #
+    # 7th-round correction (2026-09-04): state count being linear does NOT
+    # make the total work linear -- _wrapper_stop_positions itself is not
+    # memoized, and it does O(remaining length) work every time a
+    # newly-discovered state calls it, so total work summed across all
+    # ~n states is polynomial (roughly O(n^2)-O(n^3)), not linear.
+    # Independently measured: 1600 repeats of the same chain takes about
+    # 10s -- a massive practical improvement over the 60s+ hang at just
+    # 26 repeats pre-fix, but not a linear bound. A several-thousand-
+    # token wrapper chain reaching multi-second delays is not a proven
+    # need worth chasing further (this correction is comment-only, no
+    # code change). This does not change WHICH candidates are reachable
+    # -- skipping an already-expanded state only skips re-deriving
+    # finals that were already added the first time that exact state was
+    # reached, so the union of reachable finals is identical with or
+    # without memoization.
+    states = [(argv0, rest)]
+    seen_states = set()
+    finals = []
+    while states:
+        a, r = states.pop()
+        key = (a, tuple(r))
+        if key in seen_states:
+            continue
+        seen_states.add(key)
+        if not (r and a in PREFIX_WRAPPERS):
+            finals.append((a, r))
+            continue
+        classify = _WRAPPER_CLASSIFY.get(a, _generic_classify)
+        for i in _wrapper_stop_positions(r, classify):
+            states.append((basename(r[i]), r[i + 1:]))
+    return finals
+
 def _window_is_merge_dispatch(w):
     # Runs the unwrap-then-trio-check pipeline against one window and
     # reports match/no-match instead of asking directly -- factored out so
@@ -426,99 +761,22 @@ def _window_is_merge_dispatch(w):
     # the raw one.
     if not w:
         return False
-    argv0, rest = basename(w[0]), w[1:]
-
-    while rest and argv0 in PREFIX_WRAPPERS:
-        if argv0 == "env":
-            i = 0
-            while i < len(rest):
-                t = rest[i].lstrip(PH)
-                if t == "-u" and i + 1 < len(rest):
-                    i += 2
-                elif t.startswith("-"):
-                    i += 1
-                elif "=" in t and t.split("=", 1)[0].isidentifier():
-                    i += 1
-                else:
-                    break
-            if i >= len(rest):
-                break
-            argv0, rest = basename(rest[i]), rest[i + 1:]
-        elif argv0 == "nice":
-            i = 0
-            while i < len(rest) and rest[i].lstrip(PH).startswith("-"):
-                t = rest[i].lstrip(PH)
-                i += 1
-                if t == "-n" and i < len(rest):
-                    i += 1
-            if i >= len(rest):
-                break
-            argv0, rest = basename(rest[i]), rest[i + 1:]
-        elif argv0 == "sudo":
-            # sudo -u/-g (short or long) select the effective identity and
-            # take a value. Handles space-joined, "="-joined long form, and
-            # attached short form ("-ualice") in one pass, PLUS bundled
-            # short flags where u/g sits anywhere in a combined token --
-            # standard getopt short-option semantics: once a value-taking
-            # character is hit, everything after it in that same token is
-            # the value for that flag, and only an empty remainder falls
-            # through to the next token. So "-nu alice" (n takes no value,
-            # u is last in the token) reads "alice" as the value for -u,
-            # taken from the next token -- but "-un alice" (u first, "n"
-            # left over in the same token) reads the attached "n" as the
-            # value for -u, so "alice" is the real wrapped command, not a
-            # value -- both resolved correctly below (deep-audit
-            # 2026-08-28, issue #115 fix only matched exact "-u"/"-g"
-            # tokens and missed every bundled form, e.g. "sudo -nu alice
-            # gh pr merge 123" still bypassed this gate after that fix).
-            # Other sudo flags that also take a value (-p, -C, -R, -T, -U)
-            # are not modeled here -- a bundle mixing one of those with
-            # u/g (e.g. "-pu") is an accepted non-goal, same tier as the
-            # habit-guard-not-adversarial-sandbox stance this file already
-            # takes in its header comment above.
-            LONG_VALUE_FLAGS = {"--user", "--group"}
-            i = 0
-            while i < len(rest):
-                t = rest[i].lstrip(PH)
-                bare = t.split("=", 1)[0]
-                if bare in LONG_VALUE_FLAGS:
-                    i += 1 if "=" in t else min(2, len(rest) - i)
-                elif t.startswith("--"):
-                    i += 1
-                elif t.startswith("-") and len(t) > 1:
-                    m = re.search(r"[ug]", t[1:])
-                    if m:
-                        attached = m.end() < len(t[1:])
-                        i += 1 if attached else min(2, len(rest) - i)
-                    else:
-                        i += 1
-                else:
-                    break
-            if i >= len(rest):
-                break
-            argv0, rest = basename(rest[i]), rest[i + 1:]
-        else:  # command, nohup, time — bare flags then the wrapped command
-            i = 0
-            while i < len(rest) and rest[i].lstrip(PH).startswith("-"):
-                i += 1
-            if i >= len(rest):
-                break
-            argv0, rest = basename(rest[i]), rest[i + 1:]
-
     # GH #129-shaped duplication (ported from irrecoverable.sh, adapted to
     # 3 dispatch positions): this gate dispatches on argv0 AND the two
     # tokens right after it ("pr"/"merge"), so a splice landing on any of
     # the 3 is an equally live bypass -- each position tries its own fixed
     # candidate whenever it carries a PH byte (a real, non-spliced token is
     # tried as-is), and any resulting combination that completes the
-    # ("gh", "pr", "merge") trio counts as a match.
-    if len(rest) >= 2:
-        GH, PR, MERGE = "gh", "pr", "merge"
-        argv0_c = (GH,) if PH in argv0 else (argv0,)
-        rest0_c = (PR,) if PH in rest[0] else (rest[0],)
-        rest1_c = (MERGE,) if PH in rest[1] else (rest[1],)
-        if any((a, b, c) == (GH, PR, MERGE) for a in argv0_c for b in rest0_c for c in rest1_c):
-            return True
+    # ("gh", "pr", "merge") trio counts as a match. Checked against EVERY
+    # unwrap candidate from _unwrap_all -- ask if any one of them matches.
+    for argv0, rest in _unwrap_all(basename(w[0]), w[1:]):
+        if len(rest) >= 2:
+            GH, PR, MERGE = "gh", "pr", "merge"
+            argv0_c = (GH,) if (PH in argv0 or _has_raw_subst(argv0)) else (argv0,)
+            rest0_c = (PR,) if (PH in rest[0] or _has_raw_subst(rest[0])) else (rest[0],)
+            rest1_c = (MERGE,) if (PH in rest[1] or _has_raw_subst(rest[1])) else (rest[1],)
+            if any((a, b, c) == (GH, PR, MERGE) for a in argv0_c for b in rest0_c for c in rest1_c):
+                return True
     return False
 
 # Layer 3 fix (found by an independent adversarial reviewer, 2026-09-03,
@@ -543,7 +801,7 @@ def _window_is_merge_dispatch(w):
 # EVERY character in it is the placeholder byte (stripping PH from it
 # leaves nothing), never a token that merely CONTAINS PH glued to real
 # content (e.g. a PH-prefixed flag/assignment from the GH #129 fix above --
-# those already resolve correctly via lstrip(PH) and must not be touched
+# those already resolve correctly via _reveal() and must not be touched
 # here). The full unwrap-then-trio-check pipeline runs against BOTH the
 # original window and the compacted one; a match on either asks.
 #
@@ -555,8 +813,42 @@ def _window_is_merge_dispatch(w):
 # correctly fails to match and this stays noask; only a genuine vanish
 # whose compacted form lines up on the real ("gh", "pr", "merge") trio
 # triggers ask.
+#
+# Fallback-path follow-up (2026-09-04, PH-site sweep): the check above
+# only recognizes a vanish shaped as an all-PH token, which a token
+# reaching this function through the Finding-4 ValueError fallback can
+# never be -- it was never blanked, so a standalone substitution that
+# resolves to empty at runtime (e.g. a bare "$(true)" token) still carries
+# its raw "$("/"`"/"${" syntax and strip(PH) is a no-op on it, leaving it
+# in the compacted list untouched (confirmed live: an unbalanced-quote
+# span forcing the fallback, followed by "; $(true) gh pr merge 123",
+# exited 0 with no ask). A token counts as a raw vanish only when
+# stripping every backtick/$(...)/${...} span out of it leaves nothing
+# behind -- the same "resolves to empty" test the PH case encodes, just
+# applied to text that still has its substitution syntax literally in it.
+# Same non-goal already accepted above applies here too: a token like
+# "$(which gh)" also strips to empty by this test even though it resolves
+# to something real at runtime, but the OR-with-the-uncompacted-window
+# check right after this function is what keeps that case noask, not
+# this function refusing to drop it -- identical reasoning already
+# accepted for the PH case a few lines up, now extended to the raw case.
+# One more accepted imprecision unique to the fallback path: this regex
+# runs on a token already produced by shlex.split(), which has already
+# removed quote characters, so a genuinely INERT, single-quoted literal
+# spelled like a substitution (real bash never expands it) is
+# indistinguishable here from a live one. The only possible effect of
+# treating it as a vanish is dropping it from the compacted retry, which
+# can only ever ADD a spurious ask on an unusual benign shape, never
+# remove a real one -- the primary path keeps its own quote-aware
+# blanking for the common case, and the fallback only runs at all once a
+# genuinely quote-unbalanced or splice-corrupted command has already
+# forced it. _RAW_SUBST_SPAN_RE is the same shared regex _reveal() above
+# already uses -- defined once, near _has_raw_subst.
+def _raw_token_vanishes(t):
+    return _RAW_SUBST_SPAN_RE.sub("", t) == ""
+
 def _drop_bare_vanish_tokens(w):
-    return [t for t in w if t.strip(PH) != ""]
+    return [t for t in w if t.strip(PH) != "" and not _raw_token_vanishes(t)]
 
 for w in windows:
     if not w:

@@ -257,6 +257,194 @@ assert_ask "bare vanish after sudo, before gh -> ask (real bash: sudo gh pr merg
 # coverage for visibility.
 assert_noask "bare-PH argv0 resolving to a real, non-empty command -> noask (must not over-ask)" '$(which gh) pr view 123'
 
+# Finding 1 (HIGH, live, 2026-09-04): _blank_substitutions joined recovered
+# command-substitution bodies with " ; " (a space, not a real newline). A
+# bare "#" anywhere in the string before that append point makes shlex's
+# default comment-stripping (commenters="#") silently discard everything
+# from that "#" onward -- including the appended body -- since shlex's own
+# comment handling reads to the next REAL newline character, not to a
+# literal " ; " separator. Fixed by leading each appended body with an
+# actual "\n" so shlex's comment-skip stops there, same as a real bash line
+# boundary would.
+assert_ask "trailing # comment after the append point does not swallow the recovered body -> ask (Finding 1)" 'echo $(gh pr merge 123)  # merge'
+assert_ask "# comment embedded INSIDE an earlier recovered body does not swallow a later one -> ask (Finding 1)" 'echo $(echo hi # note) $(gh pr merge 123)'
+assert_ask "no-comment control still asks after the join-separator fix -> ask (Finding 1)" 'echo $(gh pr merge 123)'
+
+# Finding 2 (HIGH, live, 2026-09-04): merge-door.sh never ported
+# _normalize_ansi_c_quotes (irrecoverable.sh/verifier-protect.sh/
+# worktree-guard.py all have it). A $'...' ANSI-C-quoted span decodes to a
+# real character in bash ($'\x68' is "h") but shlex has no notion of this
+# quoting style at all and splits on the bare $, so "g$'\x68' pr merge 123"
+# (real bash: "gh pr merge 123") never reassembles into a "gh" token.
+assert_ask "ANSI-C \$'\\x68' splice decodes to h, forming gh -> ask (Finding 2, real bash: gh pr merge 123)" "g\$'\\x68' pr merge 123"
+assert_ask "unspliced control still asks -> ask (Finding 2)" 'gh pr merge 123'
+
+# Finding 5 (MEDIUM, live, 2026-09-04): _blank_substitutions's own inner
+# _scan_once tracked quote state char-by-char but had no comment-state
+# tracking at all, so a substitution-shaped string sitting inside a REAL "#"
+# comment (e.g. "# see also: $(gh pr merge 123)") was still matched and its
+# body collected into `bodies` as if live -- escaping the comment entirely
+# once appended as its own statement at the end, producing a false ask on a
+# genuinely innocent command. Fixed by porting the same in_comment
+# char-by-char state machine _newlines_to_seps already uses.
+assert_noask "substitution-shaped text inside a real # comment is inert commentary -> noask (Finding 5)" "$(printf 'gh pr view 1 # see also: $(gh pr merge 123)\necho done')"
+
+# Finding 4 (2026-09-04): _blank_substitutions's ${...}/$(...)/backtick
+# closer-search scans forward for a terminating char without tracking quote
+# state for characters it skips over. A span crossing a real quote -- an
+# everyday shell idiom like ${x:-"a}b"}, not a contrived one -- desyncs the
+# scan (it stops at the FIRST "}", which sits inside the quoted "a}b", not
+# the real closer at the end), leaving the blanked-and-reassembled command
+# quote-unbalanced even though the ORIGINAL command was perfectly valid.
+# Since Finding 1 already removed the old cmd.split() fallback for a
+# shlex.shlex() ValueError, this used to hard-ask/deny on a legitimate
+# command. Fixed by, on ValueError, validating the ORIGINAL pre-blanking
+# string with shlex.split() as a pure validity predicate -- if THAT parses,
+# the corruption was self-inflicted by blanking, so fall back to a
+# separator-aware split (";"/"&&"/"||"/"&"/"|", each piece tokenized with
+# shlex.split()) instead of a naive whitespace split, which would have
+# missed a dangerous second command in a chain entirely.
+assert_ask "quote-crossing ValueError, dangerous cmd BEFORE the bad span -> ask (Finding 4)" 'gh pr merge 123; echo ${x:-"a}b"}'
+assert_ask "quote-crossing ValueError, dangerous cmd AFTER the bad span -> ask (Finding 4)" 'echo ${x:-"a}b"}; gh pr merge 123'
+assert_noask "quote-crossing ValueError alone, no dispatch anywhere -> noask (Finding 4, must not over-ask)" 'echo ${x:-"a}b"}'
+assert_ask "genuinely malformed command (real unbalanced quote) -> still ask (Finding 4 control)" 'gh pr merge 123 "unterminated'
+
+# Finding 4 follow-up (2026-09-04, cross-file review, live confirmed): the
+# Finding-4 fallback above tokenizes from the ORIGINAL, never-blanked
+# command text, so a fallback token can never carry a PH byte -- the
+# GH #129 trio-duplication gate (PH in argv0/rest[0]/rest[1]) never fires on
+# this path, and a spliced argv0 like g$(true)h sailed through unrecognized.
+# This combined "quote-crossing ValueError forces the fallback, PLUS a
+# splice in the fallback's own dispatch window" cell was never in this
+# suite before -- exactly why it shipped. Fixed by widening the duplication
+# trigger to also fire on a token still carrying raw "`"/"$("/"${" syntax,
+# not just a PH byte.
+assert_ask "quote-crossing fallback + spliced argv0, dangerous cmd AFTER the bad span -> ask (Finding 4 follow-up, real bash: echo ...; gh pr merge 123)" 'echo ${y:-"a}b"} ; g$(true)h pr merge 123'
+assert_ask "quote-crossing fallback + spliced argv0, dangerous cmd BEFORE the bad span -> ask (Finding 4 follow-up)" 'g$(true)h pr merge 123 ; echo ${y:-"a}b"}'
+assert_noask "spliced argv0 resolving to a benign gh subcommand -> noask (Finding 4 follow-up, must not over-ask)" 'g$(true)h status'
+assert_noask "bare \$VAR command must not trigger the raw-subst widening -> noask (Finding 4 follow-up)" '$PYTHON -m pytest'
+
+# PH-site sweep (2026-09-04, second adversarial reviewer): the argv0/rest[0]/
+# rest[1] trio-duplication fix above is not the only place a token reaching
+# the Finding-4 fallback can carry raw, never-blanked substitution syntax --
+# every PREFIX_WRAPPERS unwrap-loop shape test (env/nice/sudo/generic) and
+# _drop_bare_vanish_tokens read a token's shape too, and both were still
+# blind to raw syntax before this fix (confirmed live, silent allow on each
+# shape below prior to the fix). Fixed by a shared _reveal() helper that
+# peels a leading raw substitution span the same way .lstrip(PH) already
+# peels a placeholder, so the SAME downstream shape tests recognize either
+# kind of token; _drop_bare_vanish_tokens gets the analogous _raw_token_
+# vanishes() check for a token that is ENTIRELY substitution syntax.
+assert_ask "env VAR=value unwrap, raw (never-blanked) assignment prefix reaching the fallback -> ask (real bash: env FOO=bar gh pr merge 123)" 'echo ${z:-"a}b"} ; env $(true)FOO=bar gh pr merge 123'
+assert_noask "env VAR=value unwrap, raw assignment prefix ahead of a non-merge subcommand -> noask" 'echo ${z:-"a}b"} ; env $(true)FOO=bar gh pr view 123'
+assert_ask "env -u value-taking flag with a raw prefix reaching the fallback -> ask (real bash: env -u alice gh pr merge 123, must also consume the value token)" 'echo ${z:-"a}b"} ; env $(true)-u alice gh pr merge 123'
+assert_ask "sudo -u value-taking flag with a raw prefix reaching the fallback -> ask (real bash: sudo -u alice gh pr merge 123, must also consume the value token)" 'echo ${z:-"a}b"} ; sudo $(true)-u alice gh pr merge 123'
+assert_ask "nice -n flag with a raw prefix reaching the fallback -> ask (real bash: nice -n 5 gh pr merge 123)" 'echo ${z:-"a}b"} ; nice $(true)-n 5 gh pr merge 123'
+assert_ask "generic wrapper (command -p) with a raw-prefixed flag reaching the fallback -> ask (real bash: command -p gh pr merge 123)" 'echo ${z:-"a}b"} ; command $(true)-p gh pr merge 123'
+assert_ask "bare-vanish-drop: a standalone raw substitution token reaching the fallback -> ask (real bash: gh pr merge 123)" 'echo ${z:-"a}b"} ; $(true) gh pr merge 123'
+assert_noask "bare-vanish-drop: a standalone raw substitution token ahead of a non-merge subcommand -> noask" 'echo ${z:-"a}b"} ; $(true) gh pr view 123'
+assert_noask "sudo -u benign wrapped command (no fallback forced) -> noask, unaffected by the _reveal redesign" 'sudo -u alice echo hi'
+
+# PH-site sweep, 4th cross-file review (2026-09-04): _reveal() above still
+# did t.lstrip(PH) -- leading-only -- while the equivalent sites in the 3
+# sibling files had already been converted to t.replace(PH, ""). A
+# TRAILING placeholder inside a short value-taking flag (the substitution
+# glued onto the END of "-u"/"-n"/"-g", not the front) survives a
+# leading-only strip: "-uPH" still has PH as its 3rd character, so the
+# bundled-flag length check (`m.end() < len(t[1:])`) counts it as a real
+# extra character and wrongly concludes the flag value is already
+# attached, skipping only the flag token and never the value token after
+# it -- shifting the trio-check off target (confirmed live, all 4 shapes
+# below silently allowed prior to this fix; the raw-subst-via-fallback
+# analogue of the same shape was equally live). Fixed by removing PH and
+# every raw substitution span WHEREVER they occur in the token (not
+# leading-only), so the length comparison downstream measures the correct
+# revealed remainder either way.
+assert_ask "sudo -u, trailing placeholder inside the flag -> ask (real bash: sudo -u alice gh pr merge 123)" 'sudo -u$(true) alice gh pr merge 123'
+assert_ask "nice -n, trailing placeholder inside the flag -> ask (real bash: nice -n 5 gh pr merge 123)" 'nice -n$(true) 5 gh pr merge 123'
+assert_ask "sudo -g, trailing placeholder inside the flag -> ask (real bash: sudo -g staff gh pr merge 123)" 'sudo -g$(true) staff gh pr merge 123'
+assert_ask "env -u, trailing placeholder inside the flag -> ask (real bash: env -u FOO gh pr merge 123)" 'env -u$(true) FOO gh pr merge 123'
+assert_ask "sudo -u, trailing raw (never-blanked) substitution reaching the fallback -> ask" 'echo ${z:-"a}b"} ; sudo -u$(true) alice gh pr merge 123'
+assert_noask "sudo -u, trailing placeholder, benign wrapped command -> noask (must not over-ask)" 'sudo -u$(true) alice echo hi'
+assert_noask "env -u, trailing placeholder, non-merge subcommand -> noask (must not over-ask)" 'env -u$(true) FOO gh pr view 123'
+# Bounded controls (already correctly asking before this fix; must not break)
+assert_ask "sudo -u, leading placeholder before the flag -> ask (control, unaffected)" 'sudo $(true)-u alice gh pr merge 123'
+assert_ask "sudo -u, placeholder mid-flag (between the dash and u) -> ask (control, unaffected)" 'sudo -$(true)u alice gh pr merge 123'
+assert_ask "sudo --user=, placeholder inside the = value -> ask (control, unaffected)" 'sudo --user=$(true)alice gh pr merge 123'
+
+# PH-site sweep, 5th cross-file review (2026-09-04): the trailing-splice fix
+# above closed the 4 empty-resolving bypasses but opened the mirror-image
+# bug on the SAME 4 flags -- "-u$(true)" and "-u$(id -un)" both reveal to
+# the identical "-u", but the first resolves to empty at runtime (value is
+# a SEPARATE next token) and the second resolves to something real fused
+# onto the flag (value is ATTACHED, the wrapped command is the next token
+# instead). No comparison on the revealed token text can tell these apart
+# -- the information genuinely is not there. Fixed by NOT picking a side:
+# _sudo_classify/_env_classify/_nice_classify return BOTH candidate
+# continuations whenever the token actually had a substitution removed,
+# and _unwrap_all/_window_is_merge_dispatch ask if EITHER candidate's
+# resulting token stream reaches a real gh/pr/merge trio -- same
+# enumerate-every-candidate pattern the dispatch-trio duplication above
+# already uses, applied to the unwrap-loop position instead of the final
+# compare. Both directions are pinned in this ONE suite run on purpose --
+# round 4b only tested the empty-resolving direction and immediately
+# regressed the non-empty one.
+assert_ask "sudo -u, empty-resolving substitution -> ask (real bash: sudo -u alice gh pr merge 123)" 'sudo -u$(true) alice gh pr merge 123'
+assert_ask "nice -n, empty-resolving substitution -> ask (real bash: nice -n 5 gh pr merge 123)" 'nice -n$(true) 5 gh pr merge 123'
+assert_ask "sudo -g, empty-resolving substitution -> ask (real bash: sudo -g staff gh pr merge 123)" 'sudo -g$(true) staff gh pr merge 123'
+assert_ask "env -u, empty-resolving substitution -> ask (real bash: env -u FOO gh pr merge 123)" 'env -u$(true) FOO gh pr merge 123'
+assert_ask "sudo -u, NON-empty-resolving substitution fused onto the flag -> ask (real bash: sudo -u<username> gh pr merge 123, the value is attached, not a separate token)" 'sudo -u$(id -un) gh pr merge 123'
+assert_ask "nice -n, NON-empty-resolving substitution fused onto the flag -> ask (real bash: nice -n5 gh pr merge 123)" 'nice -n$(echo 5) gh pr merge 123'
+assert_ask "env -u, NON-empty-resolving substitution fused onto the flag -> ask (real bash: env -uFOO gh pr merge 123)" 'env -u$(echo FOO) gh pr merge 123'
+assert_ask "sudo -g, NON-empty-resolving substitution fused onto the flag -> ask (real bash: sudo -gstaff gh pr merge 123)" 'sudo -g$(echo staff) gh pr merge 123'
+# Negative controls: same ambiguous flag shape, but no gh/pr/merge trio
+# reachable via EITHER candidate -- must stay clean. Duplication-based
+# over-asking on an ambiguous flag PLUS a real dispatch elsewhere in the
+# window is the deliberate, correct fail-closed direction for this
+# ask-gate (matches the stance the other 3 sibling files already take for
+# their own duplication mechanisms) -- it is not narrowed away here, but
+# these controls have no dispatch-trio match down any path at all, so
+# they must not ask regardless.
+assert_noask "sudo -u ambiguous flag, benign wrapped command (no dispatch trio down either candidate) -> noask" 'sudo -u$(true) alice ls'
+assert_noask "env -u ambiguous flag, non-merge subcommand -> noask" 'env -u$(true) FOO gh pr view 123'
+assert_noask "sudo -u ambiguous flag, non-empty-resolving, benign wrapped command -> noask" 'sudo -u$(id -un) ls'
+
+# PH-site sweep, 6th cross-file review (2026-09-04, live DoS confirmed): the
+# enumeration fix above (round 5) explores the SAME (argv0, rest) state
+# repeatedly on a CHAIN of several ambiguous prefix-wrapper flags in a row,
+# with no memoization -- work compounds into exponential blowup instead of
+# genuine branching growth. A repeated "env -u$(true) " chain (this is a
+# synchronous PreToolUse gate: a hang here blocks every Bash tool call, not
+# just this one) hung past a 15s timeout at 24 repeats pre-fix and past 60s
+# at 26. Fixed by memoizing _unwrap_all on the exact (argv0, tuple(rest))
+# state: every state here is (argv0, a SUFFIX of the top-level token list),
+# and a list of length n has only n+1 distinct suffixes, so the DISTINCT
+# STATE COUNT is linear -- the blowup was pure re-computation of the same
+# states, not real branching growth. Skipping an already-seen state only
+# skips re-deriving finals already added the first time that exact state
+# was reached, so this does not change WHICH candidates are explored
+# (verified separately: all round-5 payloads plus the sudo -u/-nu/-Sku/-un
+# baselines produced byte-identical verdicts before and after this fix).
+#
+# 7th-round correction (2026-09-04): linear STATE COUNT does not make the
+# total WORK linear -- _wrapper_stop_positions is not itself memoized, so
+# total work summed across all states is polynomial (roughly
+# O(n^2)-O(n^3)), not linear (independently measured: 1600 repeats takes
+# about 10s). Not a tight wall-clock assertion below (flaky on a loaded
+# machine) -- a generous ceiling well above the previously-hanging
+# payload; the fixed code clears it with room to spare (confirmed
+# manually: 24 repeats completes in well under a second after the fix,
+# versus a 15s timeout before it).
+dos_chain_cmd="$(printf 'env -u$(true) %.0s' $(seq 1 30))gh pr merge 123"
+dos_start=$(date +%s)
+dos_out=$(payload_bash "$dos_chain_cmd" | timeout 10 bash "$GATE" 2>/dev/null)
+dos_rc=$?
+dos_elapsed=$(( $(date +%s) - dos_start ))
+dos_ask=1; echo "$dos_out" | /usr/bin/grep -q '"permissionDecision": "ask"' && dos_ask=0
+dos_ok=1
+if [ "$dos_rc" -eq 0 ] && [ "$dos_elapsed" -le 10 ] && [ "$dos_ask" -eq 0 ]; then dos_ok=0; fi
+check "chained ambiguous wrapper flags (30x env -u\$(true)) completes within a generous ceiling and still asks -- polynomial, not exponential (6th-round DoS fix)" "$dos_ok"
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

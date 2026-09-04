@@ -52,6 +52,24 @@ _norm_nows="$(printf '%s' "$_norm" | tr -d '[:space:]')"
 # bare $ or backtick anywhere in the raw input is treated as a possible
 # zero-width splice and forces the defer -- a strict superset of every
 # enumerated marker, since each one itself contains a $ or a backtick.
+#
+# GH #134, checked and ruled out (2026-09-04): this scan reads the RAW
+# input string, so a $ or backtick that instead arrives JSON-escaped as
+# $ / ` (json.loads would still decode it to a real $/backtick
+# on the python3 side below) is invisible here -- the case below would
+# only see the literal bytes \, u, 0, 0, 2, 4, none of which is $ or a
+# backtick, so _has_subst stays 0 and a "gi${x}t push --force"-shaped
+# payload fast-exits with zero python3 spawn. Verified NON-LIVE by
+# capturing this session's own real PreToolUse hook payload for a Bash
+# command containing a literal $ and backtick: Claude Code's actual
+# serializer emitted the literal bytes ("command":"...probe$var...
+# probe`date`end...") -- no \uXXXX escaping of plain ASCII, consistent
+# with ordinary JSON.stringify behavior. This is a live capture, not a
+# docs citation. Locked in by the "documented gap" test in
+# tests/hooks/test-gates.sh (search GH #134). Would need re-checking if
+# Claude Code's hook payload serializer ever starts ASCII-escaping (e.g.
+# an added \uXXXX-escape-non-ASCII-and-punctuation mode) -- re-capture a
+# real payload the same way before deciding this is live.
 _has_subst=0
 case "$_input" in *'`'*|*'$'*) _has_subst=1 ;; esac
 case "$_norm$_norm_nows" in
@@ -394,12 +412,18 @@ def _newlines_to_seps(s):
 # substitution, not a parser, matching every other fix in this bug family
 # today.
 #
-# Named non-goal, also deliberately not fixed here: splicing a FLAG inside
-# an already-correctly-dispatched branch (e.g. --for<PH>ce defeating the
-# --force detection once "git push" is already correctly identified) is out
-# of scope for this pass -- the duplication below only re-derives WHICH
-# candidate name/subcommand a garbled dispatch token might be, it does not
-# re-scan already-clean flag tokens for embedded placeholders.
+# Mid-flag PH placement (e.g. --for<PH>ce) is NOT a non-goal -- a prior
+# version of this comment claimed it "garbles the flag name but stays
+# recognizable as a flag" and called it out of scope. That claim was wrong:
+# confirmed live (third cross-file review, 2026-09-04) as a total silent
+# bypass, not degraded recognition -- an EXACT-MATCH flag comparison
+# downstream (t == "--force", t.startswith("--no-verify"), ...) fails the
+# moment PH sits anywhere but the very front of the token, the same shape
+# of gap a leading-only lstrip already needed fixing for a LEADING splice.
+# This function only blanks the SPAN to PH; removing PH from a token before
+# comparing it to a known flag name is every downstream comparison own job,
+# not this one -- fixed at each of those call sites (full .replace(PH, "")
+# now, not a leading-only strip, so a PH anywhere in the token is removed).
 #
 # Blanking the span must not DISCARD its body. Before this whole fix,
 # "(" and ")" were already in OPERATORS (see below), so a bare $(...) split
@@ -466,13 +490,21 @@ def _newlines_to_seps(s):
 # crossing into a genuine single-quoted span no matter what punctuation
 # that span holds.
 #
-# Named residual, deliberately not fixed here: the same false-positive
-# shape can occur inside a "#" COMMENT ("# see also: $ (git push --force)"
-# is never executed in real bash) -- left alone since a false DENY is this
-# file own accepted safe direction (see the fast-path comments above), and
-# closing it would mean tracking comment state here too, the same
-# parser-not-regex step this whole pass is deliberately avoiding (comment
-# state is intentionally NOT tracked in the scan below either).
+# Comment state IS tracked in the scan below (in_comment, checked first,
+# same state machine _newlines_to_seps above already uses): a
+# substitution-shaped span sitting inside a real "#" comment ("# see also:
+# $(git push --force)" is never executed in real bash) passes through
+# unchanged instead of being blanked or collected as a body. Before this
+# fix the gap cut both ways, not just toward a false DENY as an earlier
+# version of this comment claimed: a fake payload inside a comment was
+# wrongly recovered as a live body (false DENY), and a real substitution
+# sitting BEFORE a trailing "#" comment could have its recovered body
+# silently swallowed by that same comment once re-appended with no
+# newline to end it (false ALLOW, closed separately by the newline join
+# a few lines below in this same function). The two fixes are
+# complementary: this one stops a fake payload inside a comment from ever
+# being collected; the newline join stops a real one recovered earlier
+# from being buried by a later comment.
 PH = "\x01"
 def _blank_substitutions(s):
     bodies = []
@@ -487,10 +519,21 @@ def _blank_substitutions(s):
     # fixed point instead of teaching this scan to depth-count parens.
     def _scan_once(s):
         out = []
-        in_squote = in_dquote = False
+        in_squote = in_dquote = in_comment = False
         i, n = 0, len(s)
         while i < n:
             c = s[i]
+            if in_comment:
+                # A "#" comment already ends at the literal newline no
+                # matter what precedes it -- same in_comment state machine
+                # as _newlines_to_seps above, checked first so nothing
+                # inside a real comment is ever evaluated as a
+                # substitution start.
+                if c == "\n":
+                    in_comment = False
+                out.append(c)
+                i += 1
+                continue
             if in_squote:
                 out.append(c)
                 if c == SQ:
@@ -523,6 +566,10 @@ def _blank_substitutions(s):
                 if c == "\\" and i + 1 < n:
                     out.append(c); out.append(s[i + 1])
                     i += 2
+                    continue
+                if c == "#":
+                    in_comment = True
+                    out.append(c); i += 1
                     continue
                 # else: fall through to the shared substitution-start check.
             if c == "`":
@@ -559,7 +606,17 @@ def _blank_substitutions(s):
             break
         s = new
     if bodies:
-        s = s + " ; " + " ; ".join(bodies)
+        # Comment-truncation fix: appending with a plain " ; " separator lets
+        # a "#" earlier in `s` (including one embedded inside an EARLIER
+        # recovered body already joined here) start a shlex comment that
+        # silently swallows everything appended after it -- there is no
+        # newline after the appended bodies to end that comment, so a real
+        # deny (e.g. a force-push splice followed by a trailing comment)
+        # goes silently missing. A real "\n" before each appended body ends
+        # any open comment the same way a genuine bash newline would, then
+        # "; " starts a fresh statement -- same idiom _newlines_to_seps
+        # above already uses for real newlines.
+        s = s + "\n; " + "\n; ".join(bodies)
     return s
 
 # shlex.split() only recognizes ;/&&/||/|/& as separators when whitespace
@@ -583,9 +640,11 @@ except ValueError:
     # python3 -c wrapper below, and a literal apostrophe closes that string
     # early (same constraint noted further down near _bundled_force).
     #
-    # An unbalanced quote SURVIVING the placeholder-blank pass raises here --
-    # e.g. a backtick-wrapped apostrophe-bearing body blanks to something
-    # like "giPHt push --force ; " plus that body re-appended bare (the
+    # Two different things raise here, and they need different handling.
+    #
+    # (1) An unbalanced quote SURVIVING the placeholder-blank pass -- e.g. a
+    # backtick-wrapped apostrophe-bearing body blanks to something like
+    # "giPHt push --force ; " plus that body re-appended bare (the
     # substitution BODY, put back by _blank_substitutions so it stays
     # scannable), and the loose apostrophe inside the re-appended body
     # leaves an unclosed quote. The old fallback re-tokenized cmd.split()
@@ -594,12 +653,94 @@ except ValueError:
     # mechanism went inert, ALLOWing a real force-push once bash evaluates
     # the inner failing subshell to empty (confirmed live 2026-09-03: rc=0,
     # no python re-classification at all). Same bypass shape via the
-    # dollar-paren substitution form. Matching this file own
-    # malformed-payload stance a few lines up (deny on ambiguity rather
-    # than guess at a second fallback tokenizer): a command this file
-    # cannot safely parse is denied, not silently allowed -- this gate has
-    # no "ask" outcome, so deny is the fail-closed option available.
-    deny("could not safely tokenize command for pattern matching (unbalanced quote/substitution) - confirm with user first")
+    # dollar-paren substitution form.
+    #
+    # (2) _blank_substitutions own closer-search for a backtick/$(...)/
+    # ${...} span (the `s.find`/while-loop scans a few lines up) does not
+    # track quote state for the characters it skips while hunting the
+    # terminator -- if that span crosses a real quote character (ordinary
+    # interpreter-heredoc content full of curly braces can do this), the
+    # quote toggle is silently lost, desyncing in_squote/in_dquote for the
+    # rest of the scan and leaving the FINAL string quote-unbalanced even
+    # though the ORIGINAL command was perfectly valid. Confirmed live: a
+    # read-only python3 heredoc with an unmatched "${" inside a properly-
+    # quoted string denied here, even though it never touches a dangerous
+    # command at all.
+    #
+    # Distinguishing (1) from (2) needs no new parser: re-parse the
+    # ORIGINAL, pre-blanking cmd as a pure predicate. If it parses cleanly,
+    # this ValueError is self-inflicted by our own blanking pass (case 2),
+    # so fall back to a separator-aware split instead of hard-denying a
+    # benign command (GH #129 own placeholder-splice guarantee is
+    # irrelevant here: a cleanly-parsing original has no corruption for a
+    # splice to exploit in the first place). If the original ALSO fails to
+    # parse, this really is case (1) or a plain malformed command, and this
+    # file own malformed-payload stance still applies: deny on ambiguity
+    # rather than guess at a third tokenizer -- this gate has no "ask"
+    # outcome, so deny is the fail-closed option available.
+    #
+    # A bare whitespace-only cmd.split() (this file own pre-GH#129 fallback
+    # shape) is itself exploitable here: the comment a few lines below this
+    # try/except ("the second command in the chain never had its own argv0
+    # checked") documents exactly why punctuation_chars=True exists on the
+    # primary shlex path above -- a compound command own LATER segments
+    # (after ;/&&/||/|/&) each need their own window and argv0 check. A naive
+    # .split() has no separator awareness at all, so a dangerous command
+    # placed second in a chain with no surrounding whitespace around the
+    # separator (confirmed live: cmd.split() on
+    # "${y:-\"a}b\"};git push --force" glues the separator onto its
+    # neighbors into one token, "git" never becomes its own window) evaded
+    # detection entirely -- rc=0 ALLOW on a real force-push. Fixed by
+    # regex-splitting on the separator set FIRST, keeping each separator as
+    # its own token (a subset of the OPERATORS set the window-builder below
+    # already checks against), then whitespace-splitting each remaining
+    # segment -- the resulting flat token list flows into the exact same
+    # window-building/dispatch loop below as the primary path, so every
+    # segment gets its own argv0 checked with no separate dispatch path to
+    # keep in sync. ( ) { } deliberately excluded from this split: unlike a
+    # bare ;/&&/||/|/&, they show up far more often as ordinary characters
+    # inside a ${...} body (this exact bug class) than as a real brace/
+    # subshell group in a command already headed for this raw fallback.
+    # Second-reviewer sweep, 2026-09-04: every downstream PH-based check in
+    # this whole dispatch loop (20+ distinct sites -- prefix-wrapper unwrap,
+    # rm -rf, find -exec/-delete, --no-verify, -c core.hooksPath, the git
+    # global-flag walk, the whole push/reset/clean/restore/checkout/switch/
+    # branch/commit/add family via the one shared leading-strip a few lines
+    # below, stash/worktree args[0] reads, the worktree -b/-B loop, dd of=,
+    # the SQL keyword match, and the Layer 3 standalone-vanish compaction)
+    # assumed its tokens either came from the primary, already-blanked path
+    # or contained no substitution syntax at all. Splitting the RAW,
+    # never-blanked cmd here (the shape this block shipped with) means EVERY
+    # one of those 20+ sites is blind on this fallback path the same way the
+    # two dispatch-duplication sites were before _has_raw_subst -- not one
+    # isolated gap, the whole downstream dispatch shares the same
+    # assumption. Patching each site individually is the same losing,
+    # one-spelling-at-a-time game this file own comments already call out
+    # elsewhere (GH #122/#123/#125/#129) -- so this fixes the ROOT of it
+    # instead: run the SAME _blank_substitutions/_newlines_to_seps/
+    # _normalize_ansi_c_quotes pipeline the primary path already uses,
+    # tokenize THAT (not the raw cmd) with the separator-aware split, so a
+    # real substitution reaching this fallback path carries PH into every
+    # downstream check exactly like the primary path already handles it --
+    # no per-site widening needed. Safe to reuse here even though this exact
+    # pipeline is what raised ValueError on the PRIMARY shlex path: the
+    # failure there was shlex own quote-balance requirement choking on a
+    # corrupted (quote-crossing) blank -- this fallback never runs shlex at
+    # all, just a regex split + whitespace split, neither of which cares
+    # whether quotes balance, so the same corruption that broke shlex is
+    # harmless here.
+    try:
+        shlex.split(cmd)
+        _fallback_src = _blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd)))
+        parts = re.split(r"(&&|\|\||;|\||&)", _fallback_src)
+        tokens = []
+        for part in parts:
+            if part in ("&&", "||", ";", "|", "&"):
+                tokens.append(part)
+            else:
+                tokens.extend(part.split())
+    except ValueError:
+        deny("could not safely tokenize command for pattern matching (unbalanced quote/substitution) - confirm with user first")
 windows, cur = [], []
 for tok in tokens:
     if tok in OPERATORS:
@@ -655,6 +796,27 @@ def basename(p):
 KNOWN_DANGEROUS = ("rm", "find", "git", "dd", "mysql", "psql", "sqlite3", "mariadb")
 KNOWN_GIT_SUBS = ("push", "reset", "clean", "restore", "checkout", "switch", "branch", "stash", "commit", "add", "worktree")
 
+# Coordinator review, 2026-09-04: the Finding-4 fallback tokens (used when
+# cmd raises ValueError under the primary shlex path but parses cleanly on
+# its own) come straight from cmd, never through _blank_substitutions -- so
+# a spliced dispatch token reaching this file only through the fallback
+# path (e.g. "gi$(true)t") still carries its literal substitution syntax
+# and never contains PH at all. Both duplication triggers below (this one
+# for argv0, the KNOWN_GIT_SUBS one further down for the git subcommand
+# token) are gated purely on "PH in ...", so a spliced token on the
+# fallback path sailed through unrecognized -- confirmed live:
+# "echo ${y:-\"a}b\"} ; gi$(true)t push --force" (the quote-crossing span
+# forces the fallback, the second window carries the splice) and the same
+# shape one window over with a spliced git SUBCOMMAND ("git pu$(true)sh
+# --force" in place of the argv0 splice) both exit 0, silent allow. Widened
+# both triggers to also fire on a token that still carries raw, unblanked
+# substitution syntax. A narrow, single-token check -- NOT this file own
+# bash-level _has_subst guard a few hundred lines up, which also matches a
+# bare "$" and would misfire on an ordinary "$PYTHON -m pytest"-shaped
+# token with no substitution at all.
+def _has_raw_subst(t):
+    return "`" in t or "$(" in t or "${" in t
+
 for w in windows:
     if not w:
         continue
@@ -677,7 +839,7 @@ for w in windows:
                 # it as the wrapped command and the real command ends up
                 # misplaced in rest instead of becoming argv0 (found live
                 # 2026-09-03).
-                t = rest[i].lstrip(PH)
+                t = rest[i].replace(PH, "")
                 if t == "-u" and i + 1 < len(rest):
                     i += 2
                 elif t.startswith("-"):
@@ -692,8 +854,8 @@ for w in windows:
         elif argv0 == "nice":
             i = 0
             # Same leading-PH fix as env above.
-            while i < len(rest) and rest[i].lstrip(PH).startswith("-"):
-                t = rest[i].lstrip(PH)
+            while i < len(rest) and rest[i].replace(PH, "").startswith("-"):
+                t = rest[i].replace(PH, "")
                 i += 1
                 if t == "-n" and i < len(rest):
                     i += 1
@@ -726,7 +888,7 @@ for w in windows:
             i = 0
             while i < len(rest):
                 # Same leading-PH fix as env/nice above.
-                t = rest[i].lstrip(PH)
+                t = rest[i].replace(PH, "")
                 bare = t.split("=", 1)[0]
                 if bare in LONG_VALUE_FLAGS:
                     i += 1 if "=" in t else min(2, len(rest) - i)
@@ -747,7 +909,7 @@ for w in windows:
         else:  # command, nohup, time — bare flags then the wrapped command
             i = 0
             # Same leading-PH fix as env/nice/sudo above.
-            while i < len(rest) and rest[i].lstrip(PH).startswith("-"):
+            while i < len(rest) and rest[i].replace(PH, "").startswith("-"):
                 i += 1
             if i >= len(rest):
                 break
@@ -768,7 +930,7 @@ for w in windows:
             if basename(t).replace(PH, "") in ("rm", "find", "dd", "git"):
                 argv0, rest = basename(t), rest[j + 1:]
                 break
-    elif argv0 == "docker" and rest and rest[0].lstrip(PH) == "exec":
+    elif argv0 == "docker" and rest and rest[0].replace(PH, "") == "exec":
         # "docker exec <flags> <container> <cmd...>" re-points argv0 to the
         # inner command so the SQL check below can fire on the wrapped
         # client (feeds A6 — mysql/psql/sqlite3/mariadb run inside a
@@ -777,14 +939,14 @@ for w in windows:
         # before the container name each let the real inner command slip
         # past this re-pointing (found live 2026-09-03).
         j = 1
-        while j < len(rest) and rest[j].lstrip(PH).startswith("-"):
+        while j < len(rest) and rest[j].replace(PH, "").startswith("-"):
             j += 1
         if j < len(rest):
             j += 1  # skip the container name/id
         if j < len(rest):
             argv0, rest = basename(rest[j]), rest[j + 1:]
 
-    for argv0 in (KNOWN_DANGEROUS if PH in argv0 else (argv0,)):
+    for argv0 in (KNOWN_DANGEROUS if (PH in argv0 or _has_raw_subst(argv0)) else (argv0,)):
         if argv0 == "rm":
             # Lowercase before matching. "rm -Rf" and "rm -R -f" bypassed
             # the lowercase-only "r"/"f" substring check (found 2026-07-01).
@@ -817,7 +979,7 @@ for w in windows:
                 # duplication above -- so a token that becomes flag-shaped
                 # once the substitution is assumed empty is treated as that
                 # flag.
-                t = t.lstrip(PH)
+                t = t.replace(PH, "")
                 if t.startswith("--"):
                     has_r = has_r or t == "--recursive"
                     has_f = has_f or t == "--force"
@@ -832,9 +994,9 @@ for w in windows:
         # "find $(true)-exec rm {} \;" blanks to "find PH-exec rm {} \;",
         # which the old exact "-exec" in rest membership test missed
         # entirely since the token no longer equals "-exec" at all.
-        if argv0 == "find" and any(t.lstrip(PH) in ("-exec", "-execdir") for t in rest) and "rm" in [basename(t) for t in rest]:
+        if argv0 == "find" and any(t.replace(PH, "") in ("-exec", "-execdir") for t in rest) and "rm" in [basename(t) for t in rest]:
             deny("find -exec/-execdir rm detected — destructive delete; " + delete_hint())
-        if argv0 == "find" and any(t.lstrip(PH) == "-delete" for t in rest):
+        if argv0 == "find" and any(t.replace(PH, "") == "-delete" for t in rest):
             deny("find -delete detected — destructive delete; " + delete_hint())
 
         if argv0 == "git" and rest:
@@ -846,7 +1008,7 @@ for w in windows:
             # Same leading-PH fix as below: "git commit $(true)--no-verify"
             # blanks to a "PH--no-verify" token that no longer equals
             # "--no-verify" at all, so the old exact membership test missed it.
-            if any(t.lstrip(PH) == "--no-verify" for t in w):
+            if any(t.replace(PH, "") == "--no-verify" for t in w):
                 deny("--no-verify bypasses safety hooks")
             # -c core.hooksPath=<path> (split "-c core.hooksPath=X" or joined
             # "-ccore.hooksPath=X") re-points git at a different hooks dir —
@@ -855,7 +1017,7 @@ for w in windows:
             # is not a meaningful re-point.
             hooks_path_val = None
             for idx, t in enumerate(w):
-                t_pf = t.lstrip(PH)  # same leading-PH fix as --no-verify above
+                t_pf = t.replace(PH, "")  # same leading-PH fix as --no-verify above
                 if t_pf == "-c" and idx + 1 < len(w) and w[idx + 1].startswith("core.hooksPath="):
                     hooks_path_val = w[idx + 1].split("=", 1)[1]
                 elif t_pf.startswith("-c") and t_pf[2:].startswith("core.hooksPath="):
@@ -875,8 +1037,8 @@ for w in windows:
             # stops this walk before the real subcommand, misplacing it
             # into args. Membership checks below already tolerate this;
             # args[0]-based ones (worktree/stash) do not.
-            while i < len(rest) and rest[i].lstrip(PH).startswith("-"):
-                t = rest[i].lstrip(PH)
+            while i < len(rest) and rest[i].replace(PH, "").startswith("-"):
+                t = rest[i].replace(PH, "")
                 if t in GIT_VALUE_GLOBALS:
                     i += 2  # bare value-taking global → skip flag + its value
                     continue
@@ -898,7 +1060,7 @@ for w in windows:
                 if skip:
                     skip = False
                     continue
-                if t.lstrip(PH) in ("-m", "--message"):
+                if t.replace(PH, "") in ("-m", "--message"):
                     skip = True
                     continue
                 scan.append(t)
@@ -914,9 +1076,9 @@ for w in windows:
             # it. Stripping a leading placeholder here, once, before any of
             # those branches run, covers all of them the same way the
             # dispatch-token duplication above already covers argv0/sub.
-            scan = [t.lstrip(PH) for t in scan]
+            scan = [t.replace(PH, "") for t in scan]
 
-            for sub in (KNOWN_GIT_SUBS if PH in sub else (sub,)):
+            for sub in (KNOWN_GIT_SUBS if (PH in sub or _has_raw_subst(sub)) else (sub,)):
                 if sub == "push" and any(
                     t in ("-f", "--force") or (t.startswith("--force") and not t.startswith("--force-with-lease"))
                     or (t.startswith("-") and not t.startswith("--") and "f" in t)
@@ -985,13 +1147,13 @@ for w in windows:
                     or ("--delete" in scan and "--force" in scan)
                 ):
                     deny("git branch -D / --delete --force force-deletes a branch, discarding unmerged commits — confirm with user first")
-                if sub == "stash" and args and args[0].lstrip(PH) in ("drop", "clear"):
+                if sub == "stash" and args and args[0].replace(PH, "") in ("drop", "clear"):
                     deny("git stash drop/clear discards stashed changes — confirm with user first")
                 if sub == "commit" and "--amend" in scan:
                     deny("git commit --amend rewrites history — confirm with user first")
                 if sub == "add" and any(t in ("-A", "--all", ".") for t in scan):
                     deny("git add -A/. stages everything — stage files by name instead")
-                if sub == "worktree" and args and args[0].lstrip(PH) == "add":
+                if sub == "worktree" and args and args[0].replace(PH, "") == "add":
                     # kbg single-branch doctrine gate. This is the ONLY enforcement
                     # point for the doctrine — a prior companion gate on the native
                     # WorktreeCreate event (worktree-create-block.sh) was removed
@@ -1021,7 +1183,7 @@ for w in windows:
                         # Leading-PH fix (confirmed live): a spliced -b flag
                         # no longer starts with a dash, so this doctrine
                         # gate silently ALLOWed a new non-develop branch.
-                        t = t.lstrip(PH)
+                        t = t.replace(PH, "")
                         if t in ("-b", "-B", "--branch") and i + 1 < len(args):
                             branch_name = args[i + 1]
                             break
@@ -1077,7 +1239,7 @@ for w in windows:
                                  "use detached worktrees, develop, or an existing branch. "
                                  "Remove /.kbg-no-worktree or /.mh-no-worktree to allow")
 
-        if argv0 == "dd" and any(t.lstrip(PH).startswith("of=/dev/") for t in rest):
+        if argv0 == "dd" and any(t.replace(PH, "").startswith("of=/dev/") for t in rest):
             deny("dd writing to a raw device — irrecoverable disk-level destruction")
 
         if argv0 in ("mysql", "psql", "sqlite3", "mariadb"):

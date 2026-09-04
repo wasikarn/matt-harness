@@ -580,8 +580,93 @@ CASES = [
      "tar -xf archive.tar $(true)-C repo1", {"repo1"}, None),
     ("dd of= via PH-before-prefix splice, not a dash flag but the same root cause (was a silent bypass)",
      "dd if=/dev/zero $(true)of=repo1/target.txt", {"repo1/target.txt"}, None),
+    # 2026-09-03 finding 6a: a $(...) body re-appended after " ; " landed inside a
+    # trailing "# comment" that was still open (shlex's comment handling stops only at
+    # a literal newline) -- the whole recovered write vanished into that comment.
+    ("comment-truncation: $(...) body then trailing # comment (was a silent bypass)",
+     "echo $(cp evil.sh repo1/f.txt)  # copy", {"repo1/f.txt"}, None),
+    # 2026-09-03 finding 6b: the ${...} closer-search doesn't track quote state over
+    # skipped characters, so a genuinely balanced default-value expansion containing a
+    # quoted "}" matched its closer at the wrong "}" and raised ValueError (a false
+    # deny on ordinary bash, not a real problem with the command).
+    ('param-expansion default with a quoted "}" no longer false-denies (was ValueError)',
+     'echo ${x:-"a}b"}', None, set()),
+    # Composite regression witness: an EARLIER version of the finding-6b fallback used a
+    # plain raw_cmd.split(), which fuses "repo1/f.txt;" into one word and collapses this
+    # into a single window -- the nonflag[-1] fallback then grabbed the trailing
+    # ${x:-"a}b"} token instead of the real cp target, a fail-open on a deny-gate (a
+    # write that should deny would have silently allowed). The separator-aware fallback
+    # keeps ";" as its own token so the real target still surfaces.
+    #
+    # Recorded red for THIS case specifically (not reproducible through this battery):
+    # the unfixed code raises ValueError on the PRECEDING case (the bare ${x:-"a}b"}
+    # probe two entries up) before this one ever runs, and this loop has no per-case
+    # try/except, so a battery run against unfixed code shows this case as a missing
+    # line, not a clean FAIL -- see the harness-limitation note below the CASES list.
+    # Verified instead by direct probe against the intermediate raw_cmd.split()
+    # fallback (2026-09-03, before the separator-aware split replaced it): got
+    # {'${x:-"a}b"}'} -- the real cp target was silently dropped. This case's PASS
+    # here is against the shipped separator-aware fallback, confirming it recovers
+    # {'repo1/f.txt'} where the intermediate version did not.
+    ("cp target still recovered when followed by a ${...} false-positive trigger (was fail-open)",
+     'cp evil.sh repo1/f.txt; echo ${x:-"a}b"}', {"repo1/f.txt"}, None),
+    # Finding 5 (2026-09-03, dispatch gap flagged separately from 6a/6b/8): _scan_once
+    # had no in_comment state, so a $(...) span appearing only inside a "# ..." comment
+    # still got matched and blanked, then re-appended by the finding-6a body-reappend as
+    # if it were a real statement -- a merely-commented-out command treated as live.
+    # Verified pre-fix (source reconstructed minus this hunk): this exact command
+    # returned {'b.sh', 'guarded/z.sh'} -- the commented-out target leaked in.
+    ("commented-out $(...) is inert, not treated as a live statement (was a false positive)",
+     'cp a.sh b.sh # note $(cp evil.sh guarded/z.sh)\necho hi', None, {"b.sh"}),
+    # Companion control: a GENUINE (non-commented) substitution on the same physical
+    # structure -- next line, not after a "#" -- must still be caught. Same before and
+    # after finding 5 (this is the case the fix must not break), so this is a control,
+    # not a regression witness on its own; it matters paired with the case above.
+    ("genuine (non-commented) $(...) on the same structure still caught (control)",
+     'cp a.sh b.sh\n$(cp evil.sh guarded/z.sh)', {"b.sh", "guarded/z.sh"}, None),
+    # 2026-09-03, cross-file reviewer finding: the finding-6b ValueError fallback
+    # tokenizes raw_cmd directly (never runs through _blank_substitutions), so a
+    # spliced argv0 in that path keeps its literal substitution syntax and never
+    # contains PH -- the PH-only GH #129 duplication trigger above can never fire
+    # on it by construction. Verified pre-fix (source reconstructed minus the
+    # _has_raw_subst widening): this exact command returned [] -- silent allow of
+    # a real write. _has_raw_subst(argv0) closes it by also triggering on raw
+    # backtick/$(/${ syntax, not just PH.
+    ("quote-crossing fallback + spliced argv0 still caught (was a silent allow)",
+     'echo ${y:-"a}b"} ; c$(true)p evil.sh target.txt', {"target.txt"}, None),
+    # 2026-09-04, third cross-file review: a mid-flag splice (PH landing INSIDE an
+    # already-dash-prefixed flag, not glued to the front of it) was invisible to the
+    # old leading-only t.lstrip(PH) -- "-\x01i" doesn't start with PH (it starts with
+    # "-"), so lstrip(PH) is a no-op and every startswith("-i")/exact-equality test
+    # missed it. Confirmed live pre-fix (source reconstructed minus the
+    # replace(PH, "")/_has_raw_subst widening): this exact command returned [] --
+    # sed's -i detection is the single outer gate for the whole branch, so the miss
+    # was a full silent bypass, not a degraded one.
+    ("sed -i via mid-flag PH splice (was a silent bypass, distinct from the leading-PH case above)",
+     "sed -$(true)i -e s/x/y/ repo1/target.txt", {"repo1/target.txt"}, None),
+    # Same mid-flag shape, via the ValueError-fallback path -- raw_cmd is tokenized
+    # directly there and never runs through _blank_substitutions, so "-$(true)i"
+    # keeps its literal, unblanked text (no PH byte at all for replace(PH, "") to
+    # strip). _has_raw_subst() closes it the same way it already does for argv0 and
+    # the Bash write-target fail-safe in main().
+    ("sed -i via mid-flag splice on the ValueError-fallback path (was a silent allow)",
+     'echo ${y:-"a}b"} ; sed -$(true)i -e s/x/y/ repo1/target.txt', {"repo1/target.txt"}, None),
+    # Negative control (noask): an ordinary sed with NO -i at all (a stream-editor
+    # read, not an in-place write) must not be false-flagged just because argv0 is
+    # "sed" -- guards against an overcorrection that treats every sed invocation as
+    # a write regardless of whether -i is actually present.
+    ("sed with no -i flag at all is not a write (noask negative control)",
+     "sed -e s/x/y/ repo1/target.txt", None, set()),
 ]
 
+# Known harness limitation, not fixed here (out of scope for this round -- flagged for
+# whoever next adds a case that legitimately raises): the loop below calls
+# wtg.bash_write_targets(cmd) with no per-case try/except, so a case that raises
+# ValueError kills the whole heredoc script mid-iteration instead of reporting a clean
+# FAIL for that one case -- every case after it in CASES silently never runs, with no
+# "crashed here" signal, just a shorter tally. Confirmed 2026-09-03 while red-testing
+# the finding-6b cases above: the unfixed code raised on the ${x:-"a}b"} case and the
+# composite case right after it never printed a line at all.
 fails = 0
 for desc, cmd, must_include, must_equal in CASES:
     got = set(wtg.bash_write_targets(cmd))
@@ -782,6 +867,78 @@ out=$( (cd "$WS" && echo "$(payload_bash "$QUOTED_PAREN_CMD")" \
   | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "negative control: quoted literal '(' in an argument is not a grouping operator -> still deny exit 2 on the real target" "$ok"
+
+# Finding 6b, full pipeline (2026-09-03): a genuinely balanced default-value expansion
+# containing a quoted "}" used to raise ValueError inside bash_write_targets() (the
+# ${...} closer-search doesn't track quote state), which main()'s catch turns into a
+# fail-closed deny -- a false deny on ordinary bash with no write target at all. This
+# distinguishes cleanly: exit 2 before this session's fix, exit 0 after.
+PARAM_EXPANSION_CMD='echo ${x:-"a}b"}'
+out=$( (cd "$WS" && echo "$(payload_bash "$PARAM_EXPANSION_CMD")" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "finding 6b: \${x:-\"a}b\"} default-value expansion no longer false-denies -> exit 0 (was exit 2)" "$ok"
+
+# Control, not a regression witness (test-honesty rule 6): a genuinely unterminated
+# quote is real ambiguity, not this scanner's own artifact -- it must still deny both
+# before and after the finding-6b fix (the fallback's own validity probe re-raises on
+# it). Exit code is identical pre- and post-fix; this only confirms the fail-closed
+# contract wasn't loosened by the fix, it is not evidence the fix does anything.
+MALFORMED_CMD='echo "unterminated'
+out=$( (cd "$WS" && echo "$(payload_bash "$MALFORMED_CMD")" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "control (unchanged both sides): genuinely unterminated quote still denies exit 2" "$ok"
+
+# 2026-09-03/04, second adversarial reviewer round: main()'s Bash-branch loop had no
+# PH/raw-subst fail-safe at all before resolving a yielded target through
+# os.path.abspath()/classify() -- unlike verifier-protect.sh's equivalent check. A splice
+# landing INSIDE the target itself (not just at argv0) survives all the way to that call.
+# Both cases below use the REAL absolute path to the guarded repo1 checkout -- the exploit
+# is specifically that a PH/raw-subst byte glued to the FRONT of an otherwise-absolute path
+# makes os.path.abspath() treat it as relative and reparent it under the hook's own cwd, so
+# it can never match under(fp, WORKSPACE).
+#
+# Bug 2 (more severe -- no fallback trigger needed, live on the ordinary primary path):
+# $(true) blanks to a leading PH byte fused onto the absolute path with no space between
+# them. Verified pre-fix (source reconstructed minus this hunk): exit 0, silent allow of a
+# real write into the guarded checkout.
+ABS_SPLICE_CMD='cp evil.sh $(true)'"$WS"'/repo1/target.txt'
+out=$( (cd "$WS" && echo "$(payload_bash "$ABS_SPLICE_CMD")" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "PH glued to an absolute guarded target still denies exit 2 (was a silent allow, no fallback needed)" "$ok"
+
+# Bug 1 (fallback-path variant, same shape as the finding-6b/argv0 fix): the leading
+# quote-crossing span forces the ValueError fallback, whose tokens come from raw_cmd and
+# never get PH-blanked at all -- the literal, unblanked "$(true)" is still glued to the
+# front of the absolute path, defeating abspath() the same way PH does.
+FALLBACK_ABS_SPLICE_CMD='echo ${y:-"a}b"} ; cp evil.sh $(true)'"$WS"'/repo1/target.txt'
+out=$( (cd "$WS" && echo "$(payload_bash "$FALLBACK_ABS_SPLICE_CMD")" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "raw \$(...) glued to an absolute guarded target via the fallback path still denies exit 2 (was a silent allow)" "$ok"
+
+# Round-5 regression, full pipeline (2026-09-04, third cross-file review): the confirmed
+# mid-flag splice payload run through main()/classify(), not just the bash_write_targets()
+# battery above. Real bash: "$(true)" evaluates to empty and vanishes, so this really runs
+# as "sed -i -e s/x/y/ repo1/f.txt" -- an in-place edit landing on the protected checkout.
+# Verified pre-fix (source reconstructed minus the replace(PH, "")/_has_raw_subst widening):
+# exit 0, silent allow.
+SED_MIDFLAG_CMD='sed -$(true)i -e s/x/y/ repo1/f.txt'
+out=$( (cd "$WS" && echo "$(payload_bash "$SED_MIDFLAG_CMD")" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "sed -i via mid-flag \$(true) splice denies exit 2 (was a silent allow, full pipeline)" "$ok"
+
+# Negative control (noask), full pipeline: the same benign no -i sed command as the battery
+# control above, run through main()/classify() -- must allow with no output at all, guarding
+# against an overcorrection that denies any sed invocation regardless of -i.
+SED_NOFLAG_CMD='sed -e s/x/y/ repo1/f.txt'
+out=$( (cd "$WS" && echo "$(payload_bash "$SED_NOFLAG_CMD")" \
+  | env MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= python3 "$GUARD") 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "sed with no -i is not a write, exit 0 no output (noask negative control, full pipeline)" "$ok"
 
 echo ""
 total=$((pass + fail))

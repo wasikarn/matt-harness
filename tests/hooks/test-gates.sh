@@ -538,6 +538,219 @@ test_deny "$IRRECOVERABLE" "Layer 3 companion: a standalone vanish sits between 
 test_allow "$IRRECOVERABLE" "Layer 3 negative control: \$(which git) status -- compacted window drops argv0 entirely, must stay ALLOW" \
   "$(bash_payload '$(which git) status')"
 
+# 2026-09-04 fresh-context review, 4 findings around _blank_substitutions
+# and its inner _scan_once closure.
+#
+# Finding 1 (HIGH, live): appending recovered substitution bodies with a
+# plain " ; " separator left no newline to terminate an earlier, still-open
+# "#" comment -- shlex's default comment-stripping then ate everything
+# appended after it, silently turning a real deny into an ALLOW. Fixed by
+# leading each appended body with a real newline (same idiom
+# _newlines_to_seps already uses for real newlines) so any open comment is
+# terminated before the next window starts.
+test_deny "$IRRECOVERABLE" "trailing comment after a live substitution buried the recovered body in an open shlex comment (echo \$(git push --force)  # push it, was silently ALLOWed)" \
+  "$(bash_payload 'echo $(git push --force)  # push it')"
+test_deny "$IRRECOVERABLE" "same bug via a # embedded inside an EARLIER recovered body (echo \$(echo hi # note) \$(git push --force), was silently ALLOWed)" \
+  "$(bash_payload 'echo $(echo hi # note) $(git push --force)')"
+test_deny "$IRRECOVERABLE" "baseline: same splice with no comment at all, no bug involved (must stay denied)" \
+  "$(bash_payload 'echo $(git push --force)')"
+
+# Finding 5 (MEDIUM, live, universal): _scan_once tracked in_squote/
+# in_dquote but had no in_comment state, so a substitution-shaped string
+# sitting INSIDE a real "#" comment still got matched, blanked, and its
+# body collected as if it were live code -- a false DENY on an innocent
+# command that real bash never executes. Fixed by porting the same
+# in_comment state machine _newlines_to_seps above already uses: checked
+# first in the loop, passthrough while active, ends at a literal newline.
+test_allow "$IRRECOVERABLE" "a substitution-shaped fake payload sitting inside a real # comment must not be recovered as a live body (git status # see also: \$(git push --force), followed by a real newline and echo done, was a false DENY)" \
+  "$(bash_payload $'git status # see also: $(git push --force)\necho done\n')"
+
+# Finding 4 (MEDIUM, live): _blank_substitutions own closer-search for a
+# backtick/\$(...)/\${...} span does not track quote state for characters it
+# skips while hunting the terminator -- crossing a real quote character
+# (ordinary interpreter-heredoc content full of curly braces can do this)
+# silently desyncs in_squote/in_dquote for the rest of the scan, leaving the
+# final string quote-unbalanced even though the ORIGINAL command was
+# perfectly valid. Since commit c2722488 removed the old cmd.split()
+# fallback in favor of a hard deny on ValueError, this could turn an
+# ordinary read-only heredoc into a false DENY with no override. Fixed by
+# re-parsing the ORIGINAL, pre-blanking cmd as a predicate on ValueError: if
+# it parses cleanly, the corruption is self-inflicted by our own blanking
+# pass, so fall back to a separator-aware split instead of hard-denying a
+# benign command; if the original also fails to parse, it really is
+# malformed and still denies.
+test_allow "$IRRECOVERABLE" "read-only python3 heredoc with an unmatched \${ inside a properly-quoted string desyncs _blank_substitutions own quote tracking (was a false DENY with no override)" \
+  "$(bash_payload $'python3 - <<\'PY\'\n "10k unmatched ${ (20KB)": "${ "*10000,\n}\nPY\n')"
+# Negative control: a genuinely malformed command (unterminated quote, no
+# _scan_once span involved at all) must still deny with the same message --
+# proves the fix does not turn a real bypass back on.
+test_deny "$IRRECOVERABLE" "genuinely malformed command, unterminated quote unrelated to any substitution span (must still deny)" \
+  "$(bash_payload "echo 'unterminated")"
+# Negative control: the two GH #129 apostrophe-in-body bypass tests already
+# above (backtick/\$(...) splice with an apostrophe inside the recovered
+# body) must still deny -- the ORIGINAL cmd has the same unbalanced
+# apostrophe as the blanked one, so the re-parse predicate also fails and
+# this still falls through to the hard deny, not a naive-split ALLOW.
+test_deny "$IRRECOVERABLE" "Finding 4 fix must not reopen the GH #129 apostrophe-in-body bypass, backtick form (gi\`it's\`t push --force, must stay DENY)" \
+  "$(bash_payload $'gi`it\'s`t push --force')"
+test_deny "$IRRECOVERABLE" "Finding 4 fix must not reopen the GH #129 apostrophe-in-body bypass, \$(...) form (gi\$(it's)t push --force, must stay DENY)" \
+  "$(bash_payload $'gi$(it\'s)t push --force')"
+
+# Coordinator review, 2026-09-04: the Finding 4 fallback above first shipped
+# as a bare whitespace-only cmd.split(), which is itself exploitable -- this
+# file own punctuation_chars=True shlex path (a few lines above this whole
+# block) exists specifically so a compound command's LATER segments (after
+# ;/&&/||/|/&) each get their own window and argv0 check (see the
+# "second command in the chain never had its own argv0 checked" comment
+# there). A bare .split() has no separator awareness, so a dangerous
+# command placed second in a chain, joined with NO surrounding whitespace
+# around the separator, evaded detection entirely through the fallback --
+# confirmed live: rc=0 ALLOW on a real force-push. Fixed by regex-splitting
+# on the separator set first (keeping each separator its own token) before
+# whitespace-splitting each segment, so the fallback tokens flow through
+# the same per-window dispatch as the primary path instead of landing in
+# one flat undivided window.
+test_deny "$IRRECOVERABLE" "Finding 4 fallback must not glue a dangerous SECOND command onto its no-space ; separator (echo \${y:-\"a}b\"};git push --force, was silently ALLOWed)" \
+  "$(bash_payload 'echo ${y:-"a}b"};git push --force')"
+test_deny "$IRRECOVERABLE" "same bug via a no-space && separator (echo \${y:-\"a}b\"}&&git push --force, was silently ALLOWed)" \
+  "$(bash_payload 'echo ${y:-"a}b"}&&git push --force')"
+test_deny "$IRRECOVERABLE" "baseline: same compound command with the ; surrounded by whitespace, no bug involved (must stay denied)" \
+  "$(bash_payload 'echo ${y:-"a}b"} ; git push --force')"
+
+# Coordinator review, 2026-09-04, second pass: the Finding 4 fallback tokens
+# come straight from the ORIGINAL cmd, never through _blank_substitutions --
+# so a spliced dispatch token reaching this file only through the fallback
+# path (e.g. "gi\$(true)t") still carries its literal substitution syntax
+# and never contains PH at all. The GH #129 splice-duplication trigger (both
+# the argv0 site against KNOWN_DANGEROUS and the git-subcommand site against
+# KNOWN_GIT_SUBS) was gated purely on "PH in ...", so a spliced token on the
+# fallback path sailed through unrecognized -- confirmed live: a
+# quote-crossing \${...} span forcing the fallback, followed by a spliced
+# argv0 OR a spliced git subcommand, both exit 0 silent allow. Fixed by a
+# new _has_raw_subst(t) helper (checks only for a literal backtick, "\$(",
+# or "\${" in that one token -- deliberately narrower than this file own
+# bash-level _has_subst fast-path guard, which also matches a bare "\$" and
+# would misfire on an ordinary "\$PYTHON -m pytest"-shaped token) widening
+# both duplication triggers.
+test_deny "$IRRECOVERABLE" "Finding 4 fallback duplication trigger missed a spliced ARGV0 with no PH (echo \${y:-\"a}b\"} ; gi\$(true)t push --force, was silently ALLOWed)" \
+  "$(bash_payload 'echo ${y:-"a}b"} ; gi$(true)t push --force')"
+test_deny "$IRRECOVERABLE" "same bug, spliced git SUBCOMMAND instead of argv0 (echo \${y:-\"a}b\"} ; git pu\$(true)sh --force, was silently ALLOWed)" \
+  "$(bash_payload 'echo ${y:-"a}b"} ; git pu$(true)sh --force')"
+test_deny "$IRRECOVERABLE" "same argv0 bug with the dangerous command BEFORE the quote-crossing span (gi\$(true)t push --force ; echo \${y:-\"a}b\"}, was silently ALLOWed)" \
+  "$(bash_payload 'gi$(true)t push --force ; echo ${y:-"a}b"}')"
+test_deny "$IRRECOVERABLE" "same subcommand bug with the dangerous command BEFORE the quote-crossing span (git pu\$(true)sh --force ; echo \${y:-\"a}b\"}, was silently ALLOWed)" \
+  "$(bash_payload 'git pu$(true)sh --force ; echo ${y:-"a}b"}')"
+# Negative controls: the widened trigger must not over-deny once the
+# fallback path is live -- a splice resolving to a BENIGN candidate must
+# still allow, proving the duplication loop substitutes the candidate name
+# for the downstream checks rather than pattern-matching the raw garbled
+# literal.
+test_allow "$IRRECOVERABLE" "fallback-path splice resolving to a benign git subcommand (echo \${y:-\"a}b\"} ; gi\$(true)t status, must stay ALLOW even though duplication tries argv0==git -- the quote-crossing span forces the fallback so this token never gets PH at all, only _has_raw_subst catches it)" \
+  "$(bash_payload 'echo ${y:-"a}b"} ; gi$(true)t status')"
+
+# Second-reviewer systematic sweep, 2026-09-04: EVERY downstream PH-based
+# check in the whole dispatch loop (prefix-wrapper unwrap, xargs/docker
+# re-pointing, rm -rf, find -exec/-delete, the whole git push/reset/clean/
+# restore/checkout/switch/branch/commit/add family via the one shared
+# leading-strip, stash/worktree args[0] reads, the worktree -b/-B loop, dd
+# of=, the SQL keyword match, and the Layer 3 standalone-vanish compaction)
+# assumed its tokens either came from the primary, already-blanked path or
+# carried no substitution syntax at all -- the Finding-4 fallback tokens
+# come from cmd directly and never contained PH, so a raw splice reaching
+# ANY of these sites only via the fallback path sailed through unrecognized
+# the same way the two dispatch-duplication sites did before _has_raw_subst
+# (confirmed live for each site below: rc=0 before, rc=2 after). Fixed at
+# the root instead of one spelling at a time: the fallback now tokenizes
+# the SAME _blank_substitutions/_newlines_to_seps/_normalize_ansi_c_quotes
+# output the primary path already uses (safe to reuse even though that
+# exact output is what raised ValueError on the primary shlex path -- this
+# fallback never runs shlex, just a regex+whitespace split, neither of
+# which cares whether quotes balance), so a real substitution on this path
+# now carries PH into every downstream check exactly like the primary path.
+FORCE_FALLBACK='echo ${y:-"a}b"} ; '
+test_deny "$IRRECOVERABLE" "sweep: env wrapper flag splice, fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}env \$(true)-u FOO git worktree add -b evil /tmp/wt-sweep-env")"
+test_deny "$IRRECOVERABLE" "sweep: nice wrapper flag splice, fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}nice \$(true)-n5 git worktree add -b evil /tmp/wt-sweep-nice")"
+test_deny "$IRRECOVERABLE" "sweep: sudo wrapper flag splice, fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}sudo \$(true)-u alice git worktree add -b evil /tmp/wt-sweep-sudo")"
+test_deny "$IRRECOVERABLE" "sweep: command wrapper flag splice, fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}command \$(true)-p git worktree add -b evil /tmp/wt-sweep-cmd")"
+test_deny "$IRRECOVERABLE" "sweep: xargs mid-basename splice, fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}echo x | xargs g\$(true)it worktree add -b evil /tmp/wt-sweep-xargs")"
+test_deny "$IRRECOVERABLE" "sweep: docker exec re-point splice, fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}docker exec \$(true)-i c1 mysql -e \"DROP TABLE users\"")"
+test_deny "$IRRECOVERABLE" "sweep: rm -rf leading-dash splice, fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}rm \$(true)-rf /tmp/x")"
+test_deny "$IRRECOVERABLE" "sweep: find -exec splice, fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}find /tmp/x \$(true)-exec rm {} \\;")"
+test_deny "$IRRECOVERABLE" "sweep: find -delete splice, fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}find /tmp/x \$(true)-delete")"
+test_deny "$IRRECOVERABLE" "sweep: git --no-verify splice, fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}git commit \$(true)--no-verify -m msg")"
+test_deny "$IRRECOVERABLE" "sweep: git push --force splice reaching scan, fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}git push \$(true)--force origin develop")"
+test_deny "$IRRECOVERABLE" "sweep: git clean -f splice, fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}git clean \$(true)-f")"
+test_deny "$IRRECOVERABLE" "sweep: git stash drop splice on args[0], fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}git stash \$(true)drop")"
+test_deny "$IRRECOVERABLE" "sweep: git worktree add subcommand splice on args[0], fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}git worktree \$(true)add -b evil /tmp/wt-sweep-subcmd")"
+test_deny "$IRRECOVERABLE" "sweep: git worktree -b flag splice, fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}git worktree add \$(true)-b evil /tmp/wt-sweep-branch")"
+test_deny "$IRRECOVERABLE" "sweep: dd of=/dev splice, fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}dd if=/dev/zero \$(true)of=/dev/sda")"
+test_deny "$IRRECOVERABLE" "sweep: SQL DROP mid-keyword splice, fallback path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}mysql -e \"DR\$(true)OP TABLE users\"")"
+test_deny "$IRRECOVERABLE" "sweep: Layer 3 standalone raw vanish before git, fallback path (was silently ALLOWed)" \
+  "$(bash_payload 'echo ${y:-"a}b"} ; $(true) git worktree add -b evil /tmp/wt-sweep-vanish')"
+# Negative controls: the systemic fallback-blanking fix must not over-deny.
+test_allow "$IRRECOVERABLE" "sweep neg: benign command after a forced fallback (must ALLOW)" \
+  "$(bash_payload "${FORCE_FALLBACK}ls -la")"
+test_allow "$IRRECOVERABLE" "sweep neg: git status after a forced fallback (must ALLOW)" \
+  "$(bash_payload "${FORCE_FALLBACK}git status")"
+test_allow "$IRRECOVERABLE" "sweep neg: git push safe after a forced fallback (must ALLOW)" \
+  "$(bash_payload "${FORCE_FALLBACK}git push origin develop")"
+test_allow "$IRRECOVERABLE" "sweep neg: commit message mentioning rm -rf, fallback path (must ALLOW)" \
+  "$(bash_payload "${FORCE_FALLBACK}git commit -m \"docs: warn against rm -rf\"")"
+
+# Third cross-file review, 2026-09-04: a PH/raw-subst splice landing MID-FLAG
+# (not leading) defeated every flag-recovery check written as
+# "t.lstrip(PH) == '--force'" -- lstrip only strips from the very front of a
+# string, so a placeholder byte sitting in the MIDDLE of the token (e.g.
+# --for<PH>ce) left the comparison false forever, the same flag silently
+# never recognized. Confirmed live at HEAD before this fix: --for$(true)ce,
+# --har$(true)d, and --am$(true)end all exit 0 (silent allow) on git
+# push/reset/commit respectively -- a real force-push/hard-reset/amend
+# bypass, pre-existing, not introduced this session. Root cause is the same
+# class already closed at the dispatch-duplication sites (PH/raw-subst
+# checked via _has_raw_subst) and at the SQL-keyword check (already using
+# full removal) -- fixed here by porting that same treatment
+# (str.replace(PH, "") instead of str.lstrip(PH)) to every flag-recovery
+# site, so a placeholder anywhere in the token is removed before comparison,
+# not just a leading one. Also corrected a stale comment (~line 397) that
+# had claimed mid-flag splicing was an accepted out-of-scope non-goal that
+# "stays recognizable as a flag" -- that claim was factually wrong per the
+# live bypasses just confirmed.
+test_deny "$IRRECOVERABLE" "mid-flag splice, git push --force (--for\$(true)ce, was silently ALLOWed)" \
+  "$(bash_payload 'git push --for$(true)ce origin develop')"
+test_deny "$IRRECOVERABLE" "mid-flag splice, git reset --hard (--har\$(true)d, was silently ALLOWed)" \
+  "$(bash_payload 'git reset --har$(true)d HEAD~1')"
+test_deny "$IRRECOVERABLE" "mid-flag splice, git commit --amend (--am\$(true)end, was silently ALLOWed)" \
+  "$(bash_payload 'git commit --am$(true)end -m x')"
+test_deny "$IRRECOVERABLE" "mid-flag splice reaches the flag check via the fallback path too, not just the primary shlex path (was silently ALLOWed)" \
+  "$(bash_payload "${FORCE_FALLBACK}git push --for\$(true)ce origin develop")"
+# Negative controls: the same flags with no splice at all must stay denied
+# exactly as before -- str.replace(PH, "") on a token with no PH byte is a
+# no-op, so this proves the fix is a strict widening, not a behavior change
+# for the already-working case.
+test_deny "$IRRECOVERABLE" "baseline: plain --force with no splice still denies (unaffected by the fix)" \
+  "$(bash_payload 'git push --force origin develop')"
+test_deny "$IRRECOVERABLE" "baseline: plain --hard with no splice still denies (unaffected by the fix)" \
+  "$(bash_payload 'git reset --hard HEAD~1')"
+test_deny "$IRRECOVERABLE" "baseline: plain --amend with no splice still denies (unaffected by the fix)" \
+  "$(bash_payload 'git commit --amend -m x')"
+
 test_allow "$IRRECOVERABLE" "git push --force-with-lease (safe variant)" \
   "$(bash_payload 'git push --force-with-lease origin develop')"
 test_allow "$IRRECOVERABLE" "git push --force-with-lease with refspec (still safe)" \
@@ -922,6 +1135,25 @@ test_deny  "$AGENT_RECURSION_GUARD" "spawn hidden behind a pipe inside a single-
 # invocation that itself carries no spawn flag.
 test_allow "$AGENT_RECURSION_GUARD" "unrelated later command's flag does not leak back to claude" \
   "$(bash_agent_payload 'claude --version ; othertool -p' fork)"
+
+# GH #121, 2026-09-04: heredoc-body stripping regression coverage. A
+# `git commit -m "$(cat <<'EOF' ... EOF)"` commit message (this repo's own
+# documented heredoc convention) whose body merely MENTIONS "feat(claude):"
+# and, on a later unrelated line, "--bg" was scanned as if the heredoc body
+# were real shell syntax and falsely denied -- the body is literal inert
+# data, not a command, unless the heredoc feeds an interpreter. Fixed by
+# stripping non-interpreter-fed heredoc bodies before the anchor scan (see
+# the gate's own "Heredoc-body stripping" comment block). This is the
+# issue's exact repro shape, not a paraphrase.
+test_allow "$AGENT_RECURSION_GUARD" "heredoc-authored commit message mentioning feat(claude): and --bg in unrelated prose lines no longer false-blocks (GH #121 exact repro)" \
+  "$(bash_agent_payload $'git commit -m "$(cat <<\'EOF\'\nfeat(claude): document the nested-spawn gate heredoc fix\nunrelated later line just happens to mention --bg here\nEOF\n)"' fork)"
+# Dangerous-direction control: a heredoc body that DOES feed an interpreter
+# is executable code, not inert data, so a real nested `claude -p` spawn
+# hidden inside one must still be caught -- proving the #121 fix stripped
+# only inert bodies and did not open a bypass via the interpreter-fed path.
+test_deny  "$AGENT_RECURSION_GUARD" "nested claude spawn hidden inside an interpreter-fed heredoc body still blocked (bash <<EOF ... claude -p ... EOF, GH #121 dangerous-direction control)" \
+  "$(bash_agent_payload $'bash <<EOF\nclaude -p "evil"\nEOF' fork)"
+
 test_allow "$TASK_COMPLETE" "non-TaskUpdate tool with agent_type (out of scope)" \
   "$(python3 -c 'import json; print(json.dumps({"tool_name":"Bash","tool_input":{"command":"ls"},"agent_type":"mh:build-error-resolver"}))')"
 
@@ -1177,6 +1409,33 @@ test_nopython_allow() {
   rm -f "$errf"
 }
 
+# test_documented_fastpath_allow <gate> <desc> <payload> [extra env VAR=VAL...]
+# Inverse of test_nopython_allow above (same NOPY_BIN instrument, opposite
+# expectation): asserts rc=0 WITHOUT the "python3 not found" note, i.e. the
+# fast path exited before ever reaching the deeper guard. Used ONLY for a
+# checked-and-ruled-out gap (GH #134: a $/backtick that arrives JSON
+# \uXXXX-escaped is invisible to the raw-string _has_subst scan in
+# irrecoverable.sh, so it fast-exits even around a spliced destructive argv0
+# -- confirmed NON-LIVE by capturing a real Claude Code hook payload, see the
+# comment at the _has_subst guard site). This locks in TODAY's designed
+# fast-path-allow so a silent regression is noticed; if a future change
+# makes this defer to python3 instead, that's a welcome tightening, not a
+# failure here -- update this test rather than treating it as broken.
+test_documented_fastpath_allow() {
+  local gate="$1" desc="$2" payload="$3"; shift 3
+  local rc errf
+  errf=$(mktemp "${TMPDIR:-/tmp}/kbg-nopy-err.XXXXXX")
+  rc=$(echo "$payload" | env "$@" PATH="$NOPY_BIN" bash "$gate" 2>"$errf"; echo $?)
+  if [[ "$rc" == "0" ]] && ! grep -q 'python3 not found' "$errf"; then
+    echo "  ✅ DOCUMENTED FAST-PATH ALLOW (GH #134, non-live): $desc"
+    pass=$((pass + 1))
+  else
+    echo "  ❌ documented fast-path allow expected (rc=0, no portability note) but got rc=$rc, stderr: $(cat "$errf")" >&2
+    fail=$((fail + 1))
+  fi
+  rm -f "$errf"
+}
+
 NOPY_AG_HOME=$(mktemp -d "${TMPDIR:-/tmp}/kbg-nopy-home.XXXXXX")
 mkdir -p "$NOPY_AG_HOME/.claude/plugins/cache/wasikarn/jira-acli"
 
@@ -1225,6 +1484,19 @@ test_nopython_allow "$IRRECOVERABLE" "irrecoverable: \$@-split argv0 (gi\$@t pus
   "$(bash_payload 'gi$@t push --force origin develop')"
 test_nopython_allow "$IRRECOVERABLE" "irrecoverable: \$*-split argv0 (gi\$*t push --force) still reaches the guard, not fast-path-exited" \
   "$(bash_payload 'gi$*t push --force origin develop')"
+# GH #134: a $ that arrives JSON-\uXXXX-escaped instead of as a literal byte
+# is invisible to the raw _has_subst scan above -- json.loads would decode
+# $ back to $ (recovering the same "gi${x}t push --force" splice as the
+# ${x} case above) but the bash-level fast path never sees a $ or backtick
+# in this shape, so it currently fast-exits with zero python3 spawn. Checked
+# and ruled out as a live bypass (2026-09-04): captured this session's own
+# real PreToolUse hook payload for a Bash command with a literal $/backtick
+# and confirmed Claude Code's serializer emits the literal byte, never
+# \uXXXX, for plain ASCII -- see the comment at the _has_subst guard site in
+# irrecoverable.sh. This test locks in TODAY's documented fast-path-allow
+# so a future refactor can't silently change it without someone noticing.
+test_documented_fastpath_allow "$IRRECOVERABLE" "irrecoverable: JSON \\u0024-escaped \$ around a \${x} splice (gi\\u0024{x}t push --force) -- raw scan blind, documented non-live gap" \
+  '{"tool_name":"Bash","tool_input":{"command":"gi\u0024{x}t push --force origin develop"}}'
 test_nopython_allow "$VERIFIER_PROTECT" "verifier-protect: Write to a gate path passes with note" \
   "$(write_payload 'hooks/gates/x.sh' 'echo y')"
 test_nopython_allow "$DB_WRITE_GATE" "db-write: SQL write passes with note" \
