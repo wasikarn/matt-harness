@@ -101,7 +101,58 @@ run_gate "git restore foo.txt" "agent1"; rc=$?
 ok=1; [ "$rc" -eq 0 ] && ok=0
 check "restore not handled by this gate (covered by gate:bash:irrecoverable instead)" "$ok"
 
-# --- (7) malformed/non-JSON stdin: fail-safe allow --- #
+# --- (7) global-flag bypass fix (2026-09-04, verifier-found): a git global
+# flag between "git" and the subcommand used to slip the subcommand check
+# entirely (dm was tried against "-C"/"--no-pager"/etc instead of the real
+# verb). Must all deny now. --- #
+for cmd in \
+  "git -C /repo stash" \
+  "git --no-pager clean -d" \
+  "git -c core.x=y reset" \
+  "git --git-dir=.git stash"
+do
+  run_gate "$cmd" "agent1"; rc=$?
+  ok=1; [ "$rc" -eq 2 ] && ok=0
+  check "global-flag bypass fixed, now denied: $cmd" "$ok"
+done
+
+# --- (8) sudo/xargs wrapper (2026-09-04, verifier-found second half of the
+# same bug): deliberately fixed rather than left as a documented non-goal --
+# the anchor now walks past an optional leading sudo/xargs wrapper too. --- #
+for cmd in \
+  "sudo git stash" \
+  "xargs git stash" \
+  "sudo -u someuser git stash"
+do
+  run_gate "$cmd" "agent1"; rc=$?
+  ok=1; [ "$rc" -eq 2 ] && ok=0
+  check "sudo/xargs wrapper fixed, now denied: $cmd" "$ok"
+done
+
+# --- (9) missing re.MULTILINE fix (2026-09-04, verifier-found): a genuine
+# multi-line Bash command (heredoc/multi-line script) puts "git reset" at
+# the start of its OWN line, not absolute string offset 0 -- the old
+# anchor only matched offset 0 and silently allowed this. Uses printf for
+# a real embedded newline, not echo, since echo's backslash-escape
+# behavior differs across shells (zsh interprets \n by default; bash does
+# not -- caught live while verifying this fix). --- #
+run_gate "$(printf 'ls\ngit reset')" "agent1"; rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "multi-line command: git reset at start of its own line now denied" "$ok"
+
+# --- (10) quote-aware anchor fix (2026-09-04, verifier-found false
+# positive): a `;`/`&`/`|`/`(` sitting INSIDE a quoted argument used to be
+# treated as a real command-separator anchor, wrongly denying an ordinary
+# safe command. Must now allow. --- #
+run_gate 'git commit -m "fix; git reset was wrong"' "agent1"; rc=$?
+ok=1; [ "$rc" -eq 0 ] && ok=0
+check "false positive fixed: separator inside quotes no longer anchors" "$ok"
+
+run_gate 'echo "a; git stash"' "agent1"; rc=$?
+ok=1; [ "$rc" -eq 0 ] && ok=0
+check "false positive fixed: quoted prose with a git verb allowed" "$ok"
+
+# --- (11) malformed/non-JSON stdin: fail-safe allow --- #
 out=$(echo "not json" | bash "$GATE" 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "malformed stdin: fail-safe allow, exit 0, no stdout" "$ok"
