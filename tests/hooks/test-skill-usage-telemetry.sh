@@ -12,6 +12,7 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HOOK="$ROOT/hooks/session/skill-usage-telemetry.sh"
 HEALTH_PY="$ROOT/skills/meta/harness-audit/scripts/harness-health.py"
+HEALTH_SH="$ROOT/skills/meta/harness-audit/scripts/health.sh"
 
 pass=0
 fail=0
@@ -355,6 +356,27 @@ if echo "$ds_json" | jq -e '
 else
   echo "  ❌ --json dead_surfaces payload didn't match expected shape, got:" >&2
   echo "$ds_json" >&2
+  fail=$((fail + 1))
+fi
+
+# health.sh's own root resolution (code review, #136 follow-up): the wrapper
+# computes __root from ITS OWN file location, not from a passed-in --root, so
+# this must actually invoke health.sh (not harness-health.py --root) against
+# a fixture laid out at the same relative depth
+# (<root>/skills/meta/harness-audit/scripts/health.sh) to catch an off-by-one
+# in that path math. A wrong __root here silently resolves to a directory one
+# level too shallow, which harness-health.py reads as an EMPTY fleet --
+# "0 dead skill(s)" -- not an error, so nothing else would ever catch it.
+mkdir -p "$DS_TMP/skills/meta/harness-audit/scripts"
+cp "$HEALTH_SH" "$DS_TMP/skills/meta/harness-audit/scripts/health.sh"
+cp "$HEALTH_PY" "$DS_TMP/skills/meta/harness-audit/scripts/harness-health.py"
+ds_wrapper_out=$(bash "$DS_TMP/skills/meta/harness-audit/scripts/health.sh" --last 100 --skills "$DS_SKILLS_LEDGER" --costs "$DS_COSTS_LEDGER" 2>/dev/null)
+if echo "$ds_wrapper_out" | /usr/bin/grep -qE '\| skill \| mh:dead-skill \|'; then
+  echo "  ✅ HEALTH.SH ROOT RESOLUTION: wrapper's own __root math finds the fixture fleet (not a fabricated empty all-clear)"
+  pass=$((pass + 1))
+else
+  echo "  ❌ health.sh should resolve __root to the fixture root and list mh:dead-skill, got:" >&2
+  echo "$ds_wrapper_out" >&2
   fail=$((fail + 1))
 fi
 
