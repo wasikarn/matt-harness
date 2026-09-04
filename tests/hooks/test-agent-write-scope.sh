@@ -40,9 +40,13 @@ new_gitfix() { # new_gitfix -> prints the new repo dir path
   echo "$d"
 }
 
-run_gate() { # run_gate <dir> <payload> -> sets rc, OUT, ERRTXT
-  OUT=$( (cd "$1" && HOME="$FIXDIR" bash "$GATE") <<<"$2" 2>"$ERR"); rc=$?
-  ERRTXT=$(cat "$ERR")
+run_gate() { # run_gate <dir> <payload> -> sets rc; gate stderr lands in $ERR
+  # No OUT/ERRTXT capture here (unlike the sibling test-main-exec-guard.sh
+  # run()): this sensor never denies and never has a decision channel to
+  # verify -- every assertion in this file reads the JOURNAL FILE CONTENT
+  # (see header), not stdout/stderr. $ERR is kept on disk for post-mortem
+  # if a check fails.
+  (cd "$1" && HOME="$FIXDIR" bash "$GATE") <<<"$2" >/dev/null 2>"$ERR"; rc=$?
 }
 
 write_payload() { # write_payload <tool_name> <agent_id> <path>
