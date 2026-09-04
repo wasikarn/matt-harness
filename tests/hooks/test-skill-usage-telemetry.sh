@@ -444,6 +444,7 @@ if echo "$ds_json" | jq -e '
      and .dead_surfaces.hooks.source_missing == true
      and .dead_surfaces.skills_source_missing == false
      and .dead_surfaces.costs_source_missing == false
+     and (.dead_surfaces.coverage | contains("preloaded") and contains("typed-slash") and contains("script-run"))
    ' >/dev/null 2>&1; then
   echo "  ✅ JSON PAYLOAD: --json carries dead_surfaces with matching skills/agents/hooks content (incl. #136 fix 1/2/3 fields)"
   pass=$((pass + 1))

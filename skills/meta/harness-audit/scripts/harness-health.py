@@ -313,6 +313,13 @@ def compute_dead_surfaces(root, skill_rows, costs_path, skills_path):
     return {
         "root": root,
         "plugin": plugin,
+        # Fix 4 (#136): --json is output too -- a consumer reading dead_skills
+        # bare would have no way to know the ledgers can't see preloaded,
+        # typed-slash, or script-run invocations. State it in the payload,
+        # not just the markdown heading/coverage-note text.
+        "coverage": ("model-issued Skill-tool calls and subagent Task invocations only; "
+                     "preloaded (see preloaded_by), typed-slash, and script-run "
+                     "invocations leave no row in either ledger"),
         "dead_skills": (None if dead_skills is None else
                          [{"name": n, "manual_only": m, "preloaded_by": p} for n, m, p in dead_skills]),
         "skills_path": skills_path,
