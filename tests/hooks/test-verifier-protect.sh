@@ -817,6 +817,39 @@ ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "realistic modestly-sized command, well under the GH #140 length cap -> still allows" "$ok"
 
 echo ""
+echo "=== missing sibling .py (corrupted/partial plugin install; follow-up to #146) ==="
+# GH #146 extracted this gate's embedded python3 -c block into a sibling
+# verifier-protect.py, resolved via "$(dirname "$0")/verifier-protect.py". If
+# that sibling is missing or unreadable, this gate's own documented contract
+# (header comment: "exit 0 + ask JSON on internal error too -- fail-safe: an
+# unparseable payload must never resolve to a silent allow on a
+# tamper-resistance gate") must still hold: emit an ask JSON (exit 0), not a
+# bare nonzero exit carrying a raw "python3: can't open file ..." message.
+# Simulate by copying ONLY the .sh into an isolated scratch dir (never touch
+# the real repo file) so $(dirname "$0") resolves to a directory with no
+# verifier-protect.py sibling.
+MISSPY_VP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/kbg-misspy-vp.XXXXXX")
+cp "$GUARD" "$MISSPY_VP_DIR/verifier-protect.sh"
+_errf=$(mktemp "${TMPDIR:-/tmp}/kbg-misspy-vp-err.XXXXXX")
+_out=$(payload_bash "cp evil.sh hooks/gates/evil.sh" | bash "$MISSPY_VP_DIR/verifier-protect.sh" 2>"$_errf")
+_rc=$?
+_ok=1
+# Real JSON parse, not a substring grep -- a grep on the literal
+# '"permissionDecision": "ask"' text would also pass on a typo'd sibling key
+# (hookEventName, permissionDecisionReason) that Claude Code's hook-output
+# parser would then fail to recognize, silently falling through to allow on
+# a tamper-resistance gate -- exactly the fail-open this fix exists to avoid.
+if [ "$_rc" -eq 0 ] \
+   && echo "$_out" | python3 -c 'import json,sys
+d=json.load(sys.stdin)["hookSpecificOutput"]
+sys.exit(0 if d["hookEventName"] == "PreToolUse" and d["permissionDecision"] == "ask" and d["permissionDecisionReason"] else 1)' 2>/dev/null \
+   && ! /usr/bin/grep -qi "can't open file\|Traceback" "$_errf"; then
+  _ok=0
+fi
+check "missing sibling verifier-protect.py -> ask JSON (exit 0), no raw traceback" "$_ok"
+rm -f "$_errf"
+
+echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
 [ "$fail" -eq 0 ] && exit 0 || exit 1

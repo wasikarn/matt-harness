@@ -1651,6 +1651,37 @@ fi
 rm -f "$_errf"
 
 echo ""
+echo "=== missing sibling .py (corrupted/partial plugin install; follow-up to #146) ==="
+# GH #146 extracted this gate's embedded python3 -c block into a sibling
+# irrecoverable.py, resolved via "$(dirname "$0")/irrecoverable.py". If that
+# sibling is missing or unreadable (a corrupted/partial plugin install),
+# python3 itself exits 2 with a raw "can't open file ..." message -- which
+# the rc-handling tail below already reads as "rc==2, a legitimate deny" and
+# passes through as exit 2 (fail-closed is already correct), but the stderr
+# the operator sees is an ugly unlabeled python3 error instead of this
+# repo's own [mh:gate] convention. Simulate by copying ONLY the .sh into an
+# isolated scratch dir (never touch the real repo file) so $(dirname "$0")
+# resolves to a directory with no irrecoverable.py sibling.
+MISSPY_IRR_DIR=$(mktemp -d "${TMPDIR:-/tmp}/kbg-misspy-irr.XXXXXX")
+cp "$IRRECOVERABLE" "$MISSPY_IRR_DIR/irrecoverable.sh"
+_errf=$(mktemp "${TMPDIR:-/tmp}/kbg-misspy-irr-err.XXXXXX")
+_out=$(bash_payload 'rm -rf /tmp/x' | bash "$MISSPY_IRR_DIR/irrecoverable.sh" 2>"$_errf")
+_rc=$?
+_ok=1
+if [ "$_rc" -eq 2 ] && [ -z "$_out" ] && grep -q '\[mh:gate\]' "$_errf" \
+   && ! grep -qi "can't open file\|Traceback" "$_errf"; then
+  _ok=0
+fi
+if [ "$_ok" -eq 0 ]; then
+  echo "  ✅ DENY: missing sibling irrecoverable.py -> fails closed (exit 2) with [mh:gate] message, no raw traceback"
+  pass=$((pass + 1))
+else
+  echo "  ❌ missing sibling irrecoverable.py: expected exit 2 + [mh:gate] message + no traceback, got rc=$_rc stdout='$_out' stderr: $(cat "$_errf")" >&2
+  fail=$((fail + 1))
+fi
+rm -f "$_errf"
+
+echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
 [[ "$fail" -eq 0 ]] && exit 0 || exit 1

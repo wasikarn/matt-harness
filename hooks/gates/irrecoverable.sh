@@ -87,7 +87,20 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 0
 fi
 
-printf '%s' "$_input" | python3 "$(dirname "$0")/irrecoverable.py"
+_py="$(dirname "$0")/irrecoverable.py"
+# Corrupted/partial plugin install (follow-up to #146): without this check,
+# python3 itself exits 2 on the missing file with a raw "can't open file
+# ..." message -- the rc-handling below already reads rc==2 as a legitimate
+# deny and passes it through (fail-closed is already correct), but the
+# stderr the operator sees is an ugly unlabeled python3 error instead of
+# this repo's own [mh:gate] convention. Same exit code (2), same fail-closed
+# outcome -- only the diagnostic changes.
+if [ ! -r "$_py" ]; then
+  echo "[mh:gate] internal error: sibling script irrecoverable.py missing or unreadable — failing closed" >&2
+  exit 2
+fi
+
+printf '%s' "$_input" | python3 "$_py"
 rc=$?
 if [ "$rc" -ne 0 ] && [ "$rc" -ne 2 ]; then
   echo "[mh:gate] internal error (rc=$rc) — failing closed" >&2

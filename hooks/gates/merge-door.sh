@@ -68,4 +68,16 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 0
 fi
 
-printf '%s' "$_input" | python3 "$(dirname "$0")/merge-door.py" "$(dirname "$0")/lib"
+_py="$(dirname "$0")/merge-door.py"
+# Corrupted/partial plugin install (follow-up to #146): without this check,
+# python3 itself exits 2 on the missing file with a raw "can't open file
+# ..." message -- a bare nonzero exit, not "never a hard deny" (header
+# comment above) via this gate's own ask/exit-0 mechanism. Emit the same
+# ask-JSON shape emit_ask() produces so the operator gets a clean,
+# actionable prompt instead of a stray traceback.
+if [ ! -r "$_py" ]; then
+  printf '%s\n' '{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask", "permissionDecisionReason": "merge-door: sibling script merge-door.py is missing or unreadable -- failing safe, approve manually or use mh:ship-merge for the reviewed path."}}'
+  exit 0
+fi
+
+printf '%s' "$_input" | python3 "$_py" "$(dirname "$0")/lib"

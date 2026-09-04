@@ -577,5 +577,36 @@ check "oversized padding, NON-merge tail -> still asks fast (pins the length cap
 assert_noask "realistic longer commit message mentioning gh pr merge in prose, well under the GH #140 length cap -> still noask" 'git commit -m "Add detailed changelog entry describing the upcoming gh pr merge process and rollback steps for this release"'
 
 echo ""
+echo "=== missing sibling .py (corrupted/partial plugin install; follow-up to #146) ==="
+# Same contract as verifier-protect.sh's sibling fix (GH #146 follow-up): a
+# missing/unreadable merge-door.py must resolve to an ask JSON (exit 0),
+# never a bare nonzero exit carrying a raw "python3: can't open file ..."
+# message -- this gate's own header promises "never a hard deny", and its
+# documented all-outcomes-are-exit-0 contract (same tier verifier-protect.sh
+# uses) already covers internal errors this way. Simulate by copying ONLY
+# the .sh into an isolated scratch dir (never touch the real repo file) so
+# $(dirname "$0") resolves to a directory with no merge-door.py sibling.
+MISSPY_MD_DIR=$(mktemp -d "${TMPDIR:-/tmp}/kbg-misspy-md.XXXXXX")
+cp "$GATE" "$MISSPY_MD_DIR/merge-door.sh"
+_errf=$(mktemp "${TMPDIR:-/tmp}/kbg-misspy-md-err.XXXXXX")
+_out=$(payload_bash "gh pr merge 123" | bash "$MISSPY_MD_DIR/merge-door.sh" 2>"$_errf")
+_rc=$?
+_ok=1
+# Real JSON parse, not a substring grep -- a grep on the literal
+# '"permissionDecision": "ask"' text would also pass on a typo'd sibling key
+# (hookEventName, permissionDecisionReason) that Claude Code's hook-output
+# parser would then fail to recognize, silently falling through to allow on
+# a tamper-resistance gate -- exactly the fail-open this fix exists to avoid.
+if [ "$_rc" -eq 0 ] \
+   && echo "$_out" | python3 -c 'import json,sys
+d=json.load(sys.stdin)["hookSpecificOutput"]
+sys.exit(0 if d["hookEventName"] == "PreToolUse" and d["permissionDecision"] == "ask" and d["permissionDecisionReason"] else 1)' 2>/dev/null \
+   && ! /usr/bin/grep -qi "can't open file\|Traceback" "$_errf"; then
+  _ok=0
+fi
+check "missing sibling merge-door.py -> ask JSON (exit 0), no raw traceback" "$_ok"
+rm -f "$_errf"
+
+echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

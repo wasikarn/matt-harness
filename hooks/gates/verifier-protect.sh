@@ -155,4 +155,16 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 0
 fi
 
-printf '%s' "$_input" | python3 "$(dirname "$0")/verifier-protect.py" "$(dirname "$0")/lib"
+_py="$(dirname "$0")/verifier-protect.py"
+# Corrupted/partial plugin install (follow-up to #146): without this check,
+# python3 itself exits 2 on the missing file with a raw "can't open file
+# ..." message -- a bare nonzero exit, not this gate's documented
+# all-outcomes-are-exit-0 "ask on internal error too" contract (header
+# comment above). Emit the same ask-JSON shape emit_ask() produces so the
+# operator gets a clean, actionable prompt instead of a stray traceback.
+if [ ! -r "$_py" ]; then
+  printf '%s\n' '{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask", "permissionDecisionReason": "verifier-protect: sibling script verifier-protect.py is missing or unreadable -- failing safe, approve manually or investigate the plugin install."}}'
+  exit 0
+fi
+
+printf '%s' "$_input" | python3 "$_py" "$(dirname "$0")/lib"
