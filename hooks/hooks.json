@@ -77,7 +77,7 @@
       {
         "id": "gate:pretooluse-dispatch",
         "matcher": "*",
-        "description": "T12 (#91): single PreToolUse entry point, replacing the 11 individual gate registrations below (irrecoverable, verifier-protect x2, db-write, task-complete-separation, jira-acli-engage, atlassian-cold-start, credential-guard, config-guard, worktree-guard x2). Fans out in parallel to every gate whose matcher matches this tool call per hooks/pretooluse-table.json, merges results per Claude Code's own documented precedence (deny > defer > ask > allow; a blocking decision suppresses updatedInput; additionalContext concatenated) -- see hooks/dispatch-pretooluse.py's own header for the verified doc citations. All 17 table entries are gate:* -- immune to any profile/kill-switch (no PreToolUse hook here is advisory-tiered). Each underlying gate script is unchanged.",
+        "description": "T12 (#91): single PreToolUse entry point, replacing the 11 individual gate registrations below (irrecoverable, verifier-protect x2, db-write, task-complete-separation, jira-acli-engage, atlassian-cold-start, credential-guard, config-guard, worktree-guard x2). Fans out in parallel to every gate whose matcher matches this tool call per hooks/pretooluse-table.json, merges results per Claude Code's own documented precedence (deny > defer > ask > allow; a blocking decision suppresses updatedInput; additionalContext concatenated) -- see hooks/dispatch-pretooluse.py's own header for the verified doc citations. Every table entry is immune to any profile/kill-switch, gate:* deny gates plus one journal-only sensor (advisory:agent-write-scope-enforcer, issue #137) that rides this same PreToolUse fan-out purely for its git-commit-time-window requirement and never emits permissionDecision. Each underlying gate script is unchanged.",
         "hooks": [
           {
             "type": "command",
@@ -97,6 +97,18 @@
             "type": "command",
             "command": "bash",
             "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "session:skill-usage-telemetry", "minimal", "${CLAUDE_PLUGIN_ROOT}/hooks/session/skill-usage-telemetry.sh"]
+          }
+        ]
+      },
+      {
+        "id": "advisory:agent-write-scope-recorder",
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "description": "Sensor (not a gate), issue #137 rev 4: records the normalized repo-root-relative path of every file a subagent writes (agent_id present), one JSONL line per call, to ~/.local/share/kbg/mh-agent-writes/<safe-agent-id>.jsonl -- the write-set the companion advisory:agent-write-scope-enforcer PreToolUse(Bash) enforcer leg reads back on a git commit. Always exits 0; no-op when agent_id is absent (main session). Tier: minimal, NOT async -- an async recorder could journal AFTER the enforcer leg's commit check already ran and silently corrupt the write-set it is supposed to produce. Tier must stay minimal (never kill-switched): a disabled recorder silently corrupts the enforcer leg's write-set data, not just its own coverage.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-single.sh", "advisory:agent-write-scope-recorder", "minimal", "${CLAUDE_PLUGIN_ROOT}/hooks/advisory/agent-write-scope.sh"]
           }
         ]
       },

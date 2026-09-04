@@ -4,10 +4,15 @@
 # -- see that file for the merge rules, verified against Claude Code's own
 # hooks documentation (2026-08-25, ticket #91), not invented.
 #
-# Every entry in pretooluse-table.json is gate:* -- immune to any profile
-# or kill-switch by construction (this repo's gate/advisory-sensor doctrine
-# keeps advisory logic off PreToolUse entirely; there is no tiering concept
-# here at all, unlike dispatch-single.sh's non-PreToolUse wrapper).
+# Every entry in pretooluse-table.json is immune to any profile or
+# kill-switch by construction -- there is no tiering concept here at all,
+# unlike dispatch-single.sh's non-PreToolUse wrapper. Almost every entry is
+# a gate:* deny gate; one exception, advisory:agent-write-scope-enforcer
+# (issue #137), is a journal-only sensor that never emits permissionDecision
+# -- it rides this fan-out solely because PreToolUse is the only event that
+# fires before the `git commit` it inspects actually runs, not because it's
+# a deny gate. dispatch-single.sh's non-PreToolUse wrapper cannot cover it
+# for the same timing reason.
 #
 # Portability guard (#93): every underlying gate script already
 # fails open (allow, with its own stderr note) when python3 is missing --

@@ -66,6 +66,12 @@
     "description": "Gate: a subagent (agent_id present) may not run `git stash`/`reset`/`clean` via Bash — the bare/non-force forms gate:bash:irrecoverable does not already cover unconditionally (issue #135: real incidents from a dispatched subagent racing `git stash`/`stash pop` over a peer's mid-edit files). `checkout --`/`restore` deliberately not duplicated here — irrecoverable.sh already denies their destructive forms for every session. Exit 2 + stderr; fail-safe allow on parse error; no env-var bypass."
   },
   {
+    "id": "advisory:agent-write-scope-enforcer",
+    "matcher": "Bash",
+    "script": "hooks/advisory/agent-write-scope.sh",
+    "description": "Sensor (not a gate), issue #137 rev 4: on a subagent's `git commit` (agent_id present), enumerates the paths that commit would actually commit (via git diff --cached, plus a tracked-modified diff too when -a/--all is present, correctly distinguishing e.g. -am from -ma using git commit's own short-flag bundling rules), compares against that agent_id's recorded write-set (see the companion PostToolUse recorder leg in hooks.json), and journals which committed paths were never recorded as written by this agent, plus write_state_file_present (bool) and recorded_write_count (int) so the journal can tell a clean write-set from one that never correlated, to ~/.local/share/kbg/metrics/agent-write-scope.jsonl. NEVER denies -- log-mode only, same journal mechanics as main-exec-guard.sh's own log mode. Riding the gate-only PreToolUse fan-out (not dispatch-single.sh's non-PreToolUse wrapper) purely for timing -- this must run before the git commit executes, and PreToolUse is the only event that fires before it. A non-zero git diff exit (e.g. rc=128 on an unborn HEAD) journals the enumeration failure (null) rather than misreading empty output as nothing staged."
+  },
+  {
     "id": "gate:skill:jira-acli-engage",
     "matcher": "Skill",
     "script": "hooks/gates/atlassian-mcp-gate.sh",
