@@ -10,14 +10,14 @@ effort: medium
 Single harness-state surface with two modes:
 
 - **Default (audit)** — deterministic fleet/schema/structural check. Detects drift before it becomes a silent failure.
-- **--health mode** — per-session token cost from the live cost ledger, plus a per-skill usage panel (7d/30d invocation counts by plugin) from the skill-usage ledger (formerly `kbg:harness-health`). See `references/health.md`.
+- **--health mode** — per-session token cost from the live cost ledger, a per-skill usage panel (7d/30d invocation counts by plugin) from the skill-usage ledger, plus a dead-surface panel (skills/agents with 0 invocations in the last 30 days, INFO-only) (formerly `kbg:harness-health`). See `references/health.md`.
 
 ## Mode selection
 
 | User asks for | Mode | Entry |
 |---|---|---|
 | "audit harness", "fleet check", "manifest drift", Thai: 'audit harness', 'ตรวจ harness' | audit (default) | `bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"` |
-| "harness health", "token cost", "session cost", Thai: 'harness health', 'สุขภาพ harness' | --health | `bash "${CLAUDE_SKILL_DIR}/scripts/health.sh"` or `python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" ...` |
+| "harness health", "token cost", "session cost", "dead surfaces", "unused skills", Thai: 'harness health', 'สุขภาพ harness' | --health | `bash "${CLAUDE_SKILL_DIR}/scripts/health.sh"` or `python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" ...` |
 
 
 ## Quick start
@@ -130,7 +130,7 @@ After adding a check, bump the integrity guard's expected count (`_exp_ids` near
 
 ## References
 
-- `references/health.md` — full `--health` mode contract (formerly `kbg:harness-health`).
+- `references/health.md` — full `--health` mode contract, including the dead-surface panel (#136) (formerly `kbg:harness-health`).
 
 ## Completion criterion
 

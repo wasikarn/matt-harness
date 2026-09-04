@@ -8,6 +8,8 @@ This mode is **advisory only**: it never writes, never emits a `permissionDecisi
 
 Also renders a **skill usage panel** (#90/T11) from `~/.local/share/kbg/metrics/skill-usage.jsonl` — the `session:skill-usage-telemetry` PostToolUse(Skill) hook appends one row per skill invocation. Per-skill invocation counts over the last 7 and 30 days, split by plugin (`mh:` vs `mattpocock-skills:` etc., derived from the skill name's namespace prefix). This is the data source for a future partial-overlap cull — usage evidence instead of feel.
 
+And a **dead-surface panel** (#136) — every skill/agent in THIS repo's own fleet (the `mh` plugin, name read from `.claude-plugin/plugin.json`) with 0 invocations in the last 30 days, split by type, sourced from the same two ledgers (no new data source). A skill carrying `disable-model-invocation: true` is still listed but labeled `manual-only` — a typed `/mh:<name>` still logs a row, so low count is expected there, not suspicious. Hooks have no per-invocation ledger anywhere in this repo, so that row states the source is missing rather than fabricating a zero count. Advisory only — feeds a future deletion sweep, never auto-deletes.
+
 **Scope note:** counts only, no outcome/success field. No reliable success signal exists for a Skill invocation — it loads instructions into context rather than returning an inspectable result the way a Bash exit code does, and Claude Code's own docs don't define one for PostToolUse either. A fabricated constant "outcome" would be a false metric, not a health signal (operator decision, 2026-08-25) — so the panel reports usage, not success rate.
 
 ## When to use
@@ -47,12 +49,14 @@ python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py"
 | `--since DAYS` | float | none | sessions newer than N days |
 | `--costs PATH` | path | `~/.local/share/kbg/metrics/costs.jsonl` | override cost ledger path |
 | `--skills PATH` | path | `~/.local/share/kbg/metrics/skill-usage.jsonl` | override skill-usage ledger path |
+| `--root PATH` | path | this file's own repo root (4 parents up) | fleet root for the dead-surface panel — `skills/`, `agents/`, `hooks/`, `.claude-plugin/` |
 | `--json` | bool | false | emit JSON instead of markdown |
 
 ## Read paths
 
 - **Cost ledger** — `~/.local/share/kbg/metrics/costs.jsonl` by default. Each row: `timestamp`, `session_id`, `transcript_path`, `model`, `input_tokens`, `output_tokens`, `cache_write_tokens`, `cache_read_tokens`, `estimated_cost_usd`.
 - **Skill-usage ledger** — `~/.local/share/kbg/metrics/skill-usage.jsonl` by default (`--skills PATH` overrides). Each row: `ts`, `session_id`, `skill` (full namespaced name, e.g. `mh:harness-audit`), `plugin` (the namespace prefix before `:`, or `unknown`).
+- **Fleet root** — `--root PATH` (default: this file's own repo root). Read-only `os.walk`/`glob` over `skills/`, `agents/`, `hooks/`, and `.claude-plugin/plugin.json` — same filters as `checks/01-fleet-count.sh`. No new data source: the dead-surface panel reuses the cost and skill-usage ledgers above.
 - **No write paths.** The script never appends to either ledger, never invokes an agent, never emits a `permissionDecision`.
 
 ## Output Format
@@ -76,6 +80,19 @@ ledger: ~/.local/share/kbg/metrics/skill-usage.jsonl
 | mattpocock-skills | mattpocock-skills:code-review | 1 | 4 |
 
 **Σ last 7d: 4 invocation(s) · last 30d: 15 invocation(s)** (mh=11, mattpocock-skills=4)
+
+## Dead surfaces (0 invocations in last 30d)
+fleet root: /path/to/matt-harness
+
+| type | name | note |
+|---|---|---|
+| skill | mh:some-unused-skill | |
+| skill | mh:ship-merge | manual-only (disable-model-invocation) |
+| agent | mh:some-unused-agent | |
+
+hooks: 41 hook(s) in fleet — no invocation ledger exists, source missing (see issue #136)
+
+**N dead skill(s) · M dead agent(s)** — INFO only: usage evidence for a future deletion sweep, never auto-deletes.
 ```
 
 `estimated_cost_usd` uses the heuristic rates in `hooks/stop/cost-tracker.sh` (haiku/opus/sonnet tiers) — it is an estimate, not a bill.
@@ -87,6 +104,8 @@ ledger: ~/.local/share/kbg/metrics/skill-usage.jsonl
 - **Skill-usage ledger missing** → renders "0 rows" for that panel, exit 0 — a fresh install with no skill invocations yet is expected, not an error.
 - **Malformed JSONL line** (either ledger) → WARN to stderr with the line number, skip the line, continue.
 - **0 rows match** → prints "0 rows" + a note, exit 0.
+- **Every fleet surface invoked in the last 30d** → the dead-surface panel still prints, with "0 dead skill(s), 0 dead agent(s)" rather than omitting the section.
+- **No per-hook invocation ledger** → the hooks line always states the source is missing; it never reports a fabricated zero count.
 
 ## What this skill does NOT do
 

@@ -218,6 +218,126 @@ fi
 trash "$HP_TMP" 2>/dev/null || true
 
 echo ""
+echo "=== harness-health.py dead-surface panel (#136) ==="
+echo ""
+
+# Synthetic fleet: one active + one dead skill, one manual-only (disable-model-invocation)
+# skill, one active + one dead agent, and a hooks/ tree with files that must be excluded
+# (a __pycache__ file, an underscore-prefixed file) to prove the count mirrors
+# checks/01-fleet-count.sh's find filters. Isolated under its own mktemp -d, same
+# convention as HP_TMP above — never touches the real repo's own fleet.
+DS_TMP="$(mktemp -d)"
+
+mkdir -p "$DS_TMP/.claude-plugin"
+cat >"$DS_TMP/.claude-plugin/plugin.json" <<'EOF'
+{"name": "mh"}
+EOF
+
+mkdir -p "$DS_TMP/skills/active-skill" "$DS_TMP/skills/dead-skill" "$DS_TMP/skills/manual-skill"
+cat >"$DS_TMP/skills/active-skill/SKILL.md" <<'EOF'
+---
+name: active-skill
+description: "test fixture, invoked in the last 30d"
+---
+body
+EOF
+cat >"$DS_TMP/skills/dead-skill/SKILL.md" <<'EOF'
+---
+name: dead-skill
+description: "test fixture, never invoked"
+---
+body
+EOF
+cat >"$DS_TMP/skills/manual-skill/SKILL.md" <<'EOF'
+---
+name: manual-skill
+description: "test fixture, user-typed only"
+disable-model-invocation: true
+---
+body
+EOF
+
+mkdir -p "$DS_TMP/agents"
+cat >"$DS_TMP/agents/active-agent.md" <<'EOF'
+---
+name: active-agent
+description: "test fixture, invoked in the last 30d"
+tools: Read
+---
+body
+EOF
+cat >"$DS_TMP/agents/dead-agent.md" <<'EOF'
+---
+name: dead-agent
+description: "test fixture, never invoked"
+tools: Read
+---
+body
+EOF
+
+mkdir -p "$DS_TMP/hooks/session" "$DS_TMP/hooks/stop" "$DS_TMP/hooks/__pycache__"
+touch "$DS_TMP/hooks/session/foo.sh" "$DS_TMP/hooks/stop/bar.py"
+touch "$DS_TMP/hooks/__pycache__/baz.py"   # excluded: __pycache__
+touch "$DS_TMP/hooks/_ignored.sh"          # excluded: leading underscore
+
+DS_SKILLS_LEDGER="$DS_TMP/skill-usage.jsonl"
+DS_COSTS_LEDGER="$DS_TMP/costs.jsonl"
+DS_NOW="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+echo "{\"ts\":\"$DS_NOW\",\"session_id\":\"z\",\"skill\":\"mh:active-skill\",\"plugin\":\"mh\"}" >"$DS_SKILLS_LEDGER"
+echo "{\"timestamp\":\"$DS_NOW\",\"session_id\":\"z\",\"stream\":\"subagent\",\"agent_type\":\"mh:active-agent\"}" >"$DS_COSTS_LEDGER"
+
+ds_out=$(python3 "$HEALTH_PY" --last 100 --root "$DS_TMP" --skills "$DS_SKILLS_LEDGER" --costs "$DS_COSTS_LEDGER" 2>/dev/null)
+
+if echo "$ds_out" | /usr/bin/grep -qE '\| skill \| mh:dead-skill \|' \
+   && echo "$ds_out" | /usr/bin/grep -qE '\| agent \| mh:dead-agent \|' \
+   && ! echo "$ds_out" | /usr/bin/grep -qE '\| skill \| mh:active-skill \|' \
+   && ! echo "$ds_out" | /usr/bin/grep -qE '\| agent \| mh:active-agent \|'; then
+  echo "  ✅ DEAD VS ACTIVE: dead-skill/dead-agent listed, active-skill/active-agent are not"
+  pass=$((pass + 1))
+else
+  echo "  ❌ expected mh:dead-skill + mh:dead-agent listed, mh:active-skill/active-agent absent, got:" >&2
+  echo "$ds_out" >&2
+  fail=$((fail + 1))
+fi
+
+if echo "$ds_out" | /usr/bin/grep -qE '\| skill \| mh:manual-skill \| manual-only'; then
+  echo "  ✅ MANUAL-ONLY LABEL: disable-model-invocation skill is noted, not just listed bare"
+  pass=$((pass + 1))
+else
+  echo "  ❌ expected mh:manual-skill row to carry a manual-only note, got:" >&2
+  echo "$ds_out" >&2
+  fail=$((fail + 1))
+fi
+
+if echo "$ds_out" | /usr/bin/grep -qE 'hooks: 2 hook\(s\) in fleet — no invocation ledger exists, source missing'; then
+  echo "  ✅ HOOKS SOURCE MISSING: count=2 (excludes __pycache__ and _-prefixed), never a fabricated zero"
+  pass=$((pass + 1))
+else
+  echo "  ❌ expected 'hooks: 2 hook(s) in fleet — no invocation ledger exists, source missing', got:" >&2
+  echo "$ds_out" >&2
+  fail=$((fail + 1))
+fi
+
+ds_json=$(python3 "$HEALTH_PY" --json --last 100 --root "$DS_TMP" --skills "$DS_SKILLS_LEDGER" --costs "$DS_COSTS_LEDGER" 2>/dev/null)
+if echo "$ds_json" | jq -e '
+     .dead_surfaces.plugin == "mh"
+     and (.dead_surfaces.dead_skills | map(.name) | sort) == ["mh:dead-skill", "mh:manual-skill"]
+     and (.dead_surfaces.dead_skills[] | select(.name == "mh:manual-skill") | .manual_only) == true
+     and (.dead_surfaces.dead_agents | map(.name)) == ["mh:dead-agent"]
+     and .dead_surfaces.hooks.count == 2
+     and .dead_surfaces.hooks.source_missing == true
+   ' >/dev/null 2>&1; then
+  echo "  ✅ JSON PAYLOAD: --json carries dead_surfaces with matching skills/agents/hooks content"
+  pass=$((pass + 1))
+else
+  echo "  ❌ --json dead_surfaces payload didn't match expected shape, got:" >&2
+  echo "$ds_json" >&2
+  fail=$((fail + 1))
+fi
+
+trash "$DS_TMP" 2>/dev/null || true
+
+echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
 [[ "$fail" -eq 0 ]] && exit 0 || exit 1

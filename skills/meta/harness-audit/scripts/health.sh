@@ -8,4 +8,4 @@ __src="${BASH_SOURCE[0]:-$0}"
 __dir="$(cd "$(dirname "$__src")" && pwd)"
 __root="$(cd "${__dir}/../../.." && pwd)"
 
-exec python3 "${__root}/skills/meta/harness-audit/scripts/harness-health.py" "$@"
+exec python3 "${__root}/skills/meta/harness-audit/scripts/harness-health.py" --root "${__root}" "$@"
