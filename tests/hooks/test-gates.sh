@@ -1630,7 +1630,12 @@ test_nopython_allow "$ROOT/hooks/gates/worktree-guard-dispatch.sh" "worktree-gua
 # PATH, the rm -rf deny must still fire (rc=2) and the message must route to
 # the user instead of prescribing a binary the machine doesn't have.
 TRASHLESS_BIN=$(mktemp -d "${TMPDIR:-/tmp}/kbg-notrash.XXXXXX")
-for _t in bash cat sed tr grep python3; do
+# dirname: GH #146 extracted irrecoverable.sh's embedded python3 -c block to
+# a sibling irrecoverable.py, resolved via "$(dirname "$0")" the same idiom
+# verifier-protect.sh/merge-door.sh already use for their lib dir -- this
+# minimal PATH must carry it too, or the gate itself (not the trash-CLI
+# fallback under test) fails with "dirname: command not found".
+for _t in bash cat sed tr grep python3 dirname; do
   _src=$(PATH="/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin" command -v "$_t" || command -v "$_t")
   ln -s "$_src" "$TRASHLESS_BIN/$_t"
 done
