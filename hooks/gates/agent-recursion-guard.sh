@@ -146,31 +146,117 @@ cmd = ti.get("command") if isinstance(ti, dict) else None
 if not isinstance(cmd, str):
     sys.exit(0)
 
+# --- Heredoc-body stripping (GH #121, 2026-09-04) -------------------------
+# _nested_spawn below scans the raw command string. Without this step, a
+# commit authored via the heredoc convention already documented in this
+# repo (`git commit -m "$(cat <<'"'"'EOF'"'"' ... EOF)"`) that merely
+# MENTIONS "claude -p" or "--bg" in prose -- e.g. a sentence describing
+# this very gate -- gets scanned as if it were real shell syntax and
+# falsely denied. A heredoc body is literal data until its closing
+# delimiter, not a command to scan for a nested spawn, UNLESS the heredoc
+# feeds an interpreter (bash <<EOF, python3 <<EOF, ...) -- that body IS
+# executable code, and a rogue subagent could hide a real `claude -p`
+# invocation inside one to slip past this gate if bodies were stripped
+# unconditionally. Ported from the `_strip_heredocs` function in
+# irrecoverable.sh (same fix, same shape, applied there 2026-08-06 for its
+# own destructive-command scan) rather than shared via a new cross-file
+# import -- the convention in this repo is that each gate carries its own
+# adapted copy (see the comment in that file: "Ported from
+# verifier-protect.sh... itself ported from worktree-guard.py").
+#
+# _DQ/_SQ hoisted here (needed by _HEREDOC_RE below; _TOKEN_RE further
+# down still uses them fine, Python does not care about definition order
+# within one script as long as it is before first use) instead of defined
+# twice.
+_DQ = chr(34)
+_SQ = chr(39)
+
+_HEREDOC_RE = re.compile(r"<<(-)?\s*([" + _SQ + r"\"]?)([^\s" + _SQ + r"\"]+)\2")
+_INTERPRETER_RE = re.compile(r"\b(bash|sh|zsh|dash|ksh|python3?|python2|perl|ruby|node|nodejs|osascript)\b")
+
+def _strip_heredocs(cmd):
+    # Walk line by line. On a heredoc-open line, check the segment BEFORE
+    # "<<" for an interpreter word. Not found -> the body is inert data (a
+    # quoted commit message, a prompt string, ...): consume lines up to the
+    # closing delimiter and drop them from the output. If the delimiter
+    # never closes, put the scanned lines back rather than silently
+    # discarding a real trailing command. Found -> the body is executable
+    # code the interpreter will run: keep it in the output untouched AND
+    # collect it separately into live_bodies, so the caller can anchor-scan
+    # it on its own (see the note on live_bodies below for why a separate
+    # scan, not a shared one).
+    lines = cmd.split("\n")
+    out, live_bodies, i = [], [], 0
+    while i < len(lines):
+        line = lines[i]
+        out.append(line)
+        m = _HEREDOC_RE.search(line)
+        i += 1
+        if not m:
+            continue
+        is_interpreter = bool(_INTERPRETER_RE.search(line[:m.start()]))
+        strip_tabs, delim = bool(m.group(1)), m.group(3)
+        body_start, found = i, False
+        while i < len(lines):
+            body_line = lines[i].lstrip("\t") if strip_tabs else lines[i]
+            i += 1
+            if body_line == delim:
+                found = True
+                break
+        if is_interpreter:
+            out.extend(lines[body_start:i])
+            script = lines[body_start:i - 1] if found else lines[body_start:i]
+            if script:
+                live_bodies.append("\n".join(script))
+        elif not found:
+            out.extend(lines[body_start:i])
+    return "\n".join(out), live_bodies
+
+cmd, _live_bodies = _strip_heredocs(cmd)
+# --- end heredoc-body stripping --------------------------------------------
+
 _ANCHOR_RE = re.compile(
     r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(?:\S*/)?claude\b"
+)
+# live_bodies (GH #121, 2026-09-04) get their own anchor, with re.MULTILINE:
+# inside an interpreter-fed heredoc body every line IS a fresh bash
+# statement by construction (that is the whole point of the interpreter
+# check above), so `^` should match after each embedded newline there, not
+# only at the start of the body itself. Scoping MULTILINE to _ANCHOR_RE_BODY instead
+# of applying it to the outer _ANCHOR_RE matters: an earlier version of this
+# fix put re.MULTILINE on the outer scan and it correctly caught the
+# heredoc-hidden case, but ALSO started denying an ordinary, non-heredoc
+# multi-line commit message like `git commit -m "feat: X\nclaude -p is not
+# allowed\n"` -- a real embedded newline in a quoted argument is not a
+# statement boundary the way one is inside a live heredoc body, and the
+# outer scan has no way to tell those apart. Caught before ship by an
+# adversarial review pass; this split keeps the outer scan byte-for-byte
+# identical to its pre-#121 behavior and confines the new anchor rule to
+# exactly the text it is true for.
+_ANCHOR_RE_BODY = re.compile(
+    r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(?:\S*/)?claude\b",
+    re.MULTILINE,
 )
 _FLAG_RE = re.compile(r"-p\b|--print\b|--agent\b|--bg\b")
 # Quote-aware tail scan (deep-audit, 2026-08-31): a flat char-class exclusion
 # treats ANY &/;/| as end-of-invocation, including one sitting inside a
 # quoted prompt argument (claude "fix A & B" -p) -- a false NEGATIVE, the
 # dangerous direction, since that argument is ordinary prompt text, not a
-# real shell separator. Built with chr() below instead of literal quote
-# characters, since this whole block already sits inside a bash single-
-# quoted `python3 -c` wrapper.
-_DQ = chr(34)
-_SQ = chr(39)
+# real shell separator. _DQ/_SQ (defined above; chr() rather than literal
+# quote characters, since this whole block already sits inside a bash
+# single-quoted `python3 -c` wrapper) feed the token regex below.
 _TOKEN_RE = re.compile(
     _DQ + r"(?:[^" + _DQ + r"\\]|\\.)*" + _DQ + "|" + _SQ + "[^" + _SQ + "]*" + _SQ + "|.",
     re.DOTALL,
 )
 
-def _nested_spawn(cmd):
+def _nested_spawn(cmd, anchor_re=_ANCHOR_RE):
     # A whole quoted span is consumed as ONE token, so an in-quote &/;/|
     # never reaches the bare-separator check below; only an UNQUOTED one
     # ends the scan, which keeps real command boundaries intact (does not
     # let a later, unrelated command'"'"'s flag get credited to this claude
     # invocation).
-    for m in _ANCHOR_RE.finditer(cmd):
+    for m in anchor_re.finditer(cmd):
         buf = []
         for tok in _TOKEN_RE.finditer(cmd[m.end():]):
             t = tok.group()
@@ -181,7 +267,10 @@ def _nested_spawn(cmd):
             return True
     return False
 
-if _nested_spawn(cmd):
+_spawn_found = _nested_spawn(cmd) or any(
+    _nested_spawn(body, _ANCHOR_RE_BODY) for body in _live_bodies
+)
+if _spawn_found:
     print(f"[mh:gate] BLOCKED: subagent ({agent_type}) may not spawn a nested Claude Code "
           f"session via Bash (command: {clip(cmd)!r}) — same rule as the Agent-tool leg: "
           f"only the main session dispatches (CLAUDE.md \"Task Dispatch\")", file=sys.stderr)
