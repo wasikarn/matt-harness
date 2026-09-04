@@ -60,6 +60,12 @@
     "description": "Gate: the Bash leg of agent-recursion-guard — a subagent (agent_id present) may not spawn a nested `claude -p`/`--print`/`--agent`/`--bg` session via Bash, which would bypass the Agent-tool leg entirely and run as a fresh, unrestricted main session. Coarse command-pattern match, not an adversarial sandbox (same non-goal as irrecoverable.sh). Exit 2 + stderr; fail-safe allow on parse error; no env-var bypass."
   },
   {
+    "id": "gate:bash:subagent-git-guard",
+    "matcher": "Bash",
+    "script": "hooks/gates/subagent-git-guard.sh",
+    "description": "Gate: a subagent (agent_id present) may not run `git stash`/`reset`/`clean` via Bash — the bare/non-force forms gate:bash:irrecoverable does not already cover unconditionally (issue #135: real incidents from a dispatched subagent racing `git stash`/`stash pop` over a peer's mid-edit files). `checkout --`/`restore` deliberately not duplicated here — irrecoverable.sh already denies their destructive forms for every session. Exit 2 + stderr; fail-safe allow on parse error; no env-var bypass."
+  },
+  {
     "id": "gate:skill:jira-acli-engage",
     "matcher": "Skill",
     "script": "hooks/gates/atlassian-mcp-gate.sh",
