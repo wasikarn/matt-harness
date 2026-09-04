@@ -146,55 +146,147 @@ cmd = ti.get("command") if isinstance(ti, dict) else None
 if not isinstance(cmd, str):
     sys.exit(0)
 
-# --- Heredoc-body stripping (GH #121, 2026-09-04) -------------------------
+# --- Heredoc-body stripping (GH #121, 2026-09-04; deep-audit fix same day) -
 # _nested_spawn below scans the raw command string. Without this step, a
 # commit authored via the heredoc convention already documented in this
 # repo (`git commit -m "$(cat <<'"'"'EOF'"'"' ... EOF)"`) that merely
 # MENTIONS "claude -p" or "--bg" in prose -- e.g. a sentence describing
 # this very gate -- gets scanned as if it were real shell syntax and
 # falsely denied. A heredoc body is literal data until its closing
-# delimiter, not a command to scan for a nested spawn, UNLESS the heredoc
-# feeds an interpreter (bash <<EOF, python3 <<EOF, ...) -- that body IS
-# executable code, and a rogue subagent could hide a real `claude -p`
-# invocation inside one to slip past this gate if bodies were stripped
-# unconditionally. Ported from the `_strip_heredocs` function in
-# irrecoverable.sh (same fix, same shape, applied there 2026-08-06 for its
-# own destructive-command scan) rather than shared via a new cross-file
-# import -- the convention in this repo is that each gate carries its own
-# adapted copy (see the comment in that file: "Ported from
-# verifier-protect.sh... itself ported from worktree-guard.py").
+# delimiter, not a command to scan for a nested spawn, UNLESS something on
+# the line routes it to an interpreter (bash <<EOF, cat <<EOF | bash, eval
+# "$(cat <<EOF ...)", ...) -- that body IS executable code, and a rogue
+# subagent could hide a real `claude -p` invocation inside one to slip
+# past this gate if bodies were stripped unconditionally.
 #
-# _DQ/_SQ hoisted here (needed by _HEREDOC_RE below; _TOKEN_RE further
-# down still uses them fine, Python does not care about definition order
-# within one script as long as it is before first use) instead of defined
-# twice.
+# Originally ported from the `_strip_heredocs` function in irrecoverable.sh
+# (applied there 2026-08-06 for its own destructive-command scan). A
+# same-session deep-audit found that shape had a live bypass specific to a
+# security-denial gate (below), so this copy has since diverged from that
+# source -- the two are no longer byte-identical, and a future change to
+# one should not be assumed to apply to the other. The repo convention is
+# still "each gate carries its own adapted copy" (see the comment in that
+# file: "Ported from verifier-protect.sh... itself ported from
+# worktree-guard.py"); this is that convention working as intended, not
+# drift to fix.
+#
+# Deep-audit findings (2026-09-04) that produced the design below:
+#   CRITICAL bypass: the old interpreter check looked only at the text
+#   BEFORE "<<" on the heredoc-open line. `cat <<EOF | bash` (and `cat
+#   <<EOF | sh`, `eval "$(cat <<EOF ...)"`, `fish <<EOF`, and other
+#   pipe-to-interpreter / uncovered-interpreter shapes) put the interpreter
+#   AFTER the heredoc-open or outside the fixed word list, so the body was
+#   misread as inert data and never scanned -- a subagent could hide a
+#   real `claude -p` spawn inside one of these and get a silent ALLOW.
+#   HIGH false positive: matching interpreter words with \b let a filename
+#   EXTENSION (`notes.sh`) satisfy the interpreter check, so an ordinary
+#   heredoc-authored file or commit message merely mentioning a shell name
+#   was treated as executable and scanned -- reopening the exact class of
+#   bug GH #121 was filed to fix, via a new trigger.
+#   HIGH false positive / detection hole: the heredoc-open search was not
+#   quote-aware, so a "<<"-lookalike token inside an unrelated quoted
+#   string (`echo "usage: cmd << EOF"`) was misread as a real heredoc-open.
+#   Every following line was then treated as body and deleted from the
+#   scan up to the next line matching that fake delimiter -- a
+#   text-deletion primitive that could hide a real nested-spawn command
+#   sitting right after it, an even quieter bypass than the CRITICAL one.
+#
+# Fix model: default-to-scan, not default-to-strip. A body is stripped
+# from the scan ONLY when its line'"'"'s prefix (the segment after the
+# nearest preceding |/;/&/(/&&/|| anchor) is a confidently-inert data
+# consumer (_INERT_RE, an allowlist of verbs -- cat/git/gh/jq/echo/printf
+# -- not of interpreters) AND nothing on the line routes the body to an
+# interpreter (_INTERPRETER_RE match anywhere on the line, a literal `|`,
+# or the word `eval`). An unrecognized consumer now defaults to "keep and
+# scan", the safe direction for a security gate: a false positive here is
+# loud (an ordinary command wrongly denied); a false negative is silent (a
+# real spawn missed, which is what let the CRITICAL bypass through). The
+# heredoc-open search runs over a quote-masked copy of the line
+# (_mask_quotes) so a lookalike "<<" inside a string can never be treated
+# as a real heredoc-open.
+#
+# _DQ/_SQ hoisted here (needed by _QUOTE_SPAN_RE and _HEREDOC_RE below;
+# _TOKEN_RE further down still uses them fine, Python does not care about
+# definition order within one script as long as it is before first use)
+# instead of defined twice.
 _DQ = chr(34)
 _SQ = chr(39)
 
+# Quote-masking (deep-audit fix): replace every quoted span'"'"'s contents
+# with same-length filler before the heredoc-open search runs, so a
+# "<<"-lookalike token inside an unrelated quoted string can never be
+# mistaken for a real heredoc-open -- match offsets into the ORIGINAL line
+# stay valid because the filler is the same length as what it replaces.
+_QUOTE_SPAN_RE = re.compile(
+    _DQ + r"(?:[^" + _DQ + r"\\]|\\.)*" + _DQ + "|" + _SQ + "[^" + _SQ + "]*" + _SQ
+)
+
+def _mask_quotes(s):
+    return _QUOTE_SPAN_RE.sub(lambda m: "x" * len(m.group()), s)
+
 _HEREDOC_RE = re.compile(r"<<(-)?\s*([" + _SQ + r"\"]?)([^\s" + _SQ + r"\"]+)\2")
-_INTERPRETER_RE = re.compile(r"\b(bash|sh|zsh|dash|ksh|python3?|python2|perl|ruby|node|nodejs|osascript)\b")
+_INTERPRETER_RE = re.compile(
+    r"(?<!\.)\b(bash|sh|zsh|dash|ksh|python3?|python2|perl|ruby|node|nodejs|osascript|fish|tcsh|csh)\b"
+)
+# _INERT_RE: consumers confidently known to be DATA-ONLY. Deliberately an
+# allowlist of inert verbs, not an allowlist/denylist of interpreters --
+# inverted from the pre-fix design, where an UNRECOGNIZED consumer
+# defaulted to "inert, strip it" (the CRITICAL bypass above). Now an
+# unrecognized consumer defaults to "keep and scan".
+_INERT_RE = re.compile(
+    r"^\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(?:\S*/)?(?:cat|git|gh|jq|echo|printf)\b"
+)
+_ANCHOR_SPLIT_RE = re.compile(r"\|\||&&|[|;&(]")
 
 def _strip_heredocs(cmd):
-    # Walk line by line. On a heredoc-open line, check the segment BEFORE
-    # "<<" for an interpreter word. Not found -> the body is inert data (a
-    # quoted commit message, a prompt string, ...): consume lines up to the
-    # closing delimiter and drop them from the output. If the delimiter
+    # Walk line by line. On a heredoc-open line, a body is treated as
+    # inert data (stripped from the scan) only when BOTH: (a) the segment
+    # of the line after the nearest preceding anchor is a
+    # confidently-inert consumer (_INERT_RE), and (b) nothing on the line
+    # routes the body to an interpreter (routes_to_interpreter below).
+    # Otherwise the body is kept in the output AND collected into
+    # live_bodies for its own anchor-scan by the caller. If the delimiter
     # never closes, put the scanned lines back rather than silently
-    # discarding a real trailing command. Found -> the body is executable
-    # code the interpreter will run: keep it in the output untouched AND
-    # collect it separately into live_bodies, so the caller can anchor-scan
-    # it on its own (see the note on live_bodies below for why a separate
-    # scan, not a shared one).
+    # discarding a real trailing command.
+    #
+    # Residual (accepted, not fixed): `python3 -V && cat <<EOF` over-scans
+    # (a false positive, not a bypass) because routes_to_interpreter checks
+    # the WHOLE line for an interpreter word, not just the segment after
+    # the last anchor. Tightening that to segment-only risks reintroducing
+    # false negatives for real interpreter-fed shapes that have a
+    # non-interpreter word directly left of "<<": `env bash <<EOF`, `sudo
+    # bash <<EOF`, `timeout N bash <<EOF`, `nohup bash <<EOF`, `ssh host
+    # bash <<EOF`, `xargs bash -c <<EOF`. Loud-not-silent is the safe
+    # direction for a security gate; left alone on purpose.
     lines = cmd.split("\n")
     out, live_bodies, i = [], [], 0
     while i < len(lines):
         line = lines[i]
         out.append(line)
-        m = _HEREDOC_RE.search(line)
+        m = _HEREDOC_RE.search(_mask_quotes(line))
         i += 1
         if not m:
             continue
-        is_interpreter = bool(_INTERPRETER_RE.search(line[:m.start()]))
+        # The masked search above exists only to find the correct
+        # heredoc-open POSITION (so a lookalike "<<" inside an unrelated
+        # quoted string is ignored). Its own captured groups are unusable:
+        # masking is length-preserving, so a quoted delimiter (<<'"'"'EOF'"'"',
+        # the common form) reads back as filler. Offsets align between
+        # masked and original, and the "<<" at m.start() is guaranteed
+        # unmasked (one sitting inside quotes became filler and could not
+        # have matched), so re-derive the real delimiter from the ORIGINAL
+        # line at that same offset. A re-match miss here (degenerate
+        # input) falls through to "no heredoc found" -- the safe
+        # direction -- rather than trusting the corrupt masked groups.
+        m = _HEREDOC_RE.match(line, m.start())
+        if not m:
+            continue
+        prefix = line[:m.start()]
+        last_segment = _ANCHOR_SPLIT_RE.split(prefix)[-1]
+        routes_to_interpreter = (
+            "|" in line or "eval" in line or bool(_INTERPRETER_RE.search(line))
+        )
+        is_interpreter = not (bool(_INERT_RE.match(last_segment)) and not routes_to_interpreter)
         strip_tabs, delim = bool(m.group(1)), m.group(3)
         body_start, found = i, False
         while i < len(lines):

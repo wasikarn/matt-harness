@@ -1154,6 +1154,39 @@ test_allow "$AGENT_RECURSION_GUARD" "heredoc-authored commit message mentioning 
 test_deny  "$AGENT_RECURSION_GUARD" "nested claude spawn hidden inside an interpreter-fed heredoc body still blocked (bash <<EOF ... claude -p ... EOF, GH #121 dangerous-direction control)" \
   "$(bash_agent_payload $'bash <<EOF\nclaude -p "evil"\nEOF' fork)"
 
+# Deep-audit pass, 2026-09-04 (same session, independent of the GH #121 fix
+# above): the interpreter check only looked at text BEFORE "<<" on the
+# heredoc-open line, so a heredoc PIPED to an interpreter (interpreter word
+# sits AFTER the heredoc-open) was misread as inert data -- a real nested
+# spawn hidden in the body got a silent ALLOW. Fixed with a default-to-scan
+# model (_INERT_RE allowlist of data-only verbs + routes_to_interpreter,
+# checking for a pipe/eval/interpreter word anywhere on the line, not just
+# to the left of "<<"). These three must now deny.
+test_deny  "$AGENT_RECURSION_GUARD" "CRITICAL bypass: heredoc piped to bash hides a nested spawn (cat <<EOF | bash)" \
+  "$(bash_agent_payload $'cat <<\'EOF\' | bash\ncd /tmp && claude -p evil\nEOF' fork)"
+test_deny  "$AGENT_RECURSION_GUARD" "CRITICAL bypass: heredoc piped to sh hides a nested spawn (cat <<EOF | sh)" \
+  "$(bash_agent_payload $'cat <<\'EOF\' | sh\n: ; claude --print evil\nEOF' fork)"
+test_deny  "$AGENT_RECURSION_GUARD" "CRITICAL bypass: eval \"\$(cat <<EOF ...)\" hides a nested spawn" \
+  "$(bash_agent_payload $'eval "$(cat <<\'EOF\'\n: ; claude -p evil\nEOF\n)"' fork)"
+test_deny  "$AGENT_RECURSION_GUARD" "CRITICAL bypass: fish <<EOF (interpreter word not in the old fixed list) hides a nested spawn" \
+  "$(bash_agent_payload $'fish <<\'EOF\'\ncd /tmp && claude -p evil\nEOF' fork)"
+# HIGH false positive: the old interpreter check matched \b(...|sh|...)\b
+# against ANY substring on the line, so a filename EXTENSION (notes.sh)
+# satisfied it and an ordinary heredoc-authored file got scanned and
+# falsely denied -- reopening the exact class of bug GH #121 was filed to
+# fix, via a new trigger. _INTERPRETER_RE now excludes a preceding "." via
+# a negative lookbehind, and cat targeting a file is on the _INERT_RE
+# allowlist with no interpreter word routing the body elsewhere.
+test_allow "$AGENT_RECURSION_GUARD" "HIGH false-positive fix: writing a file named notes.sh no longer false-blocks on the .sh extension" \
+  "$(bash_agent_payload $'cat > notes.sh <<\'EOF\'\nclaude -p is blocked by this gate\nEOF' fork)"
+# HIGH false positive / detection hole: the heredoc-open search was not
+# quote-aware, so a "<<"-lookalike token inside an unrelated quoted string
+# was misread as a real heredoc-open, turning the rest of the command into
+# a text-deletion primitive that could hide a real spawn sitting right
+# after it. _mask_quotes now blanks quoted spans before that search runs.
+test_deny  "$AGENT_RECURSION_GUARD" "HIGH bypass fix: a << lookalike inside a quoted string no longer swallows a real nested spawn on the next line" \
+  "$(bash_agent_payload $'echo "usage: cmd << EOF"\ncd /tmp && claude -p evil\nEOF' fork)"
+
 test_allow "$TASK_COMPLETE" "non-TaskUpdate tool with agent_type (out of scope)" \
   "$(python3 -c 'import json; print(json.dumps({"tool_name":"Bash","tool_input":{"command":"ls"},"agent_type":"mh:build-error-resolver"}))')"
 
