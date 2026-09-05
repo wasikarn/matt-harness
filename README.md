@@ -28,7 +28,7 @@ validator for a dispatched builder's multi-file work, `NEEDS-DECISION` instead o
 
 ## What it ships
 
-- **Skills:** `mh:harness-audit` (26 structural checks), `mh:memory-lint`, `mh:cost-report`,
+- **Skills:** `mh:harness-audit` (27 structural checks), `mh:memory-lint`, `mh:cost-report`,
   `mh:deep-audit`, `mh:ideate`, `mh:post-mortem`, `mh:tech-humanize`.
 - **Agents (9):** backend-architect, blind-spot-hunter, code-architect, ideate-critic,
   nextjs-reviewer, performance-optimizer, plan-reviewer, requirement-analyst,

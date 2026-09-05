@@ -14,7 +14,7 @@
       },
       {
         "id": "session:doctrine-bootstrap",
-        "description": "Inject docs/METHODOLOGY.md whole into session context, plus python3/jq preflight notes.",
+        "description": "Inject docs/METHODOLOGY.md whole into session context, plus python3/jq/node preflight notes.",
         "hooks": [
           {
             "type": "command",
@@ -105,7 +105,8 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/stop/cost-tracker.sh\"",
-            "async": true
+            "async": true,
+            "timeout": 10
           }
         ]
       },
@@ -116,7 +117,8 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/stop/memory-audit-commit.sh\"",
-            "async": true
+            "async": true,
+            "timeout": 10
           }
         ]
       }

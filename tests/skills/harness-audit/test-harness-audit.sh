@@ -3,8 +3,7 @@
 #
 # audit.sh's fragment integrity guard catches LOST checks, not SILENT ones. Each
 # known-bad fixture below is paired with a clean one; the matching check must
-# FIRE on bad and stay SILENT on good. Covered: 04, 05, 20, 28, 29, plus a
-# check-25 run under a $HOME with no plugin cache (pipefail-abort guard).
+# FIRE on bad and stay SILENT on good. Covered: 04, 05, 20, 22, 28, 29, 70.
 set -uo pipefail
 
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
@@ -91,6 +90,11 @@ if [ "$INFO_FOUND" -ge 1 ] && [ "$CRIT_FOUND" -eq 0 ]; then
 else
   bad "check-29 bad fixture did NOT fire INFO (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
 fi
+
+# Check 70: stray top-level entries (gitignored working-tree clutter). WARN on a
+# leftover `*-workspace/` dir; silent when the root holds only keep-list entries.
+expect_warn   70 check-70-bad-stray-entry
+expect_silent 70 check-70-good-clean-root
 
 echo ""
 echo "self-test: $pass passed, $fail failed"

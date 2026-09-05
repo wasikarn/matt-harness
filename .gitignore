@@ -16,6 +16,10 @@ skills/*/workspace/
 *.tmp
 *.bak
 
+# A test that ran with HOME unset once wrote metrics into the repo (2026-08-28);
+# never let that reach git again.
+.local/
+
 # Machine-specific caches (never ship a stale local blob)
 .code-review-graph/
 

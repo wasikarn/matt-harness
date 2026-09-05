@@ -5,6 +5,35 @@ All notable changes to `mh` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [1.1.4] — 2026-09-06
+
+Working-tree hygiene: the rebuild deleted every surface the keep list did not name, but
+gitignored clutter never reached git, so nothing in the gauntlet saw it — while every
+Glob/Grep in a session did.
+
+### Added
+
+- harness-audit check 70: WARN on any top-level entry outside the v1 keep list (eval
+  `*-workspace/` dirs, `graphify-out/`, `.scratch/`, caches). Flat plugin layout only; the
+  dotfiles layout is skipped. Known-bad/good fixtures + self-test lines; 27 checks.
+- `doctrine-bootstrap.sh` preflights `node` alongside python3/jq (`/mh:cost-report` renders
+  with node; the tracker itself does not need it).
+
+### Fixed
+
+- `stop:cost-tracker` and `stop:memory-audit-commit` now carry `timeout: 10`, matching the
+  "every entry with timeout" rule the other six entries already followed.
+- `.gitignore` covers `.local/` (a 2026-08-28 test run once wrote `gate-decisions.jsonl` into
+  the repo under it).
+- `tests/skills/harness-audit/test-harness-audit.sh` header no longer cites the retired
+  check 25.
+
+### Removed (working tree, not git)
+
+- 22 `*-workspace/` eval dirs (incl. `summarizer-workspace/`, whose agent left in 1.1.2),
+  `.scratch/`, `graphify-out/` (~500 cache files), `.code-review-graph/`, `.pytest_cache/`,
+  `.ruff_cache/`, `tmpg.log`, `.local/` — moved out of the tree for the operator to trash.
+
 ## [1.1.3] — 2026-09-06
 
 Deep-audit of the round-3 session (`/mh:deep-audit`), probing the new `bash -c` / `eval` unwrap.

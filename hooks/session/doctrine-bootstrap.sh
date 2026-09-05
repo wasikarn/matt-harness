@@ -26,5 +26,12 @@ if ! command -v jq >/dev/null 2>&1; then
   echo "**matt-harness:** \`jq\` not found on PATH. Cost tracking (hooks/stop/cost-tracker.sh) will skip itself this session."
   echo "<!-- /mh:portability-preflight -->"
 fi
+# node runs the report side only (scripts/workflows/cost-report-dedup.js behind
+# /mh:cost-report); the tracker keeps writing rows without it.
+if ! command -v node >/dev/null 2>&1; then
+  echo "<!-- mh:portability-preflight -->"
+  echo "**matt-harness:** \`node\` not found on PATH. \`/mh:cost-report\` cannot render the metrics log until node is installed; cost rows are still being written."
+  echo "<!-- /mh:portability-preflight -->"
+fi
 
 exit 0
