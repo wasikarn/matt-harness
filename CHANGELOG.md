@@ -5,6 +5,27 @@ All notable changes to `mh` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [1.1.3] — 2026-09-06
+
+Deep-audit of the round-3 session (`/mh:deep-audit`), probing the new `bash -c` / `eval` unwrap.
+
+### Fixed
+
+- `gate:bash:irrecoverable`: the one-level unwrap now runs after the prefix-wrapper unwrap, so
+  `sudo bash -c '<destructive>'` / `env bash -c ...` deny like `sudo <destructive>` does; a
+  single-quoted body is substitution-blanked again (the outer pass only blanked double-quoted
+  bodies, so `bash -c 'gi$(true)t push --force'` slipped through); a subagent's nested
+  `claude -p|--bg|...` spawn is denied inside `bash -c` / `eval` too, not only in a heredoc.
+  Nine regression cases.
+- Stale `doctrine-bootstrap.sh` comment (jq gates only the cost tracker).
+
+### Added
+
+- `scripts/gate-canary.sh`: the pre-commit gate canary extracted so it can be tested;
+  `tests/hooks/test-gate-canary.sh` proves it fails on an injected NameError and on an
+  apostrophe inside an embedded python string. pre-commit now runs it against the index copy
+  of `hooks/gates/`, not the working tree.
+
 ## [1.1.2] — 2026-09-05
 
 The INFO tail of the round-3 review.

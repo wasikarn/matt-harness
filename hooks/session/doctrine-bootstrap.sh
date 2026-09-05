@@ -14,9 +14,8 @@ fi
 # Dependency preflight (#93): the deny gates fail OPEN (with a per-call stderr
 # note) when python3 is missing — announce that once, up front, so the
 # degradation is visible at session start instead of being discovered
-# mid-destructive-command. jq gates the cost tracker and several nudges the
-# same way (they skip themselves silently per-event; this is their one
-# announcement).
+# mid-destructive-command. jq gates the cost tracker the same way (it skips
+# itself silently per-event; this is its one announcement).
 if ! command -v python3 >/dev/null 2>&1; then
   echo "<!-- mh:portability-preflight -->"
   echo "**matt-harness:** \`python3\` not found on PATH. Every gate (irrecoverable / subagent-git-guard / task-complete-separation / test-integrity / config-write-guard) is failing open with a stderr note — destructive-command protection is OFF until python3 is installed."

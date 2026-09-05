@@ -10,7 +10,8 @@ bash skills/meta/harness-audit/scripts/audit.sh   # 0 CRIT required; the structu
 bash scripts/run-gauntlet.sh                       # plugin-validate (manifest only), lint, every test under tests/
 ```
 
-Pre-push runs the gauntlet; pre-commit runs lint + audit + a 4096-byte cap on `docs/METHODOLOGY.md`.
+Pre-push runs the gauntlet; pre-commit runs lint + audit + a 4096-byte cap on `docs/METHODOLOGY.md` +
+a benign-payload canary on staged gates (`scripts/gate-canary.sh`).
 
 ## Git hooks
 

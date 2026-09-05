@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# gate-canary.sh <gates-dir> — every gate in <gates-dir>/*.sh must ALLOW (rc 0)
+# each benign payload below with no traceback on stderr. A NameError, an
+# apostrophe inside an embedded python string, or a missing import in a gate
+# blocks every Bash call machine-wide (2026-09-05 incident), so pre-commit runs
+# this on the staged gates and tests/hooks/test-gate-canary.sh proves it fails
+# on an injected slip.
+set -uo pipefail
+dir="${1:?usage: gate-canary.sh <gates-dir>}"
+fail=0
+for g in "$dir"/*.sh; do
+  [ -f "$g" ] || continue
+  for p in '{"tool_name":"Bash","tool_input":{"command":"ls -la"}}' \
+           '{"tool_name":"Bash","agent_id":"canary","tool_input":{"command":"git status"}}' \
+           '{"tool_name":"Edit","tool_input":{"file_path":"src/app.ts","old_string":"a","new_string":"b"}}' \
+           '{"tool_name":"Write","tool_input":{"file_path":"src/app.ts","content":"x"}}' \
+           '{"tool_name":"TaskUpdate","tool_input":{"taskId":"1","status":"in_progress"}}'; do
+    err=$(printf '%s' "$p" | bash "$g" 2>&1 >/dev/null); rc=$?
+    if [ "$rc" -ne 0 ] || printf '%s' "$err" | /usr/bin/grep -qiE 'Traceback|internal error|Error:'; then
+      echo "gate canary failed: $g rc=$rc on $p" >&2
+      printf '%s\n' "$err" | head -5 >&2
+      fail=1
+    fi
+  done
+done
+exit "$fail"

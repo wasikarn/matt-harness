@@ -7,7 +7,8 @@
 `claude plugin validate . --strict` is the primary gate. `scripts/run-gauntlet.sh` runs three
 layers in parallel: plugin-validate, lint (shell, Python, JSON, whole-tree home-path ban), and
 every test under `tests/`. pre-push runs the gauntlet; pre-commit runs the fast subset (syntax,
-shellcheck on staged `.sh`, JSON parse, the home-path ban, harness-audit CRIT only).
+shellcheck on staged `.sh`, JSON parse, the home-path ban, harness-audit CRIT only, and when a gate
+is staged, `scripts/gate-canary.sh` against the index copy of `hooks/gates/`).
 
 ## Git hooks
 

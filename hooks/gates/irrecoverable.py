@@ -443,41 +443,52 @@ def basename(p):
     return p.rsplit("/", 1)[-1]
 
 # One-level unwrap of `bash|sh|zsh|dash|ksh -c "<body>"` and `eval <body>`: the
-# quoted body is a command line, so it gets its own windows. One level only
-# (a body that itself says `bash -c` is a non-goal); the outer tokenizer has
-# already stripped the quotes and blanked substitutions inside the body.
+# quoted body is a command line, so it is re-tokenized into windows of its own,
+# appended to `windows` while the main loop runs (a list picks up items appended
+# mid-iteration). Called AFTER the prefix-wrapper unwrap so `sudo bash -c` opens
+# too. One level only: only the original windows (index < _N_OUTER) unwrap, so a
+# body that itself says `bash -c` is a documented non-goal. The outer tokenizer
+# stripped the quotes but blanked substitutions only inside a DOUBLE-quoted body
+# (a single-quoted one is inert to the outer shell and live to the inner), so
+# the body is blanked again here and its PH tokens duplicate-classify below.
 _SHELLS = {"bash", "sh", "zsh", "dash", "ksh"}
-_inner = []
-for _w in windows:
-    if not _w:
-        continue
-    _a0, _body = basename(_w[0]), None
-    if _a0 in _SHELLS:
-        for _i in range(1, len(_w) - 1):
-            _t = _w[_i].replace(PH, "")
-            if _t.startswith("-") and not _t.startswith("--") and "c" in _t:
-                _body = _w[_i + 1]
+_N_OUTER = len(windows)
+
+def _unwrap_shell(argv0, rest):
+    body = None
+    if argv0 in _SHELLS:
+        for i in range(len(rest) - 1):
+            t = rest[i].replace(PH, "")
+            if t.startswith("-") and not t.startswith("--") and "c" in t:
+                body = rest[i + 1]
                 break
-    elif _a0 == "eval" and len(_w) > 1:
-        _body = " ".join(_w[1:])
-    if not _body:
-        continue
+    elif argv0 == "eval" and rest:
+        body = " ".join(rest)
+    if not body:
+        return
+    if d.get("agent_id") and _nested_spawn(body):
+        deny("a subagent may not spawn a nested Claude Code session via Bash "
+             "(claude -p/--print/--agent/--bg/--worktree), inside bash -c / eval either "
+             "-- only the main session dispatches")
     try:
-        _lex = shlex.shlex(_newlines_to_seps(_body), posix=True, punctuation_chars=True)
-        _lex.whitespace_split = True
-        _cur = []
-        for _tok in _lex:
-            if _tok in OPERATORS:
-                if _cur:
-                    _inner.append(_cur)
-                _cur = []
+        lex = shlex.shlex(_blank_substitutions(_newlines_to_seps(body)), posix=True, punctuation_chars=True)
+        lex.wordchars += PH
+        lex.whitespace_split = True
+        cur = []
+        for tok in list(lex) + [";"]:
+            if tok in OPERATORS:
+                if cur:
+                    windows.append(cur)
+                    curc = [t for t in cur if not (t and all(c == PH for c in t))]
+                    if curc != cur:
+                        windows.append(curc)
+                cur = []
             else:
-                _cur.append(_tok)
-        if _cur:
-            _inner.append(_cur)
+                cur.append(tok)
     except ValueError:
         deny("could not safely tokenize the body of a bash -c / eval string - confirm with user first")
-windows = windows + _inner
+    if _DEPTH_BUDGET_BLOWN[0]:
+        deny("command too long to safely tokenize (nested substitution exceeded depth-scan budget) - confirm with user first")
 
 # Candidate names for placeholder-splice duplication: the exact argv0 basenames
 # and git subcommands any check below dispatches on by exact string match.
@@ -490,7 +501,7 @@ KNOWN_GIT_SUBS = ("push", "reset", "clean", "restore", "checkout", "switch", "br
 def _has_raw_subst(t):
     return "`" in t or "$(" in t or "${" in t
 
-for w in windows:
+for _wi, w in enumerate(windows):
     if not w:
         continue
     argv0, rest = basename(w[0]), w[1:]
@@ -560,6 +571,9 @@ for w in windows:
             if i >= len(rest):
                 break
             argv0, rest = basename(rest[i]), rest[i + 1:]
+
+    if _wi < _N_OUTER:
+        _unwrap_shell(argv0, rest)
 
     if argv0 == "xargs":
         # xargs args are never free-text prose, so scanning for a dangerous

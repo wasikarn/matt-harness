@@ -684,6 +684,26 @@ test_allow "$IRRECOVERABLE" "bash -c with a harmless body" \
   "$(bash_payload 'bash -c "ls -la && git status"')"
 test_allow "$IRRECOVERABLE" "bash -c body mentioning rm -rf as data" \
   "$(bash_payload 'bash -c "echo rm -rf is dangerous"')"
+# deep-audit 2026-09-06: the unwrap ran before the prefix-wrapper unwrap, never
+# blanked a single-quoted body, and the nested-spawn deny never saw inside it.
+test_deny  "$IRRECOVERABLE" "sudo bash -c with rm -rf inside (wrapper before shell)" \
+  "$(bash_payload "sudo bash -c 'rm -rf x'")"
+test_deny  "$IRRECOVERABLE" "env bash -c with git reset --hard inside" \
+  "$(bash_payload "env bash -c 'git reset --hard'")"
+test_deny  "$IRRECOVERABLE" "bash -c single-quoted body with a spliced argv0" \
+  "$(bash_payload "bash -c 'gi\$(true)t push --force origin main'")"
+test_deny  "$IRRECOVERABLE" "bash -c single-quoted body hiding the deny inside a substitution" \
+  "$(bash_payload "bash -c 'echo \$(git push --force origin main)'")"
+test_deny  "$IRRECOVERABLE" "bash -c single-quoted body with a bare-PH slot shift (stash \$(true) drop)" \
+  "$(bash_payload "bash -c 'git stash \$(true) drop'")"
+test_deny  "$IRRECOVERABLE" "subagent: bash -c hiding a nested claude -p spawn" \
+  "$(bash_agent_payload "bash -c 'claude -p hi'" fork)"
+test_deny  "$IRRECOVERABLE" "subagent: eval hiding a nested claude --bg spawn" \
+  "$(bash_agent_payload "eval 'claude --bg'" fork)"
+test_allow "$IRRECOVERABLE" "main session: bash -c claude -p (no agent_id, not a nested spawn)" \
+  "$(bash_payload "bash -c 'claude -p hi'")"
+test_allow "$IRRECOVERABLE" "sudo bash -c with a harmless body" \
+  "$(bash_payload "sudo bash -c 'ls -la'")"
 # Non-goal: cat <<EOF | bash, eval "$(cat <<EOF)", fish <<EOF, and a << lookalike inside quotes.
 test_allow "$TASK_COMPLETE" "non-TaskUpdate tool with agent_type (out of scope)" \
   "$(python3 -c 'import json; print(json.dumps({"tool_name":"Bash","tool_input":{"command":"ls"},"agent_type":"mh:build-error-resolver"}))')"
