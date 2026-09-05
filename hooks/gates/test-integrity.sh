@@ -56,28 +56,15 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 0
 fi
 
-# Corrupted/partial plugin install (deep-audit follow-up to #146): this
-# gate's embedded python
-# does `from _hook_output import emit_ask`, resolved from this gate's
-# sibling lib/ dir (passed as argv[1] below). A missing lib module raises
-# ModuleNotFoundError -> exit 1 (confirmed live), a nonzero non-2 exit that
-# Claude Code's hook contract treats as
-# non-blocking -- the gated edit proceeds regardless, i.e. this
-# tamper-resistance gate fails OPEN. Emit the same ask-JSON shape
-# emit_ask() would produce instead of letting the traceback exit nonzero.
-_lib="$(dirname "$0")/lib"
-if [ ! -r "$_lib/_hook_output.py" ]; then
-  printf '%s\n' '{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask", "permissionDecisionReason": "test-integrity: required module lib/_hook_output.py is missing or unreadable -- failing safe, approve manually or investigate the plugin install."}}'
-  exit 0
-fi
-
 # shellcheck disable=SC2016  # single quotes are intentional: this is Python code, not shell
 python3 -c '
 import json, os, re, sys
 from collections import Counter
 
-sys.path.insert(0, sys.argv[1])
-from _hook_output import emit_ask
+def emit_ask(reason):
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
+                                             "permissionDecision": "ask",
+                                             "permissionDecisionReason": reason}}))
 
 # Real test-root shapes only — not a bare "test"/"spec" substring, which
 # false-positived on spec-miner.md, anything containing "specific"/"inspect",
@@ -97,8 +84,8 @@ PATH_RE = re.compile(
 # against this repo'"'"'s own test files before writing this pattern, per the
 # plan'"'"'s own instruction not to assume a vocabulary that is not actually in
 # use here. Also covers pytest, jest/vitest `expect(`/`toThrow`, Go `t.Fatal*`, and chai `should`.
-ASSERT_RE = re.compile(r"\bcheck\s*\"|\bassert\b|\bself\.assert|\bpytest\.raises\b|\bpytest\.fail\b|\bexpect\s*\(|\btoThrow\b|\bt\.(Fatal|Error|Fail)\w*\(|\bshould\b")
-SKIP_RE = re.compile(r"#\s*SKIP\b|@pytest\.mark\.(skip|xfail)|\.skip\s*\(|\bxit\s*\(|\bit\.skip\s*\(", re.IGNORECASE)
+ASSERT_RE = re.compile(r"\bcheck\s*\"|\bassert\b|\bself\.assert|\bpytest\.raises\b|\bpytest\.fail\b|\bexpect\s*\(|\btoThrow\b|\bt\.(Fatal|Error|Fail)\w*\(|\.should\b")
+SKIP_RE = re.compile(r"#\s*SKIP:|@pytest\.mark\.(skip|xfail)|\.skip\s*\(|\bxit\s*\(|\bit\.skip\s*\(", re.IGNORECASE)
 # Bash has no marker-string idiom for disabling a line the way pytest/jest do
 # -- it disables via control flow instead. `if`/`elif`/`while` opening on a
 # bare false/0, or a bracket/test numeric comparison that'"'"'s statically
@@ -277,4 +264,4 @@ except Exception:
     # Cannot confirm this edit did not weaken a test — fail toward asking,
     # same direction db-write-gate.sh takes on an unclassifiable statement.
     emit_ask("test-integrity: could not classify this edit to a test-shaped path; approve manually or deny.")
-' "$_lib"
+'

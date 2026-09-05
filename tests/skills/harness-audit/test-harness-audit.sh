@@ -92,18 +92,6 @@ else
   bad "check-29 bad fixture did NOT fire INFO (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
 fi
 
-# Check 25: must complete (print a Summary) on a $HOME with no plugin cache; an
-# unguarded multi-level glob once aborted the whole audit under pipefail.
-FAKE_HOME_NO_CACHE=$(mktemp -d)
-CHECK25_OUT=$(HOME="$FAKE_HOME_NO_CACHE" bash "$AUDIT" "$HERE/../../.." --only 25 2>&1 || true)
-[ -n "$FAKE_HOME_NO_CACHE" ] && trash "$FAKE_HOME_NO_CACHE" 2>/dev/null || true
-if printf '%s\n' "$CHECK25_OUT" | grep -q "=== Summary"; then
-  ok "check-25 survives a \$HOME with no plugin cache (no pipefail abort)"
-else
-  bad "check-25 aborted before printing a Summary against an empty-cache \$HOME:
-$CHECK25_OUT"
-fi
-
 echo ""
 echo "self-test: $pass passed, $fail failed"
 if [ "$fail" -ne 0 ]; then

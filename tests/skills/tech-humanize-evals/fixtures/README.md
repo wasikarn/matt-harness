@@ -2,7 +2,7 @@
 
 The 4 input drafts that `evals.json` evaluates the model against. Each fixture matches the `DRAFT:` block of its eval prompt verbatim, extracted into a standalone file so:
 
-1. **Diffing inputs across versions is trivial** — `git diff evals/fixtures/` shows exactly what changed.
+1. **Diffing inputs across versions is trivial** — `git diff fixtures/` shows exactly what changed.
 2. **Eval runners can hydrate prompts at runtime** — load fixture, append humanize instruction, send to model.
 3. **The fixture IS the audit record** — anyone reviewing the eval knows what the model saw. Inline DRAFTs in `evals.json` force reviewers to scroll a giant prompt string to find the test input.
 

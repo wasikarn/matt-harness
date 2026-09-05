@@ -200,43 +200,6 @@ out=$(payload_edit "$WORK/skills/review/test-coverage/SKILL.md" 'assert nothing 
 ok=1; is_ask "$out" || ok=0
 check "Edit to a path merely containing 'test' as a substring -> noask" "$ok"
 
-echo ""
-echo "=== missing lib/_hook_output.py (corrupted/partial plugin install, deep-audit follow-up to #146) ==="
-# This gate's embedded python does `from _hook_output import emit_ask`,
-# resolved from this gate's sibling lib/ dir. A missing lib module raises
-# ModuleNotFoundError -> exit 1, a nonzero non-2 exit that
-# Claude Code's hook contract treats as non-blocking --
-# the gated edit proceeds regardless, i.e. this gate fails OPEN. Simulate
-# by copying ONLY the .sh + an empty lib/ into an isolated scratch dir
-# (never touch the real repo files).
-MISSLIB_TI_DIR=$(mktemp -d "${TMPDIR:-/tmp}/kbg-misslib-ti.XXXXXX")
-cp "$GATE" "$MISSLIB_TI_DIR/test-integrity.sh"
-mkdir -p "$MISSLIB_TI_DIR/lib"
-_errf=$(mktemp "${TMPDIR:-/tmp}/kbg-misslib-ti-err.XXXXXX")
-# Payload precomputed into a variable, THEN piped via printf (not a live
-# python3 producer process) -- the gate exits before reading all of stdin
-# (it has no early "$(cat)" stdin-drain like verifier-protect.sh/
-# merge-door.sh do), so chaining a live python3 producer directly into it
-# triggers a spurious BrokenPipeError/exit-120 on the PRODUCER side that
-# `pipefail` then surfaces as this pipeline's own exit code -- a test-harness
-# artifact, not a real gate bug (confirmed: $_out already holds the correct
-# ask JSON either way).
-_payload_ti=$(payload_edit "tests/foo_test.py" 'assert x == 1' 'pass')
-_out=$(printf '%s' "$_payload_ti" | bash "$MISSLIB_TI_DIR/test-integrity.sh" 2>"$_errf")
-_rc=$?
-_ok=1
-# Real JSON parse, not a substring grep -- a grep on the literal ask text
-# would also pass on a typo'd key Claude Code's own parser would silently
-# ignore, falling through to allow on this gate.
-if [ "$_rc" -eq 0 ] \
-   && echo "$_out" | python3 -c 'import json,sys
-d=json.load(sys.stdin)["hookSpecificOutput"]
-sys.exit(0 if d["hookEventName"] == "PreToolUse" and d["permissionDecision"] == "ask" and d["permissionDecisionReason"] else 1)' 2>/dev/null \
-   && ! /usr/bin/grep -qi "ModuleNotFoundError\|Traceback" "$_errf"; then
-  _ok=0
-fi
-check "missing lib/_hook_output.py -> ask JSON (exit 0), no raw traceback" "$_ok"
-rm -f "$_errf"
 
 echo ""
 echo "=== $pass passed, $fail failed ==="

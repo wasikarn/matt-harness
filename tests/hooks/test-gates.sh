@@ -671,6 +671,19 @@ test_allow "$IRRECOVERABLE" "heredoc-authored commit message mentioning feat(cla
 test_deny  "$IRRECOVERABLE" "nested claude spawn hidden inside an interpreter-fed heredoc body still blocked (bash <<EOF ... claude -p ... EOF, GH #121 dangerous-direction control)" \
   "$(bash_agent_payload $'bash <<EOF\nclaude -p "evil"\nEOF' fork)"
 
+# --- bash -c / eval one-level unwrap ---
+test_deny  "$IRRECOVERABLE" "bash -c with rm -rf inside" \
+  "$(bash_payload 'bash -c "rm -rf build"')"
+test_deny  "$IRRECOVERABLE" "sh -c with git push --force inside" \
+  "$(bash_payload "sh -c 'git push --force origin main'")"
+test_deny  "$IRRECOVERABLE" "bash -lc (bundled) with rm -rf inside" \
+  "$(bash_payload 'bash -lc "cd x && rm -rf y"')"
+test_deny  "$IRRECOVERABLE" "eval with rm -rf inside" \
+  "$(bash_payload 'eval "rm -rf build"')"
+test_allow "$IRRECOVERABLE" "bash -c with a harmless body" \
+  "$(bash_payload 'bash -c "ls -la && git status"')"
+test_allow "$IRRECOVERABLE" "bash -c body mentioning rm -rf as data" \
+  "$(bash_payload 'bash -c "echo rm -rf is dangerous"')"
 # Non-goal: cat <<EOF | bash, eval "$(cat <<EOF)", fish <<EOF, and a << lookalike inside quotes.
 test_allow "$TASK_COMPLETE" "non-TaskUpdate tool with agent_type (out of scope)" \
   "$(python3 -c 'import json; print(json.dumps({"tool_name":"Bash","tool_input":{"command":"ls"},"agent_type":"mh:build-error-resolver"}))')"

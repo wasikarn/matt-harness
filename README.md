@@ -28,11 +28,11 @@ validator for a dispatched builder's multi-file work, `NEEDS-DECISION` instead o
 
 ## What it ships
 
-- **Skills:** `mh:harness-audit` (27 structural checks), `mh:memory-lint`, `mh:cost-report`,
+- **Skills:** `mh:harness-audit` (26 structural checks), `mh:memory-lint`, `mh:cost-report`,
   `mh:deep-audit`, `mh:ideate`, `mh:post-mortem`, `mh:tech-humanize`.
-- **Agents (10):** backend-architect, blind-spot-hunter, code-architect, ideate-critic,
+- **Agents (9):** backend-architect, blind-spot-hunter, code-architect, ideate-critic,
   nextjs-reviewer, performance-optimizer, plan-reviewer, requirement-analyst,
-  silent-failure-hunter, summarizer. Generic TS review and security review go to
+  silent-failure-hunter. Generic TS review and security review go to
   `mattpocock-skills:code-review` and native `/security-review`. Reviewers are read-only and never
   grant `Agent`.
 - **Stop hooks:** `cost-tracker.sh` (per-session token cost to `~/.local/share/kbg/metrics/costs.jsonl`),

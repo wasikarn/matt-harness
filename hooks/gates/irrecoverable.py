@@ -6,8 +6,9 @@ try:
 except Exception:
     d = None
 
-# Malformed/absent payload fails closed: empty stdin, truncated JSON, and
-# tool_input:null must not collapse into "no command to check".
+# A malformed payload that reaches this script fails closed (truncated JSON,
+# tool_input:null). irrecoverable.sh short-circuits empty stdin and payloads
+# with no destructive token before python runs, so those allow by design.
 if not isinstance(d, dict) or not isinstance(d.get("tool_input"), dict):
     print("[mh:gate] BLOCKED: malformed PreToolUse payload — failing closed", file=sys.stderr)
     sys.exit(2)
@@ -169,7 +170,7 @@ def delete_hint():
             "delete, or install one (macOS: brew install trash; Linux: trash-cli)")
 
 # Tokenize respecting quotes so quoted free text stays one token.
-# ponytail: no command-substitution/eval unwrapping -- habit-guard, not sandbox.
+# ponytail: no command-substitution unwrapping (bash -c / eval get one level) -- habit-guard, not sandbox.
 # Newlines are command separators in bash but shlex eats them as whitespace,
 # so a literal ";" is inserted after each real newline. A backslash-newline is
 # a line continuation: both chars are removed entirely so the next token joins
@@ -440,6 +441,43 @@ windows = _aug
 
 def basename(p):
     return p.rsplit("/", 1)[-1]
+
+# One-level unwrap of `bash|sh|zsh|dash|ksh -c "<body>"` and `eval <body>`: the
+# quoted body is a command line, so it gets its own windows. One level only
+# (a body that itself says `bash -c` is a non-goal); the outer tokenizer has
+# already stripped the quotes and blanked substitutions inside the body.
+_SHELLS = {"bash", "sh", "zsh", "dash", "ksh"}
+_inner = []
+for _w in windows:
+    if not _w:
+        continue
+    _a0, _body = basename(_w[0]), None
+    if _a0 in _SHELLS:
+        for _i in range(1, len(_w) - 1):
+            _t = _w[_i].replace(PH, "")
+            if _t.startswith("-") and not _t.startswith("--") and "c" in _t:
+                _body = _w[_i + 1]
+                break
+    elif _a0 == "eval" and len(_w) > 1:
+        _body = " ".join(_w[1:])
+    if not _body:
+        continue
+    try:
+        _lex = shlex.shlex(_newlines_to_seps(_body), posix=True, punctuation_chars=True)
+        _lex.whitespace_split = True
+        _cur = []
+        for _tok in _lex:
+            if _tok in OPERATORS:
+                if _cur:
+                    _inner.append(_cur)
+                _cur = []
+            else:
+                _cur.append(_tok)
+        if _cur:
+            _inner.append(_cur)
+    except ValueError:
+        deny("could not safely tokenize the body of a bash -c / eval string - confirm with user first")
+windows = windows + _inner
 
 # Candidate names for placeholder-splice duplication: the exact argv0 basenames
 # and git subcommands any check below dispatches on by exact string match.

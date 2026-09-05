@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 11. Orphaned hooks (in filesystem but not in settings.json)
+# 11. Orphaned hooks (in filesystem but not in hooks.json / settings.json)
 # NOTE: this used to be wrapped in `if [ -f "$SETTINGS" ]; then ... fi`, which
 # silently skipped the ENTIRE check body whenever settings.json doesn't exist
 # -- true for matt-harness's own flat plugin-mode layout (this repo carries no

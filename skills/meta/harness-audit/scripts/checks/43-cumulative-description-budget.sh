@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 43. Cumulative skill+command description budget. Check 20 caps each
+# 43. Cumulative skill description budget. Check 20 caps each
 # description at 1536 chars individually — nothing sums the fleet. Skills and
 # commands share one runtime listing budget (docs: "scales at ~1% of the
 # model's context window", configurable via SLASH_COMMAND_TOOL_CHAR_BUDGET or
@@ -110,9 +110,9 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
 done
 _tokens=$((_total / 4))
 _budget_tokens=$((BUDGET_CHARS / 4))
-info "cumulative skill+command description budget: ${_total} chars (~${_tokens} tokens) of a ${BUDGET_CHARS}-char (~${_budget_tokens}-token) ceiling [${_budget_source}]"
+info "cumulative skill description budget: ${_total} chars (~${_tokens} tokens) of a ${BUDGET_CHARS}-char (~${_budget_tokens}-token) ceiling [${_budget_source}]"
 if [ "$_total" -gt "$BUDGET_CHARS" ]; then
-  warn "cumulative skill+command descriptions are ${_total} chars (~${_tokens} tokens), over the ${BUDGET_CHARS}-char (~${_budget_tokens}-token) listing-budget ceiling [${_budget_source}] — least-invoked surfaces risk silently dropping from the model's context; trim descriptions or split reference content out of the description field"
+  warn "cumulative skill descriptions are ${_total} chars (~${_tokens} tokens), over the ${BUDGET_CHARS}-char (~${_budget_tokens}-token) listing-budget ceiling [${_budget_source}] — least-invoked surfaces risk silently dropping from the model's context; trim descriptions or split reference content out of the description field"
 fi
 # Agent (Agent-tool) descriptions, tracked separately, NOT summed into the
 # ceiling above. Confirmed 2026-08-18: neither SLASH_COMMAND_TOOL_CHAR_BUDGET
@@ -133,5 +133,5 @@ for f in "$CLAUDE_DIR/agents"/*.md; do
   _agent_total=$((_agent_total + ${#desc}))
 done
 _agent_tokens=$((_agent_total / 4))
-info "cumulative agent description total: ${_agent_total} chars (~${_agent_tokens} tokens) — tracked separately, not summed into the skill+command ceiling above; no documented budget mechanism confirmed for the Agent-tool listing (2026-08-18)"
+info "cumulative agent description total: ${_agent_total} chars (~${_agent_tokens} tokens) — tracked separately, not summed into the skill ceiling above; no documented budget mechanism confirmed for the Agent-tool listing (2026-08-18)"
 unset f desc _total _tokens _budget_tokens BUDGET_CHARS _local_settings _global_settings _frac _v _sf _budget_source _agent_total _agent_tokens

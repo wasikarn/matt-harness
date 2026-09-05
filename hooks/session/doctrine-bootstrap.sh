@@ -1,24 +1,13 @@
 #!/usr/bin/env bash
 # SessionStart: inject docs/METHODOLOGY.md whole into the session context.
 # Output goes to stdout → CC injects it as system context for the session.
-# Pointers in the file name `$CLAUDE_PLUGIN_ROOT/docs/...` so main can `Read`
-# them from any repo — the literal is expanded here, at injection time,
-# because mh is enabled user-wide and cwd is not the plugin.
 set -uo pipefail
 
 METHODOLOGY="${CLAUDE_PLUGIN_ROOT:-}/docs/METHODOLOGY.md"
 
 if [[ -f "$METHODOLOGY" ]]; then
   echo "<doctrine>"
-  # Literal index/substr splice, not sed/gsub: a root containing `&`, `|`,
-  # or `\` would corrupt or empty the doctrine through a replacement string;
-  # ENVIRON (not awk -v) also skips backslash-escape processing. A trailing slash
-  # on the root is stripped so pointers never render `//docs/...`. The splice also
-  # matches the placeholder as a prefix of longer identifiers (none exist today).
-  awk 'BEGIN { root = ENVIRON["CLAUDE_PLUGIN_ROOT"]; sub(/\/$/, "", root); v = "$CLAUDE_PLUGIN_ROOT" }
-           { out = ""
-             while ((i = index($0, v)) > 0) { out = out substr($0, 1, i - 1) root; $0 = substr($0, i + length(v)) }
-             print out $0 }' "$METHODOLOGY"
+  cat "$METHODOLOGY"
   echo "</doctrine>"
 fi
 

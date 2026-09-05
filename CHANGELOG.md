@@ -5,6 +5,28 @@ All notable changes to `mh` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [1.1.2] — 2026-09-05
+
+The INFO tail of the round-3 review.
+
+### Removed
+
+- `summarizer` agent (base-model capability; 9 agents now).
+- harness-audit check 25 (`skills:` preloads; no agent carries the field) and the hooks loop in
+  check 03 (strict subset of check 11): 26 checks.
+- `hooks/gates/lib/_hook_output.py`: `emit_ask` inlined into the two ask-gates, which also removes
+  the fail-open path when the lib import sat outside the try.
+- Dead `$CLAUDE_PLUGIN_ROOT` splice in `doctrine-bootstrap.sh` (plain `cat`).
+
+### Changed
+
+- `gate:bash:irrecoverable` unwraps one level of `bash|sh|zsh|dash|ksh -c "..."` and `eval "..."`;
+  six regression cases.
+- `gate:bash:subagent-git-guard` skips python for main-session calls (no `agent_id` in payload).
+- `gate:write:test-integrity` regexes no longer match prose (`.should`, `# SKIP:`).
+- `tech-humanize/evals/` moved to `tests/skills/tech-humanize-evals/`; check-20 fixtures moved from the
+  retired `patterns` bucket to `meta`.
+
 ## [1.1.1] — 2026-09-05
 
 Round-3 review of v1.1.0 (three fresh-context reviewers: hooks, agents/skills, docs/scripts).

@@ -1,13 +1,13 @@
 # Agent authoring conventions
 
-What the 10-agent fleet actually does, made explicit so a new agent has something accurate to
+What the 9-agent fleet actually does, made explicit so a new agent has something accurate to
 pattern-match against. Prose guidance, not a gate; the mechanical checks are named per item.
 
 ## 1. Tool scoping: explicit allowlist, least privilege
 
 Every agent declares `tools:` as an explicit allowlist (`harness-audit` check 09, CRIT when
 missing). Read-only reviewers and analysts (`nextjs-reviewer`, `backend-architect`, `code-architect`, `blind-spot-hunter`,
-`silent-failure-hunter`, `requirement-analyst`, `summarizer`) get `Read`, `Grep`, `Glob`, and
+`silent-failure-hunter`, `requirement-analyst`) get `Read`, `Grep`, `Glob`, and
 usually `Bash` for `git log`/`git diff` inspection (read-only by discipline, not by tool grant);
 never `Write`/`Edit` (check 32). Mutating implementers
 (`performance-optimizer`) add `Write`/`Edit`. **`Agent` is never granted** (check 41): a
@@ -87,5 +87,5 @@ the plugin ships no preload-only skills.
 5. If it grades other work: fresh-context, advisory-only, never self-gating.
 6. If it reports findings: state a confidence bar; zero findings is valid.
 7. If it returns a branchable status: closed set of terminal codes in `## Output Format`.
-8. Run `bash skills/meta/harness-audit/scripts/audit.sh`; checks 04, 09, 24, 25, 41, 54
+8. Run `bash skills/meta/harness-audit/scripts/audit.sh`; checks 04, 09, 24, 41, 54
    touch new agents directly.

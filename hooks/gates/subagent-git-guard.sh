@@ -16,8 +16,12 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 0
 fi
 
+# Fast path: main-session calls (no agent_id) never reach python.
+_input=$(cat)
+case "$_input" in *'"agent_id"'*) ;; *) exit 0 ;; esac
+
 # shellcheck disable=SC2016  # single quotes are intentional: this is Python code, not shell
-python3 -c '
+printf '%s' "$_input" | python3 -c '
 import json, re, sys
 
 try:
