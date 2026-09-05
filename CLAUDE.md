@@ -23,9 +23,11 @@ keep that path relative; an absolute path silently runs zero hooks after a renam
 
 Before writing a new skill or agent, check in order: (1) the installed
 `mattpocock-skills@mattpocock` plugin plus the local clone at `~/Codes/Personals/mattpocock-skills`
-if present (`git fetch` it first); (2) `~/Codes/Personals/ECC` and `~/Codes/Personals/superpowers`
-if present; (3) sibling harnesses under `~/Codes/Personals/`. Create a native surface only when
-none fit. Detail: `docs/reference/composer-not-creator.md`.
+if present (`git fetch` it first); (2) the installed `codex@openai-codex` plugin, if present,
+for anything the task needs from a second, independent coding agent — `docs/reference/codex-integration-map.md`;
+(3) `~/Codes/Personals/ECC` and `~/Codes/Personals/superpowers` if present; (4) sibling harnesses
+under `~/Codes/Personals/`. Create a native surface only when none fit. Detail:
+`docs/reference/composer-not-creator.md`.
 
 ## Authoring
 

@@ -7,7 +7,7 @@
 # WARN only; the operator trashes or extends the allowlist. Plugin-mode (flat repo)
 # only — the dotfiles layout nests the fleet under claude/ and has its own top level.
 if [ "$CLAUDE_DIR" = "$REPO_ROOT" ]; then
-  _allow=" .git .github .claude .claude-plugin .gitattributes .gitignore .DS_Store CHANGELOG.md CLAUDE.md LICENSE README.md agents docs git-hooks hooks pyrightconfig.json scripts skills tests "
+  _allow=" .git .github .claude .claude-plugin .gitattributes .gitignore .DS_Store CHANGELOG.md CLAUDE.md CONTEXT.md LICENSE README.md agents docs git-hooks hooks pyrightconfig.json scripts skills tests "
   for _e in "$REPO_ROOT"/* "$REPO_ROOT"/.*; do
     [ -e "$_e" ] || continue
     _b=$(basename "$_e")

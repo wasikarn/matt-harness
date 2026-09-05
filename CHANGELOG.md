@@ -5,6 +5,45 @@ All notable changes to `mh` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [1.1.5] — 2026-09-06
+
+Pairs `codex@openai-codex` alongside mh as a second, independent coding agent — installed
+separately, routed to by name, never wrapped. `/grill-with-docs` on the original pairing
+prompt surfaced two model-invocable holes (`codex:setup`, `codex:rescue` both ship without
+`disable-model-invocation`) the prompt's own constraints didn't account for; ADR-0001 records
+which one gets a real gate and which stays documented-only. Full reasoning:
+`docs/plans/codex-pairing-2026-09-06.md`.
+
+### Added
+
+- `gate:skill:codex-setup-guard`: asks before a model-invoked `Skill(codex:setup)` call
+  carrying `--enable-review-gate` — the paired plugin's Stop-time LLM-judgment review gate
+  stays off by design (`CONTEXT.md`, ADR-0001). Sixth gate.
+- harness-audit check 71: WARN if that review gate is on for this repo, INFO otherwise
+  (installed/enabled state). Reads the plugin's own per-workspace `state.json` directly — no
+  subprocess, matching every other check's house style — via a new shared
+  `scripts/_lib/codex-state-path.sh` helper (also used by the self-test, since the state
+  path is content-addressed by the fixture's own absolute path and can't be pre-committed).
+  `MH_CODEX_DATA_DIR` overrides the plugin-data root for tests. Known-bad/good fixtures +
+  self-test lines; 28 checks.
+- `docs/reference/codex-integration-map.md`: routing table, the gate gap, and the `AGENTS.md`
+  pointer paragraph for a repo pairing Codex with mh.
+- `CONTEXT.md` (new) and `docs/adr/0001-gate-codex-setup-not-rescue.md` (new), from the
+  `/grill-with-docs` round that produced this pairing.
+- `hooks/stop/cost-tracker.sh` tallies `/codex:*` Skill and Agent tool_use calls into a
+  `codex_invocations` row (a count, not a cost — Codex exposes no local per-call price),
+  deduped by `message.id` same as `emit_rows`' own token counts (a repeated JSONL line
+  double-counted the first version — caught by a fresh-context validator pass before
+  commit); `cost-report-dedup.js` renders it as a new `=== Codex invocations ===` section,
+  keeping the latest cumulative row per session rather than summing every re-derived row.
+
+### Fixed
+
+- Composer-not-creator order (`CLAUDE.md`, `docs/reference/composer-not-creator.md`): check
+  the installed `codex@openai-codex` plugin before writing a new mh surface.
+- `skills/meta/harness-audit/SKILL.md` said "26 structural checks" — stale since check 70
+  shipped in 1.1.4 and never corrected; now 28.
+
 ## [1.1.4] — 2026-09-06
 
 Working-tree hygiene: the rebuild deleted every surface the keep list did not name, but

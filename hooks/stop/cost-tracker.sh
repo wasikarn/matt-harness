@@ -158,6 +158,35 @@ emit_rows() {
   ' 2>/dev/null
 }
 
+# emit_codex_invocations <transcript-file>...
+# Tallies `/codex:*` Skill and Agent tool_use calls across the given
+# transcripts into one small counts object -- a count, not a cost (Codex
+# exposes no local per-call price). Separate pass from emit_rows: that
+# function only scans .message.usage on claude*-model turns, but a Codex
+# tool_use block lives inside one of those same turns and needs its own scan.
+# Same last-line-per-(file, message.id) dedup as emit_rows -- one API response
+# spans several JSONL lines sharing one message.id (see emit_rows' own
+# 2026-09-04 comment), so a tool_use block on a repeated line would otherwise
+# be counted once per duplicate line, not once per real call.
+emit_codex_invocations() {
+  (( $# )) || return 0
+  local counts
+  counts=$(jq -nRc '
+    [ inputs | try fromjson | select(.type == "assistant") |
+      { c: (.message.content // []), id: (.message.id // null), f: input_filename } ]
+    | reduce .[] as $x ({byid: {}, out: []};
+        if $x.id == null then .out += [$x]
+        else .byid[$x.f + "::" + $x.id] = $x end)
+    | (.out + (.byid | [.[]])) | map(.c[]?) | map(select(.type == "tool_use")) |
+      map(if .name == "Skill" and ((.input.skill // "") | startswith("codex:")) then .input.skill
+          elif .name == "Agent" and ((.input.subagent_type // "") | startswith("codex:")) then .input.subagent_type
+          else empty end)
+    | group_by(.) | map({(.[0]): length}) | add // {}
+  ' "$@" 2>/dev/null) || counts=''
+  [[ -z "$counts" || "$counts" == "{}" ]] && return 0
+  printf '%s' "$counts"
+}
+
 if [[ -n "$transcript" && -f "$transcript" ]]; then
   rows=$(emit_rows orchestrator '{}' "$transcript")
 
@@ -167,6 +196,7 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
   # 2026-08-07). Reading only .transcript_path therefore made every subagent's spend
   # invisible to mh:cost-report. Both halves are now counted and separable by `stream`.
   sub_dir="${transcript%.jsonl}/subagents"
+  sub_files=()
   if [[ -d "$sub_dir" ]]; then
     shopt -s nullglob
     sub_files=("$sub_dir"/*.jsonl)
@@ -176,6 +206,13 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
       sub_rows=$(emit_rows subagent "$sub_typemap" "${sub_files[@]}")
       [[ -n "$sub_rows" ]] && rows="${rows:+$rows$'\n'}$sub_rows"
     fi
+  fi
+
+  codex_counts=$(emit_codex_invocations "$transcript" "${sub_files[@]}")
+  if [[ -n "$codex_counts" ]]; then
+    codex_row=$(jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg sid "$session_id" \
+      --argjson c "$codex_counts" '{timestamp: $ts, session_id: $sid, codex_invocations: $c}')
+    [[ -n "$codex_row" ]] && rows="${rows:+$rows$'\n'}$codex_row"
   fi
 
   metrics_file="$metrics_dir/costs.jsonl"

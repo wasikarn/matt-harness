@@ -5,7 +5,7 @@ installed plugins (`mattpocock-skills`, `ponytail`, `diagram-design`, `qmd`) can
 a short set of deny gates, a 4 KB methodology injected at session start, and a few
 skills and agents that earned their place.
 
-## What it enforces (5 gates, `hooks/hooks.json`)
+## What it enforces (6 gates, `hooks/hooks.json`)
 
 | gate | effect |
 |---|---|
@@ -14,6 +14,7 @@ skills and agents that earned their place.
 | `gate:task:complete-separation` | denies a subagent marking its own task complete |
 | `gate:write:test-integrity` | asks before a write that weakens a test |
 | `gate:write:config-guard` | asks before a write to Claude Code settings `hooks`/`enabledPlugins` |
+| `gate:skill:codex-setup-guard` | asks before a model-invoked `--enable-review-gate` call to the paired Codex plugin's `/codex:setup` |
 
 Each gate is its own PreToolUse entry with an 8 s timeout; Claude Code runs matching hooks in
 parallel and merges deny > ask > allow (verified empirically 2026-09-05). A timed-out gate does not
@@ -28,7 +29,7 @@ validator for a dispatched builder's multi-file work, `NEEDS-DECISION` instead o
 
 ## What it ships
 
-- **Skills:** `mh:harness-audit` (27 structural checks), `mh:memory-lint`, `mh:cost-report`,
+- **Skills:** `mh:harness-audit` (28 structural checks), `mh:memory-lint`, `mh:cost-report`,
   `mh:deep-audit`, `mh:ideate`, `mh:post-mortem`, `mh:tech-humanize`.
 - **Agents (9):** backend-architect, blind-spot-hunter, code-architect, ideate-critic,
   nextjs-reviewer, performance-optimizer, plan-reviewer, requirement-analyst,
@@ -37,6 +38,8 @@ validator for a dispatched builder's multi-file work, `NEEDS-DECISION` instead o
   grant `Agent`.
 - **Stop hooks:** `cost-tracker.sh` (per-session token cost to `~/.local/share/kbg/metrics/costs.jsonl`),
   `memory-audit-commit.sh` (commits a git-backed memory store, opt-in).
+- **Optional pairing:** `codex@openai-codex`, installed separately and routed to by name for a
+  second opinion from a different model family — `docs/reference/codex-integration-map.md`.
 
 ## How this plugin maps to a 6-layer harness
 
@@ -72,6 +75,14 @@ claude plugin list                               # both plugins "enabled"
 The plugin ships `defaultEnabled: false`; add `"mh@wasikarn": true` to `settings.json` if
 `enable` did not. Same-version edits never reach the cache: bump `plugin.json` before
 `claude plugin update`. Uninstall: `/plugin uninstall mh@wasikarn`.
+
+## Optional: pairing with Codex
+
+`codex@openai-codex` (Apache-2.0) pairs as a second, independent coding agent — a different
+model family, routed to by name, never wrapped or orchestrated. Install separately
+(`/plugin marketplace add openai/codex-plugin-cc`, `/plugin install codex@openai-codex`,
+`/codex:setup`); mh works unchanged without it. Routing, the gate gap, and the `AGENTS.md`
+pointer: `docs/reference/codex-integration-map.md`.
 
 ## Development
 

@@ -7,7 +7,7 @@ effort: medium
 
 # Harness Audit
 
-Runs 26 structural checks over `agents/`, `skills/`, and `hooks/` and reports CRIT / WARN / INFO.
+Runs 28 structural checks over `agents/`, `skills/`, and `hooks/` and reports CRIT / WARN / INFO.
 Exit code = CRIT count; WARN and INFO never change it.
 
 ```bash
@@ -27,6 +27,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh" --only 22  # one check by number
 | Bundled files | 17 python compiles, 18 shell parses, 19 JSON parses |
 | Descriptions | 20 <= 1536 chars each, 29 no imperative injection words, 43 cumulative listing budget |
 | Doc rot | 35 script pointers in prose resolve, 42 reference files carry no leaking frontmatter |
+| Working tree | 70 stray top-level entries (gitignored clutter), 71 paired Codex plugin's review-gate state |
 
 Vendor-validated limits (1536-char descriptions, hook event set, model aliases, name format) are
 WARN, not CRIT: vendor docs lag features, so an unrecognized value is flagged for a human.

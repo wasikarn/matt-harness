@@ -3,12 +3,14 @@
 #
 # audit.sh's fragment integrity guard catches LOST checks, not SILENT ones. Each
 # known-bad fixture below is paired with a clean one; the matching check must
-# FIRE on bad and stay SILENT on good. Covered: 04, 05, 20, 22, 28, 29, 70.
+# FIRE on bad and stay SILENT on good. Covered: 04, 05, 20, 22, 28, 29, 70, 71.
 set -uo pipefail
 
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
 AUDIT="$HERE/../../../skills/meta/harness-audit/scripts/audit.sh"
 FIX="$HERE/known-bad"
+# shellcheck source=../../../scripts/_lib/codex-state-path.sh
+. "$HERE/../../../scripts/_lib/codex-state-path.sh"
 
 pass=0
 fail=0
@@ -95,6 +97,26 @@ fi
 # leftover `*-workspace/` dir; silent when the root holds only keep-list entries.
 expect_warn   70 check-70-bad-stray-entry
 expect_silent 70 check-70-good-clean-root
+
+# Check 71: paired Codex plugin's review-gate state. The state file's path is
+# content-addressed by the fixture's own absolute path (sha256 of its
+# realpath), so it can't be pre-committed to git -- written fresh here with
+# the same helper the check itself uses, under a throwaway MH_CODEX_DATA_DIR
+# so this never touches the real, shared ~/.claude/plugins/data/.
+CODEX_TMP=$(mktemp -d)
+trap 'trash "$CODEX_TMP" 2>/dev/null || true' EXIT
+setup_codex_state() {
+  local fixture="$1" gate="$2" path
+  export MH_CODEX_DATA_DIR="$CODEX_TMP/$fixture"
+  path=$(codex_state_path "$FIX/$fixture") || { bad "check-71 $fixture: codex_state_path failed"; return 1; }
+  mkdir -p "$(dirname "$path")"
+  printf '{"config":{"stopReviewGate":%s}}' "$gate" > "$path"
+}
+setup_codex_state check-71-bad-review-gate-on true
+expect_warn   71 check-71-bad-review-gate-on
+setup_codex_state check-71-good-review-gate-off false
+expect_silent 71 check-71-good-review-gate-off
+unset MH_CODEX_DATA_DIR
 
 echo ""
 echo "self-test: $pass passed, $fail failed"

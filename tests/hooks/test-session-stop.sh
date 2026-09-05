@@ -55,6 +55,65 @@ row=$(tail -1 "$metrics_file" 2>/dev/null)
 assert "echoes payload through + appends one compact JSONL cost row for a valid transcript" "$ok"
 trash "$fake_home" "$transcript" 2>/dev/null || true
 
+# Codex pairing (docs/plans/codex-pairing-2026-09-06.md item F): a Skill call
+# to a codex:* skill and an Agent dispatch to a codex:* subagent_type are
+# tallied into a separate codex_invocations row -- a count, not a cost. No
+# .message.usage on this line, so emit_rows produces nothing; the only row
+# written is the codex tally, keeping the assertion single-line.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+python3 -c '
+import json
+line = {"type": "assistant", "message": {"content": [
+    {"type": "tool_use", "name": "Skill", "input": {"skill": "codex:review", "args": None}},
+    {"type": "tool_use", "name": "Agent", "input": {"subagent_type": "codex:codex-rescue"}}
+]}}
+print(json.dumps(line))
+' > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-codex"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" && "$out" == "$payload" && -f "$metrics_file" ]] \
+  && [[ "$(wc -l < "$metrics_file" | tr -d ' ')" == "1" ]] \
+  && printf '%s' "$row" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+c = d.get("codex_invocations", {})
+sys.exit(0 if c.get("codex:review") == 1 and c.get("codex:codex-rescue") == 1 else 1)
+' 2>/dev/null && ok=1 || ok=0
+assert "tallies codex:* Skill and Agent tool_use calls into one codex_invocations row" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
+# Regression: one API response spans several JSONL lines sharing one message.id
+# (emit_rows' own 2026-09-04 finding, applies here too) -- 3 duplicate lines
+# with the same id, each carrying a codex:review tool_use, must count as ONE
+# call, not three.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+python3 -c '
+import json
+line = {"type": "assistant", "message": {"id": "msg_dup1", "content": [
+    {"type": "tool_use", "name": "Skill", "input": {"skill": "codex:review", "args": None}}
+]}}
+for _ in range(3):
+    print(json.dumps(line))
+' > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "test-codex-dup"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" && "$out" == "$payload" && -f "$metrics_file" ]] \
+  && printf '%s' "$row" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+sys.exit(0 if d.get("codex_invocations", {}).get("codex:review") == 1 else 1)
+' 2>/dev/null && ok=1 || ok=0
+assert "3 duplicate JSONL lines sharing one message.id count as 1 codex call, not 3" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
 fake_home=$(mktemp -d)
 payload=$(python3 -c 'import json; print(json.dumps({"transcript_path": "/nonexistent/transcript.jsonl", "session_id": "test-session"}))')
 out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)

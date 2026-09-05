@@ -95,6 +95,18 @@
             "timeout": 8
           }
         ]
+      },
+      {
+        "id": "gate:skill:codex-setup-guard",
+        "matcher": "Skill",
+        "description": "Ask before a model-invoked Skill(codex:setup) call carrying --enable-review-gate; the paired Codex plugin's review gate stays off by design.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/codex-setup-guard.sh\"",
+            "timeout": 8
+          }
+        ]
       }
     ],
     "Stop": [
