@@ -167,4 +167,20 @@ if [ ! -r "$_py" ]; then
   exit 0
 fi
 
-printf '%s' "$_input" | python3 "$_py" "$(dirname "$0")/lib"
+# One level deeper (deep-audit follow-up to #146): verifier-protect.py does
+# `from _hook_output import emit_ask` and `from _protected_paths import
+# is_gate_path`, both resolved from this gate's sibling lib/ dir (passed as
+# argv[1] below). A missing lib module raises ModuleNotFoundError -> exit 1,
+# a nonzero non-2 exit that hooks/dispatch-pretooluse.py's own dispatch
+# contract treats as non-blocking -- the gated call proceeds regardless,
+# i.e. this tamper-resistance gate fails OPEN. Same ask-JSON fallback shape
+# as the missing-.py check above; reused rather than duplicated.
+_lib="$(dirname "$0")/lib"
+for _mod in _hook_output.py _protected_paths.py; do
+  if [ ! -r "$_lib/$_mod" ]; then
+    printf '%s\n' "{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"permissionDecision\": \"ask\", \"permissionDecisionReason\": \"verifier-protect: required module lib/$_mod is missing or unreadable -- failing safe, approve manually or investigate the plugin install.\"}}"
+    exit 0
+  fi
+done
+
+printf '%s' "$_input" | python3 "$_py" "$_lib"

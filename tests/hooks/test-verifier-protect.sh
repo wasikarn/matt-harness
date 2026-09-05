@@ -850,6 +850,49 @@ check "missing sibling verifier-protect.py -> ask JSON (exit 0), no raw tracebac
 rm -f "$_errf"
 
 echo ""
+echo "=== missing lib/*.py module (corrupted/partial plugin install, one level deeper) ==="
+# Deep-audit follow-up to #146: verifier-protect.py does
+# `from _hook_output import emit_ask` and `from _protected_paths import
+# is_gate_path`, both resolved via sys.path.insert(0, argv[1]) pointing at
+# this gate's sibling lib/ dir (passed by this .sh wrapper's own invocation
+# line). If either lib module is missing while the top-level .sh/.py remain
+# present, python3 raises ModuleNotFoundError and exits 1 -- a nonzero,
+# non-2 exit that hooks/dispatch-pretooluse.py's own contract (lines ~14-24)
+# treats as a non-blocking error, letting the gated tool call proceed
+# regardless. That is a fail-OPEN on a tamper-resistance gate -- the exact
+# threat class this gate family exists to prevent. Simulate by copying the
+# .sh, its .py, and lib/ into an isolated scratch dir, then removing ONE lib
+# module at a time (never touch the real repo files).
+for _missing_lib in _hook_output.py _protected_paths.py; do
+  MISSLIB_VP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/kbg-misslib-vp.XXXXXX")
+  cp "$GUARD" "$MISSLIB_VP_DIR/verifier-protect.sh"
+  cp "$ROOT/hooks/gates/verifier-protect.py" "$MISSLIB_VP_DIR/verifier-protect.py"
+  mkdir -p "$MISSLIB_VP_DIR/lib"
+  for _f in "$ROOT"/hooks/gates/lib/*.py; do
+    _bn="$(basename "$_f")"
+    [ "$_bn" = "$_missing_lib" ] && continue
+    cp "$_f" "$MISSLIB_VP_DIR/lib/$_bn"
+  done
+  _errf=$(mktemp "${TMPDIR:-/tmp}/kbg-misslib-vp-err.XXXXXX")
+  _out=$(payload_bash "cp evil.sh hooks/gates/evil.sh" | bash "$MISSLIB_VP_DIR/verifier-protect.sh" 2>"$_errf")
+  _rc=$?
+  _ok=1
+  # Real JSON parse, not a substring grep -- same reasoning as the
+  # missing-top-level-script check above: a grep on the literal ask text
+  # would also pass on a typo'd key Claude Code's own parser would silently
+  # ignore, falling through to allow on a tamper-resistance gate.
+  if [ "$_rc" -eq 0 ] \
+     && echo "$_out" | python3 -c 'import json,sys
+d=json.load(sys.stdin)["hookSpecificOutput"]
+sys.exit(0 if d["hookEventName"] == "PreToolUse" and d["permissionDecision"] == "ask" and d["permissionDecisionReason"] else 1)' 2>/dev/null \
+     && ! /usr/bin/grep -qi "ModuleNotFoundError\|Traceback" "$_errf"; then
+    _ok=0
+  fi
+  check "missing lib/$_missing_lib -> ask JSON (exit 0), no raw traceback" "$_ok"
+  rm -f "$_errf"
+done
+
+echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
 [ "$fail" -eq 0 ] && exit 0 || exit 1

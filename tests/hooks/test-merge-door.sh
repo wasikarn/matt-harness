@@ -608,5 +608,40 @@ check "missing sibling merge-door.py -> ask JSON (exit 0), no raw traceback" "$_
 rm -f "$_errf"
 
 echo ""
+echo "=== missing lib/_hook_output.py (corrupted/partial plugin install, one level deeper) ==="
+# Deep-audit follow-up to #146: merge-door.py does
+# `from _hook_output import emit_ask`, resolved via
+# sys.path.insert(0, argv[1]) pointing at this gate's sibling lib/ dir
+# (passed by this .sh wrapper's own invocation line). If that lib module is
+# missing while the top-level .sh/.py remain present, python3 raises
+# ModuleNotFoundError and exits 1 -- a nonzero, non-2 exit that
+# hooks/dispatch-pretooluse.py's own contract treats as a non-blocking
+# error, letting the gated `gh pr merge` proceed regardless. That is a fail-
+# OPEN on a tamper-resistance gate -- the exact threat class this gate
+# family exists to prevent. Simulate by copying the .sh, its .py, and an
+# empty lib/ into an isolated scratch dir (never touch the real repo
+# files) -- merge-door.py imports only _hook_output, so an empty lib/ is
+# enough to reproduce the missing-module case.
+MISSLIB_MD_DIR=$(mktemp -d "${TMPDIR:-/tmp}/kbg-misslib-md.XXXXXX")
+cp "$GATE" "$MISSLIB_MD_DIR/merge-door.sh"
+cp "$ROOT/hooks/gates/merge-door.py" "$MISSLIB_MD_DIR/merge-door.py"
+mkdir -p "$MISSLIB_MD_DIR/lib"
+_errf=$(mktemp "${TMPDIR:-/tmp}/kbg-misslib-md-err.XXXXXX")
+_out=$(payload_bash "gh pr merge 123" | bash "$MISSLIB_MD_DIR/merge-door.sh" 2>"$_errf")
+_rc=$?
+_ok=1
+# Real JSON parse, not a substring grep -- same reasoning as the
+# missing-top-level-script check above.
+if [ "$_rc" -eq 0 ] \
+   && echo "$_out" | python3 -c 'import json,sys
+d=json.load(sys.stdin)["hookSpecificOutput"]
+sys.exit(0 if d["hookEventName"] == "PreToolUse" and d["permissionDecision"] == "ask" and d["permissionDecisionReason"] else 1)' 2>/dev/null \
+   && ! /usr/bin/grep -qi "ModuleNotFoundError\|Traceback" "$_errf"; then
+  _ok=0
+fi
+check "missing lib/_hook_output.py -> ask JSON (exit 0), no raw traceback" "$_ok"
+rm -f "$_errf"
+
+echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

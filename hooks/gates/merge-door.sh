@@ -80,4 +80,18 @@ if [ ! -r "$_py" ]; then
   exit 0
 fi
 
-printf '%s' "$_input" | python3 "$_py" "$(dirname "$0")/lib"
+# One level deeper (deep-audit follow-up to #146): merge-door.py does
+# `from _hook_output import emit_ask`, resolved from this gate's sibling
+# lib/ dir (passed as argv[1] below). A missing lib module raises
+# ModuleNotFoundError -> exit 1, a nonzero non-2 exit that
+# hooks/dispatch-pretooluse.py's own dispatch contract treats as
+# non-blocking -- the gated `gh pr merge` proceeds regardless, i.e. this
+# tamper-resistance gate fails OPEN. Same ask-JSON fallback shape as the
+# missing-.py check above; reused rather than duplicated.
+_lib="$(dirname "$0")/lib"
+if [ ! -r "$_lib/_hook_output.py" ]; then
+  printf '%s\n' '{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask", "permissionDecisionReason": "merge-door: required module lib/_hook_output.py is missing or unreadable -- failing safe, approve manually or use mh:ship-merge for the reviewed path."}}'
+  exit 0
+fi
+
+printf '%s' "$_input" | python3 "$_py" "$_lib"
