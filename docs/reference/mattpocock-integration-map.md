@@ -12,9 +12,9 @@ the `mattpocock-skills` cache version changes. No check parses this table.
 | codebase-design | model | `agents/code-architect.md`, `agents/backend-architect.md` boundary lines (deep-module vocabulary mid-blueprint) |
 | diagnosing-bugs | model | METHODOLOGY Rule 4; `skills/workflow/post-mortem/SKILL.md` input contract |
 | tdd | model | METHODOLOGY Rule 4 |
-| domain-modeling | model | `CLAUDE.md` Agent skills section (root `CONTEXT.md` + `docs/adr/`, created lazily) |
+| domain-modeling | model | `CLAUDE.md` Authoring section (root `CONTEXT.md` + `docs/adr/`, created lazily) |
 | grill-with-docs, improve-codebase-architecture | user | paths into domain-modeling; unrouted from mh prose |
-| grilling | model | `README.md`; escalation beyond `advisor()` for a contested call. Main session only (its research step dispatches a subagent) |
+| grilling | model | escalation for a contested call; no mh pointer. Main session only (its research step dispatches a subagent) |
 | grill-me, to-questionnaire | user | `agents/requirement-analyst.md` boundary line (live interview vs analyzing a written requirement) |
 | research | model | `CLAUDE.md` research section defers to it after qmd/context7. Main session only |
 | resolving-merge-conflicts | model | adjacent to `gate:bash:irrecoverable`: its "stage everything" step is why `git add -A` is allowed while `MERGE_HEAD` exists |
@@ -24,7 +24,7 @@ the `mattpocock-skills` cache version changes. No check parses this table.
 | triage | user | deferred: mh no longer ships a triage-labels doc |
 | wayfinder, handoff, teach, wait-what | user | deferred: their former mh touchpoints were deleted in the v1.0.0 rebuild |
 | wizard | model | deferred |
-| writing-for-agents | model | `CLAUDE.md` Skill authoring doctrine; `docs/reference/skill-authoring-conventions.md` |
+| writing-for-agents | model | `CLAUDE.md` Authoring section; `docs/reference/skill-authoring-conventions.md` |
 
 ## Reverse handoffs
 

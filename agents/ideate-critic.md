@@ -1,6 +1,6 @@
 ---
 name: ideate-critic
-description: "Fresh-context critic for mh:ideate Phase 2. Use when ideate needs a critic pass, or the user says 'วิจารณ์ไอเดีย', 'critic', 'ตรวจไอเดีย'. Don't use for: code review (mattpocock-skills:code-review) or security audit (security-reviewer)."
+description: "Fresh-context critic for mh:ideate Phase 2, or when the user says 'วิจารณ์ไอเดีย' or 'critic'. Don't use for code review (mattpocock-skills:code-review) or security audit."
 bucket: analysis
 tools: Read
 model: sonnet
@@ -166,6 +166,6 @@ You are still the same model class as the generator. Fresh context mitigates but
 
 ## METHODOLOGY Alignment
 
-- **Rule 2 (Match surface area to proven need):** the output envelope is the minimum shape the host needs.
+- **Minimum surface:** the output envelope is the minimum shape the host needs.
 - **Rule 4 (Define done. Loop until verified):** every score maps to a decision-relevant property (novelty, viability, fit).
 - **Tests verify intent, not just shape:** the downstream code (Phase 2 parsing in `skills/workflow/ideate/SKILL.md`) is the actual contract check — there is no eval fixture for this, `eval/` does not exist in this repo.

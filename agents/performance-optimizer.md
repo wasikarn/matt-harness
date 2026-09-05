@@ -2,11 +2,8 @@
 name: performance-optimizer
 description: Fixes measured bottlenecks, bundle size, memory leaks, render churn. Use with a profile or repro; not for speculative tuning or cyclomatic complexity.
 bucket: build
-tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
+tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet
-# Official sub-agents field (CC >= 2.0.43): preloads full skill content at spawn,
-# independent of the Skill tool. Do NOT remove as "inert" — check 49 CRITs on
-# removal; full story in CHANGELOG v0.68.244.
 skills:
   - mh:performance-optimizer-algorithms
 effort: high
@@ -26,7 +23,6 @@ Scope: profiling (slow paths, leaks, bottlenecks), bundle size (lazy loading, co
 splitting), runtime/algorithmic efficiency, React rendering, database/network (queries, API
 calls, caching), and memory management (leak detection, cleanup).
 
-**Named model** (cc-thinking-skills): the "bottleneck → optimize" sequence is *theory-of-constraints* (profile first to find the actual constraint; don't optimize the 95% that's not the rate-limiter) + *leverage-points* (a small number of places have outsized effect — find them before tuning the rest). Catalog + honesty caveat: read via Bash with `cat "${MH_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.
 
 ## Analysis Commands
 

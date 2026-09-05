@@ -2,11 +2,8 @@
 name: summarizer
 description: "Summarizes any text, doc, or transcript into clear, filler-free output for any audience — BLUF structure, source-fidelity, information-density calibration. Use for condensing long content."
 bucket: utility
-tools: ["Read", "Grep", "Glob"]
+tools: Read, Grep, Glob
 model: sonnet
-# Official sub-agents field (CC >= 2.0.43): preloads full skill content at spawn,
-# independent of the Skill tool. Do NOT remove as "inert" — check 49 CRITs on
-# removal; full story in CHANGELOG v0.68.244.
 skills:
   - mh:summarizer-format
 effort: medium

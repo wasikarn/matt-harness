@@ -28,8 +28,8 @@ task-completion self-grading tops out near chance). So:
 - A builder that touched 2+ files or a test gets a fresh-context validator (METHODOLOGY Rule 13).
 - Reviewer agents are read-only (`harness-audit` check 32) and return findings, never a verdict
   that ships the work by fiat.
-- `harness-audit`'s own checks are proven against known-bad fixtures in
-  `tests/skills/harness-audit/`, so the audit does not grade itself either.
+- `harness-audit`'s frontmatter checks (04, 05, 20, 28, 29) are proven against known-bad fixtures in
+  `tests/skills/harness-audit/`; the rest are smoke-tested only.
 - `gate:task:complete-separation` makes the rule mechanical for task state.
 
 The same rule at fan-in: when N subagent outputs feed one synthesis, agreement and conflict are

@@ -2,7 +2,7 @@
 name: typescript-reviewer
 description: "TypeScript/JavaScript reviewer: type safety, async correctness, idiomatic patterns. Use for TS/JS diffs; Next.js-specific concerns go to nextjs-reviewer."
 bucket: review
-tools: ["Read", "Grep", "Glob", "Bash"]
+tools: Read, Grep, Glob, Bash
 model: sonnet
 effort: medium
 ---

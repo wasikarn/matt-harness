@@ -44,7 +44,7 @@ commit and one push running zero gates. Verify with `test -d "$(git config core.
   reinstall.
 - **Re-verifying a same-session edit.** Have the agent `Read` the repo path; `Skill(<name>)`,
   `subagent_type`, or a slash command silently tests the stale cached version (confirmed
-  2026-07-27: a false "fix confirmed" via `Skill(kbg:tech-humanize)`).
+  2026-07-27: a false "fix confirmed" via `Skill(mh:tech-humanize)`).
 - **The plugin runs every hook machine-wide.** A gate crash locks out every session that has
   `mh@wasikarn` enabled, not just sessions in this repo. A missing sibling `.py` or lib module
   must fail open with a diagnostic, never exit non-zero.

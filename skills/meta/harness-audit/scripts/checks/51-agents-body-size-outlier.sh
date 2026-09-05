@@ -15,11 +15,11 @@
 # `skills:` frontmatter preload option below wasn't yet considered) both sat
 # over this same threshold with zero check able to see them. Fixed 2026-08-18:
 # nextjs-reviewer.md split its
-# App Router File Conventions/Middleware sections into kbg:review-lens-nextjs-routing,
+# App Router File Conventions/Middleware sections into mh:review-lens-nextjs-routing,
 # preloaded via the `skills:` frontmatter field since this agent carries no Skill
 # tool (19,300 chars). Same day, a 30%-safety-margin pass (target ≤14,000, not
 # just <20,000) split agents/requirement-analyst.md's self-consistency pass +
-# Output Format + Anti-Patterns into kbg:requirement-analyst-format (13,536
+# Output Format + Anti-Patterns into mh:requirement-analyst-format (13,536
 # chars) — this agent is Skill-tool-less by design (its own Tool guardrails
 # section blocks adding one, to preserve a Jira/Confluence no-self-fetch
 # boundary), confirming `skills:` frontmatter preload is a real, repeatable

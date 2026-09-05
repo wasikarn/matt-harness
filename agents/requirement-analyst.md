@@ -2,7 +2,7 @@
 name: requirement-analyst
 description: "Senior-level, systematic requirement analysis from Jira tickets or other sources — ambiguities, missing acceptance criteria, edge cases, dependencies, risks, readiness verdict. Use before implementation starts."
 bucket: analysis
-tools: ["Read", "Grep", "Glob"]
+tools: Read, Grep, Glob
 model: opus
 skills:
   - mh:requirement-analyst-format

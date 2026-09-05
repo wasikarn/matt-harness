@@ -24,17 +24,6 @@
         ]
       },
       {
-        "id": "session:injection-budget-check",
-        "description": "WARN when doctrine-bootstrap.sh + memory-health-nudge.sh output exceeds 8192 bytes; silent when under.",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session/injection-budget-check.sh\"",
-            "timeout": 5
-          }
-        ]
-      },
-      {
         "id": "session:memory-health-nudge",
         "description": "Surface memory-lint findings (dangling links, orphans, index drift) at session start; silent when clean.",
         "hooks": [
@@ -60,20 +49,6 @@
         ]
       }
     ],
-    "PostToolUse": [
-      {
-        "id": "session:skill-usage-telemetry",
-        "matcher": "Skill",
-        "description": "Journal every skill invocation (skill, plugin, ts) to ~/.local/share/kbg/metrics/skill-usage.jsonl. Audit logging only.",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session/skill-usage-telemetry.sh\"",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
     "Stop": [
       {
         "id": "stop:cost-tracker",
@@ -82,8 +57,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/stop/cost-tracker.sh\"",
-            "async": true,
-            "timeout": 10
+            "async": true
           }
         ]
       },
@@ -94,8 +68,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/stop/memory-audit-commit.sh\"",
-            "async": true,
-            "timeout": 10
+            "async": true
           }
         ]
       }

@@ -41,7 +41,13 @@ while IFS= read -r f; do
   fail=1
 done < <(staged)
 
-# 5. harness-audit: zero CRITICAL
+# 5. METHODOLOGY.md is injected whole every session: hard cap 4096 bytes
+if staged docs/METHODOLOGY.md | /usr/bin/grep -q .; then
+  n=$(git show :docs/METHODOLOGY.md | wc -c | tr -d ' ')
+  [ "$n" -le 4096 ] || { echo "pre-commit: docs/METHODOLOGY.md is ${n}B, cap 4096" >&2; fail=1; }
+fi
+
+# 6. harness-audit: zero CRITICAL
 AUDIT="skills/meta/harness-audit/scripts/audit.sh"
 if [ -f "$AUDIT" ]; then
   if ! out=$(bash "$AUDIT" . 2>&1); then

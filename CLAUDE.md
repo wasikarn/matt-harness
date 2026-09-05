@@ -6,13 +6,11 @@ when you need detail. `docs/METHODOLOGY.md` is injected whole at session start.
 ## Validation (run before committing)
 
 ```bash
-claude plugin validate . --strict
-bash skills/meta/harness-audit/scripts/audit.sh   # 0 CRIT required
+bash skills/meta/harness-audit/scripts/audit.sh   # 0 CRIT required; the structural gate
+bash scripts/run-gauntlet.sh                       # plugin-validate (manifest only), lint, every test under tests/
 ```
 
-`scripts/run-gauntlet.sh` runs plugin-validate, lint (shell + JSON), and `tests/hooks/*.sh` in
-parallel; pre-push runs it. Skill tests: `tests/skills/harness-audit/test-harness-audit.sh`,
-`python3 -m pytest tests/skills/memory-lint`, `tests/skills/test-cost-report.sh`.
+Pre-push runs the gauntlet; pre-commit runs lint + audit + a 4096-byte cap on `docs/METHODOLOGY.md`.
 
 ## Git hooks
 

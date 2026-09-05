@@ -71,7 +71,7 @@ if(typed.length){
   console.log("\n=== By agent type (subagent spend only; rows tagged 2026-08-07+; tok = input+output, rank by it when rate unverified) ===");
   const m=new Map();for(const r of typed){const k=r.agent_type||"(unknown)";const p=m.get(k)||{c:0,t:0};p.c+=cost(r);p.t+=(Number(r.input_tokens)||0)+(Number(r.output_tokens)||0);m.set(k,p);}
   for(const [k,v] of [...m.entries()].sort((a,b)=>b[1].c-a[1].c||b[1].t-a[1].t))console.log(f4(v.c).padStart(12)+"  "+String(v.t).padStart(10)+" tok  "+k);
-  // By role: the F9 brief's [role: ...] tag (skills/workflow/orchestrate/f9-template.md),
+  // By role: the F9 brief's [role: ...] tag (docs/reference/spawn-brief.md),
   // read by cost-tracker.sh from the subagent's first message. Rows written before
   // 2026-09-03 carry no `role` and land in "(untagged)"; a brief with no tag lands in "unknown".
   console.log("\n=== By role (subagent spend only; F9 [role: ...] tag, rows tagged 2026-09-03+) ===");

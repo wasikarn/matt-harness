@@ -96,8 +96,8 @@ PATH_RE = re.compile(
 # (tests/hooks/*.sh: `check "desc" "$ok"`), not assert/expect — checked
 # against this repo'"'"'s own test files before writing this pattern, per the
 # plan'"'"'s own instruction not to assume a vocabulary that is not actually in
-# use here. Also covers the python/pytest idiom for the non-bash test files.
-ASSERT_RE = re.compile(r"\bcheck\s*\"|\bassert\b|\bself\.assert|\bpytest\.raises\b|\bpytest\.fail\b")
+# use here. Also covers pytest, jest/vitest `expect(`/`toThrow`, Go `t.Fatal*`, and chai `should`.
+ASSERT_RE = re.compile(r"\bcheck\s*\"|\bassert\b|\bself\.assert|\bpytest\.raises\b|\bpytest\.fail\b|\bexpect\s*\(|\btoThrow\b|\bt\.(Fatal|Error|Fail)\w*\(|\bshould\b")
 SKIP_RE = re.compile(r"#\s*SKIP\b|@pytest\.mark\.(skip|xfail)|\.skip\s*\(|\bxit\s*\(|\bit\.skip\s*\(", re.IGNORECASE)
 # Bash has no marker-string idiom for disabling a line the way pytest/jest do
 # -- it disables via control flow instead. `if`/`elif`/`while` opening on a

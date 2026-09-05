@@ -2,13 +2,8 @@
 name: nextjs-reviewer
 description: "Next.js App Router framework specialist: rendering/caching model, Server Actions, middleware, route handlers, metadata API, image/font optimization. Use for Next.js-specific changes."
 bucket: review
-tools: ["Read", "Grep", "Glob", "Bash"]
+tools: Read, Grep, Glob, Bash
 model: sonnet
-# Official sub-agents field (CC >= 2.0.43): preloads full skill content at spawn,
-# independent of the Skill tool. Do NOT remove as "inert" — check 49 CRITs on
-# removal; full story in CHANGELOG v0.68.244. mh:frontend-patterns dropped
-# 2026-09-04 (v0.68.637): the body never cited it, ~10 KB per spawn; the body now
-# points at a Read-when path instead.
 skills:
   - mh:review-lens-nextjs-routing
 effort: medium

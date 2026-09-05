@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 32. Reviewer read-only invariant (maker≠checker). An agent whose NAME marks it a
-# reviewer/analyzer (reviewer|analyzer|analyst|hunter|critic|judge|checker) must NOT grant
+# reviewer/analyzer (reviewer|analyzer|analyst|hunter|critic|judge|checker|architect|summarizer) must NOT grant
 # Write or Edit: a verifier that can mutate what it reviews defeats the fresh-context
 # independence maker≠checker depends on. Load-bearing doctrine: CLAUDE.md's Operating
 # model paragraph, under its Architecture section (the L3 bounded-autonomy build it

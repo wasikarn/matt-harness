@@ -23,8 +23,8 @@ killed and counted as allow, journaled.
 
 `docs/METHODOLOGY.md` (under 4 KB) at SessionStart: the decision-sizing triad, interrogate the
 claim, bug fix = failing test first, context economy and delegation (5 agents per wave, fresh
-validator for anything touching 2+ files, `NEEDS-DECISION` instead of guessing), score not feel.
-`hooks/session/injection-budget-check.sh` warns if session-start output passes 8192 bytes.
+validator for a dispatched builder's multi-file work, `NEEDS-DECISION` instead of guessing), score not feel.
+`git-hooks/pre-commit` refuses a `docs/METHODOLOGY.md` over 4096 bytes.
 
 ## What it ships
 
@@ -43,7 +43,7 @@ validator for anything touching 2+ files, `NEEDS-DECISION` instead of guessing),
 | layer | where it lives in mh |
 |---|---|
 | 1 Task contract | `docs/reference/spawn-brief.md` + the `NEEDS-DECISION` sentinel |
-| 2 Context compiler | `docs/METHODOLOGY.md` (4 KB map) + `CLAUDE.md` + `hooks/session/injection-budget-check.sh` |
+| 2 Context compiler | `docs/METHODOLOGY.md` (4 KB map, size gated in pre-commit) + `CLAUDE.md` |
 | 3 Tool gateway | `hooks/pretooluse-table.json` + `hooks/dispatch-pretooluse.py` (deny > ask > allow; table load failure = deny; a gate timeout = allow) |
 | 4 Durable state | native auto-memory owns it; mh adds `skills/meta/memory-lint` + `costs.jsonl` |
 | 5 Evidence gate | `scripts/run-gauntlet.sh` + `skills/meta/harness-audit` + gates `test-integrity` and `task-complete-separation` (maker never grades own work) |
@@ -76,9 +76,9 @@ The plugin ships `defaultEnabled: false`; add `"mh@wasikarn": true` to `settings
 ## Development
 
 ```bash
-claude plugin validate . --strict
-bash skills/meta/harness-audit/scripts/audit.sh
-bash scripts/run-gauntlet.sh
+bash skills/meta/harness-audit/scripts/audit.sh   # the real structural gate
+bash scripts/run-gauntlet.sh                       # validate + lint + every test under tests/
+claude plugin validate . --strict                  # manifest shape only
 git config core.hooksPath git-hooks   # relative path; pre-commit = fast gate, pre-push = gauntlet
 ```
 

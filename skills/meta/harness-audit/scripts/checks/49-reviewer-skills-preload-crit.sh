@@ -52,11 +52,7 @@
 # split, same reason — security-reviewer.md has no Skill tool (tools:
 # ["Read", "Bash", "Grep", "Glob"]). This skill carries only the BAD/GOOD
 # code-example appendix this agent has no other way to reach.
-# spec-miner|mh:spec-miner-anti-patterns added 2026-08-18: same split, same
-# reason — spec-miner.md has no Skill tool (tools: ["Read", "Grep", "Glob",
-# "Bash", "Write"]) and no prior companion skill existed, so this preload is
-# the only lawful extraction path and carries the 10-item Anti-Patterns list
-# this agent has no other way to reach.
+
 # performance-optimizer|mh:performance-optimizer-algorithms added 2026-08-18:
 # same split, same reason — performance-optimizer.md has no Skill tool
 # (tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]) and no prior

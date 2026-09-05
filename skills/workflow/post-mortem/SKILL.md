@@ -168,8 +168,3 @@ Example: "We assumed `numStreams == 1` meant single-GPU, so no sync was needed �
 - **Section 11 (Assumption Trace) origin**: added 2026-08-30 after an article audit found all 4 real post-mortems under `docs/post-mortems/` shared the same gap — none named the specific belief that made the bug's root cause go unquestioned. Distinct from Escape Reason (process gap) and Root Cause (code mechanism); applies going forward, not retrofitted onto the 4 existing records.
 - **Memory**: Write a `project` memory entry if the escape reason reveals a systemic gap (e.g., "CI matrix missing dumbModel" → `project_ci_gap_<date>.md`).
 
----
-
-## Named Model
-
-Section 7 "Escape Reason" (how did this reach production? what check missed it?) is the *pre-mortem* lens — not "what did we miss" but "what catastrophic-failure branch + detection + rollback" was missing pre-incident. Section 6 "Discovery Method" + section 8 "Validation Proof" together are *scientific-method* (repro → falsify → regression test). Catalog + honesty caveat: read via Bash with `cat "${MH_PLUGIN_ROOT}/docs/reference/reasoning-models.md"`.

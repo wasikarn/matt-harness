@@ -34,15 +34,6 @@ All three pass → proceed to Phase 1. Any fails → ABORT and answer directly, 
 appending: *"If you want a wider exploration under parallel cognitive frames with explicit
 trap detection, run `mh:ideate <your problem>`."*
 
-## Session frame rotation, convergence, and memory search (advisory)
-
-A SessionStart hook may inject `<ideate-rotation index="N">` with 5 frame names — prefer
-those (already covers the 1-wild minimum, rotated vs. prior sessions). If absent, fall back
-to [Picking frames](#picking-frames). Step 0's convergence capture side (SessionEnd embedding
-hook + `convergence.sh`) is **not currently wired** (removed in the reset) — treat
-convergence as advisory-only until rebuilt. Mechanics: `references/provenance.md`'s "Advisory
-hooks — full mechanics" section.
-
 ## 2-wave fan-out (load-bearing)
 
 > **WARNING — this skill is 2 fan-out waves, NOT 1.**

@@ -52,6 +52,13 @@ out=$(payload_edit "$TESTFILE" 'check "case two" "$ok2"' '' | bash "$GATE" 2>/de
 ok=1; is_ask "$out" && ok=0
 check "Edit removing a check() assertion -> ask" "$ok"
 
+# jest/vitest: removing an expect() from a .spec.ts must ask (rev-2 audit FAIL, 2026-09-05)
+SPEC="$WORK/src/foo.spec.ts"; mkdir -p "$(dirname "$SPEC")"
+printf 'it("x", () => {\n  expect(a).toBe(1);\n  expect(b).toBe(2);\n});\n' > "$SPEC"
+out=$(payload_edit "$SPEC" '  expect(b).toBe(2);' '' | bash "$GATE" 2>/dev/null)
+is_ask "$out"; ok=$?
+check "Edit removing a jest expect() from .spec.ts -> ask" "$ok"
+
 # --- Positive: adding a skip marker -> ask ---
 out=$(payload_edit "$TESTFILE" 'check "case two" "$ok2"' '# SKIP: check "case two" "$ok2"' | bash "$GATE" 2>/dev/null)
 ok=1; is_ask "$out" && ok=0

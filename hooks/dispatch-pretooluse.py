@@ -48,7 +48,7 @@
 # malformed table itself. Two failure classes, two different responses:
 #   - the WHOLE table fails to load/parse -> deny this call (fail CLOSED).
 #     We're the sole PreToolUse gate; an uncaught exception here used to
-#     exit 1 and silently disable all 9 deny gates with just a traceback —
+#     exit 1 and silently disable every deny gate with just a traceback —
 #     an accidental fail-open, not the deliberate announced kind every gate
 #     script's own python3-missing guard uses.
 #   - ONE table entry is malformed (missing field, bad regex) -> skip that
@@ -136,7 +136,7 @@ def main():
         return 2
 
     # Per-entry validation: one malformed table row (missing/bad matcher or
-    # script field) must not take down evaluation of the other 8 (#91 audit
+    # script field) must not take down evaluation of the other rows (#91 audit
     # finding — the old single list-comprehension threw on the FIRST bad
     # entry, before any gate ever ran). A malformed entry is logged and
     # skipped for this call, not promoted to a deny — we don't know whether

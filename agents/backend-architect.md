@@ -3,7 +3,7 @@ name: backend-architect
 description: Backend systems architect — API contracts, service boundaries, data ownership, consistency, caching, reliability, scalability. Design-first, cross-language — defers framework/DB specifics to *-patterns skills.
 bucket: design
 model: opus
-tools: [Read, Grep, Glob, Bash]
+tools: Read, Grep, Glob, Bash
 effort: high
 ---
 

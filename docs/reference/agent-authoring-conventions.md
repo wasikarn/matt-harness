@@ -9,7 +9,8 @@ Every agent declares `tools:` as an explicit allowlist (`harness-audit` check 09
 missing). Read-only reviewers and analysts (`security-reviewer`, `typescript-reviewer`,
 `nextjs-reviewer`, `backend-architect`, `code-architect`, `blind-spot-hunter`,
 `silent-failure-hunter`, `requirement-analyst`, `summarizer`) get `Read`, `Grep`, `Glob`, and
-sometimes `Bash` for inspection; never `Write`/`Edit` (check 32). Mutating implementers
+usually `Bash` for `git log`/`git diff` inspection (read-only by discipline, not by tool grant);
+never `Write`/`Edit` (check 32). Mutating implementers
 (`performance-optimizer`) add `Write`/`Edit`. **`Agent` is never granted** (check 41): a
 dispatched subagent returns scoped output, it does not spawn its own.
 
@@ -56,8 +57,9 @@ mitigation, not ceremony.
 ## 6. One-level-deep dispatch
 
 A dispatched agent never re-dispatches (METHODOLOGY Rule 13; native
-`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1` in the operator's settings enforces it). Disambiguation
-against neighboring agents lives in each agent's `## When NOT to use this agent` section.
+`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1` enforces it where the operator sets it). Disambiguation
+against neighboring agents lives in the description's "Don't use for" clause or a
+`## When NOT to use this agent` section.
 
 ## 7. Grow on proven need, not speculatively
 

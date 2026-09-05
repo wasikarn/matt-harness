@@ -33,18 +33,6 @@ parameterized pseudocode; fragile or destructive steps get an exact script, no d
 user types (`/mh:<name>`), never "invoke X now": the model cannot call it, and a "go" in chat
 does not lift that.
 
-**Named Model footers:** a skill or agent that makes load-bearing judgment choices may end with a
-`## Named Model` footer citing lenses from `docs/reference/reasoning-models.md`. Three
-conditions: a real reasoning gap, a name-a-lens benefit for the operator, and the honesty posture
-that a lens is a scaffold, never proof of correctness.
-
-**Suggested next step footers:** a workflow skill run as a discrete step may end its output with
-a bold `**Suggested next step:**` marker on its own line, followed by one
-`- <outcome> -> \`<surface>\`` bullet per branch. The footer stays passive (no auto-chain text);
-what the runtime model does on its next turn is unconstrained by it. Skip on reference, pattern,
-and catalog surfaces and on terminal workflows (post-mortem). If every branch is decidable right
-now with no sensible default, that is a present-tense fork: use `AskUserQuestion` instead.
-
 **`model_limitation:` frontmatter (optional, mh-native):** declare it when a skill's correctness
 rests on a model behaviour that could shift on upgrade. First adopter: `tech-humanize`, whose
 lexical-tell catalog assumes current-gen output still carries the enumerated tells. No check
@@ -58,8 +46,7 @@ independent re-check step. A skill an agent preloads carries the same effort as 
 `skills/*/*/references/*.md` fragments stay unstamped. Official Claude Code also accepts
 `effort: max`; check 54 accepts it, but the fleet assigns it no meaning.
 
-**Reference files** (Anthropic Agent Skills best practices): one level deep from SKILL.md, a
-table of contents on any reference over 100 lines, and MCP tools named `ServerName:tool_name`
+**Reference files** (Anthropic Agent Skills best practices): one level deep from SKILL.md, and MCP tools named `ServerName:tool_name`
 (`qmd:query`, not `query`). A reference file must not carry `description:` frontmatter, or
 Claude Code loads it as its own skill (check 42).
 

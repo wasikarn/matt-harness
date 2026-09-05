@@ -4,7 +4,7 @@ The shape every dispatched subagent prompt takes. Short on purpose; the constrai
 
 ```
 # Task: <one line>
-[role: builder|validator|research|other]
+[role: builder|validator|fixer|re-validator|research|other]
 
 ## What
 <the deliverable, in the dispatcher's own words; tracker text paraphrased, never pasted>

@@ -103,5 +103,4 @@ mtime is a proxy for "untouched," not "unverified" — editing a file resets the
 
 ## Related
 
-- `harness-audit` — same shape for the skill/agent/hook ecosystem (check 13 covers MEMORY.md pointer→file; this covers the reverse + links)
-- `inventory` — lists artifacts; doesn't judge memory health
+- `harness-audit` — same shape for the skill/agent/hook ecosystem
