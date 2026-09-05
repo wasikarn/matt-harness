@@ -3,114 +3,30 @@
     "id": "gate:bash:irrecoverable",
     "matcher": "Bash",
     "script": "hooks/gates/irrecoverable.sh",
-    "description": "Gate: block irrecoverable Bash patterns (rm -rf, push --force, --no-verify, reset --hard, clean -f)"
-  },
-  {
-    "id": "gate:bash:main-exec-guard",
-    "matcher": "Bash",
-    "script": "hooks/gates/main-exec-guard.sh",
-    "description": "Gate: the Bash leg of main-exec-guard — the MAIN session (no agent_id in the payload) may run only a read-only allowlist (ls/cat/grep/rg/jq/sed -n/awk/find/git status|log|diff|show|config <key>/gh pr view|list/rtk/claude --version, plus >/dev/null and 2>&1 redirects); everything else is DENIED by default — mutating git (add/commit/push/stash/checkout/config <k> <v>), any other redirect or heredoc, interpreters (bash/sh/python/node/perl/eval/source/xargs), sudo, tee/cp/mv/mkdir/trash, test runners, `claude plugin validate|update`, and any command it cannot tokenize (fail CLOSED on the Bash leg; a false positive costs one blocked command). Subagents (agent_id present) are untouched. Opt-in and off by default: no-op before stdin unless MH_MAIN_EXEC_GUARD is `1` (enforce) or `log` (evaluate + append a would_deny row to ~/.local/share/kbg/metrics/main-exec-guard.jsonl, never deny — calibration). Deny not ask (ask silently becomes allow under --dangerously-skip-permissions). Exit 2 + stderr. Placed right after gate:bash:irrecoverable so its deny message follows the irrecoverable one when both fire."
-  },
-  {
-    "id": "gate:bash:merge-door",
-    "matcher": "Bash",
-    "script": "hooks/gates/merge-door.sh",
-    "description": "Gate: ask before a raw `gh pr merge` runs outside the ship-merge skill flow. Restores the merge-door protection convergence-merge-gate.sh used to provide before it was retired 2026-08-24 (#82) with no replacement. Emits permissionDecision: ask. Known non-goal: the REST equivalent (gh api .../pulls/N/merge) is not covered."
-  },
-  {
-    "id": "gate:write:main-exec-guard",
-    "matcher": "Write|Edit|MultiEdit|NotebookEdit",
-    "script": "hooks/gates/main-exec-guard.sh",
-    "description": "Gate: DENY any Write/Edit/MultiEdit/NotebookEdit from the MAIN session — the top-level session plans, dispatches, verifies, decides; it does not edit files (operator decision 2026-09-02, replacing the retired volume-based main-write-budget ask-nudge). Discriminant is the ABSENCE of agent_id in the payload (never agent_type, which a top-level `claude --agent` also sets); a subagent's writes are untouched. Three carve-outs, matched after realpath+expanduser so ~/.. tricks cannot dodge them: ~/.claude/plans/, ~/.claude/projects/*/memory/, and the session scratchpad (/tmp/claude-*/*/*/scratchpad/, /private prefix tolerated). Opt-in and off by default: no-op before stdin unless MH_MAIN_EXEC_GUARD is `1` (enforce) or `log` (evaluate + append a would_deny row to ~/.local/share/kbg/metrics/main-exec-guard.jsonl, never deny — calibration mode). Deny not ask (ask silently becomes allow under --dangerously-skip-permissions). Exit 2 + stderr; fail-safe ALLOW on a malformed payload or missing python3 — a lockout on the operator's own session has no recovery path. No MH_GUARDED_WORKSPACE special-case needed: this gate only verdicts main's own calls, worktree-guard's redirect applies to a subagent's separate call. Placed FIRST among the Write|Edit-matched gates. Off for one session: relaunch with MH_MAIN_EXEC_GUARD=0. Companion gate:bash:main-exec-guard covers the same script's Bash matcher."
-  },
-  {
-    "id": "gate:write:verifier-protect",
-    "matcher": "Write|Edit|NotebookEdit",
-    "script": "hooks/gates/verifier-protect.sh",
-    "description": "Gate: ask the human to approve edits to BOTH non-model verifiers — hooks/gates/** + hooks/advisory/** + hooks/hooks.json (deny-gates + advisory sensors + wiring) AND skills/meta/harness-audit/scripts/audit.sh + checks/** (audit grader). Tamper-resistance: the model cannot edit the code that judges it. Emits permissionDecision: ask (no env-var bypass). Also folds the former path-hardcode deny (blocks hardcoded /Users/<name> in .sh/.py/.js) since 2026-07-03; one fewer python3 spawn per Write/Edit. NotebookEdit added 2026-08-06."
-  },
-  {
-    "id": "gate:bash:verifier-protect",
-    "matcher": "Bash",
-    "script": "hooks/gates/verifier-protect.sh",
-    "description": "Gate: ask the human to approve Bash-mediated writes (redirect, tee, sed -i, cp, mv) to verifier surfaces — closes the Write/Edit matcher's blind spot. Emits permissionDecision: ask."
-  },
-  {
-    "id": "gate:db:sql-write",
-    "matcher": "mcp__.*__execute_sql.*",
-    "script": "hooks/gates/db-write-gate.sh",
-    "description": "Gate: ask on non-SELECT execute_sql-shaped MCP calls, on any server. No-op when no such MCP server is configured (matcher never fires)."
-  },
-  {
-    "id": "gate:task:complete-separation",
-    "matcher": "TaskUpdate",
-    "script": "hooks/gates/task-complete-separation.sh",
-    "description": "Gate: a subagent may not mark its own task completed (maker≠checker). Only the main session completes tasks; validator subagents return verdicts to main. Denies TaskUpdate(status=completed) when agent_id is present (subagent) — corrected 2026-08-31 from agent_type, which also fires for a top-level --agent session. Exit 2 + stderr; fail-safe allow on parse error."
-  },
-  {
-    "id": "gate:agent:recursion-guard",
-    "matcher": "Agent",
-    "script": "hooks/gates/agent-recursion-guard.sh",
-    "description": "Gate: a subagent may not spawn another agent — only the main session dispatches (CLAUDE.md 'Task Dispatch'). Denies Agent(...) when agent_id is present (subagent), regardless of the requested subagent_type. Closes the gap found 2026-08-31: the host's fork->fork block doesn't cover fork/general-purpose/claude spawning a DIFFERENT subagent_type. Exit 2 + stderr; fail-safe allow on parse error; no env-var bypass. Companion Bash-leg entry below covers the same script's other matcher."
-  },
-  {
-    "id": "gate:bash:agent-recursion-guard",
-    "matcher": "Bash",
-    "script": "hooks/gates/agent-recursion-guard.sh",
-    "description": "Gate: the Bash leg of agent-recursion-guard — a subagent (agent_id present) may not spawn a nested `claude -p`/`--print`/`--agent`/`--bg` session via Bash, which would bypass the Agent-tool leg entirely and run as a fresh, unrestricted main session. Coarse command-pattern match, not an adversarial sandbox (same non-goal as irrecoverable.sh). Exit 2 + stderr; fail-safe allow on parse error; no env-var bypass."
+    "description": "Deny irrecoverable Bash patterns (rm -rf, find -delete, --no-verify, hooksPath, push --force, reset --hard, clean -f, checkout/restore discards, switch --force, branch -D, stash drop/clear, commit --amend, git add -A/. outside a merge, dd to a device, SQL DROP/TRUNCATE) and a subagent spawning a nested claude -p/--print/--agent/--bg/--worktree session."
   },
   {
     "id": "gate:bash:subagent-git-guard",
     "matcher": "Bash",
     "script": "hooks/gates/subagent-git-guard.sh",
-    "description": "Gate: a subagent (agent_id present) may not run `git stash`/`reset`/`clean` via Bash — the bare/non-force forms gate:bash:irrecoverable does not already cover unconditionally (issue #135: real incidents from a dispatched subagent racing `git stash`/`stash pop` over a peer's mid-edit files). `checkout --`/`restore` deliberately not duplicated here — irrecoverable.sh already denies their destructive forms for every session. Exit 2 + stderr; fail-safe allow on parse error; no env-var bypass."
+    "description": "Deny (subagent only): git stash (except list/show), reset, clean -- no repo-wide git inside a concurrent wave."
   },
   {
-    "id": "advisory:agent-write-scope-enforcer",
-    "matcher": "Bash",
-    "script": "hooks/advisory/agent-write-scope.sh",
-    "description": "Sensor (not a gate), issue #137 rev 4: on a subagent's `git commit` (agent_id present), enumerates the paths that commit would actually commit (via git diff --cached, plus a tracked-modified diff too when -a/--all is present, correctly distinguishing e.g. -am from -ma using git commit's own short-flag bundling rules), compares against that agent_id's recorded write-set (see the companion PostToolUse recorder leg in hooks.json), and journals which committed paths were never recorded as written by this agent, plus write_state_file_present (bool) and recorded_write_count (int) so the journal can tell a clean write-set from one that never correlated, to ~/.local/share/kbg/metrics/agent-write-scope.jsonl. NEVER denies -- log-mode only, same journal mechanics as main-exec-guard.sh's own log mode. Riding the gate-only PreToolUse fan-out (not dispatch-single.sh's non-PreToolUse wrapper) purely for timing -- this must run before the git commit executes, and PreToolUse is the only event that fires before it. A non-zero git diff exit (e.g. rc=128 on an unborn HEAD) journals the enumeration failure (null) rather than misreading empty output as nothing staged."
-  },
-  {
-    "id": "gate:skill:jira-acli-engage",
-    "matcher": "Skill",
-    "script": "hooks/gates/atlassian-mcp-gate.sh",
-    "description": "Marks the session jira-acli-engaged when a jira-acli:* skill loads, so the companion gate:mcp:atlassian-cold-start gate can allow-list it. Never blocks Skill itself."
-  },
-  {
-    "id": "gate:mcp:atlassian-cold-start",
-    "matcher": "mcp__.*",
-    "script": "hooks/gates/atlassian-mcp-gate.sh",
-    "description": "Gate: block a direct Atlassian/Jira/Confluence MCP call before a jira-acli:* skill loaded this session — forces routing through jira-acli's templates instead of a cold MCP call. Escape: MH_ALLOW_DIRECT_ATLASSIAN_MCP=1."
-  },
-  {
-    "id": "gate:read:credential-guard",
-    "matcher": "Read|Grep",
-    "script": "hooks/gates/credential-guard.sh",
-    "description": "Gate: block Read/Grep access to credential-bearing file paths (.env, id_rsa/id_ed25519/id_ecdsa, *.pem/*.key, service-account JSON, .netrc, .npmrc, .htpasswd), resolved via realpath to close symlink-indirection bypass. Read/Grep only; Bash-mediated reads are a scoped follow-up (#96)."
-  },
-  {
-    "id": "gate:write:config-guard",
-    "matcher": "Write|Edit",
-    "script": "hooks/gates/config-write-guard.sh",
-    "description": "Gate: ask before creating a brand-new Claude Code settings file (.claude/settings.json, .claude/settings.local.json), and ask on an edit to an existing one that changes the hooks or enabledPlugins keys (verified by reconstructing the edit and comparing against the on-disk content) — every other key stays frictionless (#98)."
+    "id": "gate:task:complete-separation",
+    "matcher": "TaskUpdate",
+    "script": "hooks/gates/task-complete-separation.sh",
+    "description": "Deny (subagent only): a subagent may not mark its own task completed; only the main session completes tasks."
   },
   {
     "id": "gate:write:test-integrity",
     "matcher": "Write|Edit|MultiEdit",
     "script": "hooks/gates/test-integrity.sh",
-    "description": "Gate: ask when an edit to an existing test-shaped path (tests/**, test_*.py, *_test.*, *.test.*, *.spec.*) removes an assertion line or adds a skip/disable marker. Stateless content-diff classifier, no session-phase tracking. Enforces METHODOLOGY.md Rule 4 (don't weaken a test while fixing the code it covers) computationally instead of by prose alone."
+    "description": "Ask when an edit to an existing test-shaped path removes an assertion line or adds a skip/disable marker."
   },
   {
-    "id": "gate:write:worktree-guard",
-    "matcher": "Write|Edit|NotebookEdit",
-    "script": "hooks/gates/worktree-guard-dispatch.sh",
-    "description": "Gate: redirect Edit/Write on a guarded sub-repo main checkout or protected branch into a session worktree under ~/.worktrees. Opt-in and off by default: no-op everywhere unless MH_GUARDED_WORKSPACE is set."
-  },
-  {
-    "id": "gate:bash:worktree-guard",
-    "matcher": "Bash",
-    "script": "hooks/gates/worktree-guard-dispatch.sh",
-    "description": "Gate: deny (not redirect) a Bash-mediated write that targets a guarded sub-repo main checkout or protected branch. Denies instead of redirecting: a raw shell command's target can't be rewritten via updatedInput the way file_path can. Opt-in and off by default."
+    "id": "gate:write:config-guard",
+    "matcher": "Write|Edit",
+    "script": "hooks/gates/config-write-guard.sh",
+    "description": "Ask before creating a Claude Code settings file, or editing an existing one's hooks / enabledPlugins keys."
   }
 ]

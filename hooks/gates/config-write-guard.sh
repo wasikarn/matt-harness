@@ -29,22 +29,17 @@
 # tool's own Write/Edit payload and compared key-by-key against the original;
 # a change to any of the three keys, or content on either side that cannot be
 # parsed as JSON, asks. Fail-toward-ask on the unverifiable case -- but this
-# scope is narrower than verifier-protect.sh's own invariant: verifier-protect
-# also asks on a malformed top-level payload it cannot parse at all, while
-# this gate's outer exception handler still allows on that specific failure
-# (an intentionally unchanged, pre-existing safety net for genuinely
-# unexpected errors, not touched by this security check -- see the try/except
-# structure below). The "same invariant" claim below is scoped to the
+# gate's outer exception handler still allows on a malformed top-level
+# payload it cannot parse at all (an intentionally unchanged, pre-existing
+# safety net for genuinely unexpected errors -- see the try/except structure
+# below). The "same invariant" claim below is scoped to the
 # hooks/enabledPlugins/env comparison itself, not this file's entire error
 # handling.
 #
-# Scope: Write and Edit tools only. MultiEdit is out of scope, same
-# pre-existing gap verifier-protect.sh already has for that tool. A
+# Scope: Write and Edit tools only. MultiEdit is out of scope. A
 # Bash-mediated create or edit (`echo '{}' > .claude/settings.json`, `jq`/
 # `sed -i` rewriting an existing one) bypasses this gate entirely -- accepted
-# gap, not closed here, same accepted-and-documented shape as
-# credential-guard.sh's own Bash-mediated-reads gap (#96). Porting
-# verifier-protect.sh's Bash-argv parser to cover this file too is out of
+# gap, not closed here; a Bash-argv parser for this file is out of
 # proportion to this fix.
 #
 # #98, deferred-idea backlog filed from spec #75's migration (2026-08-24).
@@ -55,8 +50,8 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 0
 fi
 
-# Corrupted/partial plugin install (deep-audit follow-up to #146, same fix
-# shape as verifier-protect.sh/merge-door.sh): this gate's embedded python
+# Corrupted/partial plugin install (deep-audit follow-up to #146): this
+# gate's embedded python
 # does `from _hook_output import emit_ask`, resolved from this gate's
 # sibling lib/ dir (passed as argv[1] below). A missing lib module raises
 # ModuleNotFoundError -> exit 1 (confirmed live), a nonzero non-2 exit that
@@ -123,7 +118,7 @@ try:
     path = os.path.normpath(os.path.expanduser(fp))
     parent, base = os.path.split(path)
     # Case-INsensitive basename/parent match, same reasoning as
-    # _protected_paths.py/verifier-protect.sh: macOS/APFS is case-insensitive
+    # macOS/APFS is case-insensitive
     # but case-preserving, so ".claude/SETTINGS.JSON" resolves to the same
     # on-disk file as ".claude/settings.json" while a case-sensitive string
     # compare treats them as unrelated -- a one-character-case Write/Edit

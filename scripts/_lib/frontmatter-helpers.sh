@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# frontmatter-helpers.sh — shared frontmatter helpers for harness-audit + inventory scripts.
+# frontmatter-helpers.sh — shared frontmatter helpers for harness-audit scripts.
 #
 # Sourced (not executed) by the 3 callers; this file defines functions and
 # exports one constant. All parsers read the YAML frontmatter block between
@@ -27,7 +27,7 @@
 #       are .sh/.py, not markdown, so the "description" is a code comment.
 #       Kept separate from fm_get so the frontmatter contract stays clean.
 
-# _FM_CACHE — per-(file,key,flags) frontmatter memoization for audit/inventory.
+# _FM_CACHE — per-(file,key,flags) frontmatter memoization for audit checks.
 # Populated once in the caller's MAIN shell (audit.sh builds it before its checks
 # loop; see the build pass there). fm_get reads it first and falls back to awk
 # on a miss, so correctness never depends on the cache -- it is a pure speedup.

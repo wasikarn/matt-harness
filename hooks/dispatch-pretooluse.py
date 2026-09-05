@@ -34,8 +34,8 @@
 #                            together").
 #   - systemMessage       -> a top-level (not hookSpecificOutput-nested)
 #                            field some hooks set for direct operator
-#                            display (confirmed live: worktree-guard.py's
-#                            redirect message). Concatenated the same way
+#                            display (confirmed live against the retired
+#                            worktree-guard.py's redirect message). Concatenated the same way
 #                            additionalContext is -- dropping it silently
 #                            lost the redirect explanation in the first
 #                            parity test run against the real gate
@@ -58,6 +58,7 @@
 import json
 import os
 import re
+import signal
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -66,11 +67,12 @@ RANK = {"allow": 0, "ask": 1, "defer": 2, "deny": 3}
 
 
 def _journal(gate_id, tool_name, decision, session_id=None):
-    # Gate-verdict journal: append a JSONL row for a non-"allow" verdict only
+    # Gate-verdict journal: append a JSONL row for a non-"allow" verdict (or a
+    # timeout) only
     # (matches the actual need -- "how often did gate X block/ask" -- and
     # avoids logging on every allow, which at up to 4 matched gates per Bash
     # call would run at several times the write rate of the existing
-    # cost-tracker.sh/instructions-loaded-journal.sh telemetry precedents).
+    # cost-tracker.sh telemetry precedent).
     # Non-negotiable: this must NEVER be able to affect the dispatch's own
     # exit code or merged decision. An unwritable/nonexistent journal path
     # (no ~/.local/share/kbg/metrics yet, read-only $HOME, full disk) throws
@@ -78,9 +80,8 @@ def _journal(gate_id, tool_name, decision, session_id=None):
     # this file's own header (see "any other exit code -> non-blocking
     # error... proceeds regardless") documents the resulting failure mode:
     # a fail-OPEN across all matched gates, not the fail-closed this file
-    # otherwise guarantees. Mirrors instructions-loaded-journal.sh's
-    # swallow-everything shape (mkdir -p + >> ... 2>/dev/null + unconditional
-    # exit 0), translated to Python.
+    # otherwise guarantees. Swallow-everything shape (mkdir -p + >> ...
+    # 2>/dev/null + unconditional exit 0), translated to Python.
     # session_id (added 2026-09-02): the PreToolUse payload's own session_id,
     # null when the payload lacks one, so verdicts can be grouped per session
     # (jq group_by(.session_id)) -- the feedback loop for the main-plans-
@@ -174,6 +175,7 @@ def main():
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
+                start_new_session=True,  # own process group, so a timeout can kill the whole tree
             )
         except OSError as exc:
             print(
@@ -184,9 +186,27 @@ def main():
             continue
         procs.append((entry, proc))
 
+    # A gate that hangs must not hang every tool call: 8s (under hooks.json's
+    # 10s hook timeout) kills the gate, counts it as allow, and journals it.
     results = []
     for entry, proc in procs:
-        out, err = proc.communicate(input=payload)
+        try:
+            out, err = proc.communicate(input=payload, timeout=8)
+        except subprocess.TimeoutExpired:
+            # Kill the whole group: a bare proc.kill() leaves a grandchild
+            # (e.g. `sleep`) holding the stdout pipe, so communicate() would
+            # still block until it exits.
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except Exception:
+                proc.kill()
+            proc.communicate()
+            print(
+                f"[mh:dispatch] {entry.get('id', '?')} timed out after 8s — killed, treated as allow",
+                file=sys.stderr,
+            )
+            _journal(entry.get("id", "?"), tool_name, "timeout", session_id)
+            continue
         results.append((entry, proc.returncode, out, err))
 
     worst_rank, worst_reason = -1, None

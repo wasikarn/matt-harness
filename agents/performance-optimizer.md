@@ -1,6 +1,6 @@
 ---
 name: performance-optimizer
-description: Fixes measured bottlenecks, bundle size, memory leaks, render churn. Use with a profile or repro; not for speculative tuning or cyclomatic complexity (mh:complexity-check).
+description: Fixes measured bottlenecks, bundle size, memory leaks, render churn. Use with a profile or repro; not for speculative tuning or cyclomatic complexity.
 bucket: build
 tools: ["Read", "Write", "Edit", "Bash", "Grep", "Glob"]
 model: sonnet

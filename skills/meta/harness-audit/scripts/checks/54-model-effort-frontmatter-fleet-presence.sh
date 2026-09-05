@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 54. Fleet model:/effort: frontmatter — every surface entrypoint carries both keys.
 #
-# Convention: docs/skill-authoring-conventions.md "Explicit model: + effort: on
+# Convention: docs/reference/skill-authoring-conventions.md "Explicit model: + effort: on
 # every surface (fleet convention, v0.68.430)" — all agents/*.md and
 # skills/*/SKILL.md ship with explicit model: and
 # effort:. This check enforces presence + value sanity, deliberately NOT the

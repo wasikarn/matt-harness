@@ -21,7 +21,7 @@ The tracker appends JSON rows to `~/.local/share/kbg/metrics/costs.jsonl` — on
 
 `{ timestamp, session_id, transcript_path, model, model_scoped, dedup_usage, usage_pick, stream, agent_type, role, turns, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cache_read_per_turn, returns, verify_tokens, verify_cache_read, verify_per_return, rate_verified, estimated_cost_usd }`
 
-`role` (2026-09-03+) is the F9 brief's `[role: …]` tag read from the subagent's first
+`role` (2026-09-03+) is the spawn brief's `[role: …]` tag read from the subagent's first
 message — `builder|validator|fixer|re-validator|research|other`, `unknown` when the brief
 carried no tag, `null` on orchestrator rows.
 
@@ -85,14 +85,12 @@ node "${MH_PLUGIN_ROOT}/scripts/workflows/cost-report-dedup.js" csv
    row for untyped subagent rows; a `tok` column (input+output tokens) sits next to cost
    so ranking still works when `rate_verified` is false. Omitted entirely when no row
    carries `stream: subagent` (all data predates 2026-08-07).
-5. By role: subagent spend ranked by the F9 `role` tag (`(untagged)` for pre-2026-09-03
+5. By role: subagent spend ranked by the brief's `role` tag (`(untagged)` for pre-2026-09-03
    rows, `unknown` for briefs that carried no tag). Same omission rule as By agent type.
 6. Handoff cost: returns per orchestrator turn, then verify tokens per return (median, p90,
    count) for all roles and per role. Rows without `verify_per_return` (pre-2026-09-04) are
    skipped; the section is omitted when none carry it.
-7. Orchestrate sessions: count and spend of sessions whose `session_id` appears with
-   `mh:orchestrate` in `skill-usage.jsonl` (omitted when that file is absent).
-8. Last seven days: date and cost.
+7. Last seven days: date and cost.
 
 Rely on the precomputed `estimated_cost_usd` values written by the tracker; do
 not re-estimate pricing from raw tokens here.

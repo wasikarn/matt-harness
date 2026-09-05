@@ -1,156 +1,64 @@
 ---
 name: harness-audit
-description: "Harness-state surface, two modes: fleet/schema audit, --health for session token cost. Use for harness audits or cost checks. Don't use for repo lint/security (mh:security-auditor)."
+description: "Deterministic structural audit of the plugin's agents, skills, and hooks. Use when asked to audit the harness or check drift. Don't use for repo lint."
 model: inherit
 effort: medium
 ---
 
 # Harness Audit
 
-Single harness-state surface with two modes:
-
-- **Default (audit)** — deterministic fleet/schema/structural check. Detects drift before it becomes a silent failure.
-- **--health mode** — per-session token cost from the live cost ledger, a per-skill usage panel (7d/30d invocation counts by plugin) from the skill-usage ledger, plus a dead-surface panel (skills/agents with 0 invocations in the last 30 days, INFO-only) (formerly `kbg:harness-health`). See `references/health.md`.
-
-## Mode selection
-
-| User asks for | Mode | Entry |
-|---|---|---|
-| "audit harness", "fleet check", "manifest drift", Thai: 'audit harness', 'ตรวจ harness' | audit (default) | `bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"` |
-| "harness health", "token cost", "session cost", "dead surfaces", "unused skills", Thai: 'harness health', 'สุขภาพ harness' | --health | `bash "${CLAUDE_SKILL_DIR}/scripts/health.sh"` or `python3 "${CLAUDE_SKILL_DIR}/scripts/harness-health.py" ...` |
-
-
-## Quick start
+Runs 31 structural checks over `agents/`, `skills/`, and `hooks/` and reports CRIT / WARN / INFO.
+Exit code = CRIT count; WARN and INFO never change it.
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"
+bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh"            # full run
+bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh" --only 25  # one check by number
 ```
-
-Produces exit code = count of findings. Zero = clean.
 
 ## What it checks
 
-| Check | Finding type |
+| Area | Checks |
 |---|---|
-| **Fleet count** | Count agents, skills, commands, hooks |
-| **Loadability** | Every repo artifact is loadable by Claude Code (plugin cache or symlink) |
-| **Frontmatter completeness** | `name`, `description`, `tools` (agents), `disable-model-invocation` (commands) |
-| **Name/filename consistency** | Frontmatter `name` matches directory/file name |
-| **Tool-grant scoping** | Agents have explicit `tools:` (no inherit-all) |
-| **Orphaned hooks** | Hook files in repo but not wired in `settings.json` |
-| **Orphaned skills** | Skills in repo but not loadable by Claude Code |
-| **Routing table coverage** | All agents referenced in `orchestrate` routing table |
-| **Memory index drift** | All `.md` references in `MEMORY.md` exist |
-| **Boundary drift** | `BOUNDARY.md` matches the live fleet (regenerate if stale) |
-| **Bundled script syntax** | Every `.py` / `.sh` under a skill compiles / parses |
-| **Bundled JSON validity** | Every `.json` under a skill parses |
-| **Duplicate tools** | Same tool listed twice in an agent's `tools:` |
-| **Placeholder residue** | "Daisy" or other upstream placeholders |
-| **PyCache tracked** | `__pycache__/` or `*.pyc` accidentally git-tracked |
-| **Description length** | Skill/agent/command `description` ≤ 1536 chars (runtime truncates over-limit) |
-| **Agent model value** | `model:`, if present, is an alias (`sonnet`/`opus`/`haiku`/`fable`/`inherit`) or a `claude-*` ID |
-| **Hook event name** | Each `settings.json` hook event is in the documented 31-event set |
-| **Hook handler type** | Each handler `type` is one of `command`/`http`/`mcp`/`agent`/`prompt` |
-| **Hook matcher regex** | Each `matcher` (other than `*` / `""` wildcards) compiles as a regex |
-| **Hook context length** | Static `additionalContext` ≤ 10000 chars |
-| **Name format** | Skill/agent `name` is lowercase/digits/hyphens, ≤ 64 chars |
-| **Tool-grant tokens** | Each agent `tools:` token is a real Claude Code tool (typo guard) |
-| **Skill-ref resolution** | Each agent `skills:` ref resolves to a repo or installed skill |
-| **Test-honesty / tautology** | Test files (`*.test.*`, `test_*.py`, `*_test.py`) lack greppable anti-patterns: tautological `assert True/False`, identity/repr assertions, `test_<placeholder>` names, bare stub bodies (Python `pass`, JS `it(...., () => {})`, or a lone `,`-only placeholder assertion) (tests that can't fail when logic changes are wrong) |
-| **Cross-file content drift** | Near-duplicate prose (token-set Jaccard 0.60-0.95) across agent/skill/command body content, not in `accepted-duplication.tsv` — advisory pre-filter for a human to read, same register as `memory-lint`'s `--find-contradictions`, never a verdict |
+| Loadability | 02 skills, 03 hooks + agents (plugin cache or symlink) |
+| Frontmatter | 04 agents (name, description, bucket enum), 05 skills (name, description, bucket dir, trigger clause), 28 strict YAML, 54 model + effort present |
+| Names | 07/08 name matches filename, 23 lowercase-hyphen format |
+| Agent tool grants | 09 explicit `tools:`, 10 no duplicates, 24 real tool tokens, 41 never `Agent`, 32 reviewers stay read-only |
+| Preloads | 25 `skills:` refs resolve, 49 reviewer preloads present (CRIT) |
+| Hooks | 11 no orphaned hook files, 22 hooks.json event / type / matcher validity, 33 `${CLAUDE_PLUGIN_ROOT}` not `CLAUDE_PLUGIN_DIR` |
+| Bundled files | 17 python compiles, 18 shell parses, 19 JSON parses |
+| Descriptions | 20 <= 1536 chars each, 29 no imperative injection words, 43 cumulative listing budget |
+| Size caps | 51 agent body, 52 output-style body, 55 LOC cap on auto-loaded surfaces |
+| Doc rot | 35 script pointers in prose resolve, 42 reference files carry no leaking frontmatter |
 
-Of these, 9 are validated directly against `code.claude.com/docs`: Description length,
-Agent model value, Hook event name, Hook handler type, Hook matcher regex, Hook context
-length, Name format, Tool-grant tokens, Skill-ref resolution (hooks 31-event set,
-skills/sub-agents 1536-char limit, model-config aliases). They are **WARN**, not CRIT:
-vendor docs lag features, so an unrecognized event or type may be real-but-undocumented —
-flagged for a human, not failed (Rule 1; surfaced, not silently dropped). Test-honesty /
-tautology and Cross-file content drift are kbg-native invariants, not vendor-doc-derived —
-don't count them into "the bottom N are vendor-validated" claims.
+Vendor-validated limits (1536-char descriptions, hook event set, model aliases, name format) are
+WARN, not CRIT: vendor docs lag features, so an unrecognized value is flagged for a human.
 
-## Output
+## Plugin delivery
 
-```
-=== Skill Audit Report ===
-Fleet: <n> agents, <n> skills, <n> hooks
-
-CRITICAL:
-  F1: probe skill not loadable by Claude Code
-  F2: qmd-reindex.py exists in hooks/ but not wired in settings.json
-
-WARNINGS:
-  W1: inventory skill missing 'Don't use for' in description
-
-INFO:
-  I1: commands derive name from filename (no name: frontmatter) — expected
-
-Exit: 2
-```
-
-## Plugin delivery (F1 is plugin-aware)
-
-When `mh@wasikarn` is enabled and its plugin cache is populated
-(`~/.claude/plugins/cache/wasikarn/mh/<version>/{agents,skills,commands,hooks,output-styles}/`),
-F1 ("not symlinked to `~/.claude/…`") treats plugin-delivered components as
-loadable and does **not** fire — Claude Code resolves them via
-the plugin cache at runtime, not via a symlink. The audit emits an
-`INFO` line confirming plugin-mode is active. Components that are neither
-symlinked **nor** plugin-delivered still fire F1 (the genuine-drift case).
-The cache path can be overridden with `--plugin-cache <path>` (used by the
-test fixtures in `tests/skills/meta/harness-audit/known-bad/`, which point at fake caches so the F1
-check is exercised without a live install). The live cache version is
-auto-detected via `ls ~/.claude/plugins/cache/wasikarn/mh/ | sort -V | tail -1` — do not hardcode.
-
-## Integration
-
-Run in CI, pre-commit, or after any fleet change:
-
-```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh" || echo "Audit failed"
-```
-
-Wire into a post-fleet-change hook for continuous enforcement.
+When `mh@wasikarn` is installed, components load from
+`~/.claude/plugins/cache/<marketplace>/mh/<version>/` with no symlink; the audit picks the
+highest installed version automatically. `--plugin-cache <path>` overrides it (used by the
+fixtures under `tests/skills/harness-audit/known-bad/`); `MH_CACHE_DIR` overrides the cache root.
 
 ## Extending checks
 
-Add a new check as its own file under `scripts/checks/`, named `NN-slug.sh` (2-digit prefix,
-hyphen, then a short slug — `audit.sh`'s loader globs `checks/[0-9][0-9]-*.sh` and dot-sources
-each match into its own shell process, so a wrong extension or separator means the check silently
-never runs). Call the shared `crit "<message>"` / `warn "<message>"` / `info "<message>"`
-functions to report a finding — they increment the shared `CRIT_COUNT`/`WARN_COUNT`/`INFO_COUNT`
-totals `audit.sh` aggregates at the end; a check does not print its own formatted line for
-`audit.sh` to parse.
-
-- `crit` — requires immediate fix
-- `warn` — should fix but not blocking
-- `info` — expected behavior, document only
-
-After adding a check, bump the integrity guard's expected count (`_exp_ids` near the end of
-`audit.sh`) in the same commit — it fails closed if the check count doesn't match.
-
-## References
-
-- `references/health.md` — full `--health` mode contract, including the dead-surface panel (#136) (formerly `kbg:harness-health`).
+Add `scripts/checks/NN-slug.sh` (two-digit prefix, hyphen, slug; the loader globs
+`checks/[0-9][0-9]-*.sh`) with a `# NN. <title>` header line. Call `crit`, `warn`, or `info`
+with a message; never print your own summary line. Then add `NN` to `_exp_ids` near the end of
+`audit.sh` in the same commit: the integrity guard fails closed on any lost, duplicated, or
+unlisted fragment. Pair a new check with a known-bad and known-good fixture in
+`tests/skills/harness-audit/known-bad/` and an assertion in `test-harness-audit.sh`.
 
 ## Completion criterion
 
-The audit ran to completion (exit code = finding count, not a script crash) and every CRIT finding
-was either fixed and re-verified with a clean re-run, or explicitly accepted with a documented
-reason. Reading the summary line after a fix, without re-running the audit, is not done — a typo in
-the fix itself only shows up on the re-run.
+The audit ran to completion (a `=== Summary` block, not a crash) and every CRIT was either fixed
+and confirmed by a clean re-run, or accepted with a written reason. Editing a file without
+re-running is not done.
 
 ## Failure modes
 
-- **WARN read as pass.** Exit code is a raw finding count, not a pass/fail bit — a WARN-only run
-  still exits nonzero. Check the CRIT/WARN/INFO breakdown, not just "exit 0 or not."
-- **Stale `--plugin-cache` override.** F1's plugin-aware skip auto-detects the live cache version
-  via `sort -V | tail -1` — a manually-passed `--plugin-cache` pointing at a stale version
-  reintroduces the false F1s the auto-detection exists to avoid.
-- **Fixing without re-running.** A finding is only closed once the audit re-runs clean on it —
-  editing the file and assuming the fix landed skips the one step that would catch a mistake in the
-  fix itself.
-
-## METHODOLOGY alignment
-
-- **Independent checks:** every check runs independently; one failure doesn't mask others.
-- **Fail loud:** exit code = finding count; zero is the only silent success.
+- **Fixing without re-running.** A typo in the fix only shows up on the re-run.
+- **Stale `--plugin-cache`.** A hand-passed old version reintroduces the loadability CRITs the
+  auto-detection exists to avoid.
+- **Green because empty.** A check that globs a directory that no longer exists passes vacuously;
+  when a surface type is removed, remove or retarget its check.

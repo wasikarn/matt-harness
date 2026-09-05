@@ -128,7 +128,7 @@ surfaces in the store's own dashboard, logs, and debugging tools in plaintext.
 `reference.md#rate-limiting-key-hashing`.
 
 Keep the backend layer responsible for choosing the integration point, the HTTP
-contract, and the error shape; use `mh:security-auditor` for abuse case review.
+contract, and the error shape; use the `security-reviewer` agent for abuse case review.
 
 ## Background Jobs & Queues
 

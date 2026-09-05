@@ -96,17 +96,6 @@ if(withVerify.length){
     for(const [k,a] of [...rm.entries()].sort((a,b)=>q(b[1],0.5)-q(a[1],0.5)))line(k,a);
   }
 }
-// Orchestrate sessions: join on session_id against skill-usage.jsonl (same dir, written by
-// hooks/session/skill-usage-telemetry.sh) — the population the 7c threshold decision waits on
-// (docs/research/orchestrate-cost-optimization-2026-09-03.md, "Collect, then decide").
-const su=path.join(path.dirname(f),"skill-usage.jsonl");
-if(fs.existsSync(su)){
-  const orchSessions=new Set(fs.readFileSync(su,"utf8").split(/\r?\n/).filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(r=>r&&r.skill==="mh:orchestrate").map(r=>r.session_id));
-  const orchRows=latest.filter(r=>orchSessions.has(r.session_id));
-  const n=new Set(orchRows.map(r=>r.session_id)).size;
-  console.log("\n=== Orchestrate sessions (session_id seen with mh:orchestrate in skill-usage.jsonl) ===");
-  console.log(n+" sessions, "+f4(sum(orchRows))+"  (main+subagent; decide 7c/model downgrades at >=10)");
-}
 console.log("\n=== Last 7 days ===");
 const days=new Map();for(const r of latest){const k=day(r);days.set(k,(days.get(k)||0)+cost(r));}
 [...days.entries()].sort((a,b)=>b[0]<a[0]?-1:1).slice(0,7).forEach(([k,v])=>console.log(k+"  "+f4(v)));

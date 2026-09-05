@@ -33,10 +33,10 @@ def _strip_heredocs(cmd):
     # second half, "bash <<EOF\nrm -rf /\nEOF" silently bypasses every check
     # below -- also reproduced live 2026-08-06, by a negative-control test
     # written specifically to probe the first fix for this exact regression.
-    # Ported from verifier-protect.sh (function of the same name), itself
-    # ported from worktree-guard.py 2026-08-04; neither sibling makes the
+    # Ported from the retired verifier-protect.sh / worktree-guard.py gates
+    # (2026-08-04, both deleted in the v1.0.0 rebuild); neither made the
     # interpreter distinction because their threat model (detecting writes
-    # to specific files) does not need it the way a "catch any dangerous
+    # to specific files) did not need it the way a "catch any dangerous
     # command" gate does.
     lines = cmd.split("\n")
     out, i = [], 0
@@ -72,8 +72,8 @@ def _normalize_ansi_c_quotes(cmd):
     # decoded character it resolves to in real bash.
     #
     # This file own dispatch logic below compares argv0 by EXACT STRING
-    # (argv0 == "git", argv0 in ("rm", ...)), unlike verifier-protect.sh own
-    # _normalize_ansi_c_quotes (a boundary-only rewrite: $SQ...SQ becomes a
+    # (argv0 == "git", argv0 in ("rm", ...)), unlike the retired
+    # verifier-protect.sh's _normalize_ansi_c_quotes (a boundary-only rewrite: $SQ...SQ becomes a
     # plain SQ...SQ token, escapes left raw) -- that boundary-only version is
     # enough for a write-target scanner that only needs correct token EDGES,
     # but insufficient here: re-wrapping "$SQ\x74SQ" as "SQ\x74SQ" still
@@ -81,9 +81,7 @@ def _normalize_ansi_c_quotes(cmd):
     # empirically 2026-09-03: porting the boundary-only version verbatim
     # left "gi$SQ\x74SQ push --force" allowed (rc=0) -- this file needs the
     # escape actually RESOLVED, not just re-quoted, so this version diverges
-    # from verifier-protect.sh on purpose (sync-seam note: the two files
-    # normalize-step comment near the top of this file no longer applies to
-    # this function -- only to the shared stdin-capture/fast-path prefix).
+    # from that retired version on purpose.
     #
     # Bounded escape set, matching what a git/rm/dd argv0 splice realistically
     # needs: \xHH (hex), \nnn (1-3 octal digits), and the standard single-char
@@ -165,6 +163,61 @@ def _normalize_ansi_c_quotes(cmd):
 
 cmd = _strip_heredocs(d["tool_input"].get("command", ""))
 
+def _mid_merge():
+    # Carve-out for `git add -A|--all|.`: allowed only while a merge is in
+    # progress (mattpocock-skills:resolving-merge-conflicts needs it). Checked
+    # in the payload's cwd, not this process's cwd.
+    import subprocess
+    cwd = d.get("cwd") or os.getcwd()
+    try:
+        r = subprocess.run(["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"],
+                           cwd=cwd, capture_output=True, timeout=3)
+        return r.returncode == 0
+    except Exception:
+        return False
+
+# --- Nested-spawn deny (ported from the retired agent-recursion-guard.sh Bash
+# leg): a subagent (agent_id present in the payload) may not spawn a nested
+# `claude -p|--print|--agent|--bg|--worktree` session via Bash -- it would run
+# as a fresh main session with no agent_id and dispatch unrestricted. Anchored
+# on a command-start position so prose mentions (commit messages, grep
+# patterns) do not trip it; the flag scan is quote-aware so a separator inside
+# a quoted prompt argument does not end the scan early. Coarse habit-guard,
+# same non-goal as the rest of this file (no obfuscation defense).
+# re.MULTILINE: a line inside an interpreter-fed heredoc body (kept by
+# _strip_heredocs above) is its own statement, so `^` must anchor there too.
+# Inert heredoc bodies (cat <<EOF ...) are already stripped before this runs.
+# ponytail: heredoc-to-interpreter routing here is only what _strip_heredocs
+# already models (interpreter word BEFORE "<<"); `cat <<EOF | bash` style
+# bodies are stripped as inert and not scanned -- extend _strip_heredocs if
+# that ever matters.
+_SPAWN_ANCHOR_RE = re.compile(
+    r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(?:\S*/)?claude\b",
+    re.MULTILINE,
+)
+_SPAWN_FLAG_RE = re.compile(r"-p\b|--print\b|--agent\b|--bg\b|--worktree\b")
+_SPAWN_TOKEN_RE = re.compile(
+    "\"(?:[^\"\\\\]|\\\\.)*\"|" + SQ + "[^" + SQ + "]*" + SQ + "|.", re.DOTALL
+)
+
+def _nested_spawn(c):
+    for m in _SPAWN_ANCHOR_RE.finditer(c):
+        buf = []
+        for tok in _SPAWN_TOKEN_RE.finditer(c[m.end():]):
+            t = tok.group()
+            if len(t) == 1 and t in "&;|":
+                break
+            buf.append(t)
+        if _SPAWN_FLAG_RE.search("".join(buf)):
+            return True
+    return False
+
+if d.get("agent_id") and _nested_spawn(cmd):
+    print("[mh:gate] BLOCKED: a subagent may not spawn a nested Claude Code session via Bash "
+          "(claude -p/--print/--agent/--bg/--worktree) -- only the main session dispatches",
+          file=sys.stderr)
+    sys.exit(2)
+
 def deny(reason):
     print("[mh:gate] BLOCKED: " + reason, file=sys.stderr)
     sys.exit(2)
@@ -194,7 +247,7 @@ def delete_hint():
 # both the backslash and the newline are stripped out entirely (real
 # bash line-continuation semantics), so the token that follows joins
 # cleanly with no residual character glued onto it, whitespace or not.
-# Ported from the _newlines_to_seps helper in worktree-guard.py
+# Ported from the _newlines_to_seps helper in the retired worktree-guard.py
 # (2026-08-04); the full-removal fix for the whitespace-less case is
 # 2026-09-03, GH #122.
 #
@@ -206,7 +259,7 @@ def delete_hint():
 # the same window as the comment, so only the FIRST command in
 # "git status # comment \" + newline + "git push --force" ever reached
 # the deny checks below -- confirmed live 2026-09-03, the same shape of
-# bug already fixed the same way in main-exec-guard.sh. Comment state is
+# bug already fixed the same way in the retired main-exec-guard.sh. Comment state is
 # tracked char by char alongside quotes (a "#"/backslash inside a quoted
 # string is never comment/escape syntax) and backslash-escape parity (an
 # escaped hash does not start a comment), matching the posix escaping
@@ -325,8 +378,8 @@ def _newlines_to_seps(s):
 # definition) left the true end of the span un-blanked, so the reconstructed
 # token never equalled "git" and every downstream exact-match dispatch
 # missed it. That claim is now wrong: the closer-search depth-counts
-# same-type brackets (same technique main-exec-guard.sh own _inner_cmds
-# already used), so both examples above are caught. Still out of scope,
+# same-type brackets (same technique the retired main-exec-guard.sh's
+# _inner_cmds used), so both examples above are caught. Still out of scope,
 # unchanged by this fix: a paren/brace hidden behind a DIFFERENT quote or
 # escape boundary inside the span (this scan already tracks quotes only at
 # the top level, not recursively inside a substitution body -- see the
@@ -596,8 +649,8 @@ def _blank_substitutions(s):
 # one token. Grouping tokens ( ) { } get the same treatment: without it,
 # "(rm -rf x)" or "{ rm -rf x; }" left a bare "(" / "{" as argv0 instead
 # of "rm" -- a subshell/brace-group bypass of the identical shape. Ported
-# from verifier-protect.sh / worktree-guard.py, which already use this
-# pattern for their own write-target detection.
+# from the retired verifier-protect.sh / worktree-guard.py gates, which
+# used this pattern for their own write-target detection.
 OPERATORS = {";", "&&", "||", "|", "&", "(", ")", "{", "}"}
 
 # GH #140: shlex.shlex(..., punctuation_chars=True) below (and its
@@ -699,7 +752,7 @@ except ValueError:
     # rm -rf, find -exec/-delete, --no-verify, -c core.hooksPath, the git
     # global-flag walk, the whole push/reset/clean/restore/checkout/switch/
     # branch/commit/add family via the one shared leading-strip a few lines
-    # below, stash/worktree args[0] reads, the worktree -b/-B loop, dd of=,
+    # below, stash args[0] reads, dd of=,
     # the SQL keyword match, and the Layer 3 standalone-vanish compaction)
     # assumed its tokens either came from the primary, already-blanked path
     # or contained no substitution syntax at all. Splitting the RAW,
@@ -757,14 +810,13 @@ if cur:
 # resolves to empty ($(true), `true`) vanishes as its own token in real
 # bash, shifting every later token left by one position -- but
 # _blank_substitutions above leaves a PH-only token sitting in its place,
-# so a fixed-index read anywhere downstream (worktree/stash args[0], the
+# so a fixed-index read anywhere downstream (stash args[0], the
 # git-subcommand extraction below, ...) trusts the wrong position.
-# Confirmed live: "$(true) git worktree add -b evil /tmp/x" silently
-# ALLOWed the single-branch-develop-only doctrine gate to be bypassed --
-# the vanished token becomes argv0 itself, shifting "git" one slot into
-# rest where no dispatch check below looks for it. A check that SCANS the
-# whole rest/args list (the -b/-B/--branch loop below, once PH-stripped) is
-# naturally immune; only a fixed-index read is at risk, and enumerating
+# Confirmed live (2026-09-03, on the since-removed worktree block): a
+# leading "$(true)" made the vanished token argv0 itself, shifting "git"
+# one slot into rest where no dispatch check below looks for it. A check
+# that SCANS the whole rest/args list (once PH-stripped) is naturally
+# immune; only a fixed-index read is at risk, and enumerating
 # every one individually is the same losing game as #122/#123/#125/#129
 # already were, one spelling at a time. Instead: re-run the whole existing
 # per-window dispatch a second time against a compacted copy of the window
@@ -795,7 +847,7 @@ def basename(p):
 # so every candidate is tried in turn instead of trusting the garbled
 # literal.
 KNOWN_DANGEROUS = ("rm", "find", "git", "dd", "mysql", "psql", "sqlite3", "mariadb")
-KNOWN_GIT_SUBS = ("push", "reset", "clean", "restore", "checkout", "switch", "branch", "stash", "commit", "add", "worktree")
+KNOWN_GIT_SUBS = ("push", "reset", "clean", "restore", "checkout", "switch", "branch", "stash", "commit", "add")
 
 # Coordinator review, 2026-09-04: the Finding-4 fallback tokens (used when
 # cmd raises ValueError under the primary shlex path but parses cleanly on
@@ -921,9 +973,8 @@ for w in windows:
         # scanning for a known-dangerous basename anywhere in its args is
         # safe (no quoted-prose false-positive risk). "git" is included so
         # the per-argv0 git check fires on the xargs-wrapped form of git
-        # commands; without it, argv0 stays as "xargs" and the worktree
-        # check is silently bypassed (found 2026-07-03 when designing the
-        # worktree-create-block gate).
+        # commands; without it, argv0 stays as "xargs" and every git check
+        # is silently bypassed (found 2026-07-03).
         # Full PH removal (not just leading): a splice can land mid-
         # basename (xargs g$(true)it ..., found live 2026-09-03), same
         # shape as the SQL keyword check below.
@@ -1028,16 +1079,13 @@ for w in windows:
             # Walk past leading global flags before the subcommand so a prefix
             # like ` git -C /repo push --force` (or ` git -Cpath push --force`,
             # ` git --no-pager push --force`) does not set sub="-C"/"--no-pager"
-            # and silently bypass the push/worktree gates (found v0.36.0 audit).
-            # The WorktreeCreate event does NOT fire for Bash-invoked worktree
-            # creation, so this Bash-side guard is the only thing blocking
-            # `git -C . worktree add -b newbranch`.
+            # and silently bypass the push gate (found v0.36.0 audit).
             GIT_VALUE_GLOBALS = {"-C", "-c", "--git-dir", "--work-tree", "--config-env"}
             i = 0
             # Leading-PH fix (hardening): a disguised global flag here
             # stops this walk before the real subcommand, misplacing it
             # into args. Membership checks below already tolerate this;
-            # args[0]-based ones (worktree/stash) do not.
+            # args[0]-based ones (stash) do not.
             while i < len(rest) and rest[i].replace(PH, "").startswith("-"):
                 t = rest[i].replace(PH, "")
                 if t in GIT_VALUE_GLOBALS:
@@ -1150,93 +1198,9 @@ for w in windows:
                     deny("git stash drop/clear discards stashed changes — confirm with user first")
                 if sub == "commit" and "--amend" in scan:
                     deny("git commit --amend rewrites history — confirm with user first")
-                if sub == "add" and any(t in ("-A", "--all", ".") for t in scan):
-                    deny("git add -A/. stages everything — stage files by name instead")
-                if sub == "worktree" and args and args[0].replace(PH, "") == "add":
-                    # kbg single-branch doctrine gate. This is the ONLY enforcement
-                    # point for the doctrine — a prior companion gate on the native
-                    # WorktreeCreate event (worktree-create-block.sh) was removed
-                    # 2026-07-31: it read tool_name/tool_input, fields that event
-                    # never actually sends (confirmed against code.claude.com/docs/en/hooks
-                    # raw HTML), so its deny logic was dead code, and independent of
-                    # that bug, registering ANY hook on WorktreeCreate replaces the
-                    # Claude Code default worktree creation and requires the hook
-                    # to emit the resulting path — this one never did, so it was
-                    # silently breaking every legitimate WorktreeCreate-triggered
-                    # worktree (isolation:"worktree", claude --worktree, background
-                    # sessions) in every repo running this plugin. See
-                    # docs/research/official-docs-audit-2026-07-31.md. This Bash-side
-                    # check is unaffected: the dedicated WorktreeCreate event never
-                    # fires for Bash-invoked `git worktree add` in the first place
-                    # (verified against the same docs), so it was never part of the
-                    # broken mechanism.
-                    #
-                    # Find the new-branch name. The git-worktree-add argv
-                    # order is flexible — the -b flag may come before or
-                    # after the path. Scan ALL args for the -b/-B/--branch
-                    # flag pair. If found, capture the value. If absent, no
-                    # new branch is being created (existing branch checkout
-                    # via positional commit-ish) — allow.
-                    branch_name = None
-                    for i, t in enumerate(args):
-                        # Leading-PH fix (confirmed live): a spliced -b flag
-                        # no longer starts with a dash, so this doctrine
-                        # gate silently ALLOWed a new non-develop branch.
-                        t = t.replace(PH, "")
-                        if t in ("-b", "-B", "--branch") and i + 1 < len(args):
-                            branch_name = args[i + 1]
-                            break
-                        # joined forms: -bBRANCH, -BBRANCH, --branch=BRANCH
-                        if (t.startswith("-b") and t != "-b") or (t.startswith("-B") and t != "-B"):
-                            branch_name = t[2:]
-                            break
-                        if t.startswith("--branch="):
-                            branch_name = t.split("=", 1)[1]
-                            break
-                    if branch_name is not None and branch_name != "develop":
-                        # Resolve project root: CLAUDE_PROJECT_DIR env first,
-                        # then walk up from cwd looking for .git OR sentinel.
-                        # Expand-not-rename (T10 #89): accept BOTH the old
-                        # .kbg-no-worktree and new .mh-no-worktree sentinel names,
-                        # indefinitely -- a sentinel file in some OTHER repo is
-                        # invisible to this one, so there is no way to force every
-                        # other repo to rename when this repo does.
-                        _SENTINEL_NAMES = (".kbg-no-worktree", ".mh-no-worktree")
-                        root = os.environ.get("CLAUDE_PROJECT_DIR") or ""
-                        if not root:
-                            d = os.getcwd() or "/"
-                            for _ in range(16):
-                                if d in ("", "/"):
-                                    break
-                                try:
-                                    if os.path.isdir(os.path.join(d, ".git")) or \
-                                       any(os.path.isfile(os.path.join(d, _s)) for _s in _SENTINEL_NAMES):
-                                        root = d
-                                        break
-                                except Exception:
-                                    pass
-                                parent = os.path.dirname(d)
-                                if parent == d:
-                                    break
-                                d = parent
-                        sentinel = ""
-                        if root:
-                            for _s in _SENTINEL_NAMES:
-                                _cand = os.path.join(root, _s)
-                                if os.path.isfile(_cand):
-                                    sentinel = _cand
-                                    break
-                        if sentinel:
-                            # No allowlist: any new non-develop branch via worktree
-                            # is denied in a sentinel repo. (The former review-pr
-                            # detached-worktree allowlist was removed with the
-                            # review pipeline, 2026-08-24 #82 — it was dead code
-                            # anyway: this branch only runs when -b/-B/--branch is
-                            # present, and the allowlist required its absence.)
-                            deny("git worktree add -b new-branch blocked by matt-harness doctrine "
-                                 "(no new non-develop branches via worktree; single branch develop only); "
-                                 "use detached worktrees, develop, or an existing branch. "
-                                 "Remove /.kbg-no-worktree or /.mh-no-worktree to allow")
+                if sub == "add" and any(t in ("-A", "--all", ".") for t in scan) and not _mid_merge():
+                    deny("git add -A/. stages everything — stage files by name instead "
+                         "(allowed only while a merge is in progress, i.e. MERGE_HEAD exists)")
 
         if argv0 == "dd" and any(t.replace(PH, "").startswith("of=/dev/") for t in rest):
             deny("dd writing to a raw device — irrecoverable disk-level destruction")

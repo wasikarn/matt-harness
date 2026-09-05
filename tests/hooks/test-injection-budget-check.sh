@@ -71,22 +71,22 @@ assert_not_contains "well under cap stays silent" "OVER-BUDGET" "$OUT"
 
 echo ""
 echo "--- over cap: warns with the real byte total ---"
-write_fixture_hooks 20000 5000
+write_fixture_hooks 7000 2000
 OUT=$(run_hook)
 assert_contains "over cap fires OVER-BUDGET" "OVER-BUDGET" "$OUT"
-assert_contains "warning names the actual combined byte total" "25000B" "$OUT"
-assert_contains "warning breaks out doctrine-bootstrap's own byte count" "20000B" "$OUT"
-assert_contains "warning breaks out memory-health-nudge's own byte count" "5000B" "$OUT"
+assert_contains "warning names the actual combined byte total" "9000B" "$OUT"
+assert_contains "warning breaks out doctrine-bootstrap's own byte count" "7000B" "$OUT"
+assert_contains "warning breaks out memory-health-nudge's own byte count" "2000B" "$OUT"
 
 echo ""
 echo "--- exactly at cap: stays silent (only strictly over warns) ---"
-write_fixture_hooks 24576 0
+write_fixture_hooks 8192 0
 OUT=$(run_hook)
 assert_not_contains "exactly-at-cap stays silent" "OVER-BUDGET" "$OUT"
 
 echo ""
 echo "--- one byte over cap: warns ---"
-write_fixture_hooks 24577 0
+write_fixture_hooks 8193 0
 OUT=$(run_hook)
 assert_contains "one byte over cap still warns" "OVER-BUDGET" "$OUT"
 

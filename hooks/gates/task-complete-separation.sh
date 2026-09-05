@@ -2,7 +2,7 @@
 # Gate: a subagent may not mark its own task completed (maker≠checker).
 # Reads the PreToolUse JSON payload from stdin; exits 2 to block.
 #
-# Why: the orchestrate validation chain (Builder A → Validator B → …) was
+# Why: the builder → validator chain (METHODOLOGY.md Rule 13) was
 # enforced by prompt doctrine + TaskCreate/addBlockedBy ordering only —
 # addBlockedBy gates *ordering*, but nothing computationally stopped the maker
 # from marking its own task `completed` without the validator's pass. That is
@@ -11,8 +11,7 @@
 # present (docs-confirmed against code.claude.com/docs/en/hooks, corrected
 # 2026-08-31: an earlier version of this gate keyed on `agent_type`, which is
 # ALSO set for a top-level `claude --agent <name>` main session — a real
-# security-review finding on the sibling agent-recursion-guard.sh gate,
-# same root cause here), so the gate can tell an actual subagent from the
+# security-review finding), so the gate can tell an actual subagent from the
 # main session without an artifact file or an allowlist.
 #
 # Rule: deny TaskUpdate(status="completed") whenever `agent_id` is present
@@ -39,7 +38,7 @@ try:
     d = json.load(sys.stdin)
 except Exception as e:
     # Fail-safe = ALLOW. Completion is recoverable; a parse error must not
-    # stall all task completion (opposite of verifier-protect'"'"'s fail-to-ask).
+    # stall all task completion (opposite of the ask-tier gates'"'"' fail-to-ask).
     print(f"[mh:gate] task-complete-separation: unparseable stdin, allowing ({e})", file=sys.stderr)
     sys.exit(0)
 
@@ -55,7 +54,7 @@ if d.get("tool_name") != "TaskUpdate":
 # status has no documented key-name alias; read it straight from tool_input.
 ti = d.get("tool_input")
 if not isinstance(ti, dict):
-    # Matches irrecoverable.sh and verifier-protect.sh: a malformed
+    # Matches irrecoverable.sh: a malformed
     # tool_input must not crash into an uncaught traceback (found
     # 2026-08-06). This gate is fail-safe=ALLOW by design, so route
     # straight to the same clean exit a missing status already takes,

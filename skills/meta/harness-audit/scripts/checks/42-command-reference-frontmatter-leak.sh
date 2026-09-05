@@ -1,29 +1,10 @@
 #!/usr/bin/env bash
 # 42. Reference-file frontmatter leak (skills/).
 #
-# A skill's `references/` subfolder
-# (`incident`, `memory-lint`, `harness-audit`, etc.) is meant to keep its
-# supporting files inert — read only via an explicit path pointer in the
-# parent COMMAND.md/SKILL.md's prose, never invoked on their own. Confirmed
-# via a live `claude -p "..." --debug-file <path>` capture (2026-07-20
-# commands/deep-research pass): two files that lived in the now-removed
-# `commands/ship/references/` directory (`classify.md` and
-# `pre-ship-verify.md`; `ship` was retired in the matt-harness migration,
-# 2026-08-24 ticket #86), both carrying their own `name:`/`description:`
-# frontmatter, loaded as fully independent skills
-# (`kbg:ship:references:classify`, userFacingName="ship-classify") even
-# though `ship/COMMAND.md` only ever read them by file path. `skills/workflow/ideate/
-# references/frames.md` carries no frontmatter and correctly does NOT leak —
-# proving the rule is precise: any `.md` under `commands/` (other than a
-# command's own `COMMAND.md` entrypoint) that carries a `description:` in
-# frontmatter becomes its own accidental command, regardless of directory
-# nesting or author intent. Widened to `skills/*/references/*.md` 2026-08-17
-# (deep-audit pass) after `skills/meta/harness-audit/references/health.md` was
-# found carrying the identical `name:`/`description:` shape, unguarded — the
-# same failure mode, just under skills/ instead of commands/.
-#
-# WARN (not CRIT): a real but non-catastrophic namespace/token-budget leak —
-# not the tamper-sensitive class checks 36/40 CRIT-guard.
+# A skill's `references/` files are read only by explicit path from SKILL.md.
+# Confirmed live (2026-07-20, `claude -p --debug-file`): any .md under a skill
+# dir carrying a `description:` in frontmatter loads as its OWN skill, whatever
+# the author intended. WARN: a namespace/token-budget leak, not a safety class.
 shopt -s nullglob
 _leak_candidates=("$CLAUDE_DIR"/skills/*/references/*.md "$CLAUDE_DIR"/skills/*/*/references/*.md)
 shopt -u nullglob

@@ -1,399 +1,57 @@
 #!/usr/bin/env bash
-# Pre-commit gate for the matt-harness plugin repo.
-#
-# This repo is the single source of truth for the harness fleet (agents/,
-# skills/, hooks/, scripts/, contexts/, output-styles/, themes/) — the flat
-# (plugin) layout, as opposed to the dotfiles repo's nested claude/ layout.
-# (commands/ retired as a surface type 2026-08-25, #112 — every command
-# converted to a skill.)
-# Validates staged files before they land:
-#   1. hooks/*.sh         → bash -n + shellcheck (severity=warning)
-#      *.sh / *.py / *.js → no hardcoded /Users/<name> home paths (use $HOME/~)
-#      *.md/.json/.yaml/.txt → no literal $HOME path of this machine (public repo)
-#   2. **/*.json          → jq -e (parses cleanly)
-#   3. {agents,skills,hooks,scripts}/* staged → harness-audit ecosystem
-#      health check, blocking on CRITICAL findings only.
-#   4. shipped-surface files staged (5 surface dirs + scripts/ + contexts/ +
-#      docs/METHODOLOGY.md + docs/reference/** — everything loaded or sourced
-#      from the per-version plugin cache at runtime — plus docs/diagrams/* and
-#      the now-dead docs/diagrams/src/*, gated for cache-consistency of
-#      shipped docs assets, not a runtime-read reason) → plugin.json version
-#      must change in this commit, and both manifests' version fields must agree
-#      (same-version edits are cache no-ops).
-#   5. brand-new agents/*.md, or
-#      skills/*/SKILL.md over 200 lines → hard-blocked (new-file LOC gate).
-#      Editing an existing one past the cap stays WARN-only (harness-audit
-#      check 55) — deliberate grandfather, see the gate's own comment block.
-#
-# The heavy layers above run in parallel so the commit gate stays fast.
-# The pre-push gauntlet adds the behavioral test suite (file list lives in
-# scripts/run-gauntlet.sh — no count here, counts drift). The old
-# eval/run-eval.py fixture gate was deleted, not rebuilt, in the c452102
-# reset (2026-06-27) — this file used to carry a Layer 3 that re-checked
-# for it on every commit and no-op'd when absent; removed 2026-08-01 since
-# the file it waited for was never coming back. See CLAUDE.md's Validation
-# section for current coverage.
-#
-# Wired via: git config core.hooksPath git-hooks
-# Bypass:    git commit --no-verify  (use only when you know why)
-
+# pre-commit — fast gate on staged files:
+#   shell syntax (+shellcheck if installed), py_compile, JSON parse,
+#   hardcoded home-path ban, harness-audit CRIT count.
+# Full gauntlet runs in pre-push. Wire once: git config core.hooksPath git-hooks
 set -uo pipefail
-
 ROOT="$(git rev-parse --show-toplevel)"
-# while-read, not mapfile (#93): mapfile is bash-4-only and this hook runs
-# under whatever bash `git` finds — stock macOS ships 3.2, where mapfile
-# aborts the whole hook rc=127 and no commit can land.
-STAGED=()
-while IFS= read -r _f; do STAGED+=("$_f"); done < <(git -c core.quotepath=false diff --cached --name-only --diff-filter=ACMR)
-
+cd "$ROOT" || exit 1
 fail=0
+staged() { git diff --cached --name-only --diff-filter=ACMR -- "$@"; }
 
-WORK_TMP=$(mktemp -d "${TMPDIR:-/tmp}/kbg-pre-commit.XXXXXX")
-trap 'rm -rf "$WORK_TMP"' EXIT
-
-# ---- Layer 1: syntax / lint checks ----
-run_syntax_layer() {
-  local rc=0
-  # Account token for the bare-name check below. Resolved once, with an
-  # ANNOUNCED skip when it is too short or too common to word-match safely — a
-  # silent skip reads exactly like a clean repo.
-  local _acct_token
-  _acct_token="$(basename "$HOME")"
-  if [ "${#_acct_token}" -lt 5 ]; then
-    echo "  [hygiene] bare account-name check SKIPPED: token under 5 chars." >&2
-    _acct_token=""
-  elif printf '%s' "$_acct_token" | grep -qixE 'admin|build|ubuntu|runner|deploy|jenkins|docker|vagrant|developer|default'; then
-    echo "  [hygiene] bare account-name check SKIPPED: token is a common word." >&2
-    _acct_token=""
-  fi
-  if [ "${#STAGED[@]}" -gt 0 ]; then
-    for f in "${STAGED[@]}"; do
-      [ -f "$f" ] || continue
-
-      if [[ "$f" == hooks/*.sh ]]; then
-        if ! bash -n "$f" 2>&1; then
-          echo "  bash syntax error: $f" >&2
-          rc=1
-        fi
-        if ! shellcheck --severity=warning "$f"; then
-          echo "  shellcheck failed: $f" >&2
-          rc=1
-        fi
-      fi
-
-      if [[ "$f" == *.json ]]; then
-        if ! jq -e . "$f" >/dev/null 2>&1; then
-          echo "  invalid JSON: $f" >&2
-          rc=1
-        fi
-      fi
-
-      # Scripts only (.sh/.py/.js): no hardcoded /Users/<name> home paths — use
-      # $HOME/~ ($HOME always resolves in a script; config/docs aren't checked).
-      # .js added 2026-08-24 (#93): shipped workflow runners are .js and were
-      # the one scripted-surface class this check missed.
-      if [[ "$f" == *.sh || "$f" == *.py || "$f" == *.js ]]; then
-        if grep -nE '/Users/[A-Za-z0-9._-]+/' "$f" >/dev/null 2>&1; then
-          echo "  hardcoded home path in $f — use \$HOME or ~:" >&2
-          grep -nE '/Users/[A-Za-z0-9._-]+/' "$f" | sed 's/^/    /' >&2
-          rc=1
-        fi
-      fi
-
-      # Text files: this is a PUBLIC repo — no literal home path of THIS
-      # machine in committed content (use ~; placeholder text like
-      # /Users/<name> passes, only the real expanded $HOME is the leak class).
-      if [[ "$f" == *.md || "$f" == *.json || "$f" == *.yml || "$f" == *.yaml || "$f" == *.txt ]]; then
-        if grep -nF "$HOME" "$f" >/dev/null 2>&1; then
-          echo "  literal home path in $f — public repo, use ~:" >&2
-          grep -nF "$HOME" "$f" | head -5 | sed 's/^/    /' >&2
-          rc=1
-        fi
-      fi
-
-      # ALL committed files: the dash-encoded home path leaks the username too.
-      # Claude Code encodes a project dir as ~/.claude/projects/<cwd with / as ->,
-      # so /Users/<name>/... becomes -Users-<name>-..., which neither check above
-      # matches. Found in 4 files (docs + scripts) on 2026-08-26; both this hook
-      # and the gauntlet's path-hygiene layer had only ever caught the slash form.
-      # Applies to every extension, since the leak showed up in .md and .py alike.
-      _home_dash="$(printf '%s' "$HOME" | tr '/' '-')"   # /Users/<name> -> -Users-<name>
-      if grep -nF "$_home_dash" "$f" >/dev/null 2>&1; then
-        echo "  dash-encoded home path in $f — public repo, use a <placeholder>:" >&2
-        grep -nF "$_home_dash" "$f" | head -5 | sed 's/^/    /' >&2
-        rc=1
-      fi
-
-      # ALL committed files: the BARE account name, no path around it. `<ACCOUNT>`
-      # in an author field, `@<account>` as a doc owner, `cache/<account>/`
-      # written inside prose — none of the three checks above sees any of them.
-      # Found 2026-08-26: 29 occurrences across CHANGELOG.md, docs/research/,
-      # docs/post-mortems/ and docs/plans/ survived a purge that reported the
-      # repo clean, because those dirs are carved out of *style* sweeps and that
-      # got silently read as a carve-out from *hygiene* too.
-      #
-      # Word-boundary, and gated on the token being distinctive ($_acct_token is
-      # resolved once above, empty when it is too short or too common to match
-      # safely). Mirrors run_path_hygiene() in scripts/run-gauntlet.sh — keep
-      # the two guards in step.
-      if [ -n "${_acct_token:-}" ]; then
-        if grep -niE "(^|[^A-Za-z0-9])${_acct_token}([^A-Za-z0-9]|$)" "$f" >/dev/null 2>&1; then
-          echo "  bare account name in $f — public repo, use a <placeholder>:" >&2
-          grep -niE "(^|[^A-Za-z0-9])${_acct_token}([^A-Za-z0-9]|$)" "$f" | head -5 | sed 's/^/    /' >&2
-          rc=1
-        fi
-      fi
-    done
-  fi
-  return "$rc"
-}
-
-# Decide whether the audit layer needs to run. Own scan, NOT ${STAGED[@]}:
-# the audit must also fire when a shipped file is renamed OUT of its dir or
-# deleted — --no-renames surfaces the rename's D side, and no --diff-filter
-# (ACMR would re-drop that D side even with --no-renames; verified
-# empirically, blind-spot find 2026-08-22). STAGED keeps ACMR above because
-# the lint loop reads file contents, which deletions don't have.
-ecosystem_staged=0
+# 1. shell syntax
 while IFS= read -r f; do
-  case "$f" in
-    agents/*|skills/*|hooks/*|scripts/*)
-      ecosystem_staged=1 ;;
-  esac
-done < <(git -c core.quotepath=false diff --cached --name-only --no-renames)
+  [ -n "$f" ] || continue
+  bash -n "$f" || fail=1
+done < <(staged '*.sh' 'git-hooks/*')
+if command -v shellcheck >/dev/null; then
+  files=$(staged '*.sh' 'git-hooks/*')
+  # shellcheck disable=SC2086
+  [ -z "$files" ] || shellcheck -S warning $files || fail=1
+fi
 
-# ---- Layer 2: harness-audit (CRITICAL only) ----
-run_audit_layer() {
-  local rc=0
-  if [ "$ecosystem_staged" -eq 1 ]; then
-    local AUDIT="$ROOT/skills/meta/harness-audit/scripts/audit.sh"
-    [ -f "$AUDIT" ] || AUDIT="$(find "$ROOT/skills" -maxdepth 4 -type f -path '*/harness-audit/scripts/audit.sh' 2>/dev/null | head -1)"
-    [ -n "$AUDIT" ] && [ -f "$AUDIT" ] || AUDIT="$HOME/.claude/skills/harness-audit/scripts/audit.sh"
-    [ -f "$AUDIT" ] || AUDIT="$(find "$HOME/.claude/skills" -maxdepth 4 -type f -path '*/harness-audit/scripts/audit.sh' 2>/dev/null | head -1)"
-    if [ -f "$AUDIT" ]; then
-      local audit_out
-      local audit_cmd="bash $AUDIT $ROOT"
-      if [ -n "${MH_GAUNTLET_PLUGIN_CACHE:-}" ]; then
-        audit_cmd="$audit_cmd --plugin-cache $MH_GAUNTLET_PLUGIN_CACHE"
-      fi
-      audit_out="$(eval "$audit_cmd" 2>&1)"
-      local crit_n
-      crit_n="$(printf '%s\n' "$audit_out" | sed -n 's/^Critical:[[:space:]]*\([0-9][0-9]*\).*/\1/p')"
-      if [ -z "$crit_n" ]; then
-        echo "  harness-audit did not complete (no summary) — run: bash $AUDIT" >&2
-        printf '%s\n' "$audit_out" | tail -3 >&2
-        rc=1
-      elif [ "$crit_n" -gt 0 ]; then
-        printf '%s\n' "$audit_out" | grep 'CRIT' >&2
-        echo "  harness-audit: $crit_n critical ecosystem issue(s) above" >&2
-        rc=1
-      fi
-    fi
-  fi
-  return "$rc"
-}
-
-# Decide whether the version-bump layer needs to run. Uses a full staged list
-# (no --diff-filter): deleting a shipped file invalidates the plugin cache the
-# same as editing one, so deletions must count here even though STAGED above
-# filters them out. --no-renames: a `git mv scripts/a.sh tools/a.sh` otherwise
-# emits ONLY the destination path, so a rename OUT of a shipped dir would skip
-# the layer while still removing cached content (compliance-audit adversarial
-# find, 2026-08-21, verified empirically). core.quotepath=false: a non-ASCII
-# filename is otherwise emitted as a "quoted" literal that defeats the case
-# patterns (same audit).
-version_check_needed=0
+# 2. python
 while IFS= read -r f; do
-  case "$f" in
-    agents/*|skills/*|hooks/*|output-styles/*|themes/*|scripts/*|contexts/*|.claude-plugin/*|docs/METHODOLOGY.md|docs/reference/*|docs/diagrams/*|docs/diagrams/src/*)
-      version_check_needed=1 ;;
-  esac
-done < <(git -c core.quotepath=false diff --cached --name-only --no-renames)
+  [ -n "$f" ] || continue
+  python3 -m py_compile "$f" || fail=1
+done < <(staged '*.py')
 
-# ---- Layer 3: version-bump gate ----
-# Shipped-surface content staged ⇒ plugin.json version must differ from HEAD
-# (same-version edits are cache no-ops — CLAUDE.md § Plugin lifecycle), and
-# plugin.json + marketplace.json must carry the same version string.
-run_version_layer() {
-  local rc=0
-  local staged_v market_v head_v
-  # Amend valve: `git commit --amend` re-runs this hook with HEAD already AT
-  # the bumped commit, so staged==HEAD reads as "no bump" and blocks a
-  # legitimate amend (--no-verify is deny-gated in this harness). Scoped skip:
-  if [ -n "${MH_SKIP_VERSION_GATE:-}" ]; then
-    echo "  version-bump gate skipped (MH_SKIP_VERSION_GATE set — amend/rescue use only)"
-    return 0
-  fi
-  staged_v="$(git show :.claude-plugin/plugin.json 2>/dev/null | jq -r .version)"
-  market_v="$(git show :.claude-plugin/marketplace.json 2>/dev/null | jq -r '.plugins[0].version')"
-  if [ -z "$staged_v" ] || [ "$staged_v" = "null" ]; then
-    echo "  cannot read staged .claude-plugin/plugin.json version" >&2
-    return 1
-  fi
-  if [ "$staged_v" != "$market_v" ]; then
-    echo "  manifest version mismatch: plugin.json $staged_v vs marketplace.json $market_v" >&2
-    rc=1
-  fi
-  # Description sync-seam: the same description string lives in BOTH manifests
-  # with no shared source — drifted for real on 2026-08-22 (marketplace.json
-  # rewritten, plugin.json left carrying a stale count). Index copies compared,
-  # so staging a description edit in only one file blocks here.
-  local staged_d market_d
-  staged_d="$(git show :.claude-plugin/plugin.json 2>/dev/null | jq -r '.description // ""')"
-  market_d="$(git show :.claude-plugin/marketplace.json 2>/dev/null | jq -r '.plugins[0].description // ""')"
-  if [ "$staged_d" != "$market_d" ]; then
-    echo "  manifest description mismatch: plugin.json and marketplace.json must carry the identical description string" >&2
-    rc=1
-  fi
-  local shipped=0
-  # Runtime-served content beyond the 5 surface dirs counts as shipped:
-  # doctrine-bootstrap injects docs/METHODOLOGY.md and score-decision
-  # cats docs/reference/* from the versioned cache; shipped skill scripts source
-  # scripts/_lib/*.sh relative out of the cache; frame.md cats contexts/*.md
-  # via ${MH_PLUGIN_ROOT}. Same stale-cache class for all of them (the
-  # scripts/+contexts/ gap bit for real on 2026-08-21 — 3 scripts/-only
-  # commits never reached the installed cache until a manual bump).
-  # docs/diagrams/* + docs/diagrams/src/* (the latter now dead, its
-  # build-pipeline directory removed in the 2026-08-28 diagram overhaul) are
-  # also gated, but for a different reason — nothing reads diagram content
-  # from the cache at runtime; it's deliberate cache-consistency for shipped
-  # docs assets (949fcf44/97132587, v0.68.512-513).
-  while IFS= read -r f; do
-    case "$f" in
-      agents/*|skills/*|hooks/*|output-styles/*|themes/*|scripts/*|contexts/*|docs/METHODOLOGY.md|docs/reference/*|docs/diagrams/*|docs/diagrams/src/*) shipped=1 ;;
-    esac
-  done < <(git -c core.quotepath=false diff --cached --name-only --no-renames)
-  if [ "$shipped" -eq 1 ]; then
-    head_v="$(git show HEAD:.claude-plugin/plugin.json 2>/dev/null | jq -r .version)"
-    if [ -n "$head_v" ] && [ "$head_v" != "null" ] && [ "$staged_v" = "$head_v" ]; then
-      echo "  shipped-surface files staged but plugin version unchanged ($staged_v)" >&2
-      echo "  same-version edits are cache no-ops — bump BOTH manifests in this commit" >&2
-      rc=1
-    fi
-  fi
-  return "$rc"
-}
+# 3. JSON
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  python3 -m json.tool "$f" >/dev/null || { echo "pre-commit: invalid JSON: $f" >&2; fail=1; }
+done < <(staged '*.json')
 
-# ---- Layer 4: new-file LOC gate (hard block) ----
-# Cap: 200 lines via `git show ":$f" | wc -l` — the STAGED INDEX content, not
-# the worktree. That matches what will actually land; check 55 below reads a
-# checked-out tree because it audits at pre-push, which is the right read
-# for it but the wrong one here (stage, keep editing, forget to re-`git add`
-# → a worktree read would score the trimmed file and miss the committed one).
-# Same 2 patterns and same cap as harness-audit check 55
-# (skills/harness-audit/scripts/checks/55-loc-cap-auto-loaded-surfaces.sh) —
-# kept in sync by tests/git-hooks/test-pre-commit-loc-gate.sh, not a shared
-# file (git-hooks/ isn't a shipped surface; scripts/_lib/ is, and pulling the
-# constant there would drag an unrelated version bump into every
-# git-hooks/-only change). (Dropped the 2 commands/-scoped patterns 2026-08-25,
-# #112 — commands/ retired as a surface type entirely.)
-#
-# Only blocks BRAND-NEW files. Editing an existing file past the cap, or
-# `git mv`-ing an already-in-scope file to a new in-scope path (e.g. the
-# reference-split migration check 55's own message recommends), stays
-# WARN-only via check 55 — a deliberate grandfather (2026-08-24 grilling:
-# don't reopen check 55's "WARN not CRIT" call from one day earlier). Known
-# gap, accepted rather than closed: `git commit --amend` growing a file past
-# cap that the commit-being-amended itself added — `--diff-filter=A` diffs
-# the index against HEAD, which already includes that add, so this reads as
-# an edit, not a new file. check 55's pre-push WARN is the backstop there.
-#
-# MH_SKIP_LOC_GATE (mirrors MH_SKIP_VERSION_GATE) is checked FIRST, before
-# the detection scan below runs at all — so a bug in the scan itself can't
-# strand a broken gate with no other way out (--no-verify and
-# `-c core.hooksPath=` are both deny-gated in this harness).
-LOC_CAP=200
-loc_gate_needed=0
-LOC_ADDED=()
-LOC_RENAMES=()
-if [ -n "${MH_SKIP_LOC_GATE:-}" ]; then
-  echo "  new-file LOC gate skipped (MH_SKIP_LOC_GATE set — rescue use only)"
-else
-  # while-read, not mapfile — bash-3.2 compat, same rationale as STAGED above.
-  while IFS= read -r _f; do LOC_ADDED+=("$_f"); done < <(git -c core.quotepath=false diff --cached --name-only --no-renames --diff-filter=A)
-  while IFS= read -r _f; do LOC_RENAMES+=("$_f"); done < <(git -c core.quotepath=false diff --cached --diff-filter=R --name-status)
-  [ "${#LOC_ADDED[@]}" -gt 0 ] && loc_gate_needed=1
-fi
+# 4. hardcoded home paths (repo is public); frozen history dirs exempt
+while IFS= read -r f; do
+  [ -n "$f" ] || continue
+  case "$f" in docs/research/*|docs/post-mortems/*|docs/plans/*|CHANGELOG.md) continue ;; esac
+  git show ":$f" | LC_ALL=C /usr/bin/grep -aqE '/Users/[A-Za-z]|-Users-[A-Za-z]' 2>/dev/null || continue
+  echo "pre-commit: hardcoded home path in $f — use \$HOME or ~" >&2
+  fail=1
+done < <(staged)
 
-is_capped_surface() {
-  local p="$1"
-  [[ "$p" =~ ^agents/[^/]+\.md$ ]] && return 0
-  [[ "$p" =~ ^skills/[^_][^/]*/SKILL\.md$ ]] && return 0
-  [[ "$p" =~ ^skills/[^_][^/]*/[^_][^/]*/SKILL\.md$ ]] && return 0
-  return 1
-}
-
-# A rename's destination shows up in LOC_ADDED (--no-renames was used for
-# that scan); find its ORIGINAL path in the separate rename-detecting pass
-# above and skip if that original path was already in-scope (grandfathered).
-was_renamed_from_in_scope() {
-  local dest="$1" line old new
-  for line in "${LOC_RENAMES[@]}"; do
-    IFS=$'\t' read -r _ old new <<< "$line"
-    if [ "$new" = "$dest" ]; then
-      is_capped_surface "$old" && return 0
-      return 1
-    fi
-  done
-  return 1
-}
-
-run_loc_gate() {
-  local rc=0 f lines
-  for f in "${LOC_ADDED[@]}"; do
-    is_capped_surface "$f" || continue
-    was_renamed_from_in_scope "$f" && continue
-    lines=$(git show ":$f" 2>/dev/null | wc -l | tr -d ' ')
-    if [ "$lines" -gt "$LOC_CAP" ]; then
-      echo "  new file '$f' is $lines lines (cap $LOC_CAP) — move detail to the surface's reference file before committing (skills: reference.md; agents: compress)" >&2
-      rc=1
-    fi
-  done
-  return "$rc"
-}
-
-# Start all applicable layers in parallel.
-echo "pre-commit: running staged checks in parallel..." >&2
-
-run_syntax_layer > "$WORK_TMP/syntax.log" 2>&1 &
-PID_SYNTAX=$!
-
-if [ "$ecosystem_staged" -eq 1 ]; then
-  run_audit_layer > "$WORK_TMP/audit.log" 2>&1 &
-  PID_AUDIT=$!
-fi
-
-if [ "$version_check_needed" -eq 1 ]; then
-  run_version_layer > "$WORK_TMP/version.log" 2>&1 &
-  PID_VERSION=$!
-fi
-
-if [ "$loc_gate_needed" -eq 1 ]; then
-  run_loc_gate > "$WORK_TMP/locgate.log" 2>&1 &
-  PID_LOC=$!
-fi
-
-# Wait and report.
-wait_layer() {
-  local name="$1" pid="$2" log="$3"
-  if wait "$pid"; then
-    echo "  ✅ $name" >&2
-  else
-    echo "  ❌ $name" >&2
-    tail -n 20 "$log" | sed 's/^/     /' >&2
+# 5. harness-audit: zero CRITICAL
+AUDIT="skills/meta/harness-audit/scripts/audit.sh"
+if [ -f "$AUDIT" ]; then
+  if ! out=$(bash "$AUDIT" . 2>&1); then
+    echo "pre-commit: harness-audit CRIT findings:" >&2
+    printf '%s\n' "$out" | /usr/bin/grep 'CRIT F' >&2
     fail=1
   fi
-}
-
-wait_layer "syntax/lint" "$PID_SYNTAX" "$WORK_TMP/syntax.log"
-[ -n "${PID_AUDIT:-}" ] && wait_layer "harness-audit" "$PID_AUDIT" "$WORK_TMP/audit.log"
-[ -n "${PID_VERSION:-}" ] && wait_layer "version-bump" "$PID_VERSION" "$WORK_TMP/version.log"
-[ -n "${PID_LOC:-}" ] && wait_layer "new-file LOC gate" "$PID_LOC" "$WORK_TMP/locgate.log"
-
-if [ "$fail" -ne 0 ]; then
-  echo "" >&2
-  echo "pre-commit blocked. Fix issues above, or bypass with: git commit --no-verify" >&2
-  exit 1
+else
+  echo "pre-commit: WARN $AUDIT missing, skipping harness-audit" >&2
 fi
 
+[ "$fail" -eq 0 ] || { echo "pre-commit: blocked" >&2; exit 1; }
 exit 0

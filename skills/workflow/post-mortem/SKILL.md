@@ -32,7 +32,7 @@ Don't use for in-progress incidents.
 **Actions**:
 1. Check whether the user supplied a bug identifier (JIRA key, GitHub issue, PR number, or
    short summary) when invoking this skill.
-2. **Scan the conversation for each of the 4 inputs first** — an immediately-prior `mattpocock-skills:diagnosing-bugs` or `mh:incident` run in this session usually already established most of them. Treat anything genuinely established as satisfied; don't re-ask for it.
+2. **Scan the conversation for each of the 4 inputs first** — an immediately-prior `mattpocock-skills:diagnosing-bugs` run in this session usually already established most of them. Treat anything genuinely established as satisfied; don't re-ask for it.
 3. For whatever remains missing or unclear, ask the user explicitly:
    - **Reproducible trigger**: exact steps, environment, inputs that cause the failure. Can someone else make it happen?
    - **Known mechanism**: what code path, what invariant, what race, what assumption broke? One-paragraph explanation.
@@ -61,7 +61,7 @@ Don't use for in-progress incidents.
 
 ## Phase 3: Draft
 
-**Goal**: Produce the post-mortem document using the 10-section template below.
+**Goal**: Produce the post-mortem document using the 11-section template below.
 
 **Tone check before writing**: re-read the Core Principles section above. Blameless, concrete, no hedging.
 
@@ -98,15 +98,19 @@ Example: "Customer-reported hang, reproduced locally, bisected to `e5f6a7b`; ins
 How did this reach production? What check missed it?
 Example: "Fast-path shipped in a perf sprint; unit tests covered multi-stream only, dumbModel wasn't in the CI workload matrix."
 
-## 8. Validation Proof
+## 8. Failure class
+One of: missing_context | bad_tool_contract | missing_guardrail | weak_verification
+Each class maps to one fix: a clearer map, a better tool, a stricter permission, a new test. Name the fix.
+
+## 9. Validation Proof
 How we know the fix works and won't regress.
 Example: "`test_tada_single_stream_sync` fails pre-fix, passes post-fix; CI green; dumbModel eval-step benchmark now completes."
 
-## 9. Follow-Ups
+## 10. Follow-Ups
 Tracked items to prevent recurrence. Each item needs an **individual owner** (not a team) and a **verifiable completion criterion** — vague ownership is the most-cited reason follow-ups rot. If genuinely unassigned, write "Unowned — needs assignment" rather than skip the field.
 Example: "- [ ] Add dumbModel single-stream config to the CI workload matrix (owner: @priya, done when: it runs in CI nightly). - [ ] Audit all `numStreams` branches for the same assumption (owner: @jordan, done when: audit doc lists every branch + verdict). - [ ] Document fast-path policy: no sync skip without explicit safety proof (owner: Unowned — needs assignment)."
 
-## 10. Assumption Trace
+## 11. Assumption Trace
 The belief in force before the incident: what the team assumed was true, why that seemed reasonable at the time, and the specific evidence that proved it wrong. Distinct from Root Cause (the code mechanism) — this is the human belief-state that let the mechanism go unquestioned. Distinct from Escape Reason (which process/check missed it) — this is what was believed, not what should have caught it.
 **Hindsight-bias risk**: this section is written after the root cause is already known, which biases recall toward a cleaner, more-reasonable-sounding belief than what was actually held at the time. Anchor to something said or written *before* the fix was found — a commit message, a chat line, an earlier hypothesis in the same investigation. If no such contemporaneous artifact exists, say so explicitly ("no record of the belief before the fix — reconstructed from memory, may be biased by knowing the outcome") rather than presenting a reconstructed belief as fact.
 Example: "We assumed `numStreams == 1` meant single-GPU, so no sync was needed — reasonable, since every other fast-path in this file makes the same assumption. Proved wrong when tracing `deviceStreamSync()` showed a write still in flight on a supposedly single-stream launch. (Anchored to the investigation's own Slack thread, timestamped before the fix commit.)"
@@ -132,7 +136,7 @@ Example: "We assumed `numStreams == 1` meant single-GPU, so no sync was needed �
 5. When declaring a broader concern "resolved," "closed," or "already addressed" — as opposed to verifying one specific identifier — grep the affected file(s) for every other occurrence of the relevant term before asserting closure. State what was actually checked ("all N occurrences of X in file Y reflect the fix") rather than a blanket "verified against the diff" implying coverage it didn't do.
 6. Verify links (PR numbers, issue keys) are real.
 7. Ensure Section 4 (Symptom Linkage) actually connects Section 3 → Section 2. If it doesn't, the mechanism isn't fully understood.
-8. Check Section 10 (Assumption Trace) for hindsight-bias reconstruction: does the stated belief trace to something said or written before the fix was found, or is it a plausible-sounding story assembled after the fact? If no contemporaneous artifact exists, confirm the draft says so explicitly rather than presenting the reconstruction as fact.
+8. Check Section 11 (Assumption Trace) for hindsight-bias reconstruction: does the stated belief trace to something said or written before the fix was found, or is it a plausible-sounding story assembled after the fact? If no contemporaneous artifact exists, confirm the draft says so explicitly rather than presenting the reconstruction as fact.
 9. Render this checklist explicitly in your response — one line per action above, noting what was checked and the result — before presenting the final draft. Don't fold Phase 4's verification into another section's prose (e.g., a stray Section 9 bullet); a visible checklist keeps the checks re-verifiable later instead of just asserted, and resists silently skipping a step under compression.
 
 ---
@@ -157,12 +161,11 @@ Example: "We assumed `numStreams == 1` meant single-GPU, so no sync was needed �
 
 ## Integration Notes (Project-Specific)
 
-- **METHODOLOGY alignment**: Rule 1 (Decision-sizing triad) → Phase 1 verifies inputs before drafting. Rule 4 (verify-intent loop) → Section 8 requires regression test proof. Abort loud → Phase 1 aborts if 4 inputs missing.
+- **METHODOLOGY alignment**: Rule 1 (Decision-sizing triad) → Phase 1 verifies inputs before drafting. Rule 4 (verify-intent loop) → Section 9 requires regression test proof. Abort loud → Phase 1 aborts if 4 inputs missing.
 - **Gate revisit trigger (Rule 1)**: 3 repo-committed post-mortems now exist under `docs/post-mortems/` — re-check whether the Phase 1 four-input gate still causes abandonment, or drop this caveat. If usage shows people bouncing off it, loosen the gate before adding more structure elsewhere.
 - **Post-diagnosing-bugs workflow**: `mattpocock-skills:diagnosing-bugs` Phase 6 (Cleanup) requires the confirmed hypothesis stated in the commit/PR message, plus the regression test from Phase 5 and the minimised repro from Phase 2 — together these cover the 4 required inputs (reproducible trigger, known mechanism, identified patch, passing validation). That output IS the input to `mh:post-mortem` Phase 1. Run `mh:post-mortem` immediately after `mattpocock-skills:diagnosing-bugs` concludes, while context is warm.
 - **Severity tier**: If the bug caused an incident (SLO breach, customer-visible outage), tag the post-mortem with the incident severity; otherwise it's standard.
-- **Section 10 (Assumption Trace) origin**: added 2026-08-30 after an article audit found all 4 real post-mortems under `docs/post-mortems/` shared the same gap — none named the specific belief that made the bug's root cause go unquestioned. Distinct from Escape Reason (process gap) and Root Cause (code mechanism); applies going forward, not retrofitted onto the 4 existing records.
-- **Hooks active**: `hooks/gates/verifier-protect.sh` asks for approval on edits to the gate/audit verifier surfaces, not CLAUDE.md/METHODOLOGY.md directly.
+- **Section 11 (Assumption Trace) origin**: added 2026-08-30 after an article audit found all 4 real post-mortems under `docs/post-mortems/` shared the same gap — none named the specific belief that made the bug's root cause go unquestioned. Distinct from Escape Reason (process gap) and Root Cause (code mechanism); applies going forward, not retrofitted onto the 4 existing records.
 - **Memory**: Write a `project` memory entry if the escape reason reveals a systemic gap (e.g., "CI matrix missing dumbModel" → `project_ci_gap_<date>.md`).
 
 ---

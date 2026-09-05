@@ -52,8 +52,8 @@ sonnet_rate='{"i":2.0,"o":10.0,"cw":2.50,"cr":0.20}'
 # emit_rows treats a file absent from the map as agent_type:null.
 #
 # Each map value is {t: <agent_type>, r: <role>}. `r` is the chain role from the
-# F9 brief's `[role: builder|validator|fixer|re-validator|research|other]` tag
-# (skills/workflow/orchestrate/f9-template.md), read from the subagent's first
+# spawn brief's `[role: builder|validator|fixer|re-validator|research|other]` tag
+# (docs/reference/spawn-brief.md), read from the subagent's first
 # user message — the only place the brief lands. Fail-open: no tag, no user
 # line, unreadable file → "unknown", never a dropped row (2026-09-03,
 # docs/research/orchestrate-cost-optimization-2026-09-03.md candidate #10).

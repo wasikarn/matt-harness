@@ -1,0 +1,67 @@
+# Skill authoring conventions
+
+Load this when writing or editing a skill. Sibling of `agent-authoring-conventions.md`.
+
+**Core doctrine:** follow `mattpocock-skills:writing-for-agents` (installed as the
+`mattpocock-skills` plugin, not vendored). Its live elements: leading words, one trigger per
+branch, completion criterion plus demand, the no-op test, negation (state the target behaviour,
+not the ban), and progressive disclosure across context load vs cognitive load. That last term is
+matt's writing heuristic; Anthropic's "progressive disclosure" is a 3-level runtime loading
+mechanism (metadata always, SKILL.md on trigger, bundled files on read). Same words, different
+question; do not conflate them.
+
+**Description cap: 25 words, third person.** This is mh's own token-budget rule (skill and agent
+descriptions load on every Task spawn), not matt's. Check 20 WARNs past 1536 chars; check 43
+tracks the cumulative listing budget; check 05 WARNs when a routing-length description has no
+"Use when" clause.
+
+**No-op test, the backstop for every size-driven trim:** delete the line; does agent behaviour
+change on a real branch of the skill's own worked examples? If not, prunable regardless of char
+count; if so, load-bearing regardless of char count. A structural-preservation check passing
+(headings, code spans, links intact) is necessary, never sufficient.
+
+**Evals-first authoring:** before drafting a body, run the task without the skill and write down
+3 concrete requests it should handle. If Claude already clears all 3, the skill should not exist.
+Then write only the instructions that close gaps the baseline run showed.
+
+**Degrees of freedom:** match how tightly a step is specified to how expensive a wrong deviation
+is. Judgment calls get criteria and several valid approaches; semi-structured work gets
+parameterized pseudocode; fragile or destructive steps get an exact script, no deviation.
+
+**Citing surfaces:** an mh skill is `mh:<name>`, a matt skill `mattpocock-skills:<name>`. A
+`disable-model-invocation: true` skill on either side is cited as the literal slash string the
+user types (`/mh:<name>`), never "invoke X now": the model cannot call it, and a "go" in chat
+does not lift that.
+
+**Named Model footers:** a skill or agent that makes load-bearing judgment choices may end with a
+`## Named Model` footer citing lenses from `docs/reference/reasoning-models.md`. Three
+conditions: a real reasoning gap, a name-a-lens benefit for the operator, and the honesty posture
+that a lens is a scaffold, never proof of correctness.
+
+**Suggested next step footers:** a workflow skill run as a discrete step may end its output with
+a bold `**Suggested next step:**` marker on its own line, followed by one
+`- <outcome> -> \`<surface>\`` bullet per branch. The footer stays passive (no auto-chain text);
+what the runtime model does on its next turn is unconstrained by it. Skip on reference, pattern,
+and catalog surfaces and on terminal workflows (post-mortem). If every branch is decidable right
+now with no sensible default, that is a present-tense fork: use `AskUserQuestion` instead.
+
+**`model_limitation:` frontmatter (optional, mh-native):** declare it when a skill's correctness
+rests on a model behaviour that could shift on upgrade. First adopter: `tech-humanize`, whose
+lexical-tell catalog assumes current-gen output still carries the enumerated tells. No check
+enforces re-verification; it is a human-cadence pointer.
+
+**Explicit `model:` + `effort:` on every entrypoint** (check 54): skills use `model: inherit`
+(a concrete pin on a main-thread skill switches the session model for the rest of the turn).
+Effort tiers: low = script wrapper or display, medium = deterministic tooling plus bounded
+interpretation, high = normal judgment, xhigh = surfaces whose own procedure contains an
+independent re-check step. A skill an agent preloads carries the same effort as its host.
+`skills/*/*/references/*.md` fragments stay unstamped. Official Claude Code also accepts
+`effort: max`; check 54 accepts it, but the fleet assigns it no meaning.
+
+**Reference files** (Anthropic Agent Skills best practices): one level deep from SKILL.md, a
+table of contents on any reference over 100 lines, and MCP tools named `ServerName:tool_name`
+(`qmd:query`, not `query`). A reference file must not carry `description:` frontmatter, or
+Claude Code loads it as its own skill (check 42).
+
+**Size cap** (check 55): a `SKILL.md` or agent body over 200 lines WARNs. Move detail into a
+reference file linked from the entrypoint rather than growing the entrypoint.

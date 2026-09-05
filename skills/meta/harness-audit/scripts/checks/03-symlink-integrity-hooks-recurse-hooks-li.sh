@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# 3. Symlink integrity — hooks (recurse: hooks live in gates/, advisory/, …)
+# 3. Symlink integrity — hooks (recurse: hooks live in gates/, session/, stop/)
 # globstar with set -e exits if the directory is empty and the pattern expands
 # literally to itself; use find so empty/minimal fixtures don't kill the audit.
 #
@@ -35,13 +35,9 @@ if [ "$HOOKS_LOADABILITY_UNVERIFIABLE" -eq 0 ] && [ -d "$CLAUDE_DIR/hooks" ]; th
     # not symlink-farm — see #2/#3b for the equivalent pattern on skills/agents/…).
     if grep -q "$name" "$CLAUDE_DIR/hooks/hooks.json" 2>/dev/null \
        && ! grep -q "$name" "$SETTINGS" 2>/dev/null; then continue; fi
-    # Transitive wiring: a hook can be invoked indirectly through a small
-    # dispatch script hooks.json names instead of the hook file itself (e.g.
-    # worktree-guard-dispatch.sh execs worktree-guard.py). See
-    # hook_wired_transitively() in audit.sh -- shared with check 11 so the
-    # two can't drift (2026-08-19: they'd been hand-duplicated and had
-    # already diverged, and the duplicated logic had a real false-negative;
-    # consolidated to one implementation).
+    # Transitive wiring: a hook may be invoked through a dispatcher hooks.json
+    # names (dispatch-pretooluse.sh + pretooluse-table.json). See
+    # hook_wired_transitively() in audit.sh, shared with check 11.
     hook_wired_transitively "$name" && continue
     if is_plugin_delivered hooks "$name"; then continue; fi
     if [ ! -L "$HOME/.claude/hooks/$name" ]; then
@@ -69,21 +65,3 @@ for f in "$CLAUDE_DIR/agents"/*.md; do
   fi
 done
 fi
-
-# 3c. Symlink integrity — output-styles.
-# Output styles ship as .md files in claude/output-styles/ and must symlink
-# to ~/.claude/output-styles/<name>.md so Claude Code can apply them via
-# /output-style. Same regression class as harness-audit's 3b (committed but not loadable).
-# CI-safety: same guard shape as check 02/the hooks loop above.
-if [ "${PLUGIN_ACTIVE:-0}" -eq 0 ] && [ ! -d "$HOME/.claude/output-styles" ]; then
-  warn "no plugin cache and no ~/.claude/output-styles symlink farm present — output-style loadability unverified in this environment (expected on a clean CI checkout; not a per-output-style finding)"
-else
-for f in "$CLAUDE_DIR/output-styles"/*.md; do
-  [ -f "$f" ] || continue
-  name=$(basename "$f")
-  if [ ! -L "$HOME/.claude/output-styles/$name" ] && ! is_plugin_delivered output-styles "${name%.md}"; then
-    crit "output-style '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
-  fi
-done
-fi
-

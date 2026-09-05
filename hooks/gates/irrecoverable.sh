@@ -4,21 +4,16 @@
 set -uo pipefail
 
 # --- Fast path: skip the python3 cold-start on commands that cannot match a
-# deny pattern. Every deny below dispatches on an argv0 in {rm, find, git, dd,
-# mysql, psql, sqlite3, mariadb} (lines 186-383); a wrapper (sudo/env/nice/
-# xargs/docker exec) never hides that token from the raw string, so if NONE of
-# these substrings survives normalization the command is allow-safe and we exit
-# 0 without spawning python. Quote/backslash stripping (tr -d) exposes the one
+# deny pattern. Every deny in irrecoverable.py dispatches on an argv0 in {rm,
+# find, git, dd, mysql, psql, sqlite3, mariadb, claude}; a wrapper (sudo/env/
+# nice/xargs/docker exec) never hides that token from the raw string, so if
+# NONE of these substrings survives normalization the command is allow-safe
+# and we exit 0 without spawning python. (`claude` feeds the subagent
+# nested-spawn deny.) Quote/backslash stripping (tr -d) exposes the one
 # shlex obfuscation the python catches -- a quote-concatenated `r""m` -> `rm`.
 # ponytail: coarse pre-filter for a habit-guard, not an adversarial sandbox;
 # command-substitution/eval unwrapping stays out of scope (see line 83 below).
 # False positives (digit/warm/scheduling) just spawn python -- safe direction.
-# sync-seam: the stdin-capture + whitespace-normalize prefix (this line +
-# the next) is hand-duplicated in verifier-protect.sh's own fast-path -- not
-# extracted to a shared sourced helper because these gates govern their own
-# edits (a shared-helper bug would break both simultaneously; a lockout here
-# already cost 2 self-inflicted recoveries in verifier-protect.sh alone,
-# 2026-08-14). If either file's normalize step changes, check the other.
 _input="$(cat)"
 _norm="$(printf '%s' "$_input" | sed 's/\\[nt]/ /g' | tr -s '[:space:]' ' ' | tr -d "\"'\\")"
 # A backslash-newline continuation splitting an argv0 itself (e.g. "gi" +
@@ -37,9 +32,7 @@ _norm_nows="$(printf '%s' "$_norm" | tr -d '[:space:]')"
 # a contiguous "git" substring under either normalization pass above, so
 # the case below would otherwise exit 0 and fully bypass this DENY gate on
 # a real ` git push --force`-shaped command (confirmed live 2026-09-03:
-# rc=0, python3 never spawned). Same conservative-deferral direction as the
-# sibling GH #125 fix in verifier-protect.sh (any raw backslash forces that
-# fast path to defer): detect the PRESENCE of a substitution marker on the
+# rc=0, python3 never spawned). Conservative deferral: detect the PRESENCE of a substitution marker on the
 # RAW input and refuse the fast-allow regardless of what the substring match
 # below finds, rather than resolving/stripping the substitution here.
 # Whether python3's own tokenizer classifies the reassembled command
@@ -73,7 +66,7 @@ _norm_nows="$(printf '%s' "$_norm" | tr -d '[:space:]')"
 _has_subst=0
 case "$_input" in *'`'*|*'$'*) _has_subst=1 ;; esac
 case "$_norm$_norm_nows" in
-  *rm*|*find*|*git*|*dd*|*mysql*|*psql*|*sqlite3*|*mariadb*) : ;;  # candidate -> python
+  *rm*|*find*|*git*|*dd*|*mysql*|*psql*|*sqlite3*|*mariadb*|*claude*) : ;;  # candidate -> python
   *) [ "$_has_subst" -eq 1 ] || exit 0 ;;                          # no destructive token possible -> allow (unless obfuscated)
 esac
 

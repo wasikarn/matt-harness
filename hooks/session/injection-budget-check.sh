@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # SessionStart: cap total injected context from kbg's own SessionStart hooks.
 #
-# Scope: kbg's 3 SessionStart hooks only. command-root-anchor.sh writes to
-# $CLAUDE_ENV_FILE, not stdout, so it contributes 0 bytes here. Claude Code's
+# Scope: doctrine-bootstrap.sh + memory-health-nudge.sh only.
+# command-root-anchor.sh writes to $CLAUDE_ENV_FILE, not stdout, so it
+# contributes 0 bytes here. Claude Code's
 # own native MEMORY.md load is separate and out of scope -- kbg's hooks don't
 # control it (#100).
 #
 # Re-invokes doctrine-bootstrap.sh and memory-health-nudge.sh to measure
 # their REAL stdout size rather than a static estimate, which would silently
 # drift the moment either script's output logic changes. No shared
-# per-session state file fits this (checked dispatch-single.sh and
-# skill-usage-telemetry.sh) -- accepting a real, measured cost instead: on a
+# per-session state file fits this -- accepting a real, measured cost instead: on a
 # dirty memory store (findings present, the common case -- memory-lint's own
 # cache only ever caches a CLEAN result), this doubles memory-health-nudge.sh's
 # python3 memory-lint.py scan, measured ~225ms on this repo's live store
@@ -21,12 +21,10 @@
 # cut blind.
 set -uo pipefail
 
-# 24KB. Measured healthy-session total ~10KB (doctrine-bootstrap.sh dominant
-# at ~7.8KB since v0.68.640 -- only docs/METHODOLOGY.md's core above its
-# `<!-- core-end -->` marker is injected; it was ~14KB whole-file before) --
-# this leaves headroom for a dirty-memory-store nudge (observed up to ~2.6KB)
+# 8KB. docs/METHODOLOGY.md is capped at 4KB (injected whole, v1.0.0), which
+# leaves headroom for a dirty-memory-store nudge (observed up to ~2.6KB)
 # plus preflight messages before warning.
-CAP=24576
+CAP=8192
 
 ROOT="${CLAUDE_PLUGIN_ROOT:-}"
 [ -n "$ROOT" ] || exit 0

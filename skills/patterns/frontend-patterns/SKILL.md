@@ -1,6 +1,6 @@
 ---
 name: frontend-patterns
-description: Frontend architecture, component design, and rendering optimization for React/TS. Use when building a React/TS frontend. Don't use for Vue/Svelte/Angular, backend (mh:backend-patterns), or WCAG/a11y audits (mh:accessibility).
+description: Frontend architecture, component design, and rendering optimization for React/TS. Use when building a React/TS frontend. Don't use for Vue/Svelte/Angular, backend (mh:backend-patterns).
 metadata:
   origin: ECC
 model: inherit
@@ -164,8 +164,6 @@ Choose patterns that fit your project complexity.
 
 - Agent: `mh:performance-optimizer` - once a client-side computation (not just rendering) is
   the confirmed bottleneck, for the algorithmic fix underneath it
-- Skill: `mh:accessibility` — the WCAG conformance layer and generic React a11y fixes (forms,
-  labels, ARIA) this file's own Accessibility Patterns section doesn't cover
 
 ## Verify before use
 

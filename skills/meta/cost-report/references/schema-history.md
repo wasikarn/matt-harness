@@ -113,8 +113,8 @@ container, a remote/headless session), the buckets follow that environment's zon
 
 ## `role` field (2026-09-03)
 
-`role` is the F9 brief's `[role: builder|validator|fixer|re-validator|research|other]` tag
-(`skills/workflow/orchestrate/f9-template.md`), read by `cost-tracker.sh` from the subagent's
+`role` is the spawn brief's `[role: builder|validator|fixer|re-validator|research|other]` tag
+(`docs/reference/spawn-brief.md`), read by `cost-tracker.sh` from the subagent's
 first user message (string or text-array content, case-insensitive). Fail-open: no tag or no
 readable user line → `"unknown"`; orchestrator rows carry `null`. It joined the dedup key for the
 same reason `agent_type` did — two roles on the same agent type are different populations of
@@ -126,7 +126,7 @@ decision). Rows written before this date have no field and report as `(untagged)
 
 The third handoff cost (`docs/research/delegation-criteria-field-survey-2026-09-04.md` gap
 G1; `orchestrate-t-shape-analysis-2026-09-04.md` hops 9-10): main's own tokens spent reading
-a subagent's result, re-reading files to verify it, and deciding — the cost F9 and the
+a subagent's result, re-reading files to verify it, and deciding — the cost the spawn brief and the
 validation chain never priced. A subagent's return does not arrive as the Agent tool_result
 (that only says "Async agent launched"); it lands later as a `user` line whose string content
 starts `<task-notification>` and whose `<task-id>` is the subagent's file id

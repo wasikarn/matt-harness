@@ -1,8 +1,0 @@
-{
-  "name": "mattpocock-skills",
-  "version": "1.0.0",
-  "skills": [
-    "./skills/engineering/foo",
-    "./skills/productivity/bar"
-  ]
-}

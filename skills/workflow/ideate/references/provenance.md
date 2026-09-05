@@ -13,10 +13,8 @@ layer (see `memory/bounded-agent-spawning.md` and
 fixture for this — `eval/` does not exist in this repo (the eval
 dataset gate was deleted, not rebuilt, in the 2026-06-27 reset;
 see `CLAUDE.md`'s Validation section). What is actually code-enforced
-is narrower than a fixture would claim: the F8.5 hard cap in
-`skills/workflow/orchestrate/SKILL.md` clamps any single wave's work-list
-to ≤5 before spawning ("the clamp is the JS work-list slice
-before `parallel()`/`pipeline()`"). This command's Phase 1 (5)
+is narrower than a fixture would claim: METHODOLOGY Rule 13's hard cap
+clamps any single wave's work-list to ≤5 before spawning. This command's Phase 1 (5)
 and Phase 3 (3) sizes are written to sit inside that per-wave
 clamp. The "exactly 2 waves, not 3+" shape is this skill's own
 design contract (see Phase 1 and Phase 2 — including its Deepen step — in
@@ -105,9 +103,7 @@ hook first and query the collection via the qmd MCP directly.
 - **Why this exists** — `kbg-vs-adhd.md` (read via Bash: `cat "${MH_PLUGIN_ROOT}/docs/research/kbg-vs-adhd.md"`)
   records the port decisions, the eval-rigor limitation (n=1
   upstream), and the things explicitly rejected.
-- **F8.5 hard cap (load-bearing)** —
-  `skills/workflow/orchestrate/SKILL.md`'s "Bounded fan-out — hard cap
-  (F8.5)" section
+- **5-agent hard cap (load-bearing)** — METHODOLOGY Rule 13
   sets the peak-concurrent cap at 5 agents per wave, enforced by
   the lead clamping the work-list before spawning. The 2-wave
   structure in this skill is engineered to fit that cap exactly.

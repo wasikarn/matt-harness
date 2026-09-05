@@ -25,14 +25,8 @@ for d in "$CLAUDE_DIR/skills"/*/ "$CLAUDE_DIR/skills"/*/*/; do
   # .gitignore's own "Session / skill workspaces" section, never deployed.
   [ "$name" = "harness-audit" ] && continue
   case "$name" in _*|*-workspace) continue ;; esac
-  # A directory under skills/ with no SKILL.md at all was never a real,
-  # invocable skill in the first place -- e.g. skills/inventory/ holds only
-  # a scripts/ subdir (inventory-witness.sh, sync-fleet-counts.sh), always
-  # invoked by direct path, never via Skill(). Flagging it "not loadable" is
-  # a false positive: there is nothing here Claude Code could load as a
-  # skill. Found 2026-08-25 while this exact CRIT blocked an unrelated
-  # commit (T12 #91) -- pre-existing, confirmed present on the base tree
-  # before that ticket's own changes.
+  # A directory under skills/ with no SKILL.md was never an invocable skill;
+  # nothing here could load, so "not loadable" would be a false positive.
   [ -f "$d/SKILL.md" ] || continue
   # Skip upstream-tracked skills (Matt Pocock + gstack + ECC + etc.) — locked
   # in ~/.agents/.skill-lock.json. Editing them drifts the content hash and

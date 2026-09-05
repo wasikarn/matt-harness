@@ -27,7 +27,7 @@
 # identical lines is no longer invisible), and an assertion relocated into
 # an inert HEREDOC body or a `: '...'` colon no-op block (both stripped
 # before scanning, same "heredoc is inert data unless it feeds an
-# interpreter" distinction `irrecoverable.sh`/`merge-door.sh` already use
+# interpreter" distinction `irrecoverable.sh` already uses
 # — ported, not reinvented). A same-day deep-audit fresh-context check
 # found the first version of this (2026-08-28, `if false` only)
 # overclaimed: `elif false`, `while false`, `if [ 1 -eq 2 ]`, and bare
@@ -56,8 +56,8 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 0
 fi
 
-# Corrupted/partial plugin install (deep-audit follow-up to #146, same fix
-# shape as verifier-protect.sh/merge-door.sh): this gate's embedded python
+# Corrupted/partial plugin install (deep-audit follow-up to #146): this
+# gate's embedded python
 # does `from _hook_output import emit_ask`, resolved from this gate's
 # sibling lib/ dir (passed as argv[1] below). A missing lib module raises
 # ModuleNotFoundError -> exit 1 (confirmed live), a nonzero non-2 exit that
@@ -120,8 +120,8 @@ DEAD_NUMERIC_RE = re.compile(
 # (`: '"'"'...'"'"'`). Both are stripped before the line-scan below sees them,
 # UNLESS the heredoc feeds an interpreter (bash/python/etc), in which case
 # its body really does execute and must stay scannable -- same
-# interpreter distinction irrecoverable.sh/merge-door.sh already use for
-# their own heredoc handling, ported rather than reinvented (deep-audit
+# interpreter distinction irrecoverable.sh already uses for
+# its own heredoc handling, ported rather than reinvented (deep-audit
 # 2026-08-28).
 SQ = chr(39)
 _HEREDOC_RE = re.compile(r"<<(-)?\s*([" + SQ + r"\"]?)([^\s" + SQ + r"\"]+)\2")

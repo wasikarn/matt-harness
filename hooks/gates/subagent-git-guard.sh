@@ -8,14 +8,10 @@
 # a shared working tree -- a dispatched builder swept a peer session's
 # CLAUDE.md into commit 6603c384, and a separate dispatched subagent ran
 # `git stash` / `git stash pop` over a peer's mid-edit files. Both are
-# exactly the "No repo-wide git in a concurrent wave" rule
-# skills/workflow/orchestrate/f9-template.md already states in prose (its
-# Constraints (always) section: "no stash, checkout, reset, clean, restore.
-# Scope every command to FILES YOU OWN... plain git stash/stash pop are not
-# [denied], and are exactly the pair that raced in the incident this rule
-# comes from") -- until this gate, nothing enforced it computationally, the
-# same gap agent-recursion-guard.sh and task-complete-separation.sh closed
-# for their own dispatch-only-from-main rules.
+# exactly the "no repo-wide git inside a concurrent wave" rule
+# docs/METHODOLOGY.md Rule 13 states in prose -- until this gate, nothing
+# enforced it computationally, the same gap task-complete-separation.sh
+# closed for its own dispatch-only-from-main rule.
 #
 # Scope, checked against the LIVE content of hooks/gates/irrecoverable.sh
 # (read fresh 2026-09-04, mid-widen by a concurrent session -- re-read that
@@ -35,12 +31,12 @@
 # scope, and only for subagents.
 #
 # Discriminant: `agent_id` present in the PreToolUse payload == an actual
-# subagent call (code.claude.com/docs/en/hooks, confirmed 2026-08-31 by the
-# two sibling gates below); keyed the same way, for the same reason --
+# subagent call (code.claude.com/docs/en/hooks, confirmed 2026-08-31); keyed
+# the same way as task-complete-separation.sh, for the same reason --
 # agent_type is ALSO set for a top-level `claude --agent <name>` MAIN
 # session, which legitimately needs every git subcommand this gate denies
-# (that over-block was a real bug caught in agent-recursion-guard.sh and
-# task-complete-separation.sh, fixed the same way both times). The main
+# (that over-block was a real bug caught in task-complete-separation.sh and
+# fixed there). The main
 # session (no agent_id) is untouched by this gate.
 #
 # Corrected 2026-09-04: an independent verifier live-probed the first
@@ -68,8 +64,8 @@
 # sandbox. What it does NOT attempt to defeat is deliberate
 # quote-splitting, variable indirection, or command-substitution
 # obfuscation of the literal word "git" itself (e.g. `g''it stash`,
-# `$(echo git) stash`) -- same non-goal those two sibling gates already
-# carry for "claude"/"rm"/etc. Ordinary global flags, a bare sudo/xargs
+# `$(echo git) stash`) -- same non-goal irrecoverable.sh already carries
+# for "claude"/"rm"/etc. Ordinary global flags, a bare sudo/xargs
 # wrapper, and quoted-argument punctuation are NOT in that non-goal
 # anymore -- they're handled above. One more non-goal the re.MULTILINE fix
 # introduces: a heredoc BODY line that happens to start with "git
@@ -78,7 +74,7 @@
 # accepts for prose in general, not attempting to parse heredoc
 # boundaries. No env-var bypass -- this enforces the harness's own
 # concurrent-dispatch architecture, not a situational human judgment call,
-# same posture as the two sibling gates.
+# same posture as task-complete-separation.sh.
 set -uo pipefail
 
 # Portability guard (#93): announced fail-open when python3 is missing.
@@ -95,7 +91,7 @@ try:
     d = json.load(sys.stdin)
 except Exception as e:
     # Fail-safe = ALLOW. A parse error must not stall every subagent Bash
-    # call -- same choice as agent-recursion-guard.sh / task-complete-separation.sh.
+    # call -- same choice as task-complete-separation.sh.
     print(f"[mh:gate] subagent-git-guard: unparseable stdin, allowing ({e})", file=sys.stderr)
     sys.exit(0)
 
@@ -118,7 +114,7 @@ if not isinstance(cmd, str):
     sys.exit(0)
 
 def clip(s):
-    # Same log-injection guard as agent-recursion-guard.sh: strip
+    # Log-injection guard (same shape as the irrecoverable.py nested-spawn deny): strip
     # non-printable bytes and cap length so a crafted command string cannot
     # forge or erase a preceding "[mh:gate] ..." line.
     s = re.sub(r"[^\x20-\x7e]", "?", str(s))
@@ -134,8 +130,7 @@ agent_type = clip(d.get("agent_type") or "unknown")
 # spans are literal; double-quote spans respect backslash-escaping, same
 # as real bash. Uses chr() for the quote characters rather than literal
 # ones, since this whole block sits inside a bash single-quoted python3 -c
-# wrapper -- same reason agent-recursion-guard.sh does the same for its
-# own quote handling.
+# wrapper.
 # ponytail: no handling for a backslash-escaped quote OUTSIDE a quoted
 # span (real bash lets a leading backslash make the next quote char
 # literal there too) -- no case in the test suite for this gate needs it;
@@ -172,7 +167,7 @@ masked = _mask_quotes(cmd)
 # Anchor: "git" must sit right at a real command-start position (string
 # start, |;&(, &&, ||, an optional VAR=val prefix chain, an optional
 # leading sudo/xargs wrapper, or a path like /usr/bin/git) -- same shape
-# as agent-recursion-guard.sh _ANCHOR_RE, extended 2026-09-04 for two gaps
+# as the irrecoverable.py _SPAWN_ANCHOR_RE, extended 2026-09-04 for two gaps
 # a verifier found: `sudo git stash` / `xargs git stash` used to slip
 # through with no anchor at all, and this now runs with re.MULTILINE so a
 # `git reset` at the start of its own line inside a multi-line Bash
@@ -188,10 +183,11 @@ _ANCHOR_RE = re.compile(
     re.MULTILINE,
 )
 # Only the three verbs irrecoverable.sh does not already cover
-# unconditionally (see header comment): stash, reset, clean. checkout and
+# unconditionally (see header comment): stash, reset, clean. Read-only
+# `stash list` / `stash show` are carved out. checkout and
 # restore are deliberately absent here -- irrecoverable.sh already denies
 # their destructive forms for every session, main included.
-_DENY_SUBCMD_RE = re.compile(r"\A\s+(stash|reset|clean)\b")
+_DENY_SUBCMD_RE = re.compile(r"\A\s+(stash(?!\s+(list|show)\b)|reset|clean)\b")
 
 # Known git global flags this gate walks past before checking the
 # subcommand -- fixes the bypass a verifier found: `git -C /repo stash`,
@@ -236,8 +232,7 @@ hit = _violation(masked)
 if hit:
     print(f"[mh:gate] BLOCKED: subagent ({agent_type}) may not run `git {hit}` "
           f"(command: {clip(cmd)!r}) -- no repo-wide git in a concurrent wave "
-          f"(skills/workflow/orchestrate/f9-template.md, \"No repo-wide git in a "
-          f"concurrent wave\"); scope every git command to files you own. "
+          f"(docs/METHODOLOGY.md Rule 13); scope every git command to files you own. "
           f"(git checkout -- / git restore are already denied unconditionally, "
           f"for every session, by gate:bash:irrecoverable when they would "
           f"discard working-tree changes -- not this gate'"'"'s job.)", file=sys.stderr)

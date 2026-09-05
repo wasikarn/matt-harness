@@ -11,8 +11,7 @@
 # even defines one for this tool. Fabricating a constant "outcome" just to
 # satisfy a schema would be a false metric, not a health signal.
 #
-# ponytail: unbounded append, same precedent as instructions-loaded-journal.sh
-# and hooks/stop/cost-tracker.sh — rotate/trim manually if it grows large.
+# ponytail: unbounded append, same precedent as hooks/stop/cost-tracker.sh — rotate/trim manually if it grows large.
 set -uo pipefail
 
 payload=$(cat)

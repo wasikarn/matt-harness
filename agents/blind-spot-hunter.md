@@ -164,7 +164,7 @@ vulnerability that did not exist, caught only by an empirical test. So:
 - **On a trivial diff** (a single non-test file). Rule 2 (match surface area to proven need) — not worth the dispatch.
 - **For a single narrow class.** Swallowed errors / silent failures → `silent-failure-hunter`
   (one fixed class, checklist-driven; you are the open-ended emergent/interaction case).
-  Security-specific → `security-reviewer` / `mh:security-auditor`.
+  Security-specific → `security-reviewer`.
 - **To pressure-test reasoning, a plan, or a decision** (no code delta) → that's `advisor()`. You
   trace code data-flow; you don't grade arguments. (A plan/spec/requirements blind-spot lens is a
   possible future sibling — not this agent, and not built until a real miss in that domain names

@@ -3,15 +3,17 @@
 # (T12 #91). Two kinds of coverage:
 #   1. PARITY: a real gate's output through the dispatcher must byte-match
 #      (or field-match) the same gate invoked directly, for the cases that
-#      matter most -- a denying gate, an asking gate, and an updatedInput
-#      redirect. This is the bar that actually matters: profile-filter and
-#      kill-switch tests alone would not have caught the systemMessage gap
-#      found live while building this (worktree-guard.py's redirect message
-#      was silently dropped by the merge on the first draft).
+#      matter most -- a denying gate, an asking gate, and (via a synthetic
+#      fixture under tests/hooks/fixtures/, since no real gate redirects
+#      any more) an updatedInput + systemMessage pass-through. The
+#      systemMessage case is the gap found live while building this (the
+#      since-retired worktree-guard.py's redirect message was silently
+#      dropped by the merge on the first draft).
 #   2. MERGE PRECEDENCE: synthetic fixture scripts (not real gates) exercise
 #      the deny > ask > allow ordering, the "blocking suppresses
 #      updatedInput" rule, the multi-updatedInput warning, and the
-#      non-blocking-error handling for a nonzero-non-2 exit -- verified
+#      non-blocking-error handling for a nonzero-non-2 exit, and the 8s
+#      per-gate timeout (killed, counted as allow, journaled) -- verified
 #      against code.claude.com/docs/en/hooks-guide + hooks.md (2026-08-25),
 #      not invented.
 # Run standalone: bash tests/hooks/test-dispatch-pretooluse.sh
@@ -66,20 +68,16 @@ dispatch_rc=$(echo "$(bash_payload 'rm -rf /tmp/test')" | env CLAUDE_PLUGIN_ROOT
 ok=1; [ "$direct_rc" -eq 2 ] && [ "$dispatch_rc" -eq 2 ] && ok=0
 check "rm -rf: direct and dispatched both exit 2 (direct=$direct_rc dispatch=$dispatch_rc)" "$ok"
 
-echo "=== ask parity (verifier-protect.sh via Write) ==="
-direct_out=$(echo "$(write_payload "hooks/gates/foo.sh" "x")" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" bash "$ROOT/hooks/gates/verifier-protect.sh" 2>/dev/null)
-# MH_MAIN_EXEC_GUARD neutralized: this check is testing verifier-protect.sh
-# dispatcher parity, not main-exec-guard.sh -- the synthetic payload has no
-# agent_id on purpose (it's not a subagent call), which is exactly what makes
-# main-exec-guard deny/short-circuit it first when that var is ambiently "1"
-# or "log" in the calling shell (this repo's own dotfiles now export it).
-dispatch_out=$(echo "$(write_payload "hooks/gates/foo.sh" "x")" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" MH_MAIN_EXEC_GUARD= bash "$DISPATCH_SH" 2>/dev/null)
+echo "=== ask parity (config-write-guard.sh via Write) ==="
+NEW_SETTINGS="$TMP/proj/.claude/settings.json"
+direct_out=$(echo "$(write_payload "$NEW_SETTINGS" "{}")" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" bash "$ROOT/hooks/gates/config-write-guard.sh" 2>/dev/null)
+dispatch_out=$(echo "$(write_payload "$NEW_SETTINGS" "{}")" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" bash "$DISPATCH_SH" 2>/dev/null)
 ok=1
 if echo "$direct_out" | /usr/bin/grep -q '"permissionDecision": "ask"' && \
    echo "$dispatch_out" | /usr/bin/grep -q '"permissionDecision": "ask"'; then
   ok=0
 fi
-check "Write to hooks/gates/foo.sh: both direct and dispatched ask" "$ok"
+check "Write creating .claude/settings.json: both direct and dispatched ask" "$ok"
 
 echo "=== deny parity (task-complete-separation.sh via TaskUpdate) ==="
 direct_rc=$(echo "$(taskupdate_payload completed general-purpose)" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" bash "$ROOT/hooks/gates/task-complete-separation.sh" >/dev/null 2>/dev/null; echo $?)
@@ -87,26 +85,39 @@ dispatch_rc=$(echo "$(taskupdate_payload completed general-purpose)" | env CLAUD
 ok=1; [ "$direct_rc" -eq 2 ] && [ "$dispatch_rc" -eq 2 ] && ok=0
 check "subagent TaskUpdate(completed): direct and dispatched both exit 2" "$ok"
 
-echo "=== updatedInput parity (worktree-guard.py via Edit, real gate) ==="
-WS="$TMP/ws"; WT="$TMP/wt"
-mkdir -p "$WS" "$WT"
-git init -q -b develop "$WS/repo1" >/dev/null
-git -C "$WS/repo1" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
-echo x > "$WS/repo1/f.txt"; git -C "$WS/repo1" add f.txt
-git -C "$WS/repo1" -c user.email=t@t -c user.name=t commit -q -m add-f
-edit_payload() { python3 -c 'import json, sys; print(json.dumps({"tool_name": "Edit", "tool_input": {"file_path": sys.argv[1]}, "session_id": sys.argv[2]}))' "$1" "$2"; }
-P=$(edit_payload "$WS/repo1/f.txt" sess1234)
-direct_out=$(echo "$P" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" CLAUDE_PROJECT_DIR="$WS/repo1" MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= bash "$ROOT/hooks/gates/worktree-guard-dispatch.sh" 2>/dev/null)
-# MH_MAIN_EXEC_GUARD neutralized: same reason as the foo.sh check above --
-# this is worktree-guard.py dispatcher parity, not main-exec-guard's own.
-dispatch_out=$(echo "$P" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" CLAUDE_PROJECT_DIR="$WS/repo1" MH_GUARDED_WORKSPACE="$WS" MH_WORKTREE_ROOT="$WT" MH_ALLOW_MAIN_EDIT= MH_MAIN_EXEC_GUARD= bash "$DISPATCH_SH" 2>/dev/null)
+echo "=== updatedInput + systemMessage pass-through (tests/hooks/fixtures/updated-input.sh) ==="
+REPO_FIXTURES="$ROOT/tests/hooks/fixtures"
+cat > "$TMP/table-updated-input.json" <<EOF
+[
+  {"id": "t:updated-input", "matcher": "Bash", "script": "tests/hooks/fixtures/updated-input.sh"}
+]
+EOF
+direct_out=$(echo "$(bash_payload 'irrelevant')" | bash "$REPO_FIXTURES/updated-input.sh" 2>/dev/null)
+dispatch_out=$(echo "$(bash_payload 'irrelevant')" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$TMP" python3 "$DISPATCH_PY" "$TMP/table-updated-input.json" "$ROOT" 2>/dev/null)
 ok=1
 python3 -c '
 import json, sys
 a, b = json.loads(sys.argv[1]), json.loads(sys.argv[2])
 sys.exit(0 if a == b else 1)
 ' "$direct_out" "$dispatch_out" && ok=0
-check "worktree-guard redirect: direct and dispatched JSON byte-match (incl. systemMessage)" "$ok"
+check "fixture redirect: direct and dispatched JSON byte-match (incl. systemMessage)" "$ok"
+
+echo "=== per-gate timeout (tests/hooks/fixtures/sleeper.sh sleeps 20s) ==="
+cat > "$TMP/table-sleeper.json" <<EOF
+[
+  {"id": "t:sleeper", "matcher": "Bash", "script": "tests/hooks/fixtures/sleeper.sh"}
+]
+EOF
+SLEEP_HOME="$TMP/sleep-home"; mkdir -p "$SLEEP_HOME"
+_t0=$(date +%s)
+out=$(echo "$(bash_payload 'irrelevant')" | env CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$SLEEP_HOME" python3 "$DISPATCH_PY" "$TMP/table-sleeper.json" "$ROOT" 2>"$TMP/sleeper.err"); rc=$?
+_dt=$(( $(date +%s) - _t0 ))
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && [ "$_dt" -lt 15 ] && ok=0
+check "timed-out gate: exit 0, empty stdout (allow), returned in ${_dt}s (<15s, not 20s)" "$ok"
+ok=1; /usr/bin/grep -q 'timed out' "$TMP/sleeper.err" && ok=0
+check "timed-out gate: stderr names the timeout" "$ok"
+ok=1; /usr/bin/grep -q '"id": "t:sleeper".*"decision": "timeout"' "$SLEEP_HOME/.local/share/kbg/metrics/gate-decisions.jsonl" 2>/dev/null && ok=0
+check "timed-out gate: journaled with decision \"timeout\"" "$ok"
 
 echo "=== merge precedence (synthetic fixture scripts, not real gates) ==="
 FIXTURE_DIR="$TMP/fixtures"

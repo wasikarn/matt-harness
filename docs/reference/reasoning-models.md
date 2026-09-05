@@ -98,12 +98,12 @@ is doing something and you want the named handle for it (to combine lenses, to e
 move, or to teach the harness's reasoning to someone new).
 
 **Which scaffold for which situation?** That router is
-`docs/reference/decision-doctrine-map.md` (situation → scaffold → owning rule, picked by
+`docs/METHODOLOGY.md` (the injected rule set, picked by
 reversibility). This catalog and its
 tables below (model→home, workflow-pattern→models) are **reference**, not a competing
 situation-router; for the reference-only frames that no kbg skill applies (the model→home table
 below marks each), the on-demand path is
-`BOUNDARY.md` (the generated capability map — the `inventory` skill wrapper was removed
+the plugin tree itself (a generated capability map was removed
 2026-08-24 #80) + the upstream cc-thinking-skills repo linked above (no local vendored copy
 since ticket 94).
 
@@ -128,32 +128,32 @@ model's upstream dir is `thinking-systems`, so its file is
 | feedback-loops | `thinking-feedback-loops` | considered | — | reinforcing-vs-balancing loops as a reference frame to pull in manually; its former kbg home was deleted 2026-08-24, no live anchor |
 | first-principles | `thinking-first-principles` | considered | — | "probe one level deeper" Root-Why frame to pull in manually; its former kbg home was deleted 2026-08-24, no live anchor |
 | second-order | `thinking-second-order` | considered | — | 10x/fail/nothing what-if branches as a reference frame to pull in manually; its former kbg home was deleted 2026-08-24, no live anchor |
-| pre-mortem | `thinking-pre-mortem` | applied | skills/post-mortem (Escape Reason) | catastrophic-failure branch: what breaks first + detection + rollback — genuinely operationalized in post-mortem (its former review-pr home was deleted 2026-08-24 #82) |
+| pre-mortem | `thinking-pre-mortem` | applied | skills/workflow/post-mortem (Escape Reason) | catastrophic-failure branch: what breaks first + detection + rollback — genuinely operationalized in post-mortem (its former review-pr home was deleted 2026-08-24 #82) |
 | five-whys-plus | `thinking-five-whys-plus` | considered | — | Root-Why probing as a reference frame to pull in manually; its former kbg home was deleted 2026-08-24, no live anchor |
 | thought-experiment | `thinking-thought-experiment` | applied | mh:ideate | extreme-zero / extreme-infinite counterfactual frames — genuinely operationalized as a named ideate frame |
 | inversion | `thinking-inversion` | applied | mh:ideate | named ideate frame: ask the OPPOSITE question |
 | reversibility | `thinking-reversibility` | applied | domain-modeling, the no-model-self-start rule (CLAUDE.md's Operating model under its Architecture section) | "hard to reverse?" and "reversible in hours/days/never" — genuinely operationalized in domain-modeling/the no-self-start rule |
 | debiasing | `thinking-debiasing` | considered | — | Check yourself — anti-self-deception frame; its former kbg home was deleted 2026-08-24, no live anchor |
 | socratic | `thinking-socratic` | considered | — | named-method questioning + "Socratic Trap" failure mode; its former kbg home was deleted 2026-08-24, no live anchor |
-| scientific-method | `thinking-scientific-method` | applied | diagnosing-bugs, skills/post-mortem (Discovery + Validation) | repro → hypothesize → instrument → falsify |
+| scientific-method | `thinking-scientific-method` | applied | diagnosing-bugs, skills/workflow/post-mortem (Discovery + Validation) | repro → hypothesize → instrument → falsify |
 | theory-of-constraints | `thinking-theory-of-constraints` | applied | agents/performance-optimizer.md | profile first to find the actual constraint; don't optimize the 95% that isn't the rate-limiter (added v0.30.2, superseding its deleted skills/perf home from the v0.6.0 reset) |
 | red-team | `thinking-red-team` | considered | — | Skeptic role: argue AGAINST and find risks; its former kbg home (review-pr) was deleted 2026-08-24 #82, no live anchor |
-| steel-manning | `thinking-steel-manning` | applied | skills/score-decision | Synthesizer: evaluate both sides; unconsidered alternatives (its former review-pr home was deleted 2026-08-24 #82) |
-| model-router | `thinking-model-router` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
-| model-selection | `thinking-model-selection` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
-| model-combination | `thinking-model-combination` | applied | skills/orchestrate | "pick the matrix" + 6-pattern dispatch vocabulary |
-| opportunity-cost | `thinking-opportunity-cost` | applied | skills/orchestrate | frozen-bid test: compare spawn value vs doing it inline |
+| steel-manning | `thinking-steel-manning` | considered | METHODOLOGY Rule 14 | Synthesizer: evaluate both sides; unconsidered alternatives (its former review-pr home was deleted 2026-08-24 #82) |
+| model-router | `thinking-model-router` | considered | METHODOLOGY Rule 13 | "pick the matrix" + 6-pattern dispatch vocabulary |
+| model-selection | `thinking-model-selection` | considered | METHODOLOGY Rule 13 | "pick the matrix" + 6-pattern dispatch vocabulary |
+| model-combination | `thinking-model-combination` | considered | METHODOLOGY Rule 13 | "pick the matrix" + 6-pattern dispatch vocabulary |
+| opportunity-cost | `thinking-opportunity-cost` | considered | METHODOLOGY Rule 13 | frozen-bid test: compare spawn value vs doing it inline |
 | circle-of-competence | `thinking-circle-of-competence` | applied | METHODOLOGY routing index, every agent | routing confidence + "defer to X" boundaries |
 | jobs-to-be-done | `thinking-jobs-to-be-done` | considered | — | user-story-vs-job-to-be-done tradeoff is thematic; agents/product-analyst (its former kbg home) was deleted in the v0.6.0 reset, no live anchor |
-| bayesian | `thinking-bayesian` | considered | diagnosing-bugs, skills/incident | likelihood ranking is present, but model name is not used |
-| probabilistic | `thinking-probabilistic` | considered | diagnosing-bugs, skills/incident | likelihood ranking is present, but model name is not used |
-| bounded-rationality | `thinking-bounded-rationality` | considered | skills/orchestrate | pick-the-matrix satisfices under constraints, but name is absent |
+| bayesian | `thinking-bayesian` | considered | diagnosing-bugs | likelihood ranking is present, but model name is not used |
+| probabilistic | `thinking-probabilistic` | considered | diagnosing-bugs | likelihood ranking is present, but model name is not used |
+| bounded-rationality | `thinking-bounded-rationality` | considered | METHODOLOGY Rule 13 | pick-the-matrix satisfices under constraints, but name is absent |
 | margin-of-safety | `thinking-margin-of-safety` | considered | — | its former kbg home, agents/inferential-structural-judge, was deleted in the v0.6.3 Wave-B cut; measured to hurt accuracy −10pp in eval, not re-proposed |
 | occams-razor | `thinking-occams-razor` | considered | METHODOLOGY Rule 2 | Simplicity First / minimum code, but frozen-bid test is explicitly opportunity-cost |
 | map-territory | `thinking-map-territory` | considered | — | Read Before You Write, a METHODOLOGY rule dropped in the v0.6.0 reset; no live anchor |
-| via-negativa | `thinking-via-negativa` | applied | skills/memory-lint (--trim mode) | named in footer: removal/absence as via-negativa |
-| ooda | `thinking-ooda` | applied | skills/incident | named in incident footer (detect→assess→mitigate→monitor); the skill's hotfix path inherits via handoff |
-| cynefin | `thinking-cynefin` | considered | skills/triage | triage classifies severity/scope, not problem domain |
+| via-negativa | `thinking-via-negativa` | applied | skills/meta/memory-lint (--trim mode) | named in footer: removal/absence as via-negativa |
+| ooda | `thinking-ooda` | considered | — | detect→assess→mitigate→monitor; its former mh home was deleted 2026-09-05 |
+| cynefin | `thinking-cynefin` | considered | — | triage classifies severity/scope, not problem domain |
 | regret-minimization | `thinking-regret-minimization` | considered | — | asymmetry lens: recoverable downside vs permanently foregone upside; its former kbg home was deleted in the v0.6.0 reset, no live anchor |
 | kepner-tregoe | `thinking-kepner-tregoe` | considered | — | no kbg anchor |
 | triz | `thinking-triz` | considered | — | no kbg anchor |
@@ -162,7 +162,7 @@ model's upstream dir is `thinking-systems`, so its file is
 | dual-process | `thinking-dual-process` | considered | — | (1) verification trigger: easy answer + high stakes → deliberate pass; (2) AI agent path design: fast-path (Haiku, no gate) vs slow-path (Sonnet + interrupt); its former kbg home was deleted in the v0.6.0 reset, no live anchor |
 | fermi-estimation | `thinking-fermi-estimation` | considered | — | capacity planning, Redis/TimescaleDB sizing, ANPR throughput estimates before instrumentation exists; its former kbg home was deleted in the v0.6.0 reset, no live anchor |
 | lindy-effect | `thinking-lindy-effect` | considered | — | no kbg anchor |
-| leverage-points | `thinking-leverage-points` | applied | agents/performance-optimizer.md, skills/score-decision (single-criterion-that-flips trace) | a small number of places have outsized effect — find them before tuning the rest (added v0.30.2, superseding its deleted former home from the v0.6.3 Wave-B cut); Meadows' 12-level hierarchy applies when parameter tuning keeps not sticking |
+| leverage-points | `thinking-leverage-points` | applied | agents/performance-optimizer.md, METHODOLOGY Rule 14 (single-criterion-that-flips trace) | a small number of places have outsized effect — find them before tuning the rest (added v0.30.2, superseding its deleted former home from the v0.6.3 Wave-B cut); Meadows' 12-level hierarchy applies when parameter tuning keeps not sticking |
 
 ## kbg-native reasoning scaffolds
 
@@ -172,13 +172,10 @@ cc-thinking-skills models. These are kbg-native processes, not part of the upstr
 
 | Scaffold | kbg surface | What it adds |
 | --- | --- | --- |
-| **judgment-ladder** | `docs/reference/judgment-ladder.md` | A five-rung Decision Quality process for consequential choices: recognize → frame → test assumptions → estimate risk → decide, commit, and follow through. Use when the choice is analyzable and the cost of a bad decision exceeds the cost of a short structured pause. |
-| **strategic-judgment** | `docs/reference/strategic-judgment.md` | A six-step strategic-judgment loop for irreversible commitments under ambiguity: diagnose → guiding policy → coherent actions → irreversibilities and real options → strategic red-team → commit to the strategy loop. Use when the commitment is large, long-lived, or hard to reverse and the diagnosis is contested. |
 
 Read the full scaffold with Bash:
 
 ```bash
-cat "${MH_PLUGIN_ROOT}/docs/reference/judgment-ladder.md"
 ```
 
 ## Additional frameworks — not from cc-thinking-skills
@@ -208,17 +205,17 @@ lens. Use this table when you know the workflow pattern you are in and want the
 named handle for the lens the relevant kbg surface already uses.
 
 The six patterns below mirror the CC Workflow vocabulary documented in
-`skills/workflow/orchestrate/reference.md`'s Dynamic-workflow pattern vocabulary section.
+the pattern names below.
 They are read-only framing labels, not dispatch instructions.
 
 | Workflow pattern | When it applies | Mental models the kbg surface already uses | kbg surface to reach for |
 |---|---|---|---|
-| **classify-and-act** | Routing a task to the right lane (scope, priority, risk class) | `model-router`, `model-selection`, `model-combination`, `circle-of-competence`, `cynefin` | `mh:orchestrate`, `triage` |
+| **classify-and-act** | Routing a task to the right lane (scope, priority, risk class) | `model-router`, `model-selection`, `model-combination`, `circle-of-competence`, `cynefin` | `mattpocock-skills:triage` |
 | **fan-out-and-synthesize** | N independent reads across disjoint slices, then merge | `systems-thinking`, `feedback-loops`, `thought-experiment`, `jobs-to-be-done`, `second-order` | `research` |
 | **adversarial verification** | Judge produced work with a fresh-context skeptic | `red-team`, `steel-manning`, `debiasing`, `socratic`, `pre-mortem` | `mattpocock-skills:code-review`, `mattpocock-skills:grilling` |
 | **generate-and-filter** | Produce N candidates, rank by rubric, return top-K | `inversion`, `thought-experiment`, `first-principles`, `opportunity-cost`, `occams-razor` | `mh:ideate`, `domain-modeling` |
 | **tournament** | N approaches compete; a rubric picks the winner | `steel-manning` + `red-team`, `bayesian` / `probabilistic` likelihood ranking, `jobs-to-be-done` tradeoff | `domain-modeling` (Pugh Matrix) |
-| **loop-until-done** | Unknown work size; stop on observable criterion | `scientific-method`, `theory-of-constraints`, `five-whys-plus`, `reversibility`, `margin-of-safety` | `mattpocock-skills:diagnosing-bugs`, `mh:recursive-improve` (human-gated), `mh:orchestrate` per-task validation chain |
+| **loop-until-done** | Unknown work size; stop on observable criterion | `scientific-method`, `theory-of-constraints`, `five-whys-plus`, `reversibility`, `margin-of-safety` | `mattpocock-skills:diagnosing-bugs`, METHODOLOGY Rule 13's validation chain |
 
 **Usage rule:** if a task already clearly matches a kbg surface, just use that
 surface — don't invoke a model name separately. The model names are useful when

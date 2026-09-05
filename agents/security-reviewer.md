@@ -168,6 +168,5 @@ omit it. Say which applies in the finding:
 ## Reference
 
 Detailed vulnerability patterns and code examples: this file's `skills:` frontmatter preloads
-`mh:security-reviewer-patterns`. For a dedicated, comprehensive deep-audit (threat model →
-remediation plan → re-audit) rather than this agent's own flagging pass, see skill:
-`security-auditor`.
+`mh:security-reviewer-patterns`. For a full threat-model-to-remediation audit rather than
+this agent's own flagging pass, use Claude Code's built-in `security-review`.

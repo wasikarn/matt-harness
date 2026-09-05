@@ -1,6 +1,6 @@
 ---
 name: security-reviewer-patterns
-description: Catalog of security-reviewer's BAD/GOOD examples (SQLi, IDOR, JWT, mass assignment, SSRF, ReDoS). Auto-loads when security-reviewer runs. Don't use for the deep-audit workflow (security-auditor).
+description: Catalog of security-reviewer's BAD/GOOD examples (SQLi, IDOR, JWT, mass assignment, SSRF, ReDoS). Auto-loads when security-reviewer runs. Don't use for a full threat-model audit.
 user-invocable: false
 metadata:
   origin: kbg
@@ -17,10 +17,8 @@ grant) — this file is the code-example reference, not a separately-triggered p
 alongside `agents/security-reviewer.md`: the CWE pattern table in that file's Code Pattern Review section is what these
 examples illustrate.
 
-**Distinct from `mh:security-auditor`:** that skill is a separate, dedicated deep-audit workflow
-(threat model → remediation plan → re-audit) with its own callers (`mattpocock-skills:diagnosing-bugs`,
-`mh:incident`) — this file is background material for `security-reviewer`'s own flagging pass
-only, not a substitute for or extension of that audit procedure.
+This file is background material for `security-reviewer`'s own flagging pass only; a full
+threat-model-to-remediation audit is a separate job (`security-review` in Claude Code).
 
 ## 3b. Concrete Patterns (BAD/GOOD)
 

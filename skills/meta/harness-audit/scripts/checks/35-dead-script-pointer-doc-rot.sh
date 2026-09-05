@@ -25,8 +25,7 @@ done < <(find "$CLAUDE_DIR" \( -name '*.sh' -o -name '*.py' -o -name '*.js' \) \
 for _f in "$CLAUDE_DIR"/skills/*/SKILL.md "$CLAUDE_DIR"/skills/*/*/SKILL.md \
           "$CLAUDE_DIR"/skills/*/reference.md "$CLAUDE_DIR"/skills/*/*/reference.md \
           "$CLAUDE_DIR"/agents/*.md \
-          "$CLAUDE_DIR"/docs/*.md "$CLAUDE_DIR"/docs/agents/*.md \
-          "$CLAUDE_DIR"/docs/reference/*.md "$CLAUDE_DIR"/docs/skill-template/*.md; do
+          "$CLAUDE_DIR"/docs/*.md "$CLAUDE_DIR"/docs/reference/*.md; do
   # docs/research/*.md is excluded on purpose — those are dated design/analysis
   # snapshots that correctly describe deleted surfaces as history, not doc-rot.
   [ -f "$_f" ] || continue

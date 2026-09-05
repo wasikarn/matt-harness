@@ -38,7 +38,7 @@ cover both lenses.
 
 ## Output Format
 
-The gate is the **fatal-weakness floor**, not a blended score — this matches how this harness already gates decisions (`mh:score-decision`, `ship-merge`): a single number hides which lens is the actual blocker.
+The gate is the **fatal-weakness floor**, not a blended score — a single number hides which lens is the actual blocker.
 
 ```
 plan_source: <file path Read, or "pasted text, N lines">

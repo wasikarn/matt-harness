@@ -8,10 +8,8 @@ set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 IRRECOVERABLE="$ROOT/hooks/gates/irrecoverable.sh"
-VERIFIER_PROTECT="$ROOT/hooks/gates/verifier-protect.sh"
 TASK_COMPLETE="$ROOT/hooks/gates/task-complete-separation.sh"
-AGENT_RECURSION_GUARD="$ROOT/hooks/gates/agent-recursion-guard.sh"
-DB_WRITE_GATE="$ROOT/hooks/gates/db-write-gate.sh"
+SUBAGENT_GIT_GUARD="$ROOT/hooks/gates/subagent-git-guard.sh"
 
 pass=0
 fail=0
@@ -52,31 +50,6 @@ print(json.dumps(d))
 ' "$1" "$2" "${3-$2}"
 }
 
-# Build an Agent tool-call payload. $1=requested subagent_type (or empty to
-# omit the field, matching a Named-Model dispatch with no subagent_type),
-# $2=agent_type of the CALLER (or empty = main session, field omitted),
-# $3=agent_id of the CALLER (omit the arg entirely to mirror $2 — the
-# realistic shape for an actual subagent, which always carries both fields;
-# pass '' explicitly to simulate a --agent MAIN session, which carries
-# agent_type but never agent_id — code.claude.com/docs/en/hooks.md,
-# confirmed 2026-08-31: agent_id is present "only when the hook fires inside
-# a subagent call", agent_type is present for --agent sessions too).
-agent_payload() {
-  python3 -c '
-import json, sys
-subtype, agent, agent_id = sys.argv[1], sys.argv[2], sys.argv[3]
-ti = {}
-if subtype:
-    ti["subagent_type"] = subtype
-d = {"tool_name": "Agent", "tool_input": ti}
-if agent:
-    d["agent_type"] = agent
-if agent_id:
-    d["agent_id"] = agent_id
-print(json.dumps(d))
-' "$1" "$2" "${3-$2}"
-}
-
 # Build a Bash tool-call payload carrying agent_id (or empty = main
 # session). Separate from bash_payload() (used by many pre-existing tests
 # with no agent fields at all) to avoid touching that signature.
@@ -89,12 +62,6 @@ if agent_id:
     d["agent_id"] = agent_id
 print(json.dumps(d))
 ' "$1" "$2"
-}
-
-# Build an MCP tool-call payload with a SQL statement in .query (a common
-# execute_sql MCP convention; db-write-gate.sh also checks .sql/.statement/.text).
-mcp_sql_payload() {
-  python3 -c 'import json, sys; print(json.dumps({"tool_name": sys.argv[1], "tool_input": {"query": sys.argv[2]}}))' "$1" "$2"
 }
 
 # Expect the gate to BLOCK (exit 2).
@@ -491,19 +458,12 @@ fi
 # (Layer 3 -- a standalone vanish token, not glued to anything, shifts every
 # later token left one position, same as real bash word-splitting, but the
 # PH-only token stays in place here) had never been tested in this file.
-# --- Layer 2: the single-branch-develop-only worktree doctrine gate ---
-# (the highest-severity gap: git worktree add -b was never lstrip(PH)-ed at
-# all, unlike every other flag check above).
-test_deny "$IRRECOVERABLE" "empty-substitution splice hides git worktree add -b's dash (was silently ALLOWed, bypassing the single-branch doctrine gate)" \
-  "$(bash_payload 'git worktree add $(true)-b feature-branch /tmp/wt-feature')"
-test_deny "$IRRECOVERABLE" "baseline: plain git worktree add -b, no splice at all (must still deny)" \
-  "$(bash_payload 'git worktree add -b feature-branch /tmp/wt-feature')"
+# (The worktree-doctrine splice cases that used to live here went with the
+# worktree block itself, v1.0.0 rebuild.)
 # Adversarial-review find (2026-09-03): the SUBCOMMAND token itself (args[0]
 # == "add") was also compared by exact match, never lstrip(PH)-ed, a
 # distinct gap from the -b flag splice tested above -- a splice glued to
 # "add" bypassed the single-branch doctrine gate entirely.
-test_deny "$IRRECOVERABLE" "empty-substitution splice hides the git worktree add subcommand token itself (git worktree \$(true)add -b evil ..., was silently ALLOWed)" \
-  "$(bash_payload 'git worktree $(true)add -b evil /tmp/wt-evil-subcmd')"
 # Same review, sibling gap: git stash drop/clear compared args[0] by exact
 # match too, never lstrip(PH)-ed.
 test_deny "$IRRECOVERABLE" "empty-substitution splice hides git stash drop (git stash \$(true)drop, was silently ALLOWed)" \
@@ -541,16 +501,6 @@ test_deny "$IRRECOVERABLE" "baseline: plain destructive SQL, no splice (must sti
 # checks like rm -rf/push --force already tolerate this by accident; the
 # fixed-index ones do not). Each pairs the splice with its already-passing
 # no-splice baseline from the existing prefix-wrapper battery above.
-test_deny "$IRRECOVERABLE" "env wrapper flag splice defeats worktree doctrine gate (env \$(true)-u FOO git worktree add -b evil ..., was silently ALLOWed)" \
-  "$(bash_payload 'env $(true)-u FOO git worktree add -b evil /tmp/wt-evil-env')"
-test_deny "$IRRECOVERABLE" "sudo wrapper flag splice defeats worktree doctrine gate (sudo \$(true)-u alice git worktree add -b evil ..., was silently ALLOWed)" \
-  "$(bash_payload 'sudo $(true)-u alice git worktree add -b evil /tmp/wt-evil-sudo')"
-test_deny "$IRRECOVERABLE" "nice wrapper flag splice defeats worktree doctrine gate (nice \$(true)-n5 git worktree add -b evil ..., was silently ALLOWed)" \
-  "$(bash_payload 'nice $(true)-n5 git worktree add -b evil /tmp/wt-evil-nice')"
-test_deny "$IRRECOVERABLE" "command wrapper flag splice defeats worktree doctrine gate (command \$(true)-p git worktree add -b evil ..., was silently ALLOWed)" \
-  "$(bash_payload 'command $(true)-p git worktree add -b evil /tmp/wt-evil-cmd')"
-test_deny "$IRRECOVERABLE" "xargs mid-basename splice defeats worktree doctrine gate (xargs g\$(true)it worktree add -b evil ..., was silently ALLOWed)" \
-  "$(bash_payload 'echo x | xargs g$(true)it worktree add -b evil /tmp/wt-evil-xargs')"
 test_deny "$IRRECOVERABLE" "docker exec flag splice defeats the inner-command re-point, hiding destructive SQL (docker exec \$(true)-i c1 mysql -e DROP TABLE, was silently ALLOWed)" \
   "$(bash_payload 'docker exec $(true)-i c1 mysql -e "DROP TABLE users"')"
 test_deny "$IRRECOVERABLE" "docker exec-itself splice defeats the inner-command re-point, hiding destructive SQL (docker \$(true)exec c1 mysql -e DROP TABLE, was silently ALLOWed)" \
@@ -559,15 +509,11 @@ test_deny "$IRRECOVERABLE" "docker exec-itself splice defeats the inner-command 
 # The worst case is the whole vanish landing right where argv0 would be
 # (before "git" itself) -- "git" then ends up misplaced one slot into
 # `rest`, and none of this file own git dispatch checks look there.
-test_deny "$IRRECOVERABLE" "Layer 3: a standalone vanish sits WHERE argv0 would be, before git itself (\$(true) git worktree add -b evil ..., was silently ALLOWed)" \
-  "$(bash_payload '$(true) git worktree add -b evil /tmp/wt-evil-vanish')"
 # Companion: a standalone vanish AFTER git, before the subcommand -- already
 # safely denied today via this file own KNOWN_GIT_SUBS candidate duplication
 # (the "restore" branch own broad any-nonflag-token condition happens to
 # fire), locked in here as a regression test for the exact shape named in
 # the fix review, not because it was ever a confirmed bypass.
-test_deny "$IRRECOVERABLE" "Layer 3 companion: a standalone vanish sits between git and the subcommand (git \$(true) worktree add -b evil ...)" \
-  "$(bash_payload 'git $(true) worktree add -b evil /tmp/wt-evil-vanish2')"
 # Negative control (Layer 3 must not over-deny): a standalone vanish
 # resolving to something REAL, not empty, still shifts a token in the SAME
 # way at the placeholder level -- but the compacted-window retry must not
@@ -706,16 +652,6 @@ test_allow "$IRRECOVERABLE" "fallback-path splice resolving to a benign git subc
 # which cares whether quotes balance), so a real substitution on this path
 # now carries PH into every downstream check exactly like the primary path.
 FORCE_FALLBACK='echo ${y:-"a}b"} ; '
-test_deny "$IRRECOVERABLE" "sweep: env wrapper flag splice, fallback path (was silently ALLOWed)" \
-  "$(bash_payload "${FORCE_FALLBACK}env \$(true)-u FOO git worktree add -b evil /tmp/wt-sweep-env")"
-test_deny "$IRRECOVERABLE" "sweep: nice wrapper flag splice, fallback path (was silently ALLOWed)" \
-  "$(bash_payload "${FORCE_FALLBACK}nice \$(true)-n5 git worktree add -b evil /tmp/wt-sweep-nice")"
-test_deny "$IRRECOVERABLE" "sweep: sudo wrapper flag splice, fallback path (was silently ALLOWed)" \
-  "$(bash_payload "${FORCE_FALLBACK}sudo \$(true)-u alice git worktree add -b evil /tmp/wt-sweep-sudo")"
-test_deny "$IRRECOVERABLE" "sweep: command wrapper flag splice, fallback path (was silently ALLOWed)" \
-  "$(bash_payload "${FORCE_FALLBACK}command \$(true)-p git worktree add -b evil /tmp/wt-sweep-cmd")"
-test_deny "$IRRECOVERABLE" "sweep: xargs mid-basename splice, fallback path (was silently ALLOWed)" \
-  "$(bash_payload "${FORCE_FALLBACK}echo x | xargs g\$(true)it worktree add -b evil /tmp/wt-sweep-xargs")"
 test_deny "$IRRECOVERABLE" "sweep: docker exec re-point splice, fallback path (was silently ALLOWed)" \
   "$(bash_payload "${FORCE_FALLBACK}docker exec \$(true)-i c1 mysql -e \"DROP TABLE users\"")"
 test_deny "$IRRECOVERABLE" "sweep: rm -rf leading-dash splice, fallback path (was silently ALLOWed)" \
@@ -732,16 +668,10 @@ test_deny "$IRRECOVERABLE" "sweep: git clean -f splice, fallback path (was silen
   "$(bash_payload "${FORCE_FALLBACK}git clean \$(true)-f")"
 test_deny "$IRRECOVERABLE" "sweep: git stash drop splice on args[0], fallback path (was silently ALLOWed)" \
   "$(bash_payload "${FORCE_FALLBACK}git stash \$(true)drop")"
-test_deny "$IRRECOVERABLE" "sweep: git worktree add subcommand splice on args[0], fallback path (was silently ALLOWed)" \
-  "$(bash_payload "${FORCE_FALLBACK}git worktree \$(true)add -b evil /tmp/wt-sweep-subcmd")"
-test_deny "$IRRECOVERABLE" "sweep: git worktree -b flag splice, fallback path (was silently ALLOWed)" \
-  "$(bash_payload "${FORCE_FALLBACK}git worktree add \$(true)-b evil /tmp/wt-sweep-branch")"
 test_deny "$IRRECOVERABLE" "sweep: dd of=/dev splice, fallback path (was silently ALLOWed)" \
   "$(bash_payload "${FORCE_FALLBACK}dd if=/dev/zero \$(true)of=/dev/sda")"
 test_deny "$IRRECOVERABLE" "sweep: SQL DROP mid-keyword splice, fallback path (was silently ALLOWed)" \
   "$(bash_payload "${FORCE_FALLBACK}mysql -e \"DR\$(true)OP TABLE users\"")"
-test_deny "$IRRECOVERABLE" "sweep: Layer 3 standalone raw vanish before git, fallback path (was silently ALLOWed)" \
-  "$(bash_payload 'echo ${y:-"a}b"} ; $(true) git worktree add -b evil /tmp/wt-sweep-vanish')"
 # Negative controls: the systemic fallback-blanking fix must not over-deny.
 test_allow "$IRRECOVERABLE" "sweep neg: benign command after a forced fallback (must ALLOW)" \
   "$(bash_payload "${FORCE_FALLBACK}ls -la")"
@@ -809,8 +739,6 @@ test_deny "$IRRECOVERABLE" "git -Cpath push --force (combined -C)" \
   "$(bash_payload 'git -C/repo push --force origin develop')"
 test_deny "$IRRECOVERABLE" "git --no-pager push --force (non-value global)" \
   "$(bash_payload 'git --no-pager push --force origin develop')"
-test_deny "$IRRECOVERABLE" "git -C . worktree add -b feature (global-flag bypass)" \
-  "$(bash_payload 'git -C . worktree add -b feature /tmp/wt-feature')"
 test_deny "$IRRECOVERABLE" "git -c key=val push --force (value global -c)" \
   "$(bash_payload 'git -c core.foo=bar push --force origin develop')"
 test_allow "$IRRECOVERABLE" "git -C /repo status (global flag, safe sub)" \
@@ -907,10 +835,6 @@ test_allow "$IRRECOVERABLE" "git branch newbranch (create, must not over-block)"
   "$(bash_payload 'git branch newbranch')"
 test_allow "$IRRECOVERABLE" "git branch featureD (name containing D, must not over-block)" \
   "$(bash_payload 'git branch featureD')"
-# --- detached-looking worktree with -b must still deny (no allowlist survives; the former
-# review-pr allowlist was removed with the review pipeline, 2026-08-24 #82) ---
-test_deny  "$IRRECOVERABLE" "git worktree add --detach -b (disguised new-branch worktree)" \
-  "$(bash_payload 'git worktree add --detach -b evil /tmp/review-pr-1')"
 # --- fail-closed internal-error backstop (irrecoverable.sh:431-433): a payload that makes the
 # Python raise (command is a JSON array, not a string) must still exit 2, never fall open. ---
 test_deny  "$IRRECOVERABLE" "non-string command payload triggers the fail-closed backstop (exit 2, not fail-open)" \
@@ -926,8 +850,7 @@ test_deny  "$IRRECOVERABLE" "non-string command payload triggers the fail-closed
 # blows straight past a 2s timeout pre-fix (confirmed live: rc=124). This
 # gate has no "ask" outcome (see its own header comments), so the fix
 # denies on an oversized command -- the same fail-closed direction as every
-# other ambiguous-input path here. timeout pattern copied from
-# test-merge-door.sh's own DoS regression battery (commit 7b37691e).
+# other ambiguous-input path here.
 _len_pad=$(python3 -c "print('A' * 700000)")
 
 _rc=$(bash_payload "git push --force origin $_len_pad" | timeout 2 bash "$IRRECOVERABLE" 2>/dev/null; echo $?)
@@ -960,155 +883,6 @@ test_allow "$IRRECOVERABLE" "realistic longer commit message, well under the GH 
   "$(bash_payload 'git commit -m "Implement feature X with detailed rationale covering edge cases and rollback plan for the release"')"
 
 echo ""
-echo "=== verifier-protect Bash gate (redirect/tee/sed-i writes to verifier surfaces) ==="
-VP_BASH="$ROOT/hooks/gates/verifier-protect.sh"
-test_ask   "$VP_BASH" "redirect > into hooks/gates/" \
-  "$(bash_payload 'echo neutered > hooks/gates/irrecoverable.sh')"
-test_ask   "$VP_BASH" "append >> into hooks/hooks.json" \
-  "$(bash_payload 'echo x >> hooks/hooks.json')"
-test_ask   "$VP_BASH" "sed -i on an audit check" \
-  "$(bash_payload 'sed -i s/a/b/ skills/meta/harness-audit/scripts/checks/01-fleet-count.sh')"
-test_ask   "$VP_BASH" "tee into a gate file" \
-  "$(bash_payload 'echo x | tee hooks/gates/verifier-protect.sh')"
-test_ask   "$VP_BASH" "cp over an audit check (dest is verifier path)" \
-  "$(bash_payload 'cp foo skills/meta/harness-audit/scripts/checks/05-frontmatter-completeness-skills.sh')"
-test_ask   "$VP_BASH" "mv into hooks/gates/ via absolute path" \
-  "$(bash_payload "mv x $ROOT/hooks/gates/irrecoverable.sh")"
-# v0.36.0 audit: cp/mv/install -t <dir> made nonflag[-1] a SOURCE, so the real
-# destination was lost and a verifier-surface write went unasked. dd of= had no
-# verifier-protect coverage at all.
-test_ask   "$VP_BASH" "cp -t into hooks/gates/ (dest via -t, not source)" \
-  "$(bash_payload 'cp -t hooks/gates/ evil.sh')"
-test_ask   "$VP_BASH" "mv -t into audit checks/ (--target-directory=)" \
-  "$(bash_payload 'mv --target-directory=skills/meta/harness-audit/scripts/checks/ evil.sh')"
-test_ask   "$VP_BASH" "install -t into hooks/gates/" \
-  "$(bash_payload 'install -t hooks/gates/ evil.sh')"
-test_ask   "$VP_BASH" "dd of= a gate file (was no coverage)" \
-  "$(bash_payload 'dd if=/dev/zero of=hooks/gates/irrecoverable.sh bs=1 count=1')"
-test_allow "$VP_BASH" "dd of= a normal project file" \
-  "$(bash_payload 'dd if=/dev/zero of=src/index.ts bs=1 count=1')"
-test_allow "$VP_BASH" "cp -t into a normal source dir" \
-  "$(bash_payload 'cp -t src/ foo.sh')"
-test_allow "$VP_BASH" "redirect into a normal source file" \
-  "$(bash_payload 'echo x > skills/foo/SKILL.md')"
-test_allow "$VP_BASH" "cat a gate file (read, not write)" \
-  "$(bash_payload 'cat hooks/gates/irrecoverable.sh')"
-test_allow "$VP_BASH" "git apply a patch to a non-verifier path" \
-  "$(bash_payload 'git apply --check foo.patch')"
-test_allow "$VP_BASH" "sed -i on a normal project file" \
-  "$(bash_payload 'sed -i s/a/b/ src/index.ts')"
-test_allow "$VP_BASH" "ls a gate file (no write)" \
-  "$(bash_payload 'ls hooks/gates/irrecoverable.sh')"
-
-# v0.36.0-fix follow-up audit: -t joined to its value (-tDIR) or bundled with
-# other short flags (-rtDIR) still bypassed the just-shipped -t fix. rsync,
-# tar -x -C, patch, and git apply/am had zero verifier-protect coverage at all.
-test_ask   "$VP_BASH" "cp -t joined to its value (-thooks/gates/)" \
-  "$(bash_payload 'cp -thooks/gates/ evil.sh')"
-test_ask   "$VP_BASH" "cp -t bundled with -r (-rthooks/gates/)" \
-  "$(bash_payload 'cp -rthooks/gates/ evil.sh')"
-test_allow "$VP_BASH" "cp -t joined to a normal dir" \
-  "$(bash_payload 'cp -t/tmp/ x')"
-
-# compliance-audit adversarial pass: -tDIR and -rtDIR (joined) were closed
-# above, but -rt DIR (bundled, value in the NEXT token) still fell through to
-# nonflag[-1] and was silently allowed.
-test_ask   "$VP_BASH" "cp -rt into hooks/gates/ (bundled, space-separated target)" \
-  "$(bash_payload 'cp -rt hooks/gates/ evil.sh')"
-test_ask   "$VP_BASH" "mv -vt into hooks/gates/ (bundled, space-separated target)" \
-  "$(bash_payload 'mv -vt hooks/gates/ evil.sh')"
-test_ask   "$VP_BASH" "install -vt into hooks/gates/ (bundled, space-separated target)" \
-  "$(bash_payload 'install -vt hooks/gates/ evil.sh')"
-test_allow "$VP_BASH" "cp -rt into a normal source dir (bundled, space-separated)" \
-  "$(bash_payload 'cp -rt /tmp/safe/ myfile.txt')"
-test_ask   "$VP_BASH" "rsync into hooks/gates/" \
-  "$(bash_payload 'rsync evil.sh hooks/gates/x.sh')"
-test_allow "$VP_BASH" "rsync into a normal dir" \
-  "$(bash_payload 'rsync a.sh b.sh')"
-test_ask   "$VP_BASH" "tar -x -C into hooks/gates/" \
-  "$(bash_payload 'tar -xf evil.tar -C hooks/gates/')"
-test_allow "$VP_BASH" "tar -x -C into a normal dir" \
-  "$(bash_payload 'tar -xf evil.tar -C /tmp')"
-test_ask   "$VP_BASH" "patch a gate file via stdin redirect" \
-  "$(bash_payload 'patch hooks/gates/irrecoverable.sh < evil.patch')"
-test_allow "$VP_BASH" "patch a normal project file" \
-  "$(bash_payload 'patch README.md < ok.patch')"
-
-VP_DIFF_BAD="$(mktemp -t kbg-vp-test-bad.XXXXXX)"
-VP_DIFF_OK="$(mktemp -t kbg-vp-test-ok.XXXXXX)"
-cat > "$VP_DIFF_BAD" <<'EOF'
---- a/hooks/gates/irrecoverable.sh
-+++ b/hooks/gates/irrecoverable.sh
-@@ -1,1 +1,1 @@
--old
-+new
-EOF
-cat > "$VP_DIFF_OK" <<'EOF'
---- a/README.md
-+++ b/README.md
-@@ -1,1 +1,1 @@
--old
-+new
-EOF
-test_ask   "$VP_BASH" "git apply a diff whose +++ b/ target is a gate file" \
-  "$(bash_payload "git apply $VP_DIFF_BAD")"
-test_allow "$VP_BASH" "git apply a diff targeting a normal file" \
-  "$(bash_payload "git apply $VP_DIFF_OK")"
-rm -f "$VP_DIFF_BAD" "$VP_DIFF_OK"
-
-echo ""
-echo "=== path-hardcode deny (folded into verifier-protect Write branch) ==="
-# ponytail: split to avoid triggering the pre-commit /Users/<name>/ grep on test source
-# These run against verifier-protect.sh (the deny folded in 2026-07-03); the
-# file_paths are normal (non-verifier) so the ask branch does not fire -- only
-# the path-hardcode deny is exercised. $_UD avoids a literal /Users/<name> in
-# this test source (which the gate would otherwise block).
-_UP="/Users" _UN="testuser" _UD="$_UP/$_UN"
-test_deny  "$VERIFIER_PROTECT" "hardcoded /Users/ in .sh" \
-  "$(write_payload 'script.sh' "export PATH=$_UD/bin:\$PATH")"
-test_deny  "$VERIFIER_PROTECT" "hardcoded /Users/ in .py" \
-  "$(write_payload 'setup.py' "BASE = $_UD/data")"
-test_deny  "$VERIFIER_PROTECT" "hardcoded /Users/ in .js (#93: shipped workflow runners)" \
-  "$(write_payload 'runner.js' "const base = \"$_UD/data\"")"
-test_deny  "$VERIFIER_PROTECT" "Edit new_string with /Users/ in .sh" \
-  "$(edit_payload 'deploy.sh' "cd $_UD/app")"
-test_allow "$VERIFIER_PROTECT" "\$HOME reference in .sh" \
-  "$(write_payload 'script.sh' 'export PATH=$HOME/bin:$PATH')"
-test_allow "$VERIFIER_PROTECT" "~ reference in .sh" \
-  "$(write_payload 'script.sh' 'cd ~/projects')"
-test_allow "$VERIFIER_PROTECT" "/Users/ in .md file (not gated)" \
-  "$(write_payload 'README.md' "see $_UD for example")"
-test_allow "$VERIFIER_PROTECT" "/Users/ in .json file (not gated)" \
-  "$(write_payload 'config.json' "{\\\"path\\\":\\\"$_UD\\\"}")"
-test_allow "$VERIFIER_PROTECT" "normal .sh content" \
-  "$(write_payload 'run.sh' 'set -uo pipefail\necho hello')"
-
-echo ""
-echo "=== verifier-protect gate (tamper-resistance: human approves each verifier-surface edit) ==="
-test_ask   "$VERIFIER_PROTECT" "Write to hooks/gates/irrecoverable.sh" \
-  "$(write_payload 'hooks/gates/irrecoverable.sh' 'echo neutered')"
-test_ask   "$VERIFIER_PROTECT" "Edit to hooks/gates/verifier-protect.sh (self)" \
-  "$(edit_payload 'hooks/gates/verifier-protect.sh' 'exit 0')"
-test_ask   "$VERIFIER_PROTECT" "Write to hooks/hooks.json (the wiring)" \
-  "$(write_payload 'hooks/hooks.json' 'neutered-wiring')"
-test_ask   "$VERIFIER_PROTECT" "Write to hooks/gates/ via absolute path" \
-  "$(write_payload "$ROOT/hooks/gates/task-complete-separation.sh" 'echo neutered')"
-test_ask   "$VERIFIER_PROTECT" "Write to audit.sh (non-model verifier runner)" \
-  "$(write_payload 'skills/meta/harness-audit/scripts/audit.sh' 'echo neutered')"
-test_ask   "$VERIFIER_PROTECT" "Edit to a check file (grading logic)" \
-  "$(edit_payload 'skills/meta/harness-audit/scripts/checks/05-frontmatter-completeness-skills.sh' 'echo neutered')"
-test_ask   "$VERIFIER_PROTECT" "Write to a check via absolute path" \
-  "$(write_payload "$ROOT/skills/meta/harness-audit/scripts/checks/01-fleet-count.sh" 'echo neutered')"
-test_allow "$VERIFIER_PROTECT" "Write to --health reporter (NOT a grader, out of scope)" \
-  "$(write_payload 'skills/meta/harness-audit/scripts/harness-health.py' 'print(1)')"
-test_allow "$VERIFIER_PROTECT" "Write to health.sh (NOT a grader, out of scope)" \
-  "$(write_payload 'skills/meta/harness-audit/scripts/health.sh' 'echo ok')"
-test_allow "$VERIFIER_PROTECT" "Write to a skill (normal work)" \
-  "$(write_payload 'skills/foo/SKILL.md' '# ok')"
-test_allow "$VERIFIER_PROTECT" "Write to another skill (normal work)" \
-  "$(write_payload 'skills/review/pr/SKILL.md' '# ok')"
-
-echo ""
 echo "=== task-complete-separation gate (maker≠checker: subagent cannot self-complete) ==="
 # maker self-completion is the one thing the harness forbids — a subagent
 # (agent_type present) calling TaskUpdate(completed) is blocked at exit 2.
@@ -1134,59 +908,29 @@ test_allow "$TASK_COMPLETE" "--agent main session (agent_type set, no agent_id) 
   "$(taskupdate_payload completed some-agent-name '')"
 
 echo ""
-echo "=== agent-recursion-guard gate (only the main session may dispatch an agent) ==="
-# The exact evasion found 2026-08-31: a rogue fork hit the host's own
-# fork->fork block, then switched subagent_type to general-purpose instead —
-# which the host allowed. This gate closes that regardless of which
-# subagent_type is requested, keyed only on whether the CALLER is itself a
-# subagent (agent_type present).
-test_deny  "$AGENT_RECURSION_GUARD" "subagent (fork) tries fork->fork (the exact rogue-fork scenario)" \
-  "$(agent_payload fork fork)"
-test_deny  "$AGENT_RECURSION_GUARD" "subagent (fork) evades via general-purpose instead" \
-  "$(agent_payload general-purpose fork)"
-test_deny  "$AGENT_RECURSION_GUARD" "subagent (general-purpose) tries to dispatch another" \
-  "$(agent_payload general-purpose general-purpose)"
-test_deny  "$AGENT_RECURSION_GUARD" "subagent (named agent) tries to dispatch" \
-  "$(agent_payload general-purpose mh:build-error-resolver)"
-test_deny  "$AGENT_RECURSION_GUARD" "subagent dispatches with no subagent_type specified" \
-  "$(agent_payload '' fork)"
-test_allow "$AGENT_RECURSION_GUARD" "main session dispatches a fork (no agent_type)" \
-  "$(agent_payload fork '')"
-test_allow "$AGENT_RECURSION_GUARD" "main session dispatches general-purpose (no agent_type)" \
-  "$(agent_payload general-purpose '')"
-test_allow "$AGENT_RECURSION_GUARD" "unrelated tool (Bash, no agent_id) passes through untouched" \
-  "$(bash_payload 'echo hi')"
-test_allow "$AGENT_RECURSION_GUARD" "malformed stdin (fail-safe allow)" \
-  '{not valid json'
-# Security-review finding: agent_type over-blocks a top-level --agent
-# session (see the identical TASK_COMPLETE case above for the doc citation).
-test_allow "$AGENT_RECURSION_GUARD" "--agent main session (agent_type set, no agent_id) may still dispatch" \
-  "$(agent_payload fork some-agent-name '')"
-
-echo ""
-echo "=== agent-recursion-guard gate, Bash leg (nested claude spawn evades the Agent-tool matcher) ==="
+echo "=== nested-spawn deny (irrecoverable.py: a subagent may not spawn a nested claude session via Bash) ==="
 # Security-review finding: a subagent retains Bash access, so `claude -p`
 # from Bash spawns a nested session that never routes through the Agent
 # tool -- and that nested session is a FRESH main session (no agent_id of
 # its own), free to dispatch further agents. This leg denies the nested-
 # spawn invocation itself, before it can ever run.
-test_deny  "$AGENT_RECURSION_GUARD" "subagent runs 'claude -p' via Bash (the nested-spawn evasion)" \
+test_deny  "$IRRECOVERABLE" "subagent runs 'claude -p' via Bash (the nested-spawn evasion)" \
   "$(bash_agent_payload 'claude -p "do something"' fork)"
-test_deny  "$AGENT_RECURSION_GUARD" "subagent runs 'claude --agent X --print' via Bash" \
+test_deny  "$IRRECOVERABLE" "subagent runs 'claude --agent X --print' via Bash" \
   "$(bash_agent_payload 'claude --agent reviewer --print "check this"' fork)"
-test_deny  "$AGENT_RECURSION_GUARD" "subagent hides the spawn after a semicolon" \
+test_deny  "$IRRECOVERABLE" "subagent hides the spawn after a semicolon" \
   "$(bash_agent_payload 'echo hi; claude -p "sneaky"' fork)"
-test_allow "$AGENT_RECURSION_GUARD" "subagent runs an unrelated claude invocation (no spawn flag)" \
+test_allow "$IRRECOVERABLE" "subagent runs an unrelated claude invocation (no spawn flag)" \
   "$(bash_agent_payload 'claude --version' fork)"
-test_allow "$AGENT_RECURSION_GUARD" "subagent runs an unrelated Bash command" \
+test_allow "$IRRECOVERABLE" "subagent runs an unrelated Bash command" \
   "$(bash_agent_payload 'ls -la' fork)"
-test_allow "$AGENT_RECURSION_GUARD" "main session runs 'claude -p' via Bash (no agent_id — always allowed)" \
+test_allow "$IRRECOVERABLE" "main session runs 'claude -p' via Bash (no agent_id — always allowed)" \
   "$(bash_agent_payload 'claude -p "do something"' '')"
-test_allow "$AGENT_RECURSION_GUARD" "malformed stdin on the Bash leg (fail-safe allow)" \
+test_allow "$IRRECOVERABLE" "malformed stdin on the Bash leg (fail-safe allow)" \
   '{not valid json'
-test_deny  "$AGENT_RECURSION_GUARD" "subagent spawns via command substitution" \
+test_deny  "$IRRECOVERABLE" "subagent spawns via command substitution" \
   "$(bash_agent_payload 'echo $(claude -p "evil")' fork)"
-test_deny  "$AGENT_RECURSION_GUARD" "subagent spawns with an env-var prefix before claude" \
+test_deny  "$IRRECOVERABLE" "subagent spawns with an env-var prefix before claude" \
   "$(bash_agent_payload 'CLAUDE_API_KEY=x claude -p "do something"' fork)"
 # Deep-audit fresh adversarial pass, 2026-08-31: the un-anchored regex denied
 # these three real, harmless commands because they merely CONTAIN the
@@ -1194,27 +938,27 @@ test_deny  "$AGENT_RECURSION_GUARD" "subagent spawns with an env-var prefix befo
 # could not even document or grep this gate's own pattern without tripping
 # it. Fixed by anchoring the match on command position (see the gate's own
 # header comment for why a shlex-token rewrite was rejected instead).
-test_allow "$AGENT_RECURSION_GUARD" "subagent commits a message mentioning the flag (prose, not invocation)" \
+test_allow "$IRRECOVERABLE" "subagent commits a message mentioning the flag (prose, not invocation)" \
   "$(bash_agent_payload 'git commit -m "mention claude -p in docs"' fork)"
-test_allow "$AGENT_RECURSION_GUARD" "subagent echoes the pattern as a string, not a real invocation" \
+test_allow "$IRRECOVERABLE" "subagent echoes the pattern as a string, not a real invocation" \
   "$(bash_agent_payload 'echo "claude -p"' fork)"
-test_allow "$AGENT_RECURSION_GUARD" "subagent greps for the pattern (auditing this gate itself)" \
+test_allow "$IRRECOVERABLE" "subagent greps for the pattern (auditing this gate itself)" \
   "$(bash_agent_payload 'grep -r "claude -p" docs/' fork)"
 # Deep-audit "fix it all" pass, 2026-08-31: the flat [^|;&]* exclusion after
 # the anchor treated any &/;/| as end-of-invocation even inside a quoted
 # prompt argument, so these three real nested-spawn attempts evaded
 # detection entirely (a false negative -- the dangerous direction). Fixed
 # with a quote-aware scan; these must now deny.
-test_deny  "$AGENT_RECURSION_GUARD" "spawn hidden behind an ampersand inside a quoted prompt" \
+test_deny  "$IRRECOVERABLE" "spawn hidden behind an ampersand inside a quoted prompt" \
   "$(bash_agent_payload 'claude "fix A & B" -p' fork)"
-test_deny  "$AGENT_RECURSION_GUARD" "spawn hidden behind a semicolon inside a quoted prompt" \
+test_deny  "$IRRECOVERABLE" "spawn hidden behind a semicolon inside a quoted prompt" \
   "$(bash_agent_payload 'claude "note; then" --print x' fork)"
-test_deny  "$AGENT_RECURSION_GUARD" "spawn hidden behind a pipe inside a single-quoted prompt" \
+test_deny  "$IRRECOVERABLE" "spawn hidden behind a pipe inside a single-quoted prompt" \
   "$(bash_agent_payload "claude 'use A | B' --agent x" fork)"
 # Cross-segment separation must survive the quote-aware rewrite: a LATER,
 # unrelated command's flag must never get credited to an earlier claude
 # invocation that itself carries no spawn flag.
-test_allow "$AGENT_RECURSION_GUARD" "unrelated later command's flag does not leak back to claude" \
+test_allow "$IRRECOVERABLE" "unrelated later command's flag does not leak back to claude" \
   "$(bash_agent_payload 'claude --version ; othertool -p' fork)"
 
 # GH #121, 2026-09-04: heredoc-body stripping regression coverage. A
@@ -1226,284 +970,75 @@ test_allow "$AGENT_RECURSION_GUARD" "unrelated later command's flag does not lea
 # stripping non-interpreter-fed heredoc bodies before the anchor scan (see
 # the gate's own "Heredoc-body stripping" comment block). This is the
 # issue's exact repro shape, not a paraphrase.
-test_allow "$AGENT_RECURSION_GUARD" "heredoc-authored commit message mentioning feat(claude): and --bg in unrelated prose lines no longer false-blocks (GH #121 exact repro)" \
+test_allow "$IRRECOVERABLE" "heredoc-authored commit message mentioning feat(claude): and --bg in unrelated prose lines no longer false-blocks (GH #121 exact repro)" \
   "$(bash_agent_payload $'git commit -m "$(cat <<\'EOF\'\nfeat(claude): document the nested-spawn gate heredoc fix\nunrelated later line just happens to mention --bg here\nEOF\n)"' fork)"
 # Dangerous-direction control: a heredoc body that DOES feed an interpreter
 # is executable code, not inert data, so a real nested `claude -p` spawn
 # hidden inside one must still be caught -- proving the #121 fix stripped
 # only inert bodies and did not open a bypass via the interpreter-fed path.
-test_deny  "$AGENT_RECURSION_GUARD" "nested claude spawn hidden inside an interpreter-fed heredoc body still blocked (bash <<EOF ... claude -p ... EOF, GH #121 dangerous-direction control)" \
+test_deny  "$IRRECOVERABLE" "nested claude spawn hidden inside an interpreter-fed heredoc body still blocked (bash <<EOF ... claude -p ... EOF, GH #121 dangerous-direction control)" \
   "$(bash_agent_payload $'bash <<EOF\nclaude -p "evil"\nEOF' fork)"
 
-# Deep-audit pass, 2026-09-04 (same session, independent of the GH #121 fix
-# above): the interpreter check only looked at text BEFORE "<<" on the
-# heredoc-open line, so a heredoc PIPED to an interpreter (interpreter word
-# sits AFTER the heredoc-open) was misread as inert data -- a real nested
-# spawn hidden in the body got a silent ALLOW. Fixed with a default-to-scan
-# model (_INERT_RE allowlist of data-only verbs + routes_to_interpreter,
-# checking for a pipe/eval/interpreter word anywhere on the line, not just
-# to the left of "<<"). These three must now deny.
-test_deny  "$AGENT_RECURSION_GUARD" "CRITICAL bypass: heredoc piped to bash hides a nested spawn (cat <<EOF | bash)" \
-  "$(bash_agent_payload $'cat <<\'EOF\' | bash\ncd /tmp && claude -p evil\nEOF' fork)"
-test_deny  "$AGENT_RECURSION_GUARD" "CRITICAL bypass: heredoc piped to sh hides a nested spawn (cat <<EOF | sh)" \
-  "$(bash_agent_payload $'cat <<\'EOF\' | sh\n: ; claude --print evil\nEOF' fork)"
-test_deny  "$AGENT_RECURSION_GUARD" "CRITICAL bypass: eval \"\$(cat <<EOF ...)\" hides a nested spawn" \
-  "$(bash_agent_payload $'eval "$(cat <<\'EOF\'\n: ; claude -p evil\nEOF\n)"' fork)"
-test_deny  "$AGENT_RECURSION_GUARD" "CRITICAL bypass: fish <<EOF (interpreter word not in the old fixed list) hides a nested spawn" \
-  "$(bash_agent_payload $'fish <<\'EOF\'\ncd /tmp && claude -p evil\nEOF' fork)"
-# HIGH false positive: the old interpreter check matched \b(...|sh|...)\b
-# against ANY substring on the line, so a filename EXTENSION (notes.sh)
-# satisfied it and an ordinary heredoc-authored file got scanned and
-# falsely denied -- reopening the exact class of bug GH #121 was filed to
-# fix, via a new trigger. _INTERPRETER_RE now excludes a preceding "." via
-# a negative lookbehind, and cat targeting a file is on the _INERT_RE
-# allowlist with no interpreter word routing the body elsewhere.
-test_allow "$AGENT_RECURSION_GUARD" "HIGH false-positive fix: writing a file named notes.sh no longer false-blocks on the .sh extension" \
-  "$(bash_agent_payload $'cat > notes.sh <<\'EOF\'\nclaude -p is blocked by this gate\nEOF' fork)"
-# HIGH false positive / detection hole: the heredoc-open search was not
-# quote-aware, so a "<<"-lookalike token inside an unrelated quoted string
-# was misread as a real heredoc-open, turning the rest of the command into
-# a text-deletion primitive that could hide a real spawn sitting right
-# after it. _mask_quotes now blanks quoted spans before that search runs.
-test_deny  "$AGENT_RECURSION_GUARD" "HIGH bypass fix: a << lookalike inside a quoted string no longer swallows a real nested spawn on the next line" \
-  "$(bash_agent_payload $'echo "usage: cmd << EOF"\ncd /tmp && claude -p evil\nEOF' fork)"
-
+# Not ported from the retired agent-recursion-guard.sh: its deep-audit
+# heredoc model (cat <<EOF | bash, eval "$(cat <<EOF)", fish <<EOF, a <<
+# lookalike inside quotes). irrecoverable.py reuses its own _strip_heredocs
+# (interpreter word before "<<" only), a documented ponytail residual there.
 test_allow "$TASK_COMPLETE" "non-TaskUpdate tool with agent_type (out of scope)" \
   "$(python3 -c 'import json; print(json.dumps({"tool_name":"Bash","tool_input":{"command":"ls"},"agent_type":"mh:build-error-resolver"}))')"
 
 echo ""
-echo "=== db-write-gate (ask on non-SELECT execute_sql-shaped MCP calls, any server) ==="
-test_ask   "$DB_WRITE_GATE" "DELETE on production" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'DELETE FROM users WHERE id=1')"
-test_ask   "$DB_WRITE_GATE" "DROP TABLE on staging" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_staging' 'DROP TABLE sessions')"
-test_ask   "$DB_WRITE_GATE" "comment-then-DELETE (comment-strip order)" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' $'-- note\nDELETE FROM users')"
-test_ask   "$DB_WRITE_GATE" "WITH-CTE whose outer statement writes" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'WITH t AS (SELECT 1) DELETE FROM users')"
-test_allow "$DB_WRITE_GATE" "SELECT is read-only" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'SELECT * FROM users')"
-test_allow "$DB_WRITE_GATE" "WITH-CTE that only reads" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'WITH t AS (SELECT 1) SELECT * FROM t')"
-test_allow "$DB_WRITE_GATE" "EXPLAIN is read-only" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'EXPLAIN SELECT * FROM users')"
-test_allow "$DB_WRITE_GATE" "comment-only statement is a no-op" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' '-- just a comment')"
-# compliance-audit adversarial pass: a write stacked after a lead SELECT
-# classified by leading-verb-only as a read and slipped through.
-test_ask   "$DB_WRITE_GATE" "write stacked after a lead SELECT" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'SELECT 1; DELETE FROM users')"
-test_allow "$DB_WRITE_GATE" "two stacked SELECTs stay read-only" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'SELECT 1; SELECT 2')"
-test_ask   "$DB_WRITE_GATE" "leading block comment before a write verb" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' '/* comment */ DELETE FROM users')"
-test_allow "$DB_WRITE_GATE" "leading block comment before a read stays allowed" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' '/* comment */ SELECT * FROM users')"
-# v0.49.0: quote-aware comment stripping — two silent-allow bypasses that shipped
-# in v0.40.0's regex stripper, caught exercising mh:review-pr. String-literal
-# blindness: a /* (or --) inside one string literal paired with a */ in a later
-# literal erased a stacked write. MySQL /*! ... */ executable comments: the body
-# runs on the server but was deleted as if inert. (SQL uses "..." literals so the
-# single-quote-heavy cases stay expressible inside the test file's '...' args.)
-test_ask   "$DB_WRITE_GATE" "block-comment lookalike across two string literals hides a stacked write" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'SELECT "/*", 1; DELETE FROM users WHERE x = "*/"')"
-test_allow "$DB_WRITE_GATE" "a /* inside a string literal is not a comment (no over-ask)" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'SELECT "/*" AS a')"
-test_ask   "$DB_WRITE_GATE" "-- lookalike inside string literals hides a stacked write" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'SELECT "--", 1; DELETE FROM x')"
-test_ask   "$DB_WRITE_GATE" "MySQL /*! executable-comment body is a real write" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' '/*!50000 DELETE */ FROM t')"
-# Under the ask-by-default inversion (v0.49.0) a /*! ... */ hint that prepends a
-# non-read token (SQL_NO_CACHE) to the statement no longer leads with a read verb,
-# so it asks. Over-ask on an exotic read hint is the intended safe direction.
-test_ask   "$DB_WRITE_GATE" "MySQL /*! read hint prepends a non-read token -> safe over-ask" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' '/*!40101 SQL_NO_CACHE */ SELECT 1')"
-# The /*! body is real SQL to MariaDB: its closing */ is found respecting inner
-# strings and nested /* */ comments. The first cut of this fix sliced the body
-# with a raw find("*/"), which closed early on an inner */ and left the write verb
-# non-leading -> silent allow. Caught against a live MariaDB while exercising
-# mh:review-pr on the fix itself; these lock the second-order fix in.
-test_ask   "$DB_WRITE_GATE" "/*! body with a nested block comment before the write verb" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' '/*!50000 /* x */ DELETE FROM t2 */')"
-test_ask   "$DB_WRITE_GATE" "/*! body with a */ hidden inside a string literal" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' '/*!00000 SELECT "*/-- x" */ ; DELETE FROM t')"
-test_allow "$DB_WRITE_GATE" "/*! body that is read-only stays allowed (no over-ask)" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' '/*!50000 /* x */ SELECT 1 */')"
-test_ask   "$DB_WRITE_GATE" "unterminated block comment keeps the trailing write for classification" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'SELECT 1; /* trap; DELETE FROM t')"
-# v0.49.0 ask-by-default inversion: the gate now ALLOWs only proven simple reads
-# and ASKs on everything else, so verb-list gaps and lexer desyncs fall to a safe
-# false-ask instead of a false-allow. All four caught against a live MariaDB in
-# round 3 of the review exercise; the last is the -- needs-whitespace lexer rule.
-test_ask   "$DB_WRITE_GATE" "LOAD DATA is a write not on any leading-verb list" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'LOAD DATA LOCAL INFILE "/x" INTO TABLE t')"
-test_ask   "$DB_WRITE_GATE" "PREPARE/EXECUTE hides the write verb in a string literal" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'PREPARE s FROM "DELETE FROM t"; EXECUTE s')"
-test_ask   "$DB_WRITE_GATE" "SELECT ... INTO OUTFILE writes to disk despite the SELECT lead" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'SELECT * FROM t INTO OUTFILE "/tmp/x"')"
-test_ask   "$DB_WRITE_GATE" "-- without trailing whitespace is arithmetic, not a comment (1--1)" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'SELECT 1--1;DELETE FROM t')"
-test_ask   "$DB_WRITE_GATE" "SET GLOBAL is a server-config write" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'SET GLOBAL x = 1')"
-test_allow "$DB_WRITE_GATE" "SHOW is a proven read" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'SHOW TABLES')"
-test_allow "$DB_WRITE_GATE" "plain EXPLAIN never executes what it analyzes (read)" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'EXPLAIN SELECT 1')"
-# MariaDB honors a SECOND executable-comment form, /*M! ... */, alongside /*! ... */
-# (the M form is designed to read as inert to non-MariaDB parsers). Missing it was
-# a live silent-allow bypass found in the final round of the review exercise.
-test_ask   "$DB_WRITE_GATE" "MariaDB /*M! executable comment runs a write" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' '/*M!100000 DELETE FROM t */')"
-test_ask   "$DB_WRITE_GATE" "MariaDB /*M! with no version digits still runs" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' '/*M!DELETE FROM t */')"
-test_allow "$DB_WRITE_GATE" "MariaDB /*M! body that is a read stays allowed" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' '/*M!100000 SELECT 1 */')"
-# scope expansion (user-approved): CALL invokes a stored procedure that can
-# write internally; EXPLAIN ANALYZE (unlike plain EXPLAIN) actually executes
-# the analyzed statement on MySQL/MariaDB.
-test_ask   "$DB_WRITE_GATE" "CALL a stored procedure" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'CALL delete_all_users()')"
-test_ask   "$DB_WRITE_GATE" "EXPLAIN ANALYZE of a write executes it" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'EXPLAIN ANALYZE DELETE FROM users')"
-test_allow "$DB_WRITE_GATE" "EXPLAIN ANALYZE of a read stays allowed" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'EXPLAIN ANALYZE SELECT * FROM users')"
-test_allow "$DB_WRITE_GATE" "unrelated MCP tool (mongodb) out of scope" \
-  "$(mcp_sql_payload 'mcp__mongodb__find' 'DELETE')"
-# Generalization proof: the matcher/regex is server-name-agnostic now
-# (^mcp__.*__execute_sql) — a completely different server name must still ask
-# on a write, with zero config. This is the whole point of the de-clienting.
-test_ask   "$DB_WRITE_GATE" "a different server name entirely still gates a write (generic match)" \
-  "$(mcp_sql_payload 'mcp__postgres__execute_sql' 'DELETE FROM users')"
-# hooks.json's matcher ("mcp__.*__execute_sql.*") is zero-or-more on the server
-# segment; the script's own check must match that scope exactly, or a
-# degenerate empty-server tool name that trips the outer trigger would fall
-# through the inner check unclassified -> silent exit 0, no ask (a real
-# never-silently-allow violation, even though no live MCP server ever emits
-# an empty name). Confirmed live-fire during the compliance audit: `^mcp__.+`
-# left this asking nothing; `^mcp__.*` closes it.
-test_ask   "$DB_WRITE_GATE" "empty server-name segment still gates a write (outer/inner scope parity)" \
-  "$(mcp_sql_payload 'mcp____execute_sql' 'DELETE FROM users')"
-test_ask   "$DB_WRITE_GATE" "malformed stdin (fail-safe ask)" \
-  '{not valid json'
 
-echo ""
-echo "=== missing lib/_hook_output.py (corrupted/partial plugin install, deep-audit follow-up to #146) ==="
-# This gate's embedded python does `from _hook_output import emit_ask`,
-# resolved from this gate's sibling lib/ dir. A missing lib module raises
-# ModuleNotFoundError -> exit 1, a nonzero non-2 exit that
-# hooks/dispatch-pretooluse.py's own contract treats as non-blocking --
-# the gated SQL write proceeds regardless, i.e. this gate fails OPEN.
-# Simulate by copying ONLY the .sh + an empty lib/ into an isolated scratch
-# dir (never touch the real repo files). Real JSON parse, not a substring
-# grep -- a grep on the literal ask text would also pass on a typo'd key
-# Claude Code's own parser would silently ignore, falling through to allow.
-MISSLIB_DBW_DIR=$(mktemp -d "${TMPDIR:-/tmp}/kbg-misslib-dbw.XXXXXX")
-cp "$DB_WRITE_GATE" "$MISSLIB_DBW_DIR/db-write-gate.sh"
-mkdir -p "$MISSLIB_DBW_DIR/lib"
-_errf=$(mktemp "${TMPDIR:-/tmp}/kbg-misslib-dbw-err.XXXXXX")
-# Payload precomputed into a variable, THEN piped via printf (not a live
-# python3 producer process) -- the gate exits before reading all of stdin
-# (it has no early "$(cat)" stdin-drain like verifier-protect.sh/
-# merge-door.sh do), so chaining a live python3 producer directly into it
-# triggers a spurious BrokenPipeError/exit-120 on the PRODUCER side that
-# `pipefail` then surfaces as this pipeline's own exit code -- a test-harness
-# artifact, not a real gate bug (confirmed: $_out already holds the correct
-# ask JSON either way).
-_payload_dbw=$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'DELETE FROM users')
-_out=$(printf '%s' "$_payload_dbw" | bash "$MISSLIB_DBW_DIR/db-write-gate.sh" 2>"$_errf")
-_rc=$?
-_ok=1
-if [ "$_rc" -eq 0 ] \
-   && echo "$_out" | python3 -c 'import json,sys
-d=json.load(sys.stdin)["hookSpecificOutput"]
-sys.exit(0 if d["hookEventName"] == "PreToolUse" and d["permissionDecision"] == "ask" and d["permissionDecisionReason"] else 1)' 2>/dev/null \
-   && ! grep -qi "ModuleNotFoundError\|Traceback" "$_errf"; then
-  _ok=0
-fi
-if [ "$_ok" -eq 0 ]; then
-  echo "  ✅ ASK: missing lib/_hook_output.py -> ask JSON (exit 0), no raw traceback"
-  pass=$((pass + 1))
+echo "=== v1.0.0 gate edits (worktree allowed, git add -A merge carve-out, --worktree spawn, stash list) ==="
+# Payload with an explicit cwd (irrecoverable.py checks MERGE_HEAD there).
+bash_cwd_payload() { python3 -c 'import json, sys; print(json.dumps({"tool_name": "Bash", "tool_input": {"command": sys.argv[1]}, "cwd": sys.argv[2]}))' "$1" "$2"; }
+test_allow "$IRRECOVERABLE" "git worktree add -b x ../y is ALLOWED (single-branch worktree doctrine block removed)" \
+  "$(bash_payload 'git worktree add -b x ../y')"
+test_allow "$IRRECOVERABLE" "git -C . worktree add -b feature (was denied by the removed worktree block)" \
+  "$(bash_payload 'git -C . worktree add -b feature /tmp/wt-feature')"
+MERGE_FIX=$(mktemp -d "${TMPDIR:-/tmp}/kbg-merge-fixture.XXXXXX")
+NOMERGE_FIX=$(mktemp -d "${TMPDIR:-/tmp}/kbg-nomerge-fixture.XXXXXX")
+( cd "$MERGE_FIX" && git init -q -b develop . && git -c user.email=t@t -c user.name=t commit -q --allow-empty -m init \
+  && echo a > f && git add f && git -c user.email=t@t -c user.name=t commit -q -m a \
+  && git checkout -q -b side && echo b > f && git -c user.email=t@t -c user.name=t commit -q -am b \
+  && git checkout -q develop && echo c > f && git -c user.email=t@t -c user.name=t commit -q -am c \
+  && git merge -q side >/dev/null 2>&1; true )
+( cd "$NOMERGE_FIX" && git init -q -b develop . && git -c user.email=t@t -c user.name=t commit -q --allow-empty -m init )
+if git -C "$MERGE_FIX" rev-parse -q --verify MERGE_HEAD >/dev/null; then
+  test_allow "$IRRECOVERABLE" "git add -A ALLOWED while MERGE_HEAD exists in the payload cwd (mid-merge carve-out)" \
+    "$(bash_cwd_payload 'git add -A' "$MERGE_FIX")"
+  test_allow "$IRRECOVERABLE" "git add . ALLOWED mid-merge" \
+    "$(bash_cwd_payload 'git add .' "$MERGE_FIX")"
 else
-  echo "  ❌ missing lib/_hook_output.py: expected ask JSON (exit 0), got rc=$_rc stdout='$_out' stderr: $(cat "$_errf")" >&2
-  fail=$((fail + 1))
+  echo "  ❌ merge fixture failed to reach a conflicted state" >&2; fail=$((fail + 1))
 fi
-rm -f "$_errf"
+test_deny "$IRRECOVERABLE" "git add -A DENIED in a repo with no MERGE_HEAD" \
+  "$(bash_cwd_payload 'git add -A' "$NOMERGE_FIX")"
+test_deny "$IRRECOVERABLE" "git add --all DENIED with no cwd in the payload (falls back to process cwd, not mid-merge)" \
+  "$(bash_payload 'git add --all')"
+trash "$MERGE_FIX" "$NOMERGE_FIX" 2>/dev/null || true
+test_deny "$IRRECOVERABLE" "subagent: claude -p hi via Bash denied" \
+  "$(bash_agent_payload 'claude -p hi' fork)"
+test_deny "$IRRECOVERABLE" "subagent: claude --worktree x denied (new flag in the ported nested-spawn deny)" \
+  "$(bash_agent_payload 'claude --worktree x' fork)"
+test_deny "$IRRECOVERABLE" "subagent: claude --bg denied" \
+  "$(bash_agent_payload 'claude --bg "run it"' fork)"
+test_allow "$IRRECOVERABLE" "main session: claude --worktree x allowed (no agent_id)" \
+  "$(bash_agent_payload 'claude --worktree x' '')"
+test_allow "$SUBAGENT_GIT_GUARD" "subagent: git stash list allowed (read-only carve-out)" \
+  "$(bash_agent_payload 'git stash list' fork)"
+test_allow "$SUBAGENT_GIT_GUARD" "subagent: git stash show -p allowed (read-only carve-out)" \
+  "$(bash_agent_payload 'git stash show -p' fork)"
+test_deny "$SUBAGENT_GIT_GUARD" "subagent: git stash (bare) still denied" \
+  "$(bash_agent_payload 'git stash' fork)"
+test_deny "$SUBAGENT_GIT_GUARD" "subagent: git stash pop still denied" \
+  "$(bash_agent_payload 'git stash pop' fork)"
+test_deny "$SUBAGENT_GIT_GUARD" "subagent: git stash listing (not the list verb) still denied" \
+  "$(bash_agent_payload 'git stash listing' fork)"
 
-echo ""
-echo "=== atlassian-mcp-gate (cold-start guard: Skill(jira-acli:*) must load before Atlassian MCP) ==="
-ATLASSIAN_GATE="$ROOT/hooks/gates/atlassian-mcp-gate.sh"
-
-# Fixture HOME (#93): the gate now feature-detects the jira-acli plugin under
-# $HOME/.claude/plugins/cache/*/jira-acli and allows everything when absent —
-# so these tests must run under a HOME that HAS it (any publisher dir works),
-# or they'd vacuously pass/fail depending on what the dev machine has
-# installed. Side benefit: session markers land under the fixture, not the
-# real ~/.local/share/kbg/.
-AG_HOME=$(mktemp -d "${TMPDIR:-/tmp}/kbg-ag-home.XXXXXX")
-mkdir -p "$AG_HOME/.claude/plugins/cache/wasikarn/jira-acli"
-AG_REAL_HOME="$HOME"
-export HOME="$AG_HOME"
-
-# Build a Skill tool payload.
-skill_payload() {
-  python3 -c 'import json, sys; print(json.dumps({"tool_name": "Skill", "tool_input": {"skill": sys.argv[1]}, "session_id": sys.argv[2]}))' "$1" "$2"
-}
-
-# Build an MCP tool-call payload keyed to a session_id.
-mcp_session_payload() {
-  python3 -c 'import json, sys; print(json.dumps({"tool_name": sys.argv[1], "tool_input": {}, "session_id": sys.argv[2]}))' "$1" "$2"
-}
-
-AG_COLD="test-atlassian-gate-cold-$$"
-AG_ENGAGED="test-atlassian-gate-engaged-$$"
-AG_WRONGSKILL="test-atlassian-gate-wrongskill-$$"
-AG_OTHER="test-atlassian-gate-other-$$"
-AG_ESCAPE="test-atlassian-gate-escape-$$"
-
-test_deny  "$ATLASSIAN_GATE" "cold connector-family MCP call (mcp__claude_ai_Atlassian_Rovo__*), no skill loaded" \
-  "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__createJiraIssue' "$AG_COLD")"
-test_deny  "$ATLASSIAN_GATE" "cold plugin-family MCP call (mcp__plugin_atlassian_atlassian__*), no skill loaded" \
-  "$(mcp_session_payload 'mcp__plugin_atlassian_atlassian__editJiraIssue' "$AG_COLD")"
-test_allow "$ATLASSIAN_GATE" "Skill(jira-acli:acli) load is never itself blocked" \
-  "$(skill_payload 'jira-acli:acli' "$AG_ENGAGED")"
-test_allow "$ATLASSIAN_GATE" "same-session MCP call allowed once jira-acli:acli loaded" \
-  "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__createJiraIssue' "$AG_ENGAGED")"
-test_allow "$ATLASSIAN_GATE" "same-session confluence-content fallback (page create) also allowed once engaged" \
-  "$(mcp_session_payload 'mcp__plugin_atlassian_atlassian__createConfluencePage' "$AG_ENGAGED")"
-test_allow "$ATLASSIAN_GATE" "Skill(other:x) load is never itself blocked" \
-  "$(skill_payload 'mh:orchestrate' "$AG_WRONGSKILL")"
-test_deny  "$ATLASSIAN_GATE" "a non-jira-acli skill does not engage the session" \
-  "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__getJiraIssue' "$AG_WRONGSKILL")"
-test_deny  "$ATLASSIAN_GATE" "a different, still-cold session stays blocked (marker is per-session)" \
-  "$(mcp_session_payload 'mcp__plugin_atlassian_atlassian__editJiraIssue' "$AG_OTHER")"
-test_allow "$ATLASSIAN_GATE" "unrelated MCP tool (mongodb) out of scope" \
-  "$(mcp_session_payload 'mcp__mongodb__find' "$AG_COLD")"
-test_allow "$ATLASSIAN_GATE" "unrelated MCP tool (code-review-graph) out of scope" \
-  "$(mcp_session_payload 'mcp__code-review-graph__query_graph_tool' "$AG_COLD")"
-test_allow "$ATLASSIAN_GATE" "malformed stdin (fail-safe allow)" \
-  '{not valid json'
-test_allow "$ATLASSIAN_GATE" "escape hatch MH_ALLOW_DIRECT_ATLASSIAN_MCP=1 bypasses a cold block" \
-  "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__createJiraIssue' "$AG_ESCAPE")" \
-  "MH_ALLOW_DIRECT_ATLASSIAN_MCP=1"
-
-# Portability (#93): without the jira-acli plugin installed anywhere in the
-# cache, a cold Atlassian call must pass untouched — blocking would prescribe
-# skills the machine cannot load. Empty fixture HOME = no plugin.
-AG_NOPLUGIN_HOME=$(mktemp -d "${TMPDIR:-/tmp}/kbg-ag-nohome.XXXXXX")
-test_allow "$ATLASSIAN_GATE" "no jira-acli plugin in cache -> cold Atlassian call allowed (feature-detect)" \
-  "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__createJiraIssue' "$AG_COLD")" \
-  "HOME=$AG_NOPLUGIN_HOME"
-
-export HOME="$AG_REAL_HOME"
-
-echo ""
 echo "=== fast-path (bash pre-filter that skips python3 on commands that cannot match, added 2026-08-14) ==="
-# irrecoverable + verifier-protect gained a bash fast-path so a benign command
-# skips the python3 cold-start. The fast-path only exits 0 (never 2), so a
-# deny-case still exiting 2 / an ask-case still emitting stdout PROVES python ran
-# and the fast-path did not short-circuit it. These guard the fast-path's own
-# specific risks (the existing suite already covers the git-apply-with-verifier-
-# diff fail-open at line ~314, which the carrier fall-through must preserve).
+# irrecoverable gained a bash fast-path so a benign command skips the python3
+# cold-start. The fast-path only exits 0 (never 2), so a deny-case still
+# exiting 2 PROVES python ran and the fast-path did not short-circuit it.
 # irrecoverable: the quote-strip MUST expose a quote-concatenated `r""m` -> rm
 # (the one shlex obfuscation the python catches that a naive substring misses).
 test_deny  "$IRRECOVERABLE" "r\"\"m -rf (quote-concatenation -> fast-path quote-strip)" \
@@ -1520,22 +1055,6 @@ test_deny  "$IRRECOVERABLE" "gi + backslash-newline + t (argv0 split, was a fast
   "$(bash_payload $'gi\\\nt push --force origin develop')"
 test_deny  "$IRRECOVERABLE" "r + backslash-newline + m (argv0 split, was a fast-path bypass)" \
   "$(bash_payload $'r\\\nm -rf /tmp/x')"
-# verifier-protect: a Write to a file_path containing "Bash" must NOT be
-# mis-routed through the Bash fast-path (which would exit 0 and skip the Write
-# ask) -- the tool_name peek matches the quoted value precisely.
-test_ask   "$VERIFIER_PROTECT" "Write to hooks/gates/Bash.sh (mis-route guard: file_path contains Bash)" \
-  "$(write_payload 'hooks/gates/Bash.sh' 'echo neutered')"
-# verifier-protect: write/carrier substrings with no verifier path fast-exit 0
-# (the latency win); the fast-path must not deny (it never does) and python
-# (if a carrier substring like 'tar' in 'start' reaches it) must allow.
-test_allow "$VERIFIER_PROTECT" "npm install (write token 'install', no verifier path -> allow)" \
-  "$(bash_payload 'npm install')"
-test_allow "$VERIFIER_PROTECT" "npm start (carrier 'tar' in 'start', false-pos -> allow)" \
-  "$(bash_payload 'npm start')"
-test_allow "$VERIFIER_PROTECT" "ls (no write token -> fast allow)" \
-  "$(bash_payload 'ls -la')"
-test_allow "$VERIFIER_PROTECT" "echo > /tmp/x (redirect, no verifier path -> allow)" \
-  "$(bash_payload 'echo x > /tmp/x')"
 
 echo ""
 echo "=== python3-missing fail-open (#93: every deny gate must exit 0 with ONE stderr note, never rc=127 or a silent block) ==="
@@ -1593,8 +1112,6 @@ test_documented_fastpath_allow() {
   rm -f "$errf"
 }
 
-NOPY_AG_HOME=$(mktemp -d "${TMPDIR:-/tmp}/kbg-nopy-home.XXXXXX")
-mkdir -p "$NOPY_AG_HOME/.claude/plugins/cache/wasikarn/jira-acli"
 
 test_nopython_allow "$IRRECOVERABLE" "irrecoverable: rm -rf passes with note (was: rc=127 read as fail-CLOSED, blocking every git/rm command)" \
   "$(bash_payload 'rm -rf /tmp/x')"
@@ -1654,28 +1171,15 @@ test_nopython_allow "$IRRECOVERABLE" "irrecoverable: \$*-split argv0 (gi\$*t pus
 # so a future refactor can't silently change it without someone noticing.
 test_documented_fastpath_allow "$IRRECOVERABLE" "irrecoverable: JSON \\u0024-escaped \$ around a \${x} splice (gi\\u0024{x}t push --force) -- raw scan blind, documented non-live gap" \
   '{"tool_name":"Bash","tool_input":{"command":"gi\u0024{x}t push --force origin develop"}}'
-test_nopython_allow "$VERIFIER_PROTECT" "verifier-protect: Write to a gate path passes with note" \
-  "$(write_payload 'hooks/gates/x.sh' 'echo y')"
-test_nopython_allow "$DB_WRITE_GATE" "db-write: SQL write passes with note" \
-  "$(mcp_sql_payload 'mcp__example-db__execute_sql_production' 'DELETE FROM users')"
 test_nopython_allow "$TASK_COMPLETE" "task-complete-separation: subagent completion passes with note" \
   "$(taskupdate_payload 'completed' 'refactor-cleaner')"
-test_nopython_allow "$AGENT_RECURSION_GUARD" "agent-recursion-guard: subagent dispatch passes with note" \
-  "$(agent_payload 'general-purpose' 'refactor-cleaner')"
-test_nopython_allow "$ATLASSIAN_GATE" "atlassian gate: cold Atlassian call passes with note (jira-acli present in fixture HOME)" \
-  "$(mcp_session_payload 'mcp__claude_ai_Atlassian_Rovo__createJiraIssue' 'nopy-session')" \
-  "HOME=$NOPY_AG_HOME"
-test_nopython_allow "$ROOT/hooks/gates/worktree-guard-dispatch.sh" "worktree-guard-dispatch: guarded workspace passes with note" \
-  "$(bash_payload 'echo x')" \
-  "MH_GUARDED_WORKSPACE=/tmp/kbg-nopy-ws" "CLAUDE_PROJECT_DIR=/tmp/kbg-nopy-ws" "CLAUDE_PLUGIN_ROOT=$ROOT"
 
 # trash-fallback deny message (#93): with python3 present but NO trash CLI on
 # PATH, the rm -rf deny must still fire (rc=2) and the message must route to
 # the user instead of prescribing a binary the machine doesn't have.
 TRASHLESS_BIN=$(mktemp -d "${TMPDIR:-/tmp}/kbg-notrash.XXXXXX")
 # dirname: GH #146 extracted irrecoverable.sh's embedded python3 -c block to
-# a sibling irrecoverable.py, resolved via "$(dirname "$0")" the same idiom
-# verifier-protect.sh/merge-door.sh already use for their lib dir -- this
+# a sibling irrecoverable.py, resolved via "$(dirname "$0")" -- this
 # minimal PATH must carry it too, or the gate itself (not the trash-CLI
 # fallback under test) fails with "dirname: command not found".
 for _t in bash cat sed tr grep python3 dirname; do

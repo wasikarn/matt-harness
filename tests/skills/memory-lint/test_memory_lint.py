@@ -751,7 +751,7 @@ def test_find_patterns_reports_hidden_count_when_everything_is_capped_out():
 
 
 def test_find_patterns_json_prompt_includes_prompts():
-    """Regression test for a 2026-08-17 finding (kbg:bug-sweep): --json's
+    """Regression test for a 2026-08-17 finding (a bug sweep): --json's
     early `return 0` used to fire before the --prompt block ever ran, so
     `--find-patterns --json --prompt` silently dropped the prompt content
     with no warning — byte-identical to `--json` alone. JSON must mirror
@@ -789,7 +789,7 @@ def test_find_patterns_json_prompt_includes_prompts():
 
 
 def test_find_patterns_cli_boundary_at_exact_cap_size():
-    """Regression test for a 2026-08-17 mutation-testing finding (kbg:bug-sweep):
+    """Regression test for a 2026-08-17 mutation-testing finding (a bug sweep):
     run_find_patterns()'s own re-filter (`c["size"] <= max_cluster`) had zero
     test coverage at size == max_cluster through the actual CLI path — a
     mutated `<=` -> `<` still passed the full suite. A cluster sized exactly

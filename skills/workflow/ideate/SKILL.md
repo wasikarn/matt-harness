@@ -1,9 +1,9 @@
 ---
 name: ideate
-description: "Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Use when the question is open-ended. Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Don't use for syntax, lookups, or closed-phrasing asks."
+description: "Parallel divergent ideation (5 isolated agents, rotating frames, novelty/viability/fit scoring). Use when the question is open-ended. Say 'brainstorm/ระดมความคิด/คิดไอเดีย'. Not for syntax, lookups, or closed-phrasing asks."
 argument-hint: "[problem-statement]"
 disable-model-invocation: false
-disable-model-invocation-reason: Auto-fire on vague prompts is load-bearing (catches prompts the model would otherwise default on). Cost is bounded by the F8.5 cap (orchestrate SKILL's F8.5 section) and the 2-wave fan-out callout below — NOT by this flag.
+disable-model-invocation-reason: Auto-fire on vague prompts is load-bearing (catches prompts the model would otherwise default on). Cost is bounded by the 5-agent-per-wave cap (METHODOLOGY Rule 13) and the 2-wave fan-out callout below — NOT by this flag.
 model: inherit
 effort: high
 ---
@@ -51,8 +51,7 @@ hooks — full mechanics" section.
 > - **Phase 2 (Focus)**: sequential score + cluster on the host, no fan-out.
 > - **Phase 3 (Deepen)**: 3 parallel Agent calls, peak 3.
 >
-> **Peak concurrent = 5** (the F8.5 hard cap, `skills/workflow/orchestrate/SKILL.md`'s
-> "Bounded fan-out — hard cap (F8.5)" section). Sequential: Phase 1 → Phase 2 →
+> **Peak concurrent = 5** (the hard cap in METHODOLOGY Rule 13). Sequential: Phase 1 → Phase 2 →
 > Phase 3. ≈8-10 Agent calls/run. **Do not collapse into 1 wave.**
 >
 > Audit history (the 44→105-agent failure mode) and enforcement mechanism:
@@ -142,7 +141,7 @@ Phase 1 payload does NOT list other branches or carry peer `Idea` objects, and i
 prompt forbids cross-talk. Sibling recombination is passed ONLY at Phase 3 (deepen), never
 during Diverge. This is load-bearing: a branch seeing another's output anchors the two
 together, collapsing the method to one wider thought (no shared mutable state across parallel
-branches — `skills/workflow/orchestrate/SKILL.md`'s F8.5 section).
+branches).
 
 **Practical rules:** don't call one Diverge Agent from another; don't include a "here's what
 the other branches generated" line in any Diverge userPrompt; don't carry `Idea` objects

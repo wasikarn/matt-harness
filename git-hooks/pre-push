@@ -1,35 +1,7 @@
 #!/usr/bin/env bash
-# pre-push — run the full parallel validation gauntlet before allowing push.
-#
-# This is the heavy gate. It runs plugin-validate, self-audit, shell/JSON lint,
-# and the deny-gate behavioral suite (hooks/tests/) in parallel. The broader
-# fleet critical-hooks suite and eval dataset gate are pending rebuild.
-# Failures are reported with log tails.
-#
-# Note: the L4 autonomy exit-tripwire backstop (scripts/l4/exit-tripwire.sh)
-# was removed when ADR 0006 retired the L2–L5 bounded-autonomy ratchet
-# (2026-06-26). The gauntlet + scoped denials (block-dangerous-git.sh /
-# block-dangerous-bash.sh) are the live guardrails; there is no autonomy
-# flag and no enforced maker-checker ship-gate (CLAUDE.md §The operating model).
-#
-# For a faster local check on every commit, see git-hooks/pre-commit.
-
+# pre-push — run the full parallel gauntlet (scripts/run-gauntlet.sh).
+# Resolve via git: core.hooksPath is shared across linked worktrees.
 set -euo pipefail
-
-# Resolve via git, not "$(dirname "$0")/.." — core.hooksPath is shared across
-# linked worktrees (a bare hub repo + worktree layout), so the hook script's
-# own location is the hub's git-hooks/ dir, not the worktree that's actually
-# pushing. git already cds into the invoking worktree's root before running
-# hooks; asking git directly (instead of relying on that cwd contract) also
-# keeps this correct if the hook is ever invoked manually from a subdirectory.
-# Same pattern pre-commit already uses one directory over.
 ROOT="$(git rev-parse --show-toplevel)"
-GAUNTLET="$ROOT/scripts/run-gauntlet.sh"
-
-if [ ! -x "$GAUNTLET" ]; then
-  echo "pre-push: gauntlet script not found or not executable: $GAUNTLET" >&2
-  exit 1
-fi
-
-echo "pre-push: running full validation gauntlet..."
-bash "$GAUNTLET"
+echo "pre-push: running validation gauntlet..."
+bash "$ROOT/scripts/run-gauntlet.sh"
