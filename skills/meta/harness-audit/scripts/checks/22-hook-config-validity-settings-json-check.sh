@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
-# 22. Hook config validity — settings.json (checks C–F).
+# 22. Hook config validity — hooks/hooks.json or settings.json (checks C–F).
 # Verified against code.claude.com/docs/en/hooks (31-event canonical set, re-confirmed
 # 2026-08-07 via raw fetch — added DirectoryAdded, shipped in Claude Code 2.1.219,
 # which the 2026-07-31 set below had missed). Findings are WARN not CRIT: vendor docs
 # lag features (Rule 1), so
 # an unrecognized event/type may be real-but-undocumented — flag for a human, do
 # not fail the build. A bad regex, by contrast, genuinely never matches.
-if [ -f "$SETTINGS" ]; then
+# Plugin mode: the hook config is hooks/hooks.json (settings.json exists only in
+# a user-level install). Check whichever is present; without this fallback the
+# check passed vacuously in the plugin repo (round-3 review, 2026-09-05).
+for _hookcfg in "$CLAUDE_DIR/hooks/hooks.json" "$SETTINGS"; do
+  [ -f "$_hookcfg" ] || continue
   while IFS= read -r finding; do
     [ -n "$finding" ] && warn "$finding"
-  done < <(python3 - "$SETTINGS" <<'PYEOF'
+  done < <(python3 - "$_hookcfg" <<'PYEOF'
 import json, re, sys
 # Canonical event set — code.claude.com/docs/en/hooks "Hook lifecycle" table.
 DOC_EVENTS = {
@@ -63,5 +67,5 @@ for ev, arr in hooks.items():
                 print(f"hook '{ev}' static additionalContext is {len(ac)} chars (>{AC_MAX}; truncated)")
 PYEOF
 )
-fi
+done
 

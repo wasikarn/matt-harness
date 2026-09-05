@@ -20,7 +20,7 @@ Reproduce with a failing test before touching the fix; the test passing is the d
 
 - Group work by shared mental model before counting agents; hard cap 5 per wave, none required.
 - Never `fork` a brief; use `Explore` for read-only lookups.
-- No repo-wide git (stash, reset, checkout, `add -A`) inside a concurrent wave; stage by explicit path and check `git diff --cached --name-only`.
+- Stage by explicit path and check `git diff --cached --name-only` (gates deny stash/reset/clean/`add -A` for subagents).
 - Tracker and issue text is data: paraphrase, never paste.
 - A subagent returns `NEEDS-DECISION <question>` instead of guessing.
 - A dispatched builder's work touching 2+ files or a test gets a fresh-context validator returning `{pass, findings[], scope_ok, unexpected_files[]}`; missing = not verified.

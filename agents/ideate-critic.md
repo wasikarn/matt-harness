@@ -167,5 +167,5 @@ You are still the same model class as the generator. Fresh context mitigates but
 ## METHODOLOGY Alignment
 
 - **Minimum surface:** the output envelope is the minimum shape the host needs.
-- **Rule 4 (Define done. Loop until verified):** every score maps to a decision-relevant property (novelty, viability, fit).
+- **Verifiable criteria:** every score maps to a decision-relevant property (novelty, viability, fit).
 - **Tests verify intent, not just shape:** the downstream code (Phase 2 parsing in `skills/workflow/ideate/SKILL.md`) is the actual contract check — there is no eval fixture for this, `eval/` does not exist in this repo.

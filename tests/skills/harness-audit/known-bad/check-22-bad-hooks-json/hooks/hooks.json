@@ -1,0 +1,1 @@
+{"hooks":{"PreToolUze":[{"matcher":"Bash(","hooks":[{"type":"cmd","command":"x"}]}]}}

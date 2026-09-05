@@ -1,6 +1,6 @@
 # Agent authoring conventions
 
-What the 12-agent fleet actually does, made explicit so a new agent has something accurate to
+What the 10-agent fleet actually does, made explicit so a new agent has something accurate to
 pattern-match against. Prose guidance, not a gate; the mechanical checks are named per item.
 
 ## 1. Tool scoping: explicit allowlist, least privilege
@@ -87,5 +87,5 @@ the plugin ships no preload-only skills.
 5. If it grades other work: fresh-context, advisory-only, never self-gating.
 6. If it reports findings: state a confidence bar; zero findings is valid.
 7. If it returns a branchable status: closed set of terminal codes in `## Output Format`.
-8. Run `bash skills/meta/harness-audit/scripts/audit.sh`; checks 04, 09, 24, 25, 41, 49, 51, 54
+8. Run `bash skills/meta/harness-audit/scripts/audit.sh`; checks 04, 09, 24, 25, 41, 54
    touch new agents directly.

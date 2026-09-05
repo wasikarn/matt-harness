@@ -86,15 +86,15 @@ def test_markdown_style_link_with_path_is_treated_as_external_not_dangling():
     # This store's memories live flat (no subdirectories except _archive/), so
     # a target containing "/" is a citation into another repo, not a same-store
     # link — confirmed live in plugin-install-portability.md's
-    # ../../docs/reference/reasoning-models.md citation.
+    # ../../docs/reference/some-deleted-doc.md citation.
     with tempfile.TemporaryDirectory() as d:
         with open(os.path.join(d, "baz.md"), "w") as f:
-            f.write("---\nname: baz\n---\nsee [x](../../docs/reference/reasoning-models.md)\n")
+            f.write("---\nname: baz\n---\nsee [x](../../docs/reference/some-deleted-doc.md)\n")
         with open(os.path.join(d, "MEMORY.md"), "w") as f:
             f.write("- [baz](baz.md) — x\n")
         state = memory_lint.collect_state(d)
         findings, _, _ = memory_lint.detector_findings(state)
-        assert not any("reasoning-models" in f for f in findings), (
+        assert not any("some-deleted-doc" in f for f in findings), (
             f"a path-qualified markdown target must not be scanned as a same-store link: {findings}")
 
 

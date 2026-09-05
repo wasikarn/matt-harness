@@ -30,6 +30,12 @@ run_lint() {
   while IFS= read -r f; do
     python3 -m json.tool "$f" >/dev/null || { echo "invalid JSON: $f"; rc=1; }
   done < <(git ls-files '*.json' | existing)
+  # Whole-tree home-path ban (pre-commit only sees staged blobs).
+  if git ls-files | /usr/bin/grep -vE '^(docs/(research|post-mortems|plans)/|CHANGELOG\.md$)' | existing \
+       | xargs LC_ALL=C /usr/bin/grep -alE '/Users/[A-Za-z]|-Users-[A-Za-z]' 2>/dev/null \
+       | /usr/bin/grep -vE '^(git-hooks/pre-commit|scripts/run-gauntlet\.sh)$'; then
+    echo "hardcoded home path in tracked file(s) above"; rc=1
+  fi
   return "$rc"
 }
 

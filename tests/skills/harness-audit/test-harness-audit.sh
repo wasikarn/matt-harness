@@ -75,6 +75,11 @@ expect_silent 20 check-20-good-short-desc
 expect_warn   20 check-20-bad-duplicate-surface
 expect_silent 20 check-20-good-duplicate-distinct
 
+# Check 22: hooks/hooks.json event/type/matcher validity (plugin mode; used to
+# be gated on settings.json and passed vacuously in the plugin repo).
+expect_warn   22 check-22-bad-hooks-json
+expect_silent 22 check-22-good-hooks-json
+
 # Check 28: strict YAML frontmatter on the bucketed 2-level path.
 expect_crit   28 check-28-bad-malformed-yaml
 expect_silent 28 check-28-good-valid-yaml

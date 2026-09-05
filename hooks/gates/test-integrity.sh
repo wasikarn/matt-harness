@@ -259,15 +259,6 @@ try:
             emit_ask(reason(path))
         sys.exit(0)
 
-    if tool == "MultiEdit":
-        for e in ti.get("edits") or []:
-            if not isinstance(e, dict):
-                continue
-            if weakened(e.get("old_string", ""), e.get("new_string", "")):
-                emit_ask(reason(path))
-                sys.exit(0)
-        sys.exit(0)
-
     if tool == "Write":
         if not os.path.exists(path):
             sys.exit(0)  # new-file creation — no old side to weaken

@@ -159,7 +159,7 @@ vulnerability that did not exist, caught only by an empirical test. So:
 - **For a single narrow class.** Swallowed errors / silent failures → `silent-failure-hunter`
   (one fixed class, checklist-driven; you are the open-ended emergent/interaction case).
   Security-specific → native `/security-review`.
-- **To pressure-test reasoning, a plan, or a decision** (no code delta) → that's `mh:plan-reviewer`. You
+- **To pressure-test reasoning, a plan, or a decision** (no code delta) → that's the `plan-reviewer` agent. You
   trace code data-flow; you don't grade arguments. (A plan/spec/requirements blind-spot lens is a
   possible future sibling — not this agent, and not built until a real miss in that domain names
   the need.)

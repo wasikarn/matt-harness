@@ -154,6 +154,10 @@ test_allow "$IRRECOVERABLE" "git checkout branch (must not over-block)" \
   "$(bash_payload 'git checkout main')"
 test_allow "$IRRECOVERABLE" "git checkout -b new branch (must not over-block)" \
   "$(bash_payload 'git checkout -b new-branch')"
+test_allow "$IRRECOVERABLE" "git checkout -b new branch from start-point (create, not tree+path)" \
+  "$(bash_payload 'git checkout -b feat origin/develop')"
+test_deny  "$IRRECOVERABLE" "git checkout -b with tree-ish AND path still denied" \
+  "$(bash_payload 'git checkout -b feat HEAD~1 file.txt')"
 # The force check only matched the exact token "-f"/ "--force", missing a bundled short-flag
 # cluster like "-qf" (quiet+force).
 test_deny "$IRRECOVERABLE" "git checkout -qf bundled force flag (was a bypass)" \
@@ -450,6 +454,8 @@ test_allow "$IRRECOVERABLE" "git push --force-with-lease (safe variant)" \
   "$(bash_payload 'git push --force-with-lease origin develop')"
 test_allow "$IRRECOVERABLE" "git push --force-with-lease with refspec (still safe)" \
   "$(bash_payload 'git push --force-with-lease=main:12345 origin develop')"
+test_allow "$IRRECOVERABLE" "git push --force-with-lease --force-if-includes (safest variant)" \
+  "$(bash_payload 'git push --force-with-lease --force-if-includes origin develop')"
 test_allow "$IRRECOVERABLE" "git push normal (no force)" \
   "$(bash_payload 'git push origin develop')"
 
@@ -540,6 +546,12 @@ test_deny  "$IRRECOVERABLE" "git -c core.hooksPath= (hook bypass, space form)" \
   "$(bash_payload 'git -c core.hooksPath=/tmp/evil commit -m x')"
 test_deny  "$IRRECOVERABLE" "git -ccore.hooksPath= (hook bypass, joined form)" \
   "$(bash_payload 'git -ccore.hooksPath=/tmp/evil commit -m x')"
+test_deny  "$IRRECOVERABLE" "git config core.hooksPath <other> (persistent hook bypass)" \
+  "$(bash_payload 'git config core.hooksPath /dev/null')"
+test_deny  "$IRRECOVERABLE" "git config --unset core.hooksPath (persistent hook bypass)" \
+  "$(bash_payload 'git config --unset core.hooksPath')"
+test_allow "$IRRECOVERABLE" "git config core.hooksPath git-hooks (documented wiring)" \
+  "$(bash_payload 'git config core.hooksPath git-hooks')"
 test_allow "$IRRECOVERABLE" "git -c user.name= (benign -c config, must not over-block)" \
   "$(bash_payload 'git -c user.name=x commit -m y')"
 # --- git branch force-delete: discards unmerged commits ---

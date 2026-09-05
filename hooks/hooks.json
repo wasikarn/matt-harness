@@ -74,7 +74,7 @@
       },
       {
         "id": "gate:write:test-integrity",
-        "matcher": "Write|Edit|MultiEdit",
+        "matcher": "Write|Edit",
         "description": "Ask when an edit to an existing test-shaped path removes an assertion line or adds a skip/disable marker.",
         "hooks": [
           {

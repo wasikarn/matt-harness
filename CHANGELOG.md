@@ -1,9 +1,47 @@
 # Changelog
 
-All notable changes to `kbg` are documented here. Format loosely follows
+All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
+
+## [1.1.1] — 2026-09-05
+
+Round-3 review of v1.1.0 (three fresh-context reviewers: hooks, agents/skills, docs/scripts).
+
+### Fixed
+
+- `gate:bash:irrecoverable`: `git push --force-with-lease --force-if-includes` no longer denied;
+  `git checkout -b <new> <start-point>` no longer denied (the branch name was counted as a path);
+  `git config core.hooksPath <x>` / `--unset core.hooksPath` now denied (same bypass class as
+  `--no-verify`; the documented `git-hooks` value stays allowed). Six regression cases added.
+- harness-audit check 22 only ran when `settings.json` existed, so `hooks/hooks.json` was never
+  schema-checked in the plugin repo. Now checks `hooks/hooks.json` first; known-bad/good fixtures added.
+- Checks 17 and 19 now also compile/parse files under `hooks/`.
+- Gauntlet lint gained the whole-tree hardcoded-home-path layer that `repo-gotchas.md` promised.
+
+### Removed
+
+- Dead `MultiEdit` matcher fragment and branch in `gate:write:test-integrity` (tool no longer exists).
+- METHODOLOGY Rule 13 bullet duplicating what the git gates enforce computationally (3151 → 3127 B).
+
+### Changed
+
+- Stale prose: "12-agent fleet" → 10; checks 49/51 references dropped; three pre-rebuild "Rule 4"
+  labels reworded; `mh:plan-reviewer` skill pointer → `plan-reviewer` agent; "preloaded via" → "in".
+
+## [1.1.0] — 2026-09-05
+
+Cuts 1–6 from the round-2 review: native `hooks.json` gate entries replace the Python dispatcher,
+patterns/agent-support skills deleted, 6 preloads inlined into their host agents, 10 agents. See commit `2cac98c8`.
+
+## [1.0.1] — 2026-09-05
+
+Round-2 fixes: test-integrity catches jest `expect()`, budget/telemetry hooks dropped, stale doctrine refs pruned. See commit `a1055f64`.
+
+## [1.0.0] — 2026-09-05
+
+Rebuild: keep only what native Claude Code and installed plugins cannot do. Old tree at tag `pre-rebuild-v0.68.673`. See commit `10b6230f`.
 
 ## [0.68.480] — 2026-08-25
 

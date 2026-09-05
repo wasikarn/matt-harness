@@ -20,9 +20,8 @@
 # gates never review), `enabledPlugins` (can flip this plugin's own enabled
 # flag off), and `env` -- Claude Code injects a settings file's `env` block
 # into the session AND the subprocesses it spawns (docs/reference/env-vars.md),
-# so an edit to that key could silently set an escape-hatch var this repo's
-# own gates already honor (MH_ALLOW_MAIN_EDIT, MH_ALLOW_DIRECT_ATLASSIAN_MCP)
-# without ever touching hooks/enabledPlugins directly. Every other key --
+# so an edit to that key could silently set an escape-hatch var (see
+# docs/reference/env-vars.md) without ever touching hooks/enabledPlugins directly. Every other key --
 # statusLine, permissions, theme, etc. -- stays frictionless, matching this
 # gate's own "an already-reviewed file needs no friction" philosophy for the
 # ordinary case. The edit is reconstructed from the on-disk content plus the

@@ -626,12 +626,17 @@ for w in windows:
 
             for sub in (KNOWN_GIT_SUBS if (PH in sub or _has_raw_subst(sub)) else (sub,)):
                 if sub == "push" and any(
-                    t in ("-f", "--force") or (t.startswith("--force") and not t.startswith("--force-with-lease"))
+                    t in ("-f", "--force") or (t.startswith("--force") and not t.startswith(("--force-with-lease", "--force-if-includes")))
                     or (t.startswith("-") and not t.startswith("--") and "f" in t)
                     or t.startswith("+")  # "+refspec" force-pushes without a -f/--force flag
                     for t in scan
                 ):
                     deny("git push --force overwrites remote history — needs explicit user approval (use --force-with-lease for the safe variant)")
+                # `git config core.hooksPath X` / --unset disables pre-commit and
+                # pre-push (same bypass class as --no-verify). The documented
+                # wiring value `git-hooks` stays allowed.
+                if sub == "config" and any(t.lower() == "core.hookspath" for t in scan) and "git-hooks" not in scan:
+                    deny("git config core.hooksPath rewires/disables the repo git hooks — only `git config core.hooksPath git-hooks` is allowed")
                 if sub == "reset" and "--hard" in scan:
                     deny("git reset --hard discards uncommitted work — confirm with user first")
                 # SHORT bundled cluster counts per-character, LONG option only on
@@ -667,8 +672,12 @@ for w in windows:
                 # checkout: "--"/"." = discard; 2+ nonflag = tree-ish + path
                 # (`git checkout HEAD~1 file` overwrites the worktree). 1 nonflag
                 # stays allowed: it may be a legit branch switch.
+                # -b/-B/--orphan consume one nonflag (the new branch name), so
+                # `checkout -b feat origin/develop` is a create, not tree+path.
+                _co_nonflag = len([t for t in scan if not t.startswith("-")]) - (
+                    1 if any(t in ("-b", "-B", "--orphan") for t in scan) else 0)
                 if sub == "checkout" and ("--" in scan or "." in scan or
-                                            len([t for t in scan if not t.startswith("-")]) >= 2 or
+                                            _co_nonflag >= 2 or
                                             any(t in ("-f", "--force") or _bundled_force(t, ("b", "B")) for t in scan)):
                     deny("git checkout -- / git checkout . / git checkout -f / git checkout <tree> <file> discards working-tree changes — confirm with user first")
                 if sub == "switch" and any(t in ("-f", "--force", "--discard-changes") or _bundled_force(t, ("c", "C")) for t in scan):

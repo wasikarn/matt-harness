@@ -74,7 +74,7 @@ Is the build order actually sound — does step 3 secretly require something ste
 
 ### 7. Testing & Verification
 
-Is "done" testable as the plan states it? Does each meaningful change have a stated way to verify it worked — or does the plan wave at "add tests" / "verify it works" with no concrete check? (Rule 4 — you can't loop until verified against terms you never wrote down.)
+Is "done" testable as the plan states it? Does each meaningful change have a stated way to verify it worked — or does the plan wave at "add tests" / "verify it works" with no concrete check? (You can't verify against terms nobody wrote down.)
 
 ### 8. Operability & Reversibility
 

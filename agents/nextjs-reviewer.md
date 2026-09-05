@@ -104,7 +104,7 @@ route-table ground-truth note in the Reference section below.
 
 ## Output Format
 
-Per-issue template and the closing Review Summary/Verdict table template preloaded via
+Per-issue template and the closing Review Summary/Verdict table template in
 the Reference section below. Always include the
 file path and line number. Quote the offending snippet when it improves clarity.
 

@@ -1,7 +1,7 @@
 # Branching model
 
 Single branch: `develop` only. No feature branches. Commit direct; *when* to push follows the
-operator's confirm-before-push policy (`~/.claude/CLAUDE.md`, Background Session Git Discipline).
+operator's confirm-before-push policy (`~/.claude/CLAUDE.md`, `# Git`).
 
 Nothing enforces the single-branch rule computationally. The former `git worktree add -b` deny
 was removed in the v1.0.0 rebuild; `claude --worktree` and `/branch` never routed through it
@@ -25,5 +25,5 @@ for isolation:
 - **A scratch dir that reappears after cleanup belongs to another session.** Leave it alone.
 - **`/rewind` can revert another session's work.** Check `git status` before trusting it in a
   shared tree; recover through git if it did.
-- **Subagents never stash, reset, or checkout** (`gate:bash:subagent-git-guard` denies it) and
+- **Subagents never stash, reset, or clean** (`gate:bash:subagent-git-guard` denies it) and
   verify `git diff --cached --name-only` before committing.

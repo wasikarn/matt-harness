@@ -170,7 +170,7 @@ gets a one-sentence summary with the detail section omitted entirely, not manufa
 
 Before writing a single `tl;dr:` line, resolve Phase 2's question: one throughline, or several — a
 fork taken before the template starts, not a footnote applied after. Full single- and
-several-throughline templates (`tl;dr`/`summary`/`detail`/`flagged_ambiguity`) preloaded via
+several-throughline templates (`tl;dr`/`summary`/`detail`/`flagged_ambiguity`) in
 the Reference section below.
 
 ## Guardrails
