@@ -47,6 +47,26 @@ if staged docs/METHODOLOGY.md | /usr/bin/grep -q .; then
   [ "$n" -le 4096 ] || { echo "pre-commit: docs/METHODOLOGY.md is ${n}B, cap 4096" >&2; fail=1; }
 fi
 
+# 5b. gate canary: every staged gate must still ALLOW a benign payload with no
+# traceback. A NameError/apostrophe/import slip in a gate blocks every Bash call
+# machine-wide (2026-09-05 incident), so catch it before it is committed.
+if staged 'hooks/gates/*' | /usr/bin/grep -q .; then
+  for g in hooks/gates/*.sh; do
+    for p in '{"tool_name":"Bash","tool_input":{"command":"ls -la"}}' \
+             '{"tool_name":"Bash","agent_id":"canary","tool_input":{"command":"git status"}}' \
+             '{"tool_name":"Edit","tool_input":{"file_path":"src/app.ts","old_string":"a","new_string":"b"}}' \
+             '{"tool_name":"Write","tool_input":{"file_path":"src/app.ts","content":"x"}}' \
+             '{"tool_name":"TaskUpdate","tool_input":{"taskId":"1","status":"in_progress"}}'; do
+      err=$(printf '%s' "$p" | bash "$g" 2>&1 >/dev/null); rc=$?
+      if [ "$rc" -ne 0 ] || printf '%s' "$err" | /usr/bin/grep -qiE 'Traceback|internal error|Error:'; then
+        echo "pre-commit: gate canary failed: $g rc=$rc on $p" >&2
+        printf '%s\n' "$err" | head -5 >&2
+        fail=1
+      fi
+    done
+  done
+fi
+
 # 6. harness-audit: zero CRITICAL
 AUDIT="skills/meta/harness-audit/scripts/audit.sh"
 if [ -f "$AUDIT" ]; then
