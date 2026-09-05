@@ -20,7 +20,7 @@ cache version changes; no check parses it. Full reasoning: `docs/plans/codex-pai
 ## Gate gap
 
 `/codex:rescue` edits files through the Codex app-server, not through Claude Code's tool-call
-pipeline — none of mh's five gates (`gate:bash:irrecoverable`, `gate:bash:subagent-git-guard`,
+pipeline — none of mh's other gates (`gate:bash:irrecoverable`, `gate:bash:subagent-git-guard`,
 `gate:task:complete-separation`, `gate:write:test-integrity`, `gate:write:config-guard`) see
 those writes. **This repo's own git hooks (`git-hooks/pre-commit`, `pre-push`) are the
 vendor-agnostic floor**: whatever wrote a file, the same lint, harness-audit, and gauntlet run

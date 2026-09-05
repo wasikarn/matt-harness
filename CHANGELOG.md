@@ -5,6 +5,20 @@ All notable changes to `mh` are documented here. Format loosely follows
 
 Pre-`1.0.0`: breaking changes may land in any `0.x` release.
 
+## [1.1.6] — 2026-09-06
+
+### Added
+
+- `AGENTS.md`: the drop-in doctrine pointer `docs/reference/codex-integration-map.md` already
+  documented for other repos, adopted here too so Codex reads it while working in this repo.
+
+### Fixed
+
+- check 70's allowlist covers `AGENTS.md` (new top-level file, same treatment as `CONTEXT.md`).
+- `codex-integration-map.md`'s Gate gap section said "mh's five gates" — stale since
+  `gate:skill:codex-setup-guard` shipped as the sixth in 1.1.5; now "mh's other gates" so it
+  won't drift on the next one either.
+
 ## [1.1.5] — 2026-09-06
 
 Pairs `codex@openai-codex` alongside mh as a second, independent coding agent — installed

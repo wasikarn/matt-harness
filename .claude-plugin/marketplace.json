@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "mh",
-      "version": "1.1.5",
+      "version": "1.1.6",
       "source": ".",
       "description": "A Matt-Pocock-first Claude Code harness. Six computational deny/ask gates (irrecoverable commands, subagent git guard, task-complete separation, test integrity, config-write guard, codex-setup guard), SessionStart injection of a 4 KB METHODOLOGY, and memory-lint for the auto-memory store. Composes mattpocock-skills instead of duplicating it.",
       "author": {
