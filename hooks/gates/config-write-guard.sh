@@ -55,6 +55,21 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 0
 fi
 
+# Corrupted/partial plugin install (deep-audit follow-up to #146, same fix
+# shape as verifier-protect.sh/merge-door.sh): this gate's embedded python
+# does `from _hook_output import emit_ask`, resolved from this gate's
+# sibling lib/ dir (passed as argv[1] below). A missing lib module raises
+# ModuleNotFoundError -> exit 1 (confirmed live), a nonzero non-2 exit that
+# hooks/dispatch-pretooluse.py's own dispatch contract treats as
+# non-blocking -- the gated settings write proceeds regardless, i.e. this
+# tamper-resistance gate fails OPEN. Emit the same ask-JSON shape
+# emit_ask() would produce instead of letting the traceback exit nonzero.
+_lib="$(dirname "$0")/lib"
+if [ ! -r "$_lib/_hook_output.py" ]; then
+  printf '%s\n' '{"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": "ask", "permissionDecisionReason": "config-write-guard: required module lib/_hook_output.py is missing or unreadable -- failing safe, approve manually or investigate the plugin install."}}'
+  exit 0
+fi
+
 python3 -c '
 import sys, json, os
 sys.path.insert(0, sys.argv[1])
@@ -160,4 +175,4 @@ try:
     )
 except Exception:
     sys.exit(0)
-' "$(dirname "$0")/lib"
+' "$_lib"
