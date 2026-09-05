@@ -6,8 +6,7 @@ pattern-match against. Prose guidance, not a gate; the mechanical checks are nam
 ## 1. Tool scoping: explicit allowlist, least privilege
 
 Every agent declares `tools:` as an explicit allowlist (`harness-audit` check 09, CRIT when
-missing). Read-only reviewers and analysts (`security-reviewer`, `typescript-reviewer`,
-`nextjs-reviewer`, `backend-architect`, `code-architect`, `blind-spot-hunter`,
+missing). Read-only reviewers and analysts (`nextjs-reviewer`, `backend-architect`, `code-architect`, `blind-spot-hunter`,
 `silent-failure-hunter`, `requirement-analyst`, `summarizer`) get `Read`, `Grep`, `Glob`, and
 usually `Bash` for `git log`/`git diff` inspection (read-only by discipline, not by tool grant);
 never `Write`/`Edit` (check 32). Mutating implementers
@@ -76,10 +75,8 @@ vocabulary fixed at authoring time prevents that.
 
 ## Preloads
 
-`skills:` frontmatter preloads a support skill the agent has no `Skill` tool to reach. Current
-pairs, each CRIT-guarded by check 49: blind-spot-hunter, nextjs-reviewer, performance-optimizer,
-plan-reviewer, requirement-analyst, security-reviewer, summarizer. A preloaded skill carries the
-same `effort:` as its host agent.
+Reference material an agent needs lives in the agent file itself (a trailing `# Reference` section);
+the plugin ships no preload-only skills.
 
 ## Checklist for a new agent
 

@@ -6,7 +6,7 @@ Three ideas hold the plugin up. Everything else is a consequence.
 
 A hook can deny a tool call before it runs. That is the only place a rule is a guarantee
 instead of a hope, so the deny list is kept small and literal: the set of actions no later
-step can undo. `hooks/pretooluse-table.json` is the whole list:
+step can undo. the PreToolUse entries in `hooks/hooks.json` are the whole list:
 
 | gate | denies or asks |
 |---|---|

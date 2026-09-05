@@ -52,7 +52,7 @@ message. Detail: `docs/reference/branching-model.md`.
 
 Ships as `mh@wasikarn`; Claude Code loads it from `~/.claude/plugins/cache/<marketplace>/mh/<version>/`
 at startup, nothing symlinked. Operating model: deny the irrecoverable set computationally
-(`hooks/pretooluse-table.json`), the maker never grades its own work, score not feel. Detail:
+(PreToolUse entries in `hooks/hooks.json`), the maker never grades its own work, score not feel. Detail:
 `docs/reference/operating-model.md`. Env vars: `docs/reference/env-vars.md`.
 
 ## Non-obvious gotchas

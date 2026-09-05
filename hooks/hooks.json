@@ -37,14 +37,62 @@
     ],
     "PreToolUse": [
       {
-        "id": "gate:pretooluse-dispatch",
-        "matcher": "*",
-        "description": "Single PreToolUse entry point: fans out in parallel to every gate in hooks/pretooluse-table.json whose matcher matches, merges per Claude Code precedence (deny > defer > ask > allow). A gate that exceeds 8s is killed and counted as allow.",
+        "id": "gate:bash:irrecoverable",
+        "matcher": "Bash",
+        "description": "Deny irrecoverable Bash patterns (rm -rf, find -delete, --no-verify, hooksPath, push --force, reset --hard, clean -f, checkout/restore discards, switch --force, branch -D, stash drop/clear, commit --amend, git add -A/. outside a merge, dd to a device, SQL DROP/TRUNCATE) and a subagent spawning a nested claude -p/--print/--agent/--bg/--worktree session.",
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/dispatch-pretooluse.sh\"",
-            "timeout": 10
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/irrecoverable.sh\"",
+            "timeout": 8
+          }
+        ]
+      },
+      {
+        "id": "gate:bash:subagent-git-guard",
+        "matcher": "Bash",
+        "description": "Deny (subagent only): git stash (except list/show), reset, clean -- no repo-wide git inside a concurrent wave.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/subagent-git-guard.sh\"",
+            "timeout": 8
+          }
+        ]
+      },
+      {
+        "id": "gate:task:complete-separation",
+        "matcher": "TaskUpdate",
+        "description": "Deny (subagent only): a subagent may not mark its own task completed; only the main session completes tasks.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/task-complete-separation.sh\"",
+            "timeout": 8
+          }
+        ]
+      },
+      {
+        "id": "gate:write:test-integrity",
+        "matcher": "Write|Edit|MultiEdit",
+        "description": "Ask when an edit to an existing test-shaped path removes an assertion line or adds a skip/disable marker.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/test-integrity.sh\"",
+            "timeout": 8
+          }
+        ]
+      },
+      {
+        "id": "gate:write:config-guard",
+        "matcher": "Write|Edit",
+        "description": "Ask before creating a Claude Code settings file, or editing an existing one's hooks / enabledPlugins keys.",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/config-write-guard.sh\"",
+            "timeout": 8
           }
         ]
       }

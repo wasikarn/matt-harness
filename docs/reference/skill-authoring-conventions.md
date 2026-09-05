@@ -50,5 +50,5 @@ independent re-check step. A skill an agent preloads carries the same effort as 
 (`qmd:query`, not `query`). A reference file must not carry `description:` frontmatter, or
 Claude Code loads it as its own skill (check 42).
 
-**Size cap** (check 55): a `SKILL.md` or agent body over 200 lines WARNs. Move detail into a
-reference file linked from the entrypoint rather than growing the entrypoint.
+**Size:** keep a `SKILL.md` under 500 lines (Anthropic's cap); an agent file may carry its own trailing
+`# Reference` section instead of a preload skill.

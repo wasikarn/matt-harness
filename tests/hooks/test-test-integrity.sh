@@ -205,7 +205,7 @@ echo "=== missing lib/_hook_output.py (corrupted/partial plugin install, deep-au
 # This gate's embedded python does `from _hook_output import emit_ask`,
 # resolved from this gate's sibling lib/ dir. A missing lib module raises
 # ModuleNotFoundError -> exit 1, a nonzero non-2 exit that
-# hooks/dispatch-pretooluse.py's own contract treats as non-blocking --
+# Claude Code's hook contract treats as non-blocking --
 # the gated edit proceeds regardless, i.e. this gate fails OPEN. Simulate
 # by copying ONLY the .sh + an empty lib/ into an isolated scratch dir
 # (never touch the real repo files).

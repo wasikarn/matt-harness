@@ -19,36 +19,27 @@ The tracker appends JSON rows to `~/.local/share/kbg/metrics/costs.jsonl` — on
 `model_scoped: true`; each row re-derives cumulative totals from the full transcript
 (stateless). Row schema:
 
-`{ timestamp, session_id, transcript_path, model, model_scoped, dedup_usage, usage_pick, stream, agent_type, role, turns, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cache_read_per_turn, returns, verify_tokens, verify_cache_read, verify_per_return, rate_verified, estimated_cost_usd }`
+`{ timestamp, session_id, transcript_path, model, model_scoped, dedup_usage, usage_pick, stream, agent_type, turns, input_tokens, output_tokens, cache_write_tokens, cache_read_tokens, cache_read_per_turn, rate_verified, estimated_cost_usd }`
 
-`role` (2026-09-03+) is the spawn brief's `[role: …]` tag read from the subagent's first
-message — `builder|validator|fixer|re-validator|research|other`, `unknown` when the brief
-carried no tag, `null` on orchestrator rows.
+`stream` is `orchestrator` (the main transcript) or `subagent` (each `subagents/agent-*.jsonl`);
+`agent_type` is the Agent tool's `subagent_type` from the sibling `.meta.json`, `unknown` when
+missing, `null` on orchestrator rows. Older rows may carry extra fields from retired schemas;
+the report ignores unknown keys.
 
 `dedup_usage: true` (2026-09-04+) marks rows that count each API response once by
 `message.id`; rows without it counted one JSONL line per content block and run ~2.4x high on
-`turns`, tokens, and `verify_*`. `usage_pick: "last"` (v0.68.641+) marks rows that keep the
-last line per id (the final `output_tokens`); `dedup_usage` rows without it kept the first
-line and run ~39% low on `output_tokens`. Neither era is rewritten — see
-`references/schema-history.md`.
-
-`returns` / `verify_tokens` / `verify_cache_read` / `verify_per_return` (2026-09-04+) price
-the third handoff cost: main's own tokens from a subagent's return (`<task-notification>`)
-to the next Agent dispatch or the next human prompt. `verify_tokens` = input + cache_write +
-output summed over those windows (`null` when the row has no return); `verify_cache_read` is
-the rent re-read in them; `verify_per_return` lists each window. On the orchestrator row they
-cover every notification window in the session; Σ subagent rows can be smaller (task-ids
-with no subagent file, non-Claude subagent rows dropped).
+`turns` and tokens. `usage_pick: "last"` (v0.68.641+) marks rows that keep the last line per
+id (the final `output_tokens`); `dedup_usage` rows without it kept the first line and run
+~39% low on `output_tokens`. Neither era is rewritten; the report prints a note instead.
 
 **Aggregation rule (the part that must not regress):** for each session with any
 `model_scoped` row, take the latest row per (`session_id`, `stream`, `model`,
-`agent_type`, `role`) key and sum across keys — a streamless legacy row counts as
+`agent_type`) key and sum across keys — a streamless legacy row counts as
 `stream: "orchestrator"`, not a fourth bucket. A session with no `model_scoped` rows falls
 back to the single latest row by `session_id`. Every element of that key exists because
-dropping it double-counted or silently dropped real spend — the incident history, the legacy
-row format, the claude-only filter, the `cache_read_per_turn` rent-meter rationale, and the
-local-timezone bucketing caveat live in `references/schema-history.md`; read it before
-changing the key, the schema, or the tracker.
+dropping it double-counted real spend (a streamless legacy row plus a same-model
+orchestrator row overcounted one session by $8.07, 2026-08-07); the tests in
+`tests/skills/test-cost-report.sh` pin each element. Days bucket by local calendar day, not UTC.
 
 Two standing caveats when reading totals: `rate_verified: false` rows are priced at a
 Sonnet-rate guess (the `(rate unverified)` tag is the only signal — totals are "correctly
@@ -85,12 +76,7 @@ node "${MH_PLUGIN_ROOT}/scripts/workflows/cost-report-dedup.js" csv
    row for untyped subagent rows; a `tok` column (input+output tokens) sits next to cost
    so ranking still works when `rate_verified` is false. Omitted entirely when no row
    carries `stream: subagent` (all data predates 2026-08-07).
-5. By role: subagent spend ranked by the brief's `role` tag (`(untagged)` for pre-2026-09-03
-   rows, `unknown` for briefs that carried no tag). Same omission rule as By agent type.
-6. Handoff cost: returns per orchestrator turn, then verify tokens per return (median, p90,
-   count) for all roles and per role. Rows without `verify_per_return` (pre-2026-09-04) are
-   skipped; the section is omitted when none carry it.
-7. Last seven days: date and cost.
+5. Last seven days: date and cost.
 
 Rely on the precomputed `estimated_cost_usd` values written by the tracker; do
 not re-estimate pricing from raw tokens here.

@@ -61,7 +61,7 @@ fi
 # does `from _hook_output import emit_ask`, resolved from this gate's
 # sibling lib/ dir (passed as argv[1] below). A missing lib module raises
 # ModuleNotFoundError -> exit 1 (confirmed live), a nonzero non-2 exit that
-# hooks/dispatch-pretooluse.py's own dispatch contract treats as
+# Claude Code's hook contract treats as
 # non-blocking -- the gated edit proceeds regardless, i.e. this
 # tamper-resistance gate fails OPEN. Emit the same ask-JSON shape
 # emit_ask() would produce instead of letting the traceback exit nonzero.

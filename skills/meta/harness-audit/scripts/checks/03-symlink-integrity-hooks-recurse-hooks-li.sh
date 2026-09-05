@@ -35,9 +35,7 @@ if [ "$HOOKS_LOADABILITY_UNVERIFIABLE" -eq 0 ] && [ -d "$CLAUDE_DIR/hooks" ]; th
     # not symlink-farm — see #2/#3b for the equivalent pattern on skills/agents/…).
     if grep -q "$name" "$CLAUDE_DIR/hooks/hooks.json" 2>/dev/null \
        && ! grep -q "$name" "$SETTINGS" 2>/dev/null; then continue; fi
-    # Transitive wiring: a hook may be invoked through a dispatcher hooks.json
-    # names (dispatch-pretooluse.sh + pretooluse-table.json). See
-    # hook_wired_transitively() in audit.sh, shared with check 11.
+    # Transitive wiring: see hook_wired_transitively() in audit.sh, shared with check 11.
     hook_wired_transitively "$name" && continue
     if is_plugin_delivered hooks "$name"; then continue; fi
     if [ ! -L "$HOME/.claude/hooks/$name" ]; then

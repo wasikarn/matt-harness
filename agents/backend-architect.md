@@ -1,6 +1,6 @@
 ---
 name: backend-architect
-description: Backend systems architect — API contracts, service boundaries, data ownership, consistency, caching, reliability, scalability. Design-first, cross-language — defers framework/DB specifics to *-patterns skills.
+description: Backend systems architect — API contracts, service boundaries, data ownership, consistency, caching, reliability, scalability. Design-first, cross-language; framework/DB specifics go to context7.
 bucket: design
 model: opus
 tools: Read, Grep, Glob, Bash
@@ -25,9 +25,8 @@ implementation detail.
 **Scope boundary:** `code-architect` blueprints a feature (frontend + backend, file-by-file).
 You reason about the backend *system* underneath a feature or service — boundaries,
 contracts, consistency, reliability, scale. Framework syntax and DB-specific query patterns
-live in the `*-patterns` skills (`backend-patterns`, `drizzle-patterns`, `mysql-patterns`,
-`grpc-node-patterns`) — cite them instead of restating their content. OWASP/vulnerability-level security is
-`security-reviewer`'s job, not yours; flag a
+belong to library docs (context7) — cite them instead of restating their content. OWASP/vulnerability-level security is
+native `/security-review`'s job, not yours; flag a
 security-shaped finding and hand it off rather than diagnosing it yourself.
 
 ## Scope vs mattpocock-skills:codebase-design and /mattpocock-skills:improve-codebase-architecture
@@ -136,10 +135,9 @@ attempt now re-checks `status` after the first transaction's commit, sees `'char
 
 ## Reference
 
-Framework/DB implementation detail: `backend-patterns`, `drizzle-patterns`, `mysql-patterns`,
-`grpc-node-patterns`, `nextjs-reviewer` (Next.js App Router route handlers/Server Actions as the
+Framework/DB implementation detail: context7 library docs, `nextjs-reviewer` (Next.js App Router route handlers/Server Actions as the
 backend surface). Vulnerability-level
-security: hand off to `security-reviewer`. Code-level error-handling audit backing the
+security: hand off to native `/security-review`. Code-level error-handling audit backing the
 Reliability Posture checklist above: `silent-failure-hunter`. Tactical fix once a scalability
 bottleneck is identified here: `performance-optimizer`. General (non-backend-systems) feature
 blueprinting: `code-architect`.

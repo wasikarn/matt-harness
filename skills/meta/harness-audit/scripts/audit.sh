@@ -38,8 +38,6 @@ _LIB="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../../../scripts/_lib"
 . "$_LIB/frontmatter-helpers.sh"
 # shellcheck source=../../../../scripts/_lib/err.sh
 . "$_LIB/err.sh"
-# shellcheck source=../../../../scripts/_lib/mattpocock-root.sh
-. "$_LIB/mattpocock-root.sh"
 
 if [ ! -d "$CLAUDE_DIR/agents" ] && [ ! -d "$CLAUDE_DIR/skills" ] && \
    [ ! -d "$CLAUDE_DIR/hooks" ]; then
@@ -117,38 +115,11 @@ is_plugin_delivered() {
   esac
 }
 
-# hook_wired_via_pretooluse_table <basename>: true if hooks/pretooluse-table.json
-# names the script directly, or a table script's (comment-stripped) source does.
-hook_wired_via_pretooluse_table() {
-  local name="$1" table="$CLAUDE_DIR/hooks/pretooluse-table.json" script_rel ref_file
-  [ -f "$table" ] || return 1
-  local scripts
-  if command -v jq >/dev/null 2>&1; then
-    scripts=$(jq -r '.[].script // empty' "$table" 2>/dev/null | sort -u)
-  else
-    scripts=$(grep -oE '"script"[[:space:]]*:[[:space:]]*"[^"]+"' "$table" 2>/dev/null \
-      | sed -E 's/.*"([^"]+)"$/\1/' | sort -u)
-  fi
-  [ -n "$scripts" ] || return 1
-  while IFS= read -r script_rel; do
-    [ -n "$script_rel" ] || continue
-    ref_file="$CLAUDE_DIR/$script_rel"
-    # Must resolve to a REAL file with this basename; a typo'd dir must not count.
-    if [ -f "$ref_file" ] && [ "$(basename "$ref_file")" = "$name" ]; then
-      return 0
-    fi
-    [ -f "$ref_file" ] || continue
-    sed 's/#.*$//' "$ref_file" 2>/dev/null | grep -qF "$name" && return 0
-  done <<< "$scripts"
-  return 1
-}
-
 # hook_wired_transitively <basename>: true if a script hooks.json names invokes
 # <basename> (comment text stripped so a prose mention does not count). Shared by
 # checks 03 and 11.
 hook_wired_transitively() {
   local name="$1" hooks_json="$CLAUDE_DIR/hooks/hooks.json" ref_file
-  hook_wired_via_pretooluse_table "$name" && return 0
   if command -v jq >/dev/null 2>&1; then
     while IFS= read -r ref_file; do
       [ -n "$ref_file" ] && [ -f "$ref_file" ] || continue
@@ -244,7 +215,7 @@ _n_files=${#_checks[@]}
 _n_total=$(printf '%s\n' "$_all_ids" | grep -c .)
 _n_uniq=$(printf '%s\n' "$_all_ids" | sort -u | grep -c .)
 _uniq_ids=$(printf '%s\n' "$_all_ids" | uniq | tr '\n' ' ')
-_exp_ids="2 3 4 5 7 8 9 10 11 17 18 19 20 21 22 23 24 25 28 29 32 33 35 41 42 43 49 51 54 55 "
+_exp_ids="2 3 4 5 7 8 9 10 11 17 18 19 20 21 22 23 24 25 28 29 32 33 35 41 42 43 54 "
 [ "$_n_files" = "$_n_total" ] || err_die "audit: check-fragment header mismatch: $_n_files files sourced but $_n_total '# N.' headers (fail-closed)"
 [ "$_n_total" = "$_n_uniq" ] || err_die "audit: duplicate check-fragment number (total=$_n_total unique=$_n_uniq) (fail-closed)"
 [ "$_uniq_ids" = "$_exp_ids" ] || err_die "audit: check-fragment set [$_uniq_ids] != expected [$_exp_ids]; a fragment was lost or a gap appeared (fail-closed)"

@@ -5,7 +5,7 @@ installed plugins (`mattpocock-skills`, `ponytail`, `diagram-design`, `qmd`) can
 a short set of deny gates, a 4 KB methodology injected at session start, and a few
 skills and agents that earned their place.
 
-## What it enforces (5 gates, `hooks/pretooluse-table.json`)
+## What it enforces (5 gates, `hooks/hooks.json`)
 
 | gate | effect |
 |---|---|
@@ -15,9 +15,9 @@ skills and agents that earned their place.
 | `gate:write:test-integrity` | asks before a write that weakens a test |
 | `gate:write:config-guard` | asks before a write to Claude Code settings `hooks`/`enabledPlugins` |
 
-One PreToolUse entry (`hooks/dispatch-pretooluse.sh`) fans out to every matching gate in
-parallel and merges by Claude Code precedence (deny > ask > allow). A gate that exceeds 8 s is
-killed and counted as allow, journaled.
+Each gate is its own PreToolUse entry with an 8 s timeout; Claude Code runs matching hooks in
+parallel and merges deny > ask > allow (verified empirically 2026-09-05). A timed-out gate does not
+block.
 
 ## What it injects
 
@@ -28,12 +28,12 @@ validator for a dispatched builder's multi-file work, `NEEDS-DECISION` instead o
 
 ## What it ships
 
-- **Skills:** `mh:harness-audit` (30 structural checks), `mh:memory-lint`, `mh:cost-report`,
-  `mh:deep-audit`, `mh:ideate`, `mh:post-mortem`, `mh:tech-humanize`, 6 stack pattern references
-  (backend, frontend, TypeScript, Drizzle, MySQL, gRPC), 7 agent-support preloads.
-- **Agents (12):** backend-architect, blind-spot-hunter, code-architect, ideate-critic,
-  nextjs-reviewer, performance-optimizer, plan-reviewer, requirement-analyst, security-reviewer,
-  silent-failure-hunter, summarizer, typescript-reviewer. Reviewers are read-only and never
+- **Skills:** `mh:harness-audit` (27 structural checks), `mh:memory-lint`, `mh:cost-report`,
+  `mh:deep-audit`, `mh:ideate`, `mh:post-mortem`, `mh:tech-humanize`.
+- **Agents (10):** backend-architect, blind-spot-hunter, code-architect, ideate-critic,
+  nextjs-reviewer, performance-optimizer, plan-reviewer, requirement-analyst,
+  silent-failure-hunter, summarizer. Generic TS review and security review go to
+  `mattpocock-skills:code-review` and native `/security-review`. Reviewers are read-only and never
   grant `Agent`.
 - **Stop hooks:** `cost-tracker.sh` (per-session token cost to `~/.local/share/kbg/metrics/costs.jsonl`),
   `memory-audit-commit.sh` (commits a git-backed memory store, opt-in).
@@ -44,7 +44,7 @@ validator for a dispatched builder's multi-file work, `NEEDS-DECISION` instead o
 |---|---|
 | 1 Task contract | `docs/reference/spawn-brief.md` + the `NEEDS-DECISION` sentinel |
 | 2 Context compiler | `docs/METHODOLOGY.md` (4 KB map, size gated in pre-commit) + `CLAUDE.md` |
-| 3 Tool gateway | `hooks/pretooluse-table.json` + `hooks/dispatch-pretooluse.py` (deny > ask > allow; table load failure = deny; a gate timeout = allow) |
+| 3 Tool gateway | `hooks/hooks.json` PreToolUse entries, one per gate script in `hooks/gates/` (native deny > ask > allow; a gate timeout = allow) |
 | 4 Durable state | native auto-memory owns it; mh adds `skills/meta/memory-lint` + `costs.jsonl` |
 | 5 Evidence gate | `scripts/run-gauntlet.sh` + `skills/meta/harness-audit` + gates `test-integrity` and `task-complete-separation` (maker never grades own work) |
 | 6 Trace + recovery | `hooks/stop/cost-tracker.sh` + `skills/workflow/post-mortem` |

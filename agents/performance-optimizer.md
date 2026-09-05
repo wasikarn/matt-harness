@@ -4,8 +4,6 @@ description: Fixes measured bottlenecks, bundle size, memory leaks, render churn
 bucket: build
 tools: Read, Write, Edit, Bash, Grep, Glob
 model: sonnet
-skills:
-  - mh:performance-optimizer-algorithms
 effort: high
 ---
 
@@ -28,8 +26,7 @@ calls, caching), and memory management (leak detection, cleanup).
 
 Only run an `npx`-based command — every one below, bundle-analysis tools and Lighthouse
 alike — when it's already an installed dependency (check `package.json`/`node_modules`
-first). Verified live on `security-reviewer`'s and two since-deleted agents' equivalent
-`npx` steps: on an uninstalled package, `npx` silently
+first). Verified live on three since-deleted agents' equivalent `npx` steps: on an uninstalled package, `npx` silently
 fetches it from the registry into the npm cache before running — a real network fetch and
 disk write nobody asked for, and this agent also holds `Write`/`Edit`. "Conventionally run
 via `npx` without a local install" doesn't change that — the fetch-before-fail happens
@@ -81,7 +78,7 @@ npx lighthouse https://your-app.com --only-categories=performance
 ### 2. Algorithmic Analysis
 
 Full 14-row pattern → complexity → better-alternative table (plus the hidden-constants
-caveat) preloaded via `mh:performance-optimizer-algorithms` (see `skills:` frontmatter).
+caveat) in the Reference section below.
 
 ### 3. React Performance Checklist
 
@@ -183,3 +180,30 @@ applies the fixes (holds Write/Edit). "Audit performance" / "optimize this" → 
   with different iteration order, a cache with a TTL that can now serve stale data, a shallow
   copy replacing a deep clone — cannot be called safe without tests to catch a regression,
   no matter how convincing the manual reasoning looks.
+
+---
+
+# Reference (inlined; formerly a preloaded skill)
+
+## Performance Optimizer — Algorithmic Analysis Reference
+
+#### Algorithmic Analysis
+
+| Pattern | Complexity | Better Alternative |
+|---------|------------|-------------------|
+| Nested loops on same data | O(n²) | Use Map/Set for O(1) lookups |
+| Repeated array searches | O(n) per search | Convert to Map for O(1) |
+| Sorting inside loop | O(n² log n) | Sort once outside loop |
+| String concatenation in loop | O(n²) | Use array.join() |
+| Deep cloning large objects | O(n) each time | `immer`'s `produce()` (structural sharing, still safe for nested mutation) — **not** a plain shallow copy (`{...obj}`/`Object.assign`), which only copies top-level keys. Verified live: `const copy = {...original}; copy.user.prefs.theme = 'light'` also mutates `original.user.prefs.theme`, because `copy.user` is the same nested object reference, not a new one. Shallow copy is only a safe substitute when nothing downstream mutates a nested field — check that before recommending it as the fix. |
+| Recursion without memoization | O(2^n) | Add memoization (top-down — still recurses, can stack-overflow on large/unbounded n) or tabulation (bottom-up — iterative, no recursion-depth risk; prefer it once n isn't small and bounded) — dynamic programming |
+| Brute-force pairwise interval-overlap check (booking/calendar conflicts, merging time ranges) | O(n²) | Sort by start time, then linear sweep-merge — O(n log n) |
+| Repeated linear scan for existence/lookup on sorted data | O(n) per search | Binary search — O(log n) |
+| Brute-force substring/pattern search | O(n·m) | KMP — O(n+m) guaranteed; Rabin-Karp — O(n+m) average, still O(n·m) worst case on hash collisions |
+| Re-sorting or full rescan to get current min/max after each update | O(n log n) per update | Heap/priority queue — O(log n) push/pop |
+| Brute-force contiguous subarray/substring scan | O(n·k) | Sliding window (subtract-leaving, add-entering) — O(n) |
+| Brute-force pair search on sorted array | O(n²) | Two pointers (opposite-ends) — O(n) |
+| Brute-force triplet search (e.g. 3-sum) on sorted array | O(n³) | Sort + two pointers per outer iteration — O(n²), not O(n) — 3-sum doesn't collapse to linear |
+| Exhaustive enumeration with no early exit (permutations/subsets/constraint search) | O(branching^depth) | Backtracking — same worst case, prunes invalid branches before completing them |
+
+**Hidden constants matter — don't flag on asymptotics alone.** Insertion sort beats mergesort below ~30 elements; a Fibonacci heap has better asymptotic decrease-key than a binary heap but usually loses in practice on constants. Same rule as the bundle/LCP budgets above: benchmark before recommending a swap on a hot path with small or bounded n. Also count the recursion stack in space analysis — a solution that recurses n deep is O(n) space, not O(1), even with no explicit array.

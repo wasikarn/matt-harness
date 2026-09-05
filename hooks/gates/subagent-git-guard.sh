@@ -1,80 +1,13 @@
 #!/usr/bin/env bash
-# Gate: a subagent may not run a repo-wide-mutating git subcommand via Bash
-# -- only the main session may, and only because nothing else is writing in
-# the shared tree. Reads the PreToolUse JSON payload from stdin; exits 2 to
-# block.
-#
-# Why: issue #135 (2026-09-04) recorded two real incidents in one session on
-# a shared working tree -- a dispatched builder swept a peer session's
-# CLAUDE.md into commit 6603c384, and a separate dispatched subagent ran
-# `git stash` / `git stash pop` over a peer's mid-edit files. Both are
-# exactly the "no repo-wide git inside a concurrent wave" rule
-# docs/METHODOLOGY.md Rule 13 states in prose -- until this gate, nothing
-# enforced it computationally, the same gap task-complete-separation.sh
-# closed for its own dispatch-only-from-main rule.
-#
-# Scope, checked against the LIVE content of hooks/gates/irrecoverable.sh
-# (read fresh 2026-09-04, mid-widen by a concurrent session -- re-read that
-# file directly rather than trusting exact conditions here if this drifts):
-# irrecoverable.sh ALREADY denies, unconditionally, for every session
-# (main included, not just subagents): `git reset --hard`; `git clean -f`
-# and bundled short-flag -f forms (-xf etc); `git checkout --` / `git
-# checkout .` / `git checkout -f` / `git checkout <tree-ish> <path>` (2+
-# non-flag args); and `git restore <pathspec>` whenever it targets the
-# worktree (default mode, or --worktree -- the destructive case; --staged
-# alone is deliberately allowed there as recoverable). This gate does NOT
-# re-implement any of those checks -- duplicating an existing unconditional
-# deny gains nothing and only adds a second place to keep in sync. What
-# irrecoverable.sh does NOT cover, for ANY session, is a bare/non-force
-# `git stash`, `git reset`, or `git clean` -- exactly the shapes that raced
-# in the issue #135 incident. Those three verbs are this gate's entire
-# scope, and only for subagents.
-#
-# Discriminant: `agent_id` present in the PreToolUse payload == an actual
-# subagent call (code.claude.com/docs/en/hooks, confirmed 2026-08-31); keyed
-# the same way as task-complete-separation.sh, for the same reason --
-# agent_type is ALSO set for a top-level `claude --agent <name>` MAIN
-# session, which legitimately needs every git subcommand this gate denies
-# (that over-block was a real bug caught in task-complete-separation.sh and
-# fixed there). The main
-# session (no agent_id) is untouched by this gate.
-#
-# Corrected 2026-09-04: an independent verifier live-probed the first
-# version and found two real gaps that were NOT the disclaimed non-goal
-# below -- `git -C /repo stash` (and -c/--git-dir/--work-tree/--config-env/
-# --no-pager/etc global flags, plus a `sudo`/`xargs` wrapper) walked past
-# the old adjacent-to-"git" subcommand check entirely, and the anchor only
-# matched absolute string offset 0 (no re.MULTILINE), so a `git reset` on
-# its own line inside a multi-line Bash command string was never anchored.
-# Both are now fixed: the anchor walks past a recognized git global flag
-# set and an optional leading sudo/xargs wrapper before checking the
-# subcommand verb (same technique irrecoverable.sh's own git global-flag
-# walk uses, adapted to this gate's regex shape), and the anchor runs with
-# re.MULTILINE so each line's own start anchors independently.
-#
-# The same pass also fixed a false positive: the anchor used to fire on
-# any `;`/`&`/`|`/`(` character regardless of whether it sat inside a
-# quoted argument, so `git commit -m "fix; git reset was wrong"` wrongly
-# denied on the quoted "git reset". The anchor search now runs against a
-# quote-masked copy of the command (single-quote spans literal,
-# double-quote spans backslash-escape-aware, same as real bash) -- a
-# separator character inside a quoted span is never a real anchor.
-#
-# Non-goal: still a coarse command-pattern match, not an adversarial
-# sandbox. What it does NOT attempt to defeat is deliberate
-# quote-splitting, variable indirection, or command-substitution
-# obfuscation of the literal word "git" itself (e.g. `g''it stash`,
-# `$(echo git) stash`) -- same non-goal irrecoverable.sh already carries
-# for "claude"/"rm"/etc. Ordinary global flags, a bare sudo/xargs
-# wrapper, and quoted-argument punctuation are NOT in that non-goal
-# anymore -- they're handled above. One more non-goal the re.MULTILINE fix
-# introduces: a heredoc BODY line that happens to start with "git
-# stash"/"reset"/"clean" as plain text (not a real shell command) now
-# anchors and denies too -- same over-block direction the anchor already
-# accepts for prose in general, not attempting to parse heredoc
-# boundaries. No env-var bypass -- this enforces the harness's own
-# concurrent-dispatch architecture, not a situational human judgment call,
-# same posture as task-complete-separation.sh.
+# Gate: a subagent (agent_id in the PreToolUse payload) may not run a bare
+# `git stash|reset|clean` -- repo-wide mutation races peers on a shared tree
+# (issue #135). Main session (no agent_id) is untouched; `claude --agent` main
+# sessions also lack agent_id, so agent_type is NOT the discriminant.
+# irrecoverable.sh already denies the destructive forms (reset --hard, clean -f,
+# checkout --, restore <path>) for every session; this gate only adds the three
+# non-force verbs, for subagents. Coarse pattern match, not a sandbox: quote-
+# splitting or substitution of the word "git" itself is a non-goal, and a
+# heredoc BODY line starting with "git stash" over-blocks (no heredoc parsing).
 set -uo pipefail
 
 # Portability guard (#93): announced fail-open when python3 is missing.
@@ -90,8 +23,7 @@ import json, re, sys
 try:
     d = json.load(sys.stdin)
 except Exception as e:
-    # Fail-safe = ALLOW. A parse error must not stall every subagent Bash
-    # call -- same choice as task-complete-separation.sh.
+    # Fail-safe = ALLOW: a parse error must not stall every subagent Bash call.
     print(f"[mh:gate] subagent-git-guard: unparseable stdin, allowing ({e})", file=sys.stderr)
     sys.exit(0)
 
@@ -102,8 +34,7 @@ if not isinstance(d, dict):
 if d.get("tool_name") != "Bash":
     sys.exit(0)
 
-# agent_id is present ONLY when the hook fires inside a subagent call.
-# Absent => main session => untouched by this gate.
+# agent_id is present ONLY inside a subagent call.
 agent_id = d.get("agent_id")
 if not agent_id:
     sys.exit(0)
@@ -114,27 +45,19 @@ if not isinstance(cmd, str):
     sys.exit(0)
 
 def clip(s):
-    # Log-injection guard (same shape as the irrecoverable.py nested-spawn deny): strip
-    # non-printable bytes and cap length so a crafted command string cannot
-    # forge or erase a preceding "[mh:gate] ..." line.
+    # Log-injection guard: a crafted command cannot forge/erase a [mh:gate] line.
     s = re.sub(r"[^\x20-\x7e]", "?", str(s))
     return s[:120]
 
 agent_type = clip(d.get("agent_type") or "unknown")
 
-# Quote-aware masking (2026-09-04 fix): replace every character inside a
-# single- or double-quoted span, including the quote marks, with a
-# placeholder that cannot match a separator character, git, or a flag --
-# output is the same length as input, so every match position below still
-# lines up with the ORIGINAL cmd string for clip()/reporting. Single-quote
-# spans are literal; double-quote spans respect backslash-escaping, same
-# as real bash. Uses chr() for the quote characters rather than literal
-# ones, since this whole block sits inside a bash single-quoted python3 -c
-# wrapper.
-# ponytail: no handling for a backslash-escaped quote OUTSIDE a quoted
-# span (real bash lets a leading backslash make the next quote char
-# literal there too) -- no case in the test suite for this gate needs it;
-# add a one-char lookback if a real false positive/negative traces to it.
+# Quote-aware masking: every char inside a quoted span (quotes included) becomes
+# a placeholder that matches neither a separator, "git", nor a flag; output
+# length equals input so match positions still line up with cmd. Single-quote
+# spans are literal, double-quote spans honor backslash escapes, as in bash.
+# chr() for the quote chars: this block sits inside a bash single-quoted string.
+# ponytail: no handling for a backslash-escaped quote OUTSIDE a span; add a
+# one-char lookback if a real false positive/negative traces to it.
 _SQ = chr(39)
 _DQ = chr(34)
 
@@ -164,47 +87,26 @@ def _mask_quotes(s):
 
 masked = _mask_quotes(cmd)
 
-# Anchor: "git" must sit right at a real command-start position (string
-# start, |;&(, &&, ||, an optional VAR=val prefix chain, an optional
-# leading sudo/xargs wrapper, or a path like /usr/bin/git) -- same shape
-# as the irrecoverable.py _SPAWN_ANCHOR_RE, extended 2026-09-04 for two gaps
-# a verifier found: `sudo git stash` / `xargs git stash` used to slip
-# through with no anchor at all, and this now runs with re.MULTILINE so a
-# `git reset` at the start of its own line inside a multi-line Bash
-# command anchors too, not just absolute string offset 0. Runs against the
-# quote-masked string above, so a quote character sitting right before
-# "git", or a separator character sitting inside a quoted span, is never
-# itself an anchor: `grep -r "git reset" docs/`, `git commit -m "explain
-# git stash here"`, and `git commit -m "fix; git reset was wrong"` never
-# anchor a match on the quoted occurrence at all.
+# Anchor: "git" must sit at a real command-start (string/line start, |;&(, &&,
+# ||, optional VAR=val chain, optional sudo/xargs wrapper, or a /path/git).
+# re.MULTILINE so each line of a multi-line command anchors. Runs on the masked
+# string, so `git commit -m "fix; git reset was wrong"` never anchors inside
+# the quotes.
 _ANCHOR_RE = re.compile(
     r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*"
     r"(?:sudo\s+(?:\S+\s+)*|xargs\s+(?:\S+\s+)*)?(?:\S*/)?git\b",
     re.MULTILINE,
 )
-# Only the three verbs irrecoverable.sh does not already cover
-# unconditionally (see header comment): stash, reset, clean. Read-only
-# `stash list` / `stash show` are carved out. checkout and
-# restore are deliberately absent here -- irrecoverable.sh already denies
-# their destructive forms for every session, main included.
+# Only stash/reset/clean (see header); read-only `stash list|show` carved out.
 _DENY_SUBCMD_RE = re.compile(r"\A\s+(stash(?!\s+(list|show)\b)|reset|clean)\b")
 
-# Known git global flags this gate walks past before checking the
-# subcommand -- fixes the bypass a verifier found: `git -C /repo stash`,
-# `git --no-pager clean -d`, `git -c core.x=y reset`, and `git
-# --git-dir=.git stash` used to land the deny check on sub="-C" (etc)
-# instead of the real subcommand and silently miss it. Same technique
-# irrecoverable.sh already uses for its own git global-flag walk (see its
-# "Walk past leading global flags" comment), adapted here to a regex-tail
-# shape instead of full pre-tokenization.
+# Git global flags walked past before the subcommand check, so `git -C /repo
+# stash` / `git --no-pager clean` do not land the check on sub="-C".
 _GIT_VALUE_GLOBALS = ("-C", "-c", "--git-dir", "--work-tree", "--config-env")
 
 def _skip_git_globals(tail):
-    # tail starts right at the end of the "git" anchor match, on the
-    # quote-masked string, so a quoted flag value cannot desync the walk.
-    # Returns the suffix starting at the first non-flag token (the
-    # subcommand), leading whitespace intact so _DENY_SUBCMD_RE \A\s+
-    # still matches it.
+    # tail starts right after the "git" anchor on the masked string. Returns the
+    # suffix from the first non-flag token, leading whitespace intact for \A\s+.
     i = 0
     while True:
         m = re.match(r"\s+(\S+)", tail[i:])

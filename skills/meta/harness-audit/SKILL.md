@@ -7,7 +7,7 @@ effort: medium
 
 # Harness Audit
 
-Runs 30 structural checks over `agents/`, `skills/`, and `hooks/` and reports CRIT / WARN / INFO.
+Runs 27 structural checks over `agents/`, `skills/`, and `hooks/` and reports CRIT / WARN / INFO.
 Exit code = CRIT count; WARN and INFO never change it.
 
 ```bash
@@ -23,11 +23,10 @@ bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh" --only 25  # one check by number
 | Frontmatter | 04 agents (name, description, bucket enum), 05 skills (name, description, bucket dir, trigger clause), 28 strict YAML, 54 model + effort present |
 | Names | 07/08 name matches filename, 23 lowercase-hyphen format |
 | Agent tool grants | 09 explicit `tools:`, 10 no duplicates, 24 real tool tokens, 41 never `Agent`, 32 reviewers stay read-only |
-| Preloads | 25 `skills:` refs resolve, 49 reviewer preloads present (CRIT) |
+| Preloads | 25 `skills:` refs resolve |
 | Hooks | 11 no orphaned hook files, 22 hooks.json event / type / matcher validity, 33 `${CLAUDE_PLUGIN_ROOT}` not `CLAUDE_PLUGIN_DIR` |
 | Bundled files | 17 python compiles, 18 shell parses, 19 JSON parses |
 | Descriptions | 20 <= 1536 chars each, 29 no imperative injection words, 43 cumulative listing budget |
-| Size caps | 51 agent body, 55 LOC cap on auto-loaded surfaces |
 | Doc rot | 35 script pointers in prose resolve, 42 reference files carry no leaking frontmatter |
 
 Vendor-validated limits (1536-char descriptions, hook event set, model aliases, name format) are

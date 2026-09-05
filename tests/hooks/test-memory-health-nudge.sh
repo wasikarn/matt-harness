@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-# memory-health-nudge unit tests: focused on the --classify-unindexed wiring
-# added on top of the pre-existing detector-findings nudge. Isolates a fake
-# $HOME and a fake project cwd so real ~/.claude/projects state is never
-# touched; the hook derives its memory dir from `pwd -P` (physical path,
+# memory-health-nudge unit tests. Isolates a fake $HOME and a fake project
+# cwd so real ~/.claude/projects state is never touched; the hook derives its memory dir from `pwd -P` (physical path,
 # slashes -> dashes) the same way memory-lint.py's own memory_dir() does, so
 # fixtures must be planted at that exact computed path.
 # Run standalone: bash tests/hooks/test-memory-health-nudge.sh
@@ -25,18 +23,9 @@ PHYSPWD=$(cd "$PROJECT_DIR" && pwd -P)
 ENC="${PHYSPWD//\//-}"
 MEMDIR="$FAKE_HOME/.claude/projects/$ENC/memory"
 
-_git() { git -C "$MEMDIR" "$@" >/dev/null 2>&1; }
-
 init_memdir() {
   trash "$MEMDIR" 2>/dev/null || true
   mkdir -p "$MEMDIR"
-}
-
-init_git_repo() {
-  _git init -q
-  _git config user.email "test@example.com"
-  _git config user.name "Test"
-  _git config commit.gpgsign false
 }
 
 write_memory() {
@@ -96,7 +85,7 @@ assert_not_contains() {
 echo "=== memory-health-nudge hook (SessionStart) ==="
 echo ""
 
-echo "--- baseline behavior (unaffected by the classify-unindexed addition) ---"
+echo "--- baseline behavior ---"
 
 init_memdir
 # A lone unlinked memory trips the ORPHAN check by itself — cross-link two
@@ -123,88 +112,14 @@ printf '%s\n' \
   "- [topic-a](topic-a.md) — a fully indexed topic" \
   "- [topic-b](topic-b.md) — another fully indexed topic" > "$MEMDIR/MEMORY.md"
 OUT=$(run_hook)
-# topic-a/topic-b bodies carry no Why:/How-to-apply: fields, so this store
-# also has template-gap > 0 (feedback/project template compliance) — this
-# assertion doubles as coverage that template-gap alone never trips the gate.
-assert_not_contains "clean store (incl. template-gap-only) stays fully silent" "[memory-lint]" "$OUT"
+assert_not_contains "clean store stays fully silent" "[memory-lint]" "$OUT"
 
 trash "$FAKE_HOME/.claude/projects" 2>/dev/null || true
 OUT=$(run_hook)
 assert_not_contains "no memory dir at all stays silent" "[memory-lint]" "$OUT"
 
 echo ""
-echo "--- stale-only stays silent (staleness is permanent-by-design debt, same as template-gap) ---"
-
-init_memdir
-cat > "$MEMDIR/topic-a.md" <<'EOF'
----
-name: topic-a
-description: "a fully indexed topic"
-metadata:
-  type: project
----
-see [[topic-b]]
-EOF
-cat > "$MEMDIR/topic-b.md" <<'EOF'
----
-name: topic-b
-description: "another fully indexed topic"
-metadata:
-  type: project
----
-see [[topic-a]]
-EOF
-printf '%s\n' \
-  "- [topic-a](topic-a.md) — a fully indexed topic" \
-  "- [topic-b](topic-b.md) — another fully indexed topic" > "$MEMDIR/MEMORY.md"
-OLD=$(date -v-100d +%Y%m%d0000 2>/dev/null || date -d '100 days ago' +%Y%m%d0000)
-touch -t "$OLD" "$MEMDIR/topic-a.md"
-OUT=$(run_hook)
-assert_not_contains "0 findings + 1 stale (>90d) file stays silent — a dormant-by-design 'settled audit' memory would otherwise re-trigger this forever" \
-  "[memory-lint]" "$OUT"
-
-echo ""
-echo "--- stale-file list stays out of the emitted block when it fires for an unrelated finding ---"
-
-init_memdir
-cat > "$MEMDIR/topic-a.md" <<'EOF'
----
-name: topic-a
-description: "has a dangling link to trigger findings>=1"
-metadata:
-  type: project
----
-see [[nonexistent-target-xyz]]
-EOF
-cat > "$MEMDIR/old-settled-audit.md" <<'EOF'
----
-name: old-settled-audit
-description: "a dormant settled-audit style memory, deliberately stale"
-metadata:
-  type: project
----
-old content, dormant by design
-EOF
-printf '%s\n' \
-  "- [topic-a](topic-a.md) — has a dangling link" \
-  "- [old-settled-audit](old-settled-audit.md) — dormant" > "$MEMDIR/MEMORY.md"
-OLD=$(date -v-100d +%Y%m%d0000 2>/dev/null || date -d '100 days ago' +%Y%m%d0000)
-touch -t "$OLD" "$MEMDIR/old-settled-audit.md"
-OUT=$(run_hook)
-assert_contains "the dangling-link finding still fires the main block" \
-  "[memory-lint] The memory store has findings" "$OUT"
-# Regression test for the 2026-08-17 fix: the Staleness section used to stay
-# unfiltered ("Staleness stays in — a short summary line, not a file dump"),
-# but it prints one STALE: line per stale file just like Template compliance
-# did before that section was stripped — a live repro found "STALE:
-# old-settled-audit.md — 100d..." leaking into the emitted nudge.
-assert_not_contains "stale-file filename/line stays out of the emitted block" \
-  "STALE:" "$OUT"
-assert_contains "the advisory summary line (with its stale count) still survives" \
-  "advisory: 1 stale" "$OUT"
-
-echo ""
-echo "--- classify-unindexed wiring ---"
+echo "--- UNINDEXED findings surface raw, no triage line ---"
 
 init_memdir
 write_memory "topic-a.md" "a fully indexed topic"
@@ -212,46 +127,16 @@ printf '%s\n' \
   "- [topic-a](topic-a.md) — a fully indexed topic" \
   "see [[missing-thing]] for more" > "$MEMDIR/MEMORY.md"
 OUT=$(run_hook)
-assert_contains "non-UNINDEXED finding (dangling link) still fires the main block" \
+assert_contains "dangling link fires the main block" \
   "[memory-lint] The memory store has findings" "$OUT"
-assert_not_contains "no UNINDEXED finding present -> no triage line" \
-  "UNINDEXED triage" "$OUT"
-# write_memory's fixture body carries no Why:/How-to-apply: fields, so this
-# store also has template-gap > 0 — confirms the Template compliance section
-# (and its file list) never reaches the emitted message even when the block
-# fires for an unrelated reason.
-assert_not_contains "template-gap noise stays out of the emitted block" \
-  "Template compliance" "$OUT"
 
 init_memdir
-init_git_repo
-write_memory "folded-target.md" "a finished audit"
-printf '%s\n' "- [folded-target](folded-target.md) — a finished audit" > "$MEMDIR/MEMORY.md"
-_git add -A && _git commit -q -m "add folded-target pointer"
-: > "$MEMDIR/MEMORY.md"
-_git add -A && _git commit -q -m "fold rule: drop stale index entry"
-OUT=$(run_hook)
-assert_contains "folded-confirmed UNINDEXED file still surfaces the raw finding" \
-  "UNINDEXED: folded-target.md" "$OUT"
-assert_not_contains "all-folded (0 never-indexed) -> no triage line (nothing actionable)" \
-  "UNINDEXED triage" "$OUT"
-
-init_memdir
-init_git_repo
-: > "$MEMDIR/MEMORY.md"
-_git add -A && _git commit -q -m "baseline (predates the target file)"
-write_memory "new-target.md" "written after the baseline commit"
-OUT=$(run_hook)
-assert_contains "a real never-indexed candidate triggers the triage line" \
-  "UNINDEXED triage: 1 of the UNINDEXED file(s)" "$OUT"
-
-init_memdir
-write_memory "plain-target.md" "no git here"
+write_memory "plain-target.md" "unindexed and unreachable"
 : > "$MEMDIR/MEMORY.md"
 OUT=$(run_hook)
-assert_contains "no-git-history: raw UNINDEXED finding still surfaces" \
+assert_contains "raw UNINDEXED finding surfaces" \
   "UNINDEXED: plain-target.md" "$OUT"
-assert_not_contains "no-git-history has no never-indexed bucket -> no triage line" \
+assert_not_contains "no triage line (triage mode removed)" \
   "UNINDEXED triage" "$OUT"
 
 echo ""
