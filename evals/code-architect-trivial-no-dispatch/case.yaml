@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: code-architect-trivial-no-dispatch
+context:
+  scaffold_script: scaffold.sh

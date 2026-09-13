@@ -1,0 +1,4 @@
+schema_version: "1.1"
+name: perf-architectural-handoff
+context:
+  scaffold_script: scaffold.sh
