@@ -3,11 +3,13 @@
 # `claude plugin eval` is early-access gated, so this keeps the suite loadable
 # without running it: every case has prompt.md (case.yaml is only required when
 # the case needs scaffolded fixture files) and at least one outcome grader
-# (regex/llm/file_exists/baseline, not just tool_used/tool_order), the
-# scaffold_script (inline `|` block or an external sibling file — the CLI only
-# accepts the latter, confirmed empirically 2026-09-13) runs in a temp dir and
-# writes the files the prompt names, and every regex grader's pattern compiles
-# (Python re, same dialect family).
+# (regex/llm/file_exists/baseline, not just tool_used/tool_order — counted from
+# each grader's own frontmatter, not a whole-file grep), the scaffold_script
+# (inline `|` block or an external sibling file — the CLI only accepts the
+# latter, confirmed empirically 2026-09-13) runs in a temp dir and writes the
+# files the prompt names, and every regex grader's pattern compiles (Python re,
+# same dialect family) — this last check runs for every case including
+# prompt.md-only ones (no case.yaml to scaffold).
 set -uo pipefail
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
 EVALS="$HERE/../../evals"
@@ -32,7 +34,16 @@ for d in "$EVALS"/*/; do
   has_case_yaml=0; [ -f "$d/case.yaml" ] && has_case_yaml=1
   g=$(ls "$d/graders"/*.md 2>/dev/null | wc -l | tr -d ' ')
   [ "$g" -ge 2 ] || { bad "$c: $g graders (need >=2)"; continue; }
-  outcome_graders=$(/usr/bin/grep -lE '^type: (regex|llm|file_exists|baseline)$' "$d/graders"/*.md 2>/dev/null | wc -l | tr -d ' ')
+  # Frontmatter-scoped, not a whole-file grep: a grader's own body prose can otherwise
+  # contain a line like "type: llm" (in an explanation) and get miscounted as an outcome
+  # grader even when its actual frontmatter type is tool_used/tool_order.
+  outcome_graders=0
+  for gf in "$d"/graders/*.md; do
+    [ -f "$gf" ] || continue
+    if awk '/^---$/{n++; next} n==1' "$gf" | /usr/bin/grep -qE '^type: (regex|llm|file_exists|baseline)$'; then
+      outcome_graders=$((outcome_graders + 1))
+    fi
+  done
   [ "$outcome_graders" -ge 1 ] || { bad "$c: no outcome grader (only tool_used/tool_order)"; continue; }
   if [ "$has_case_yaml" -eq 1 ]; then
     /usr/bin/grep -q '^schema_version: "1.1"' "$d/case.yaml" || { bad "$c: case.yaml lacks schema_version 1.1"; continue; }
@@ -57,17 +68,13 @@ for d in "$EVALS"/*/; do
     esac ;;
   esac
 
-  if [ "$has_case_yaml" -eq 0 ]; then
-    ok "$c"
-    continue
-  fi
-
-  # scaffold_script: extract the block (inline `|` form) or read the external sibling
-  # file it names (the CLI only accepts the latter — confirmed empirically 2026-09-13,
-  # inline content is mis-parsed as a literal path and fails to load), run it in a
-  # temp workspace, check every file prompt.md names.
-  ws="$TMP/$c"; mkdir -p "$ws"
-  python3 - "$d/case.yaml" "$d" > "$ws/scaffold.sh" <<'PY'
+  if [ "$has_case_yaml" -eq 1 ]; then
+    # scaffold_script: extract the block (inline `|` form) or read the external sibling
+    # file it names (the CLI only accepts the latter — confirmed empirically 2026-09-13,
+    # inline content is mis-parsed as a literal path and fails to load), run it in a
+    # temp workspace, check every file prompt.md names.
+    ws="$TMP/$c"; mkdir -p "$ws"
+    python3 - "$d/case.yaml" "$d" > "$ws/scaffold.sh" <<'PY'
 import sys, os
 case_yaml, case_dir = sys.argv[1], sys.argv[2]
 lines = open(case_yaml).read().splitlines()
@@ -90,13 +97,14 @@ if external:
 else:
     sys.stdout.write("\n".join(out) + "\n")
 PY
-  [ -s "$ws/scaffold.sh" ] || { bad "$c: scaffold_script empty or its external file missing"; continue; }
-  if ! (cd "$ws" && bash scaffold.sh >/dev/null 2>&1); then bad "$c: scaffold_script failed"; continue; fi
-  missing=0
-  for f in $(/usr/bin/grep -oE '`[A-Za-z0-9_./-]+\.(py|md|ts|tsx|json)`' "$d/prompt.md" | tr -d '`' | sort -u); do
-    [ -f "$ws/$f" ] || { bad "$c: scaffold did not write $f"; missing=1; }
-  done
-  [ "$missing" -eq 0 ] || continue
+    [ -s "$ws/scaffold.sh" ] || { bad "$c: scaffold_script empty or its external file missing"; continue; }
+    if ! (cd "$ws" && bash scaffold.sh >/dev/null 2>&1); then bad "$c: scaffold_script failed"; continue; fi
+    missing=0
+    for f in $(/usr/bin/grep -oE '`[A-Za-z0-9_./-]+\.(py|md|ts|tsx|json)`' "$d/prompt.md" | tr -d '`' | sort -u); do
+      [ -f "$ws/$f" ] || { bad "$c: scaffold did not write $f"; missing=1; }
+    done
+    [ "$missing" -eq 0 ] || continue
+  fi
 
   # every grader has column-0 frontmatter with a type (the runner skips a grader
   # whose fence is indented, silently -- caught by a validator 2026-09-06), and

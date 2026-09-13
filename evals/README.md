@@ -75,9 +75,9 @@ Six for `handoff` (tag `handoff`): plain `prompt.md` + `graders/` cases, no `cas
 skill needs no fixture files, so scaffolding wasn't worth adding. Note for future suites:
 `context.scaffold_script` must be a relative path to an external `.sh` file in the case dir (e.g.
 `scaffold_script: scaffold.sh`); inline YAML block content (the shape every other suite here
-predates this and uses) is mis-parsed as a literal path under the installed CLI and fails to load
-— confirmed on `post-mortem`, not `handoff`-specific. The other suites in this file haven't been
-converted to the file-path form yet. Five fire
+predated this and used) is mis-parsed as a literal path under the installed CLI and fails to load
+— confirmed on `post-mortem`, not `handoff`-specific. See "A previously-invisible defect" below:
+every other suite in this file has since been converted to the file-path form. Five fire
 cases (clean finish, mixed done/blocked/not-started progress, a live-looking secret that must be
 redacted from the persisted doc, a currently-failing named test, and a sparse session that must
 mark unknown items "Unknown" rather than invent) plus one should-NOT-fire case: a plain-English
@@ -176,9 +176,11 @@ three different frames must land in one cluster with `frameCount` 3, not split b
 re-split by the agent's own sharp reasoning before this near-paraphrase design finally worked
 (`cluster-by-angle`); and `shortlistReasons`/`nonObviousPickReason`/`confidence.reason` must be
 idea-specific arguments, not restated score numbers, on an idea list close enough in appeal to
-tempt generic filler (`shortlist-reasons-specific`). The fifth fire case needs a `case.yaml` +
-`scaffold.sh`: `total`/`shortlist`/`runnerUp`/`nonObviousPick` must match `rank.py`'s own Bash
-stdout verbatim, never hand-adjusted (`rank-verbatim`) — needs `--allow-tools Bash,Read,Agent`.
+tempt generic filler (`shortlist-reasons-specific`). The fifth fire case is prompt.md-only, no
+`case.yaml`: `total`/`shortlist`/`runnerUp`/`nonObviousPick` must match `rank.py`'s own Bash
+stdout verbatim, never hand-adjusted, and a `tool_used: Bash, input_match: rank.py` grader
+confirms the agent actually piped through the script rather than computing totals by hand
+(`rank-verbatim`) — needs `--allow-tools Bash,Read,Agent`.
 Plus one should-NOT-fire case: `mh:ideate-critic`'s own description rules out code/security review
 — a request to review a fixture with a real SQL-injection bug must not dispatch it
 (`security-review-misroute`) — needs `--allow-tools Bash,Read,Grep,Glob,Agent`.
@@ -187,16 +189,52 @@ Plus one should-NOT-fire case: `mh:ideate-critic`'s own description rules out co
 `claude plugin eval` CLI only accepts `context.scaffold_script` as a relative path to an external
 `.sh` file — a `scaffold_script: |` inline YAML block is silently mis-parsed as a literal path and
 the case fails to load (`path "..." does not exist`), confirmed empirically case-by-case, at $0.00
-each (the error fires before any agent turn). This affected 46 of this file's original 65
-`case.yaml` files — essentially the entire pre-existing suite predating this file's `handoff`
-section — despite `tests/evals/test-eval-cases.sh` reporting all of them `PASS`, because that
-script never invokes the real CLI: it only simulates loading by extracting and running the inline
-block directly, which the actual CLI cannot do. All 46 have been migrated to external `scaffold.sh`
-files (content byte-identical, just relocated); `test-eval-cases.sh` itself has been updated to
+each (the error fires before any agent turn). This affected all 46 of this file's pre-existing
+`case.yaml` files (confirmed via `git ls-tree` at the commit before this fix) — the entire
+pre-existing suite predating this file's `handoff` section — despite `tests/evals/test-eval-cases.sh`
+reporting all of them `PASS`, because that script never invokes the real CLI: it only simulates
+loading by extracting and running the inline block directly, which the actual CLI cannot do. All 46
+have been migrated to external `scaffold.sh` files (same logic, relocated — not byte-identical: every
+file gained a `#!/usr/bin/env bash` shebang, and 8 `compliance-audit-*` scripts also gained `|| exit`
+after a `cd` to close a shellcheck SC2164 warning); `test-eval-cases.sh` itself has been updated to
 read either form, to allow `prompt.md`-only cases (no `case.yaml`) and 2-grader cases with at least
 one outcome grader (the two conventions this file's newer suites use), and its hardcoded case count
 now reads 76. Spot-checked against the real CLI on both a trivial case (`cost-report-clean`) and a
 complex one (`deep-audit-clean`, git-history scaffold) — both now load and run correctly.
+
+**A follow-up `mh:deep-audit` pass** (fresh-context Codex checker, two rounds — every finding from
+both rounds independently re-verified by direct file reads or a `python3 -c` regex repro before
+being accepted or fixed) closed six real grading-logic gaps. Two needed a second attempt:
+`code-architect-layer-direction/no-reverse-import.md`'s proximity-window regex rejected the
+*correct* answer (matched `CsvExporter` and `from src.infra` even in the intended
+composition-point import block); a first fix anchoring to `class CsvExporter` plus an indented
+`from src.infra` line still false-rejected a correct answer formatted as an indented Markdown
+list item with a fenced code block (confirmed via repro: Markdown list indentation reads the same
+as "inside the class body" to a regex). Two independent counter-examples against two different
+fix attempts is a sign this specific invariant can't be captured reliably by a regex over
+free-form prose — `cites-analog-quality.md` (the case's LLM grader) already states the same
+invariant correctly and with full semantic understanding ("Score 0 if the new exporter ...
+imports infra directly"), so the regex was dropped rather than patched a third time.
+`frontmatter-intact.md` had no delimiter check and no end-anchor on `owner:` (accepted deleted
+delimiter lines or `owner: platform-other`; now checks both delimiters and both exact field lines
+via a `-{3}` placeholder — a literal three-dash run previously broke this grader file's own
+frontmatter parsing when it sat inside the `pattern:` value; the second round caught that the
+first fix's own explanatory prose still spelled it out literally in three places, which turned out
+harmless since prose sits after the file's real closing delimiter, but was corrected anyway since
+the file's own comment claimed otherwise). The remaining four fixes held on re-verification: the 5
+`handoff` `attempted-staging.md` graders checked `tool_used: Bash` with no `input_match` (any Bash
+call passed; now requires `handoff-path.sh`, confirmed as the literal invoked filename in
+`skills/workflow/handoff/SKILL.md`); `code-architect-trivial-no-dispatch` had no check on the
+actual edit's correctness (a half-rename leaving a `NameError` behind would have passed; added a
+`not_contains: usr` check on the file); the 20 should-fire agent-dispatch cases across
+`backend-architect`/`code-architect`/`performance-optimizer`/`ideate-critic` only proved the trace
+*lacked* an "agent not found" error, never that dispatch actually happened (added a
+`dispatch-confirmed.md` display-only `tool_used` trigger to each, `input_match` values confirmed
+against each case's own `subagent_type`, `arm` left unset); and `test-eval-cases.sh` skipped its
+own frontmatter/regex-compile validator entirely for prompt.md-only cases (an early `continue`,
+contradicting its own comment) and counted "outcome graders" via a whole-file grep that a grader's
+body prose could accidentally trip (both now scoped correctly — see the script's own comments).
+All 76 cases still pass under the tightened checks.
 
 Run (needs `plugin eval` early access on the account; 2.1.263 prints "currently in early access"
 otherwise):
