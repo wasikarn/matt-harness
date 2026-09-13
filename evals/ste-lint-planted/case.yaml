@@ -1,11 +1,4 @@
 schema_version: "1.1"
 name: ste-lint-planted
 context:
-  scaffold_script: |
-    cat > notes.md <<'FIXTURE_EOF'
-    # Deployment notes
-
-    The deployment pipeline builds the container image, runs the full test suite against a staging cluster, and then promotes the same image to production once every check reports a clean result.
-
-    Do not skip the smoke test; a failed smoke test blocks the release.
-    FIXTURE_EOF
+  scaffold_script: scaffold.sh

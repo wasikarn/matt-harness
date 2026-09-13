@@ -1,9 +1,4 @@
 schema_version: "1.1"
 name: ste-lint-clean
 context:
-  scaffold_script: |
-    cat > status.md <<'FIXTURE_EOF'
-    # Status
-
-    The build is green. Tests pass. Deploy is ready.
-    FIXTURE_EOF
+  scaffold_script: scaffold.sh

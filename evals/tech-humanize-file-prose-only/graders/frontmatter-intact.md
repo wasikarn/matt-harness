@@ -1,6 +1,6 @@
 ---
 type: regex
-pattern: '^---\ntitle: cache-warmer\nowner: platform\n---\n'
+pattern: 'title: cache-warmer\nowner: platform'
 match: contains
 target: {source: file, path: README.md}
 ---

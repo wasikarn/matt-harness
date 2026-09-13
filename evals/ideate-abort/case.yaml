@@ -1,5 +1,4 @@
 schema_version: "1.1"
 name: ideate-abort
 context:
-  scaffold_script: |
-    printf 'alpha\nbeta\ngamma\n' > notes.txt
+  scaffold_script: scaffold.sh

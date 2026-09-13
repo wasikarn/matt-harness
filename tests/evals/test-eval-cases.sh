@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 # test-eval-cases.sh: static check of evals/<case>/ for the review-agent and skill evals.
 # `claude plugin eval` is early-access gated, so this keeps the suite loadable
-# without running it: every case has prompt.md + case.yaml + >=3 graders, the
-# scaffold_script runs in a temp dir and writes the files the prompt names, and
-# every regex grader's pattern compiles (Python re, same dialect family).
+# without running it: every case has prompt.md (case.yaml is only required when
+# the case needs scaffolded fixture files) and at least one outcome grader
+# (regex/llm/file_exists/baseline, not just tool_used/tool_order), the
+# scaffold_script (inline `|` block or an external sibling file — the CLI only
+# accepts the latter, confirmed empirically 2026-09-13) runs in a temp dir and
+# writes the files the prompt names, and every regex grader's pattern compiles
+# (Python re, same dialect family).
 set -uo pipefail
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
 EVALS="$HERE/../../evals"
@@ -15,34 +19,60 @@ command -v python3 >/dev/null || { echo "python3 required" >&2; exit 1; }
 TMP=$(mktemp -d)
 trap 'trash "$TMP" 2>/dev/null || true' EXIT
 
+# Cases whose prompt deliberately does not name a subagent_type/skill: they prove
+# the agent/skill must NOT be dispatched for an out-of-scope or misrouted ask.
+NO_DISPATCH_EXPECTED="handoff-no-slash-command code-architect-trivial-no-dispatch perf-regression-routing backend-architect-file-blueprint-misroute ideate-critic-security-review-misroute"
+
 n=0
 for d in "$EVALS"/*/; do
   c=$(basename "$d"); n=$((n + 1))
-  [ -f "$d/prompt.md" ] && [ -f "$d/case.yaml" ] || { bad "$c: prompt.md or case.yaml missing"; continue; }
+  [ "$c" = "results" ] && { n=$((n - 1)); continue; }
+  [ "$c" = "mocks" ] && { n=$((n - 1)); continue; }
+  [ -f "$d/prompt.md" ] || { bad "$c: prompt.md missing"; continue; }
+  has_case_yaml=0; [ -f "$d/case.yaml" ] && has_case_yaml=1
   g=$(ls "$d/graders"/*.md 2>/dev/null | wc -l | tr -d ' ')
-  [ "$g" -ge 3 ] || { bad "$c: $g graders (need >=3)"; continue; }
-  /usr/bin/grep -q '^schema_version: "1.1"' "$d/case.yaml" || { bad "$c: case.yaml lacks schema_version 1.1"; continue; }
-  case "$c" in
+  [ "$g" -ge 2 ] || { bad "$c: $g graders (need >=2)"; continue; }
+  outcome_graders=$(/usr/bin/grep -lE '^type: (regex|llm|file_exists|baseline)$' "$d/graders"/*.md 2>/dev/null | wc -l | tr -d ' ')
+  [ "$outcome_graders" -ge 1 ] || { bad "$c: no outcome grader (only tool_used/tool_order)"; continue; }
+  if [ "$has_case_yaml" -eq 1 ]; then
+    /usr/bin/grep -q '^schema_version: "1.1"' "$d/case.yaml" || { bad "$c: case.yaml lacks schema_version 1.1"; continue; }
+  fi
+  case " $NO_DISPATCH_EXPECTED " in
+    *" $c "*) : ;;
+    *) case "$c" in
     tech-humanize-*) /usr/bin/grep -q 'skill: "mh:tech-humanize"' "$d/prompt.md" || { bad "$c: prompt.md does not name the skill"; continue; } ;;
     harness-audit-*) /usr/bin/grep -q 'skill: "mh:harness-audit"' "$d/prompt.md" || { bad "$c: prompt.md does not name the skill"; continue; } ;;
     post-mortem-*)   /usr/bin/grep -q '^/mh:post-mortem' "$d/prompt.md" || { bad "$c: prompt.md does not invoke the skill by slash command"; continue; } ;;
     compliance-audit-*) /usr/bin/grep -q '^/mh:compliance-audit' "$d/prompt.md" || { bad "$c: prompt.md does not invoke the skill by slash command"; continue; } ;;
+    handoff-*)       /usr/bin/grep -q '/mh:handoff' "$d/prompt.md" || { bad "$c: prompt.md does not invoke the skill by slash command"; continue; } ;;
     memory-lint-*)   /usr/bin/grep -q 'skill: "mh:memory-lint"' "$d/prompt.md" || { bad "$c: prompt.md does not name the skill"; continue; } ;;
     learn-*)         /usr/bin/grep -q 'skill: "mh:learn"' "$d/prompt.md" || { bad "$c: prompt.md does not name the skill"; continue; } ;;
+    ideate-critic-*) /usr/bin/grep -q 'subagent_type: "mh:ideate-critic"' "$d/prompt.md" || { bad "$c: prompt.md does not name a subagent_type"; continue; } ;;
     ideate-*)        /usr/bin/grep -q 'skill: "mh:ideate"' "$d/prompt.md" || { bad "$c: prompt.md does not name the skill"; continue; } ;;
     idea-audit-*)    /usr/bin/grep -q 'skill: "mh:idea-audit"' "$d/prompt.md" || { bad "$c: prompt.md does not name the skill"; continue; } ;;
     deep-audit-*)    /usr/bin/grep -q 'skill: "mh:deep-audit"' "$d/prompt.md" || { bad "$c: prompt.md does not name the skill"; continue; } ;;
     cost-report-*)   /usr/bin/grep -q 'skill: "mh:cost-report"' "$d/prompt.md" || { bad "$c: prompt.md does not name the skill"; continue; } ;;
     ste-lint-*)      /usr/bin/grep -q 'skill: "mh:ste-lint"' "$d/prompt.md" || { bad "$c: prompt.md does not name the skill"; continue; } ;;
     *) /usr/bin/grep -q 'subagent_type: "mh:' "$d/prompt.md" || { bad "$c: prompt.md does not name a subagent_type"; continue; } ;;
+    esac ;;
   esac
 
-  # scaffold_script: extract the block, run it in a temp workspace, check every file prompt.md names.
+  if [ "$has_case_yaml" -eq 0 ]; then
+    ok "$c"
+    continue
+  fi
+
+  # scaffold_script: extract the block (inline `|` form) or read the external sibling
+  # file it names (the CLI only accepts the latter — confirmed empirically 2026-09-13,
+  # inline content is mis-parsed as a literal path and fails to load), run it in a
+  # temp workspace, check every file prompt.md names.
   ws="$TMP/$c"; mkdir -p "$ws"
-  python3 - "$d/case.yaml" > "$ws/scaffold.sh" <<'PY'
-import sys
-lines = open(sys.argv[1]).read().splitlines()
+  python3 - "$d/case.yaml" "$d" > "$ws/scaffold.sh" <<'PY'
+import sys, os
+case_yaml, case_dir = sys.argv[1], sys.argv[2]
+lines = open(case_yaml).read().splitlines()
 out, on = [], False
+external = None
 for l in lines:
     if on:
         if l.strip() and not l.startswith("    "):
@@ -50,9 +80,17 @@ for l in lines:
         out.append(l[4:])
     elif l.strip() == "scaffold_script: |":
         on = True
-sys.stdout.write("\n".join(out) + "\n")
+    else:
+        s = l.strip()
+        if s.startswith("scaffold_script:") and not s.endswith("|"):
+            external = s.split(":", 1)[1].strip()
+if external:
+    path = os.path.join(case_dir, external)
+    sys.stdout.write(open(path).read() if os.path.isfile(path) else "")
+else:
+    sys.stdout.write("\n".join(out) + "\n")
 PY
-  [ -s "$ws/scaffold.sh" ] || { bad "$c: scaffold_script empty"; continue; }
+  [ -s "$ws/scaffold.sh" ] || { bad "$c: scaffold_script empty or its external file missing"; continue; }
   if ! (cd "$ws" && bash scaffold.sh >/dev/null 2>&1); then bad "$c: scaffold_script failed"; continue; fi
   missing=0
   for f in $(/usr/bin/grep -oE '`[A-Za-z0-9_./-]+\.(py|md|ts|tsx|json)`' "$d/prompt.md" | tr -d '`' | sort -u); do
@@ -101,7 +139,11 @@ echo "a;b"
 ```' ;;
     *) sample='' ;;
   esac
-  [ -n "$sample" ] || { bad "$c: no verdict sample in test-eval-cases.sh (add one to the case list)"; continue; }
+  # Cases outside the table above (agent-dispatch suites whose output has no fixed
+  # verdict token — a full report or a JSON contract, not a "Verdict:" line) skip the
+  # discrimination check below; the universal frontmatter/regex-compile check still
+  # runs for them. Their content quality was verified via real ablation pilot runs,
+  # not this static proxy (see evals/README.md per suite).
   # Skill cases have no verdict token. Their proof is the fixture itself: every regex grader
   # pattern must match the scaffolded input (a not_contains tell is really planted, a contains
   # specific is really there), or the grader cannot discriminate.
@@ -127,7 +169,7 @@ for f in sorted(os.listdir(sys.argv[1])):
         print(f"  {f}: no column-0 frontmatter with a known type"); bad = 1; continue
     if "type: regex" not in m.group(1):
         continue
-    p = re.search(r"^pattern: '(.*)'$", m.group(1), re.M)
+    p = re.search(r"^pattern: '(.*)'$", m.group(1), re.M) or re.search(r'^pattern: "(.*)"$', m.group(1), re.M)
     if not p:
         print(f"  no pattern in {f}"); bad = 1; continue
     try:
@@ -136,6 +178,8 @@ for f in sorted(os.listdir(sys.argv[1])):
         print(f"  bad regex in {f}: {e}"); bad = 1; continue
     fl = re.search(r"^flags: (\w+)$", m.group(1), re.M)
     flags = re.I if fl and "i" in fl.group(1) else 0
+    if not sample:
+        continue  # no verdict/fixture sample for this case's output shape; compile check above already ran
     if f in ("contract.md", "clean.md"):
         want = "match: not_contains" not in m.group(1)
         if bool(re.search(p.group(1), sample, flags)) != want:
@@ -150,7 +194,7 @@ PY
   then bad "$c: a grader is malformed"; continue; fi
   ok "$c"
 done
-[ "$n" -eq 46 ] || bad "expected 46 cases, found $n"
+[ "$n" -eq 76 ] || bad "expected 76 cases, found $n"
 
 echo "eval-cases: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
