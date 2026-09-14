@@ -182,8 +182,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/stop/cost-tracker.sh\"",
-            "async": true,
-            "timeout": 10
+            "async": true
           }
         ]
       },
@@ -192,8 +191,7 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/stop/memory-audit-commit.sh\"",
-            "async": true,
-            "timeout": 10
+            "async": true
           }
         ]
       }
