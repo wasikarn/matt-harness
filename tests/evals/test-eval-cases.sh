@@ -8,11 +8,15 @@
 # (inline `|` block or an external sibling file — the CLI only accepts the
 # latter, confirmed empirically 2026-09-13) runs in a temp dir and writes the
 # files the prompt names, and every regex grader's pattern compiles as a JS
-# RegExp (the real eval runtime's engine — Python's re module is NOT the same
-# dialect: it silently accepts inline `(?i)`, which V8 rejects at runtime; a
-# live run of 8 compliance-audit graders written with `(?i)` proved this
-# empirically on 2026-09-14) — this last check runs for every case including
-# prompt.md-only ones (no case.yaml to scaffold).
+# RegExp via `node` — Python's re module is NOT the same dialect: it silently
+# accepts inline `(?i)`, which JS rejects. The real eval runtime is Bun
+# (JavaScriptCore), confirmed 2026-09-14 by extracting the installed CLI
+# binary's embedded source (it calls `new RegExp(pattern, flags)` directly)
+# and matching its exact `(?i)` error text against `bun -e`, not `node -e`;
+# `node`/V8 is used here only as a same-family proxy — both engines reject
+# inline `(?i)` identically, so it still catches the bug class, but a report
+# of the *specific* engine should say Bun, not V8 — this last check runs for
+# every case including prompt.md-only ones (no case.yaml to scaffold).
 set -uo pipefail
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
 EVALS="$HERE/../../evals"

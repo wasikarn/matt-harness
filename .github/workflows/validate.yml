@@ -14,7 +14,7 @@ env:
 
 jobs:
   validate-plugin:
-    name: claude plugin validate --strict
+    name: claude plugin validate (marketplace strict + plugin manifest)
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
