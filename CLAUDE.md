@@ -70,5 +70,6 @@ at startup, nothing symlinked. Operating model: deny the irrecoverable set compu
   Enforced by `gate:bash:irrecoverable`; `git add -A` is allowed only mid-merge.
 - **Same-version edits are no-ops.** Bump both manifests before `claude plugin update`; to
   re-verify a same-session edit, have the agent `Read` the repo path, never `Skill(<name>)`.
-- **`grep` is aliased** to `rtk grep` in the operator's shell; use `/usr/bin/grep` or `awk` for
-  counts.
+- **Bare `grep` is shadowed by Claude Code's own shell-snapshot shim** (not an rtk alias — no
+  `rtk` reference exists in the snapshot; it reformats via CC's own binary); use `/usr/bin/grep`
+  or `awk` for counts.
