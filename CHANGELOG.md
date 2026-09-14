@@ -3,6 +3,25 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.91] — 2026-09-14
+
+### Fixed
+
+- **Duplicate skill listing: `mh:idea-audit`, and a dead `mh:ste-lint` entry.** `idea-audit` is
+  dev-mode symlinked directly from `~/.claude/skills/idea-audit` into this repo's
+  `skills/workflow/idea-audit`, so the plugin's own `./skills/workflow/` directory glob in
+  `plugin.json` shipped it a second time as `mh:idea-audit` — a byte-identical duplicate that
+  never earned an invocation of its own (all 5 real uses landed on the symlinked bare
+  `idea-audit`, confirmed via `skillUsage` counters). `ste-lint` has zero lifetime uses and is
+  niche enough (ASD-STE100) that it doesn't earn a resident listing entry either. `skills/workflow/`
+  and `skills/design/` switched from whole-directory globs to explicit per-skill paths, dropping
+  just these two; `handoff`, `ideate`, `post-mortem`, and `tech-humanize` are unaffected. Found via
+  a skill-cost grading pass (`skillUsage` counters + `/context` token accounting) in an unrelated
+  dotfiles-repo session; `skillOverrides` couldn't fix it locally since it doesn't apply to plugin
+  skills (`docs/en/skills`: "Plugin skills are not affected by skillOverrides. Manage those through
+  `/plugin` instead."). Takes effect for consumers on install/update to this version, not
+  retroactively on an already-cached copy.
+
 ## [1.1.90] — 2026-09-12
 
 ### Fixed
