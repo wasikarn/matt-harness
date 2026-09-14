@@ -68,9 +68,10 @@ returning 404 "Branch not protected."
 
 ## Session environment quirks
 
-- **Bare `grep` is shadowed by Claude Code's own shell-snapshot shim**, not an rtk alias (no
-  `rtk` reference exists in the snapshot function). Use `/usr/bin/grep` or `awk` for count and
-  stat operations.
+- **Bare `grep` is shadowed, for ordinary invocations, by Claude Code's own shell-snapshot shim**,
+  not an rtk alias (no `rtk` reference exists in the snapshot function; a few flags like
+  `--null`/`-Z` fall through to real grep). Use `/usr/bin/grep` or `awk` for count and stat
+  operations.
 - **`/context` verifies what actually loaded.** Check the Memory files list before reasoning
   about whether a CLAUDE.md or rule file is in context.
 - **Two user-level rules load every session:** `~/.claude/rules/{test-honesty,code-review-graph}.md`
