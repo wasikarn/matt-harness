@@ -29,8 +29,17 @@ jobs:
       - name: install claude code
         run: npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
-      - name: validate plugin manifest (strict)
+      - name: validate marketplace manifest (strict)
         run: claude plugin validate --strict .
+
+      # `.` alone resolves to marketplace.json when both files sit in this
+      # repo's shared .claude-plugin/ dir (confirmed via --json's "target"
+      # field), so plugin.json itself needs its own explicit path here.
+      # --strict is dropped only because it would fail on a single
+      # known-benign warning ("CLAUDE.md not loaded as project context") that
+      # is true and intentional — METHODOLOGY.md ships via hooks instead.
+      - name: validate plugin manifest
+        run: claude plugin validate .claude-plugin/plugin.json
 
   harness-audit:
     name: harness-audit (0 CRIT)

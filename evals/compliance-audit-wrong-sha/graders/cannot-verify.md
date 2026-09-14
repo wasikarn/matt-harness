@@ -1,6 +1,7 @@
 ---
 type: regex
-pattern: '(?i)cannot verify|does not exist|not found|invalid (?:sha|commit|revision)|scope_ok\s*[:=]?\s*false'
+pattern: 'cannot verify|does not exist|not found|invalid (?:sha|commit|revision)|scope_ok\s*[:=]?\s*false'
+flags: i
 match: contains
 target: last_message
 ---

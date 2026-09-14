@@ -1,6 +1,7 @@
 ---
 type: regex
-pattern: '(?i)unaccepted|not accepted|unjustified|no (?:sanctioning|sanctioned|sign-?off)'
+pattern: 'unaccepted|not accepted|unjustified|no (?:sanctioning|sanctioned|sign-?off)'
+flags: i
 match: contains
 target: last_message
 ---

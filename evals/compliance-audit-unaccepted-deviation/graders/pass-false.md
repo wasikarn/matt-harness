@@ -1,6 +1,7 @@
 ---
 type: regex
-pattern: '(?i)\bpass\s*[:=]?\s*false\b|\bnot (?:yet )?compliant\b|\bopen[- ]item'
+pattern: '\bpass\s*[:=]?\s*false\b|\bnot (?:yet )?compliant\b|\bopen[- ]item'
+flags: i
 match: contains
 target: last_message
 ---

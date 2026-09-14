@@ -7,8 +7,11 @@
 # each grader's own frontmatter, not a whole-file grep), the scaffold_script
 # (inline `|` block or an external sibling file — the CLI only accepts the
 # latter, confirmed empirically 2026-09-13) runs in a temp dir and writes the
-# files the prompt names, and every regex grader's pattern compiles (Python re,
-# same dialect family) — this last check runs for every case including
+# files the prompt names, and every regex grader's pattern compiles as a JS
+# RegExp (the real eval runtime's engine — Python's re module is NOT the same
+# dialect: it silently accepts inline `(?i)`, which V8 rejects at runtime; a
+# live run of 8 compliance-audit graders written with `(?i)` proved this
+# empirically on 2026-09-14) — this last check runs for every case including
 # prompt.md-only ones (no case.yaml to scaffold).
 set -uo pipefail
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
@@ -18,6 +21,7 @@ ok()  { pass=$((pass + 1)); echo "  PASS: $1"; }
 bad() { fail=$((fail + 1)); echo "  FAIL: $1" >&2; }
 
 command -v python3 >/dev/null || { echo "python3 required" >&2; exit 1; }
+command -v node >/dev/null || { echo "node required (validates regex graders against the real JS engine)" >&2; exit 1; }
 TMP=$(mktemp -d)
 trap 'trash "$TMP" 2>/dev/null || true' EXIT
 
@@ -166,7 +170,7 @@ echo "a;b"
     ste-lint-file-prose-only) wrong='mixed.md line 6: rule 8.1 semicolon inside the code block' ;;
   esac
   if ! python3 - "$d/graders" "$sample" "$wrong" <<'PY'
-import sys, os, re
+import sys, os, re, subprocess
 bad = 0
 sample = sys.argv[2]
 wrong = sys.argv[3] if len(sys.argv) > 3 else ""
@@ -185,7 +189,17 @@ for f in sorted(os.listdir(sys.argv[1])):
     except re.error as e:
         print(f"  bad regex in {f}: {e}"); bad = 1; continue
     fl = re.search(r"^flags: (\w+)$", m.group(1), re.M)
+    js_flags = fl.group(1) if fl else ""
     flags = re.I if fl and "i" in fl.group(1) else 0
+    js = subprocess.run(
+        ["node", "-e", "new RegExp(process.argv[1], process.argv[2])", "--", p.group(1), js_flags],
+        capture_output=True, text=True,
+    )
+    if js.returncode != 0:
+        err_lines = js.stderr.strip().splitlines()
+        reason = next((l for l in err_lines if "Error" in l), err_lines[-1] if err_lines else "compile failed")
+        print(f"  bad JS regex in {f} (real eval runtime uses JS, not Python re): {reason}")
+        bad = 1; continue
     if not sample:
         continue  # no verdict/fixture sample for this case's output shape; compile check above already ran
     if f in ("contract.md", "clean.md"):

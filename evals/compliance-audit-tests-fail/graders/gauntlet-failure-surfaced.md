@@ -1,6 +1,7 @@
 ---
 type: regex
-pattern: '(?i)FAIL|AssertionError|exit code 1|non-?zero'
+pattern: 'FAIL|AssertionError|exit code 1|non-?zero'
+flags: i
 match: contains
 target: last_message
 ---

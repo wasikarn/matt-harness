@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 # run-gauntlet.sh — full validation gauntlet, 3 layers in parallel:
-#   validate  claude plugin validate . --strict
+#   validate  claude plugin validate . --strict (marketplace.json) +
+#             claude plugin validate .claude-plugin/plugin.json (plugin manifest —
+#             `.` alone resolves to marketplace.json when both files sit in the
+#             same .claude-plugin/, confirmed via --json's "target" field
+#             2026-09-14, so plugin.json was never actually checked before this;
+#             --strict is dropped here only because it would fail on a single
+#             known-benign warning, "CLAUDE.md not loaded as project context" —
+#             true and intentional, since METHODOLOGY.md is what ships via hooks)
 #   lint      bash -n (+shellcheck if installed) on tracked .sh,
 #             py_compile on tracked .py, JSON parse on tracked .json
 #   tests     every tests/hooks/*.sh on disk + tests/skills/**/test*.sh
@@ -17,7 +24,10 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OB
 LOG="$(mktemp -d)"
 trap 'trash "$LOG" 2>/dev/null || true' EXIT
 
-run_validate() { claude plugin validate . --strict; }
+run_validate() {
+  claude plugin validate . --strict &&
+  claude plugin validate .claude-plugin/plugin.json
+}
 
 existing() { local f; while IFS= read -r f; do [ -f "$f" ] && printf '%s\n' "$f"; done; return 0; }
 

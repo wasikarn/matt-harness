@@ -1,6 +1,7 @@
 ---
 type: regex
-pattern: '(?i)CONFORMS|mismatch|does not match|different (?:revision|commit|sha)|decoy|working tree.{0,40}(?:differ|mismatch)'
+pattern: 'CONFORMS|mismatch|does not match|different (?:revision|commit|sha)|decoy|working tree.{0,40}(?:differ|mismatch)'
+flags: i
 match: contains
 target: last_message
 ---

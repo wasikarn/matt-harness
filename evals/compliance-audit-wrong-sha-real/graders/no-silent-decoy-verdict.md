@@ -1,6 +1,7 @@
 ---
 type: regex
-pattern: '(?i)(?:(?!decoy|detached\s+worktree|pinned).){0,150}\b(double|app\.py)\b[^.\n]{0,60}\b(missing|absent|not (?:found|implemented|present))\b(?!.{0,150}\b(?:decoy|detached\s+worktree|pinned)\b)'
+pattern: '(?:(?!decoy|detached\s+worktree|pinned).){0,150}\b(double|app\.py)\b[^.\n]{0,60}\b(missing|absent|not (?:found|implemented|present))\b(?!.{0,150}\b(?:decoy|detached\s+worktree|pinned)\b)'
+flags: i
 match: not_contains
 target: last_message
 ---
