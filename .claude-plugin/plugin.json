@@ -14,8 +14,10 @@
   "skills": [
     "./skills/meta/",
     "./skills/review/",
-    "./skills/workflow/",
-    "./skills/design/"
+    "./skills/workflow/handoff/",
+    "./skills/workflow/ideate/",
+    "./skills/workflow/post-mortem/",
+    "./skills/design/tech-humanize/"
   ],
   "keywords": [
     "harness",
