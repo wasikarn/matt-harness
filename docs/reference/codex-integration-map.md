@@ -16,9 +16,9 @@ cache version changes; no check parses it. Full reasoning: `docs/plans/codex-pai
 | `/codex:setup` | **user or model** — ships without `disable-model-invocation` | the one surface mh puts a real gate on: `gate:skill:codex-setup-guard` asks before a model-invoked call carrying `--enable-review-gate` |
 | `/codex:transfer` | user only (`disable-model-invocation: true`) | Claude near its own limit → hands the session to a resumable Codex thread. The reverse of the fallback direction above |
 | `/codex:status` | user only | job and review-gate status, read-only |
-| `/mh:compliance-audit` (mh's own skill, not a `codex@openai-codex` skill) | user only (`disable-model-invocation: true`) | Phase 2's verifier dispatches a raw `codex exec --sandbox workspace-write --cd <worktree> -c model_reasoning_effort=high` (explicit flags; scoped to a disposable pinned worktree — not read-only, since it reruns the gauntlet) as primary, for stronger maker≠checker separation than a fresh Claude context alone; Claude-side alternative: a `general-purpose` subagent. On rate-limit or Codex absence, fall back to the Claude subagent — independence is lost for that pass, same fallback language as `/codex:review` above |
-| `/mh:deep-audit` (mh's own skill) | user or model (no `disable-model-invocation`) | Step 3's fresh-context checker dispatches `codex exec --sandbox read-only -c model_reasoning_effort=high` (explicit flags, not the config-dependent default; no worktree, since the checker never writes and needs the current tree, not a pinned SHA) as primary; Claude-side alternative: an `Explore`/review agent (the pre-existing mechanism). On rate-limit, absence, timeout, auth failure, a schema-invalid result, or a semantic refusal (schema-valid JSON that still didn't do the review), fall back to the Claude agent — independence is lost for that pass, same fallback language as `/codex:review` / `/mh:compliance-audit` above. Unlike those, a failed fallback here doesn't just get noted: it hard-forces the skill's own Final Verdict to `fail` ("verification incomplete"), since deep-audit's rubric would otherwise let a checker-less run still pass on its other dimensions |
-| `/mh:idea-audit` (mh's own skill) | user or model (no `disable-model-invocation`) | Phase 2's attacker dispatches `codex exec --sandbox read-only -c model_reasoning_effort=high --cd <repo-root> --output-last-message <file> --output-schema <schema-file>` (same shape as `/mh:deep-audit`'s checker — read-only, no worktree) as primary; Claude-side alternative: a `general-purpose` subagent dispatched with `disallowedTools: ["Write", "Edit", "NotebookEdit"]` (never `mh:plan-reviewer`, which hard-stops on non-plan input) — independence is lost for that pass, same fallback language as the rows above. Fallback triggers are the same six as `/mh:deep-audit`'s. On all-fallback failure, or every finding failing a post-parse citation-shape check, the adversarial criterion is marked `insufficient evidence` and Phase 3 blocks on the operator, rather than the deep-audit-style hard-fail override — idea-audit's rubric has no "insufficient evidence left out of the total" path to close |
+| `/mh:compliance-audit` (mh's own skill, not a `codex@openai-codex` skill) | user only (`disable-model-invocation: true`) | Phase 2's verifier dispatches a raw `codex exec --sandbox workspace-write --cd <worktree> --model <selected-model> -c model_reasoning_effort=<selected-effort>` (explicit flags; scoped to a disposable pinned worktree — not read-only, since it reruns the gauntlet) as primary, for stronger maker≠checker separation than a fresh Claude context alone; Claude-side alternative: a `general-purpose` subagent. On rate-limit or Codex absence, fall back to the Claude subagent — independence is lost for that pass, same fallback language as `/codex:review` above |
+| `/mh:deep-audit` (mh's own skill) | user or model (no `disable-model-invocation`) | Step 3's fresh-context checker dispatches `codex exec --sandbox read-only --model <selected-model> -c model_reasoning_effort=<selected-effort>` (explicit flags, not the config-dependent default; no worktree, since the checker never writes and needs the current tree, not a pinned SHA) as primary; Claude-side alternative: an `Explore`/review agent (the pre-existing mechanism). On rate-limit, absence, timeout, auth failure, a schema-invalid result, or a semantic refusal (schema-valid JSON that still didn't do the review), fall back to the Claude agent — independence is lost for that pass, same fallback language as `/codex:review` / `/mh:compliance-audit` above. Unlike those, a failed fallback here doesn't just get noted: it hard-forces the skill's own Final Verdict to `fail` ("verification incomplete"), since deep-audit's rubric would otherwise let a checker-less run still pass on its other dimensions |
+| `/mh:idea-audit` (mh's own skill) | user or model (no `disable-model-invocation`) | Phase 2's attacker dispatches `codex exec --sandbox read-only --model <selected-model> -c model_reasoning_effort=<selected-effort> --cd <repo-root> --output-last-message <file> --output-schema <schema-file>` (same shape as `/mh:deep-audit`'s checker — read-only, no worktree) as primary; Claude-side alternative: a `general-purpose` subagent dispatched with `disallowedTools: ["Write", "Edit", "NotebookEdit"]` (never `mh:plan-reviewer`, which hard-stops on non-plan input) — independence is lost for that pass, same fallback language as the rows above. Fallback triggers are the same six as `/mh:deep-audit`'s. On all-fallback failure, or every finding failing a post-parse citation-shape check, the adversarial criterion is marked `insufficient evidence` and Phase 3 blocks on the operator, rather than the deep-audit-style hard-fail override — idea-audit's rubric has no "insufficient evidence left out of the total" path to close |
 
 The three bare `codex exec` dispatches — `/mh:compliance-audit`'s verifier, `/mh:deep-audit`'s
 checker, `/mh:idea-audit`'s attacker — are the ones `docs/reference/spawn-brief.md`'s effort-flag
@@ -49,15 +49,54 @@ Sandbox/approval note: no `~/.codex/config.toml` recommendation is needed for th
 The plugin hardcodes its own sandbox per call — `read-only` for `/codex:review` and
 `/codex:adversarial-review`, `workspace-write` (never `danger-full-access`) for rescue's write
 path — as a structured parameter to its app-server, not a config file setting. `config.toml`
-only governs a bare `codex`/`codex exec` run by a human directly, outside the plugin.
+can still supply model/effort defaults when the plugin leaves those unset; the explicit
+sandbox supplied by the plugin takes precedence for its calls.
 
-Model/effort note: mh pins the reasoning effort at every Codex call site (`-c
-model_reasoning_effort=high` on the three bare `codex exec` dispatches, `--effort high` on
-audit/verify rescue briefs) and never pins a model. Codex's bundled default is `gpt-6-astra` at
-effort `low` (codex-cli 0.153.4), too low for an independent checker; a pinned model slug would
-break the call site on the next catalog rotation. Putting `model_reasoning_effort` in
-`~/.codex/config.toml` instead was rejected: machine-local, and it bleeds into interactive Codex.
-Evidence: `docs/research/claude-code-codex-models-efforts-2026-09-07.md`.
+## Model, effort, and account cost
+
+Choose model and effort before each dispatch, using the signed-in account rather than a
+bundled default. On 2026-09-14, Codex CLI 0.154.0 reported ChatGPT Plus, no purchased credits,
+and access to Luna, Terra, Sol, and Astra through `model/list`. This is a dated observation,
+not a required plan or a live balance. Recheck `account/rateLimits/read` through the app-server
+(or `/status` in the CLI) when planning substantial work; never commit account IDs or tokens.
+
+| Work | Starting model | Effort |
+|---|---|---|
+| Clear, small edits or extraction | `gpt-5.6-luna` | `low` |
+| Bounded implementation or verification of explicit requirements | `gpt-5.6-terra` | `medium` |
+| Ambiguous bugs, adversarial review, cross-file judgment | `gpt-5.6-sol` | `medium` |
+| Hard end-to-end investigation with sustained judgment | `gpt-6-astra` | `medium` |
+
+These are starting choices, not measured quality guarantees. Deep-audit and idea-audit normally
+start with Sol/medium; compliance-audit starts with Terra/medium for explicit requirements,
+Sol/medium if interpretation is material. Increase to `high` for a concrete unresolved reasoning
+problem; reserve `xhigh` for unusually hard cases. Keep the same evidence and acceptance checks
+at every tier. If quota cannot support adequate verification, report it incomplete or use the
+existing independent-checker fallback; never call a weaker or skipped check a pass.
+
+Validate the chosen slug and effort against the live catalog; if unavailable, choose an
+available model suitable for the same task and disclose the substitution. No silent retry loop
+or automatic paid fallback. Never hardcode a personal `-p` profile in shipped commands: profiles
+are machine-local. On bare CLI dispatches substitute `--model <selected-model>` and
+`-c model_reasoning_effort=<selected-effort>`; the existing sandbox, cwd, schema, and fallback
+contracts still apply. Global config is only the default when a call does not override it.
+
+For `/codex:rescue`, use `--model` and `--effort` as runtime flags under this operator-authorized
+routing policy, not prose hidden in the task. The installed plugin 1.0.6 task path forwards both;
+its review/adversarial-review paths do not forward a task effort flag. Do not promise those
+review commands honor `--effort`; use their supported controls and report the actual selection.
+The plugin accepts up to `xhigh`, not `max`/`ultra`.
+
+Plus consumes included usage before purchased credits; API dollar rates are not the account's
+invoice. Published credit rates per 1M input/cached-input/output tokens are Luna 5/0.5/30,
+Terra 50/5/300, Sol 100/10/500, Astra 250/25/1250 (2026-09-14). These compare credit usage;
+they do not price included quota or prove actual spend. Recheck current pricing when the
+account, plan, or catalog changes. Avoid optional fast/priority service and speculative fan-out
+as cost defaults; neither is required by this policy.
+
+Sources: [OpenAI models](https://learn.chatgpt.com/docs/models?surface=cli),
+[pricing](https://learn.chatgpt.com/docs/pricing),
+[app-server account and model APIs](https://learn.chatgpt.com/docs/app-server).
 
 ## AGENTS.md
 

@@ -65,13 +65,13 @@ record whether it exists and, if so, a content hash of its bytes on disk. Keep t
 
 **Dispatch, Codex primary:**
 ```
-codex exec --sandbox read-only -c model_reasoning_effort=high --cd <repo-root> \
+codex exec --sandbox read-only --model <selected-model> -c model_reasoning_effort=<selected-effort> --cd <repo-root> \
   --output-last-message <file> --output-schema <schema-file>
 ```
-Effort is pinned to `high` because Codex's bundled default (`gpt-6-astra`, effort `low` as of
-codex-cli 0.153.4) under-powers an independent checker; the model is deliberately left to
-Codex's default so a catalog rotation never breaks this call site
-(`docs/research/claude-code-codex-models-efforts-2026-09-07.md`).
+Choose `<selected-model>` and `<selected-effort>` using
+`docs/reference/codex-integration-map.md`'s task/account-cost policy; normally Sol/medium
+for this adversarial checker. Check availability and remaining quota before a substantial run.
+Raise effort only for a concrete reasoning need; acceptance criteria below never weaken.
 `<schema-file>` is `references/checker-output-schema.json` (this skill's own JSON Schema for
 `{pass, findings[], scope_ok, unexpected_files[]}`). This is sandboxed against model-generated
 shell commands (`codex exec --help`'s own wording) plus the brief's no-mutation line above — not

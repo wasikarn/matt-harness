@@ -87,9 +87,10 @@ must discover independently, then get an independent answer from a different mod
    not asserted. Starts empty if you have no first-hand deviation knowledge — step 3 still
    catches anything real.
 2. Dispatch **one** verifier at the pinned worktree from step 1.4. Primary: `codex exec --sandbox workspace-write
-   --cd <worktree> -c model_reasoning_effort=high` (sandbox and cwd explicit, not the
-   config-dependent default; effort pinned, model left to Codex's default; rationale in
-   `skills/review/deep-audit/SKILL.md`'s dispatch block). On
+   --cd <worktree> --model <selected-model> -c model_reasoning_effort=<selected-effort>` (sandbox and cwd explicit, not the
+   config-dependent default). Select the model/effort through
+   `docs/reference/codex-integration-map.md`: Terra/medium for explicit requirements,
+   Sol/medium when interpretation is material; check availability and quota first. On
    rate-limit or Codex's absence, fall back to a Claude `general-purpose` subagent (no new
    bespoke agent type) — note "independence reduced for this pass" in the final report, matching
    `docs/reference/codex-integration-map.md`'s established fallback language for

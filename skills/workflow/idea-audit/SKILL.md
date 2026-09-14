@@ -164,7 +164,7 @@ Neither scores yet — anchoring guard, same as `ideate` Phase 2.
 **Primary**, matching `mh:deep-audit`'s dispatch shape (`skills/review/deep-audit/SKILL.md`):
 
 ```bash
-codex exec --sandbox read-only -c model_reasoning_effort=high --cd <repo-root> \
+codex exec --sandbox read-only --model <selected-model> -c model_reasoning_effort=<selected-effort> --cd <repo-root> \
   --output-last-message <file> --output-schema <skill-dir>/references/attacker-output-schema.json
 ```
 
@@ -177,8 +177,9 @@ to already be this skill's own directory, but `--cd <repo-root>` puts it at the 
 cannot resolve. Always pass the schema path as absolute (or as `<skill-dir>` relative to
 `--cd`'s own target), never bare.
 
-Effort pinned to `high` for the same reason as `deep-audit`: Codex's bundled default under-powers
-an independent checker; model left to Codex's default. The brief (`references/attacker-brief.md`)
+Select model and effort through `docs/reference/codex-integration-map.md`'s task/account-cost
+policy; normally Sol/medium for this adversarial attacker. Check availability and quota first;
+escalate effort for concrete reasoning needs without weakening the acceptance criteria. The brief (`references/attacker-brief.md`)
 gives the attacker the scratchpad source's **absolute path so it can actually open the file** —
 `codex exec --help`'s own flag semantics say `-s`/`--sandbox` governs what a shell command can
 *write*, and `--add-dir <DIR>` is documented only as "additional directories that should be

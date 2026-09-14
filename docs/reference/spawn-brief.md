@@ -35,11 +35,13 @@ When the brief goes to Codex (`/codex:rescue`), name the reasoning effort as an 
 `--effort <none|minimal|low|medium|high|xhigh>` (the set `codex@openai-codex` 1.0.6 validates), never
 as a line inside the task text: the rescue agent strips runtime flags from the prompt and a
 prose `REASONING:` line reaches nothing. Omitting the flag runs the operator's configured default;
-say so when you relay the result. Effort is the dispatcher's call, never the lane's. Audit and
-verify lanes pass `--effort high`; fix lanes may omit it (the operator default is `gpt-6-astra`
-at `low` as of codex-cli 0.153.4). Never name a Codex model in a brief: mh pins effort, never
-model. The live Codex catalog also lists `max` and `ultra`, but the plugin rejects both, so never
-write them. Empty-diff handling: `docs/reference/codex-integration-map.md`, "Silent-refusal gotcha".
+say so when you relay the result. Model and effort are the dispatcher's call, never the lane's.
+Select both using `docs/reference/codex-integration-map.md`'s task/account-cost table. This
+operator-authorized policy permits explicit `--model <selected-model> --effort <selected-effort>`
+on rescue dispatches; bounded verification starts at Terra/medium, adversarial judgment at
+Sol/medium. Escalate effort for a concrete reasoning need, not merely the word "audit".
+The live Codex catalog also lists `max` and `ultra`, but this plugin rejects both.
+Empty-diff handling: `docs/reference/codex-integration-map.md`, "Silent-refusal gotcha".
 
 A validator returns `{pass, findings[], scope_ok, unexpected_files[]}` and nothing else;
 `scope_ok` fails on either an unexpected file or an owned file the diff never touches.
