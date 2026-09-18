@@ -222,10 +222,10 @@ refusal not caught by the schema. On any of these: fall back to `general-purpose
 when handed a summary rather than a plan artifact (`agents/plan-reviewer.md`). Note "independence
 is lost for that pass," matching `docs/reference/codex-integration-map.md`'s established fallback
 wording exactly (the map's own idea-audit row should carry the same phrase — cross-check it).
-**Dispatch the fallback with `disallowedTools: ["Write", "Edit", "NotebookEdit"]`** — this removes
-the three most direct write paths, but the fallback still has `Bash` (unlike the Codex primary, it
-has no sandbox), so a shell redirect could still write a file despite the grant; the tool grant
-alone does not carry the constraint. The real backstop is behavioral: capture
+**The Agent tool has no per-invocation `disallowedTools`** — that field exists only in an
+agent file's frontmatter, and the fallback is a `general-purpose` dispatch, so the fallback keeps
+every tool including `Bash` (unlike the Codex primary, it has no sandbox); a write is only
+constrained by the brief's own words. The real backstop is behavioral: capture
 `git status --porcelain` before and after and treat any diff as a violation. The brief itself also
 states plainly: *you write nothing; report findings only in your final message.*
 

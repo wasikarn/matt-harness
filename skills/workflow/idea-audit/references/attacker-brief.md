@@ -35,8 +35,8 @@ it cannot be confirmed against the actual source.>
 <paste Agent B's output>
 
 ## FILES YOU OWN
-<none — read-only pass. If running as the Claude fallback: you were dispatched with
-`disallowedTools: ["Write", "Edit", "NotebookEdit"]`. You write nothing regardless of that grant;
+<none — read-only pass. If running as the Claude fallback: no tool grant restricts you, so this
+line is the constraint. You write nothing — no Write, Edit, NotebookEdit, or shell redirect;
 report findings only in your final message.>
 
 ## What to check
