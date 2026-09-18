@@ -35,6 +35,14 @@ for the session when the hooks worker crashes, and evaluate matchers once before
 gate ported there must catch and deny on its own error and sit above any hook that rewrites
 the event.
 
+**The principle behind that per-gate table, stated once:** fail closed when the verdict
+authorizes an action; fail open to the native/no-op path when the verdict only optimizes one
+that was already going to happen anyway. `irrecoverable.py` denies on a missing sibling because
+its verdict gates an irreversible command; the three subagent-scoped gates allow on the same
+failure because their absence just returns the session to unguarded-but-otherwise-normal
+behavior, not to a worse state than before the gate existed. A new gate's error path is decided
+by which side of that line its verdict sits on, not by copying an existing wrapper's style.
+
 ## 2. The maker never grades its own work
 
 An LLM cannot reliably judge output it produced in the same context (self-preference bias;

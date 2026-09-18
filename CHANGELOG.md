@@ -3,6 +3,47 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.96] — 2026-09-18
+
+### Added
+
+- **Shared weighted scorer** (`scripts/_lib/weighted-score.py`) — `mh:deep-audit`'s 5-dimension
+  rubric and `mh:idea-audit`'s Phase 3 axis scoring now both hand their per-item scores to one
+  script instead of computing the weighted total by hand, mirroring the guarantee
+  `skills/workflow/ideate/scripts/rank.py` already gives ideate. An `insufficient evidence` item
+  is dropped from both the numerator and denominator (renormalized), never divided by the full
+  weight sum — that would be arithmetically identical to scoring it 0. Fails closed: malformed
+  input or an entirely-insufficient source exits non-zero with no stdout, never falls back to a
+  hand-computed total. idea-audit also gains a `primaryId` check confirming the primary-source-
+  fidelity axis's weight is strictly the largest (catches a tie a bare sum-to-100 check would
+  miss).
+- **`skills/review/deep-audit/scripts/check-verdict.py`** — extracted from an inline
+  single-quoted `python3 -c '...'` prose block in `SKILL.md` (this repo's own
+  `embedded-python-single-quote-fragility` gotcha class) and hardened from a presence-only check
+  (`{"pass","findings","scope_ok","unexpected_files"} <= d.keys()`, a subset test) to full shape
+  and type validity: exact key-set equality, `pass`/`scope_ok` as real booleans, every
+  `findings[]` item validated against the `{summary, evidence}` shape
+  `references/checker-output-schema.json` already requires. A correct `NEEDS-DECISION`
+  escalation (`docs/reference/spawn-brief.md`'s return contract) is now distinguished from a
+  rejected/malformed verdict (exit 2 vs. exit 1) rather than misclassified as broken.
+
+### Changed
+
+- `docs/reference/operating-model.md` — states the fail-closed-vs-fail-open principle behind
+  the existing per-gate error-path table: fail closed when a verdict authorizes an action, fail
+  open to the native/no-op path when it only optimizes one. Previously implicit in the table's
+  asymmetry, not written down.
+- `docs/reference/agent-authoring-conventions.md` — reworded (not deleted) a stale ">80%"
+  confidence-bar line that zero agents in the fleet implement; kept the co-located, actually
+  implemented file:line-citation and zero-findings-is-valid clauses.
+
+Prompted by applying design concepts from a third-party "Jev" model release to this repo's own
+decision layer; most of the exercise concluded the gates already embody the idea (no network
+call anywhere in `hooks/`, three fixed verdict shapes, zero graded verdicts) and retracted a
+confidence-thresholding proposal this repo's own doctrine already rejects for four independently
+stated reasons (`docs/reference/operating-model.md`, `agents/plan-reviewer.md`,
+`agents/blind-spot-hunter.md`). Full source-verification pass: `docs/research/typesafe-ai-system-one-jev-2026-09-18.md`.
+
 ## [1.1.95] — 2026-09-18
 
 ### Added

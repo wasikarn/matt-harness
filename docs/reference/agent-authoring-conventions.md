@@ -55,9 +55,12 @@ idea applied to agent design.
 
 ## 5. Confidence discipline for anything that reports findings
 
-Review agents state a confidence bar (commonly >80%) and require HIGH/CRITICAL findings to cite
+Review agents state a confidence with each finding and require HIGH/CRITICAL findings to cite
 `file:line` or a reproducible scenario. **Zero findings on a clean input is valid output**; do
-not manufacture findings to look thorough.
+not manufacture findings to look thorough. State the confidence, never drop a finding on it —
+a stated confidence is context for the reader, never a gate the agent uses to withhold or
+filter its own output (`docs/reference/operating-model.md`'s "confidence is the weakest input
+because it is the only one the model controls" applies to a reviewer's own findings too).
 
 Why: static-analysis false-positive rates run 35 to 91%, and LLM review has the opposite failure
 too (near-total misses on seeded vulnerabilities). Explicit discipline is an evidenced
@@ -95,7 +98,7 @@ the plugin ships no preload-only skills.
 3. Add `## Prompt Defense Baseline` if the agent ever touches content it did not generate.
 4. Pin `model: opus` only if the value is judgment quality.
 5. If it grades other work: fresh-context, advisory-only, never self-gating.
-6. If it reports findings: state a confidence bar; zero findings is valid.
+6. If it reports findings: state a confidence per finding; zero findings is valid.
 7. If it returns a branchable status: closed set of terminal codes in `## Output Format`.
 8. Run `bash skills/meta/harness-audit/scripts/audit.sh`; checks 04, 09, 24, 41, 54
    touch new agents directly.

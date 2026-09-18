@@ -29,8 +29,7 @@ your own note on it.
 
 ## 2. Score the baseline on the fixed rubric
 
-Score each dimension 0–10 from evidence and take the weighted average (weights sum to 10);
-pass is 7.0 or more with no dimension under 5. Same rubric every run, so runs compare.
+Score each dimension 0–10 from evidence. Same rubric every run, so runs compare.
 
 | dimension | weight | evidence that earns the score |
 |---|---|---|
@@ -42,8 +41,29 @@ pass is 7.0 or more with no dimension under 5. Same rubric every run, so runs co
 
 Evidence is read in the operating-model order: deterministic result, then this run's
 trajectory, then rollback history, then model confidence last. A dimension with no evidence is
-marked **insufficient evidence**, left out of the total, and named in the report for the operator to
-decide; a guessed score is worse than none (Rule 14).
+marked **insufficient evidence** and passed through as such; a guessed score is worse than none
+(Rule 14).
+
+The model scores each dimension and writes reasons; `scripts/_lib/weighted-score.py` (repo root)
+does the arithmetic — the weighted total, the pass/fail call, and the "insufficient evidence"
+renormalization — so a wrong hand sum can never reach a Final Verdict:
+```
+python3 scripts/_lib/weighted-score.py <<< '{"scores": [
+  {"id": "correctness", "score": <0-10>, "max": 10, "weight": 3, "insufficient": <bool>},
+  {"id": "completeness", "score": <0-10>, "max": 10, "weight": 2, "insufficient": <bool>},
+  {"id": "claim_accuracy", "score": <0-10>, "max": 10, "weight": 2, "insufficient": <bool>},
+  {"id": "regression_safety", "score": <0-10>, "max": 10, "weight": 2, "insufficient": <bool>},
+  {"id": "simplicity", "score": <0-10>, "max": 10, "weight": 1, "insufficient": <bool>}
+], "floorPct": 0.5, "passThreshold": 7.0}'
+```
+An `insufficient`-flagged dimension is dropped from both the numerator and the denominator, so
+the total renormalizes over the dimensions that actually scored — it is never divided by the
+full weight sum, which would be arithmetically identical to scoring the dropped dimension 0.
+`pass` in the output is `total >= 7.0` with no scored dimension under 50% of its own max (`5`);
+report `belowFloor` and any insufficient-evidence dimensions to the operator either way. **The
+script fails closed:** malformed input (a missing field, a non-numeric score, or every dimension
+flagged insufficient) exits non-zero with a reason on stderr — treat that as a hard `fail`,
+never as license to fall back to computing the total by hand.
 
 Claim accuracy is scored on whether the claim was true when made; later evidence that makes it
 true is separate current-state work.
@@ -96,34 +116,24 @@ On this fallback path there is no `--output-last-message` file and no `--output-
 "the output-last-message file parses against the schema" above doesn't apply literally. A live
 run of this path (2026-09-18) returned a schema-valid object followed by unrequested trailing
 prose after the closing code fence — a plain "strip a leading/trailing fence" rule doesn't
-survive that, since the trailing prose sits after the fence, not inside it. Read the criterion
-instead as: **extract the first balanced JSON object from the agent's final message** and check
-it parses with all four fields present. Do this by trying every `{` in the text in order until
-one starts a value that actually parses — not just the first `{` byte, which fails whenever
-narration before the real JSON contains its own brace (a realistic case here: the validator's own
-prompt, `docs/reference/spawn-brief.md`'s `Validator/re-validator:` line, literally contains the
-string `{pass, findings[], scope_ok, unexpected_files[]}`, so an agent that echoes its
-instructions before answering trips a naive first-brace search):
+survive that, since the trailing prose sits after the fence, not inside it. Pipe the agent's raw
+final message to `scripts/check-verdict.py`:
 ```
-python3 -c '
-import json, sys
-t = sys.stdin.read()
-dec = json.JSONDecoder()
-d = None
-i = t.find("{")
-while i != -1:
-    try:
-        d, _ = dec.raw_decode(t, i)
-        break
-    except ValueError:
-        i = t.find("{", i + 1)
-assert d is not None and {"pass", "findings", "scope_ok", "unexpected_files"} <= d.keys()
-'
+python3 skills/review/deep-audit/scripts/check-verdict.py <<< "$AGENT_FINAL_MESSAGE"
 ```
-— tolerant of a fence, leading narration, or trailing narration alike, without requiring the
-stricter "nothing before `{` or after `}`" some other agents in this repo are held to. Check
-field presence mechanically rather than by eyeballing it. The substance rule is unchanged either
-way: schema-valid JSON that still refuses in prose is not review evidence.
+It extracts the first JSON object that actually parses (trying every `{` in the text in order,
+not just the first byte — narration before the real JSON can itself contain a brace, e.g. the
+agent echoing `docs/reference/spawn-brief.md`'s own `{pass, findings[], scope_ok,
+unexpected_files[]}` return-contract line), then validates it against the full contract: exact
+key-set equality (not merely all four keys present — an extra invented field is rejected too),
+`pass`/`scope_ok` as real booleans, every `findings[]` item as exactly `{summary, evidence}`
+with string values, `unexpected_files[]` as a list of strings. Exit 0 with the validated JSON on
+stdout means accept; exit 1 with a reason on stderr means reject (a malformed verdict must never
+reach a fixer brief); **exit 2 means the agent correctly returned `NEEDS-DECISION` instead of
+guessing** (`spawn-brief.md:31-33`'s escalation return) — that is a valid non-guess, not a
+rejected verdict, and surfaces to the operator as an open question, not a broken checker. The
+substance rule is unchanged regardless of exit code: schema-valid JSON that still refuses in
+prose is not review evidence.
 
 **Re-fingerprint after the checker returns.** A mismatch against the pre-dispatch manifest — a
 changed hash, a path that appeared or disappeared — means a concurrent session touched scope
@@ -185,7 +195,8 @@ criteria. If the score did not move, say so and say why.
 
 Line one is the **Final Verdict**: pass or fail against the threshold in step 2, with the
 reason and a confidence level, stated plainly — check step 3's hard-fail override first; when it
-fires, it wins regardless of the step-2 total. Then:
+fires, it wins regardless of the step-2 total. The total and the pass/fail call are copied from
+`weighted-score.py`'s output, never computed by hand. Then:
 
 1. Baseline score (per dimension, weighted total)
 2. Findings, with the checker's and your own marked

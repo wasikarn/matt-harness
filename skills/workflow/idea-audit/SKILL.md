@@ -267,6 +267,25 @@ covering the common partial case — one or two criteria weak, not the whole sou
 scale differ from that file's); state the chosen threshold in the artifact rather than importing
 85 by assumption.
 
+The model scores each axis and writes reasons; `scripts/_lib/weighted-score.py` (repo root) does
+the arithmetic and both floor checks — the same script `mh:deep-audit` uses, so the "no hand sum
+ever reaches the output" guarantee is one mechanism, not two:
+```
+python3 scripts/_lib/weighted-score.py <<< '{"scores": [
+  {"id": "<axis-id>", "score": <0-max>, "max": <axis-own-max>, "weight": <w>, "insufficient": <bool>},
+  ...
+], "floorPct": 0.40, "primaryId": "<primary-source-fidelity axis id>"}'
+```
+`total` renormalizes over axes that actually scored, dropping an `insufficient` axis from both
+the numerator and the denominator — never dividing by the full weight sum, which would score it
+0 by another name. `belowFloor` lists axes at or under 40% of their own max — trigger (2) above.
+`primaryWeightOk` is trigger-adjacent, not a floor: pass `primaryId` and the script confirms that
+axis's weight is *strictly* the largest, catching a tie (two axes both at 40, say) a bare
+sum-to-100 check would miss. Omit `passThreshold` — this phase writes a scored verdict for the
+artifact, not a single pass/fail gate. **The script fails closed:** malformed input or an
+entirely-insufficient source exits non-zero with a reason on stderr, which is trigger (1) above
+by construction — treat it as the floor tripping, never as license to compute the total by hand.
+
 Per-claim verdict vocabulary: `MATCH / PARTIAL / GAP / N-A`, with a legend line above the table —
 picked for consistency going forward, not asserted as an already-dominant convention.
 **MATCH:** both the claim's core assertion and its specific details (a number, a scope, a timing)
