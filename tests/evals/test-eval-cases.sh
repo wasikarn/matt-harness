@@ -31,7 +31,7 @@ trap 'trash "$TMP" 2>/dev/null || true' EXIT
 
 # Cases whose prompt deliberately does not name a subagent_type/skill: they prove
 # the agent/skill must NOT be dispatched for an out-of-scope or misrouted ask.
-NO_DISPATCH_EXPECTED="handoff-no-slash-command code-architect-trivial-no-dispatch perf-regression-routing backend-architect-file-blueprint-misroute ideate-critic-security-review-misroute"
+NO_DISPATCH_EXPECTED="code-architect-trivial-no-dispatch perf-regression-routing backend-architect-file-blueprint-misroute ideate-critic-security-review-misroute"
 
 n=0
 for d in "$EVALS"/*/; do
@@ -63,7 +63,6 @@ for d in "$EVALS"/*/; do
     harness-audit-*) /usr/bin/grep -q 'skill: "mh:harness-audit"' "$d/prompt.md" || { bad "$c: prompt.md does not name the skill"; continue; } ;;
     post-mortem-*)   /usr/bin/grep -q '^/mh:post-mortem' "$d/prompt.md" || { bad "$c: prompt.md does not invoke the skill by slash command"; continue; } ;;
     compliance-audit-*) /usr/bin/grep -q '^/mh:compliance-audit' "$d/prompt.md" || { bad "$c: prompt.md does not invoke the skill by slash command"; continue; } ;;
-    handoff-*)       /usr/bin/grep -q '/mh:handoff' "$d/prompt.md" || { bad "$c: prompt.md does not invoke the skill by slash command"; continue; } ;;
     memory-lint-*)   /usr/bin/grep -q 'skill: "mh:memory-lint"' "$d/prompt.md" || { bad "$c: prompt.md does not name the skill"; continue; } ;;
     learn-*)         /usr/bin/grep -q 'skill: "mh:learn"' "$d/prompt.md" || { bad "$c: prompt.md does not name the skill"; continue; } ;;
     ideate-critic-*) /usr/bin/grep -q 'subagent_type: "mh:ideate-critic"' "$d/prompt.md" || { bad "$c: prompt.md does not name a subagent_type"; continue; } ;;
@@ -220,7 +219,7 @@ PY
   then bad "$c: a grader is malformed"; continue; fi
   ok "$c"
 done
-[ "$n" -eq 76 ] || bad "expected 76 cases, found $n"
+[ "$n" -eq 70 ] || bad "expected 70 cases, found $n"
 
 echo "eval-cases: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

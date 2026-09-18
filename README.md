@@ -66,7 +66,7 @@ score not feel. `git-hooks/pre-commit` refuses a `docs/METHODOLOGY.md` over 4096
 ## What it ships
 
 - **Skills:** `mh:harness-audit` (30 structural checks), `mh:memory-lint`, `mh:cost-report`,
-  `mh:deep-audit`, `mh:handoff`, `mh:ideate`, `mh:idea-audit`, `mh:post-mortem`,
+  `mh:deep-audit`, `mh:ideate`, `mh:idea-audit`, `mh:post-mortem`,
   `mh:tech-humanize`. (This list has drifted before — `ste-lint`, `learn`, and `compliance-audit`
   ship but aren't named here; not closed in this pass, out of scope.)
 - **Agents (10):** backend-architect, blind-spot-hunter, code-architect, ideate-critic,

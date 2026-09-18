@@ -19,23 +19,13 @@
         "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session/memory-health-nudge.sh\""
       },
       {
-        "id": "session:handoff-surface",
-        "description": "Inline any unread mh:handoff documents for this project, newest-first, then archive them; silent when none pending. Matcher excludes compact so the session that just wrote a handoff doesn't immediately re-consume it.",
-        "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session/handoff-surface.sh\""
-      },
-      {
-        "id": "session:handoff-nudge",
-        "description": "Nudge the model to suggest /mh:handoff to the user after a compact, once per session; silent otherwise. Matcher fires only on compact -- the opposite of session:handoff-surface's exclusion.",
-        "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session/handoff-nudge.sh\""
-      },
-      {
         "id": "session:fragments-surface",
         "description": "Surface a one-line pointer per writing-fragments document with an unseen on-disk change since it was last shown; silent when none. Records the new snapshot for what it shows and sweeps stale TMPDIR arm state.",
         "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session/fragments-surface.sh\""
       },
       {
         "id": "session:fragments-reinject",
-        "description": "Reprint every on-record writing-fragments document unconditionally after a compact, ignoring the snapshot-diff filter; never records. Opposite inclusion from session:handoff-nudge's compact-only scope -- a fragments file's one stated path is exactly what compaction loses.",
+        "description": "Reprint every on-record writing-fragments document unconditionally after a compact, ignoring the snapshot-diff filter; never records. A fragments file's one stated path is exactly what compaction loses, so this ignores compact's own scoping.",
         "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session/fragments-surface.sh\" --reinject"
       }
     ],

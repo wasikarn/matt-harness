@@ -32,22 +32,6 @@ layer — mh creates no surface whose only job is to call Codex.
 _Avoid_: "integration," which implies code-level coupling mh deliberately avoids; "orchestration,"
 which implies mh sequences or supervises Codex's work.
 
-**Handoff**:
-A Markdown session-summary document, written by mh's own `/mh:handoff` skill (`skills/workflow/
-handoff/`) to a path mh controls, distinct from `mattpocock-skills:handoff` — the upstream skill
-mh deliberately does not delegate to or detect (`docs/adr/0002-mh-controlled-handoff-path.md`),
-since its own instructions name no write tool and no output path. The term covers both directions:
-`session:handoff-surface` reads and inlines an unread one at `SessionStart`; `session:handoff-nudge`
-nudges the model, once per session right after a compact, to suggest writing one.
-_Avoid_: "the handoff skill" without a prefix, ambiguous between mh's and mattpocock's; "handoff
-file" for anything still in `staging/` — it isn't a handoff until published to `pending/`.
-
-**Consumed** (handoff state):
-The state a handoff enters once mh's `session:handoff-surface` hook has moved it from
-`pending/` to `consumed/` after printing it successfully. No age-based expiry — a document in
-`consumed/` is never auto-replayed, regardless of how long it sat unread beforehand.
-_Avoid_: "stale" or "expired," which imply a time-based rule mh deliberately does not use.
-
 **Fragments pointer**:
 The durable JSON record `sensor:write:fragments-capture` writes at `$HOME/.claude/state/
 mh-fragments/` when a write plausibly targets a `mattpocock-skills:writing-fragments` document —

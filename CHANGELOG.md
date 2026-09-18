@@ -3,6 +3,23 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.94] — 2026-09-18
+
+### Removed
+
+- **`mh:handoff` and its two `SessionStart` hooks are gone; mh now defers to
+  `mattpocock-skills:handoff` directly.** `mh:handoff` (`skills/workflow/handoff/`,
+  `session:handoff-surface`, `session:handoff-nudge`) was never a wrapper around upstream —
+  upstream is `disable-model-invocation: true`, so mh could not delegate to it and authored its
+  own content guidance instead (`docs/adr/0002-mh-controlled-handoff-path.md`). Kept anyway, it
+  duplicated a skill this repo already composes, a composer-not-creator violation. Removed:
+  the skill, both hooks (`hooks/hooks.json`, `hooks/hook-registry.json`), 3 tests, and 6
+  `evals/handoff-*` cases (76 → 70). `docs/adr/0002` is marked superseded, not deleted — it
+  records a rejected auto-surfacing design worth keeping. Fragments (`docs/adr/0003`) was
+  checked and does not depend on any handoff machinery. The trade-off, stated plainly: the
+  auto-surfacing this removes (no path to retype next session) comes back as upstream's known
+  friction — accepted, since the operator asked for the removal.
+
 ## [1.1.93] — 2026-09-18
 
 ### Fixed

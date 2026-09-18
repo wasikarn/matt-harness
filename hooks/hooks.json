@@ -33,26 +33,6 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session/handoff-surface.sh\"",
-            "timeout": 10
-          }
-        ]
-      },
-      {
-        "matcher": "compact",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session/handoff-nudge.sh\"",
-            "timeout": 5
-          }
-        ]
-      },
-      {
-        "matcher": "startup|resume|clear",
-        "hooks": [
-          {
-            "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session/fragments-surface.sh\"",
             "timeout": 10
           }

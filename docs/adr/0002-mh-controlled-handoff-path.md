@@ -1,5 +1,10 @@
 # mh writes its own handoff, at a path it controls
 
+*Superseded 2026-09-18: `mh:handoff` and its two `SessionStart` hooks were removed in v1.1.94 —
+a composer-not-creator violation given upstream's existence. mh now defers to
+`mattpocock-skills:handoff` directly and ships nothing of its own here. This ADR stays for the
+rejected-design record below.*
+
 `mattpocock-skills:handoff` compacts a session into a Markdown document, but its own
 instructions name no write tool and no output path or filename — only "save to the temporary
 directory of the user's OS." The user has to find and retype that path in the next session,

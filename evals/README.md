@@ -71,28 +71,12 @@ redirect into `costs.jsonl`; Write and Edit are not granted). The prompt points 
 workspace log with `MH_COSTS_FILE`, since the sandbox HOME is fresh and case `env` keys must be
 `EVAL_*`. Needs `--allow-tools Bash`.
 
-Six for `handoff` (tag `handoff`): plain `prompt.md` + `graders/` cases, no `case.yaml` — this
-skill needs no fixture files, so scaffolding wasn't worth adding. Note for future suites:
+Note for future suites (not skill-specific, kept from the removed `handoff` suite):
 `context.scaffold_script` must be a relative path to an external `.sh` file in the case dir (e.g.
 `scaffold_script: scaffold.sh`); inline YAML block content (the shape every other suite here
 predated this and used) is mis-parsed as a literal path under the installed CLI and fails to load
-— confirmed on `post-mortem`, not `handoff`-specific. See "A previously-invisible defect" below:
-every other suite in this file has since been converted to the file-path form. Five fire
-cases (clean finish, mixed done/blocked/not-started progress, a live-looking secret that must be
-redacted from the persisted doc, a currently-failing named test, and a sparse session that must
-mark unknown items "Unknown" rather than invent) plus one should-NOT-fire case: a plain-English
-"save my progress" ask with no `/mh:handoff`, which must not freelance a file and should point to
-the command. Every fire case's prompt ends with a line telling the model to treat the narrated
-session as ground truth rather than re-verifying the sandbox's (empty) filesystem against it —
-without that line, a careful model notices the mismatch and the content-quality graders misfire.
-The skill's own publish mechanism (`$HOME/.claude/state/mh-handoffs/...`) is outside the sandbox's
-writable scope and every attempt there is denied deterministically, every run — graders don't
-require a successful `Write`/publish, only that the model attempted the documented steps
-(`attempted-staging.md`, `tool_used: Bash`) and that the six-item content is present and honest
-wherever it lands (Write input or the final message), never claiming false success. `mh`'s
-manifest sets `defaultEnabled: false`; the eval sandbox doesn't inherit the operator's own
-enablement override, so the with-arm silently runs without the plugin unless `defaultEnabled` is
-temporarily flipped to `true` in `.claude-plugin/plugin.json` for the run and reverted after.
+— confirmed on `post-mortem`. See "A previously-invisible defect" below: every other suite in
+this file has since been converted to the file-path form.
 
 Six for `code-architect` (tag `code-architect`, agent not a skill — dispatched via the `Agent`
 tool with `subagent_type: "mh:code-architect"`, not a `disable-model-invocation` slash command).
@@ -116,8 +100,8 @@ without-plugin arm, `mh:code-architect` doesn't exist — the model's first disp
 built-in `Plan` agent. This makes `tool_used: Agent` with `input_match` on the requested
 subagent_type a false-positive trap (it matches the failed attempt too, not just a successful
 one): `agent-fired.md` is a `regex`/`trace` `not_contains` check on that exact tool-error string
-instead. Needs `--allow-tools Bash,Read,Grep,Glob,Agent,Edit` and, like `handoff`, needs
-`defaultEnabled: true` temporarily for the with-arm to load the plugin's agents at all.
+instead. Needs `--allow-tools Bash,Read,Grep,Glob,Agent,Edit` and needs `defaultEnabled: true`
+temporarily for the with-arm to load the plugin's agents at all.
 
 Six for `performance-optimizer` (tag `performance-optimizer`, agent, same dispatch/ablation
 mechanics as `code-architect` — explicit dispatch instruction in every fire-case prompt,
@@ -247,8 +231,7 @@ claude plugin eval . --scaffold --tag memory-lint --allow-tools Bash --runs 1 --
 claude plugin eval . --scaffold --tag ideate --runs 1 --no-publish     # the run case spawns 6-8 agents
 claude plugin eval . --scaffold --tag deep-audit --allow-tools Bash,Edit,Write --runs 1 --no-publish
 claude plugin eval . --scaffold --tag cost-report --allow-tools Bash --runs 1 --no-publish
-# defaultEnabled must be temporarily true in .claude-plugin/plugin.json for these three
-claude plugin eval . --tag handoff --allow-tools Bash,Write,Read,Glob,Grep --ablation with-without --no-publish
+# defaultEnabled must be temporarily true in .claude-plugin/plugin.json for these four
 claude plugin eval . --scaffold --tag code-architect --allow-tools Bash,Read,Grep,Glob,Agent,Edit --ablation with-without --no-publish
 claude plugin eval . --scaffold --tag performance-optimizer --allow-tools Bash,Read,Write,Edit,Grep,Glob,Agent --ablation with-without --no-publish
 claude plugin eval . --scaffold --tag backend-architect --allow-tools Bash,Read,Grep,Glob,Agent --ablation with-without --no-publish
