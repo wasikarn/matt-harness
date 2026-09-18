@@ -259,6 +259,31 @@ the use-case-map's "verify hallucinations in other AIs" pitch rests on a *judgme
 guarantee that is a stronger, different, and — per this review — still-unverified claim, distinct
 from (and not covered by) the "0% type errors" figure the blog treats as its headline evidence.
 
+## Addendum, 2026-09-18: independent field-test evidence on the speed claim (idea-audit re-run)
+
+Coordinator re-ran this same source through `mh:idea-audit` (2 isolated analysts + 1 adversarial
+attacker, Codex primary rate-limited, Claude fallback used). Verdict unchanged from above and from
+the applicability addendum: mh already has the functional equivalent, no Jev adoption warranted.
+One genuinely new data point surfaced, not in the sections above:
+
+- **Real-world reproduction found, and it's much lower than the headline number.** A UK events
+  company ("Near Here") ran ~50 live moderation decisions through Jev and measured "roughly five
+  times faster" than their prior LLM setup — not the blog's "up to 193 times faster than Claude
+  Sonnet 5." A separate public reproduction attempt, `github.com/themsquared/jev-benchmark`,
+  explicitly states it ran "no frontier-LLM baseline in these numbers... nothing here supports or
+  refutes the vendor's speed and cost multipliers" — i.e. even the closest thing to an independent
+  benchmark declines to validate the multiplier.
+- **The vendor's own headline number is internally inconsistent.** The Register's quoted demo
+  figures (0.114s vs. 8.566s, already cited above) work out to `8.566 / 0.114 ≈ 75x`
+  (verified: `python3 -c "print(8.566/0.114)"` → `75.14`) — not the "193.6x" the launch page's own
+  chart headlines. Both numbers come from TypeSafe's own materials; they don't agree with each
+  other.
+
+Net effect: strengthens, doesn't change, the existing "self-reported only, no independent
+reproduction" finding — now there IS an independent reproduction, and it lands roughly an order of
+magnitude below the vendor's claim, with the vendor's own page also disagreeing with itself on the
+multiplier.
+
 ## Sources
 
 - [TypeSafe AI blog post (subject of this review)](https://typesafe.ai/blog/introducing-system-one-models-and-jev)
