@@ -98,8 +98,28 @@ run of this path (2026-09-18) returned a schema-valid object followed by unreque
 prose after the closing code fence — a plain "strip a leading/trailing fence" rule doesn't
 survive that, since the trailing prose sits after the fence, not inside it. Read the criterion
 instead as: **extract the first balanced JSON object from the agent's final message** and check
-it parses with all four fields present, e.g.
-`python3 -c 'import json,sys; t=sys.stdin.read(); d,_=json.JSONDecoder().raw_decode(t, t.index("{")); assert {"pass","findings","scope_ok","unexpected_files"} <= d.keys()'`
+it parses with all four fields present. Do this by trying every `{` in the text in order until
+one starts a value that actually parses — not just the first `{` byte, which fails whenever
+narration before the real JSON contains its own brace (a realistic case here: the validator's own
+prompt, `docs/reference/spawn-brief.md`'s `Validator/re-validator:` line, literally contains the
+string `{pass, findings[], scope_ok, unexpected_files[]}`, so an agent that echoes its
+instructions before answering trips a naive first-brace search):
+```
+python3 -c '
+import json, sys
+t = sys.stdin.read()
+dec = json.JSONDecoder()
+d = None
+i = t.find("{")
+while i != -1:
+    try:
+        d, _ = dec.raw_decode(t, i)
+        break
+    except ValueError:
+        i = t.find("{", i + 1)
+assert d is not None and {"pass", "findings", "scope_ok", "unexpected_files"} <= d.keys()
+'
+```
 — tolerant of a fence, leading narration, or trailing narration alike, without requiring the
 stricter "nothing before `{` or after `}`" some other agents in this repo are held to. Check
 field presence mechanically rather than by eyeballing it. The substance rule is unchanged either

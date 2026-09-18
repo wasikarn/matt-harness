@@ -172,15 +172,21 @@ can't emit outside a declared type — has anything to offer this repo. It does 
 adopted from Jev: mh already has the equivalent via `codex exec --output-schema` (two JSON
 Schemas, `skills/review/deep-audit/references/checker-output-schema.json` and
 `skills/workflow/idea-audit/references/attacker-output-schema.json`), shipped weeks before this
-research. The actual gap found was narrower and unrelated to Jev specifically: `--output-schema`
-is a Codex CLI flag with no Claude Agent-tool equivalent, so every Claude fallback path (used
-when Codex is rate-limited or absent) was both unenforced and, more importantly,
-under-instructed — never told the output shape at all. Also confirmed against
-code.claude.com/docs that Claude Code has no producer-side enforcement mechanism to adopt even
-if desired: `SubagentStop` is observation-only, there's no output-schema frontmatter field for
-agents, and plugins cannot define native tools. Fixed in `docs/reference/spawn-brief.md` and
-`skills/review/deep-audit/SKILL.md` (see repo history same date); `compliance-audit` has the
-same gap class, deferred separately.
+research. The actual gap found was narrower and unrelated to Jev specifically, and not universal:
+`--output-schema` is a Codex CLI flag with no Claude Agent-tool equivalent, so a Claude fallback
+path *could* ship both unenforced and under-instructed — but not every one did. Idea-audit's
+Claude fallback already carried an explicit output-shape contract
+(`skills/workflow/idea-audit/references/attacker-brief.md`'s `## Output` section, wired into its
+`general-purpose` fallback dispatch). The two paths that were genuinely under-instructed were
+`docs/reference/spawn-brief.md`'s dispatched-validator template (the return contract lived outside
+the fenced brief) and `skills/review/deep-audit/SKILL.md`'s fallback acceptance criterion (written
+purely in Codex-CLI terms, unsatisfiable on the Claude path) — both fixed same date. Also confirmed
+against code.claude.com/docs that Claude Code has no producer-side enforcement mechanism to adopt
+even if desired: `SubagentStop` is observation-only, there's no output-schema frontmatter field
+for agents, and plugins cannot define native tools. `compliance-audit`'s own Claude fallback was
+checked separately and found not to depend on any Codex-only artifact in the first place (no
+`spawn-brief`/`output-schema`/`output-last-message` reference in its SKILL.md), so there was no
+comparable gap to defer there.
 
 ## Addendum, 2026-09-18: `concepts/use-case-map.md` drill-down
 

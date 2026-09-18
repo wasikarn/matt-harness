@@ -3,6 +3,22 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.93] — 2026-09-18
+
+### Fixed
+
+- **1.1.92's field-presence check broke on the exact input it targeted.** A `/mh:deep-audit` pass
+  found `skills/review/deep-audit/SKILL.md`'s new fallback check used `t.index("{")` — the first
+  literal brace in the text, not a balanced object — which throws whenever narration before the
+  real JSON contains its own `{` (realistic here: the validator's own prompt echoes the literal
+  string `{pass, findings[], scope_ok, unexpected_files[]}`). Fixed to try every `{` in order
+  until one parses; verified against the failing case plus two negative controls (missing key,
+  no braces at all) that still correctly fail. Also corrected two false claims the same pass
+  introduced: the research doc's "every Claude fallback path... never told the output shape"
+  (idea-audit's fallback already had one), and both the doc's and this file's own
+  "compliance-audit has the same gap class, deferred" (it never depended on a Codex-only artifact,
+  so there was nothing to defer).
+
 ## [1.1.92] — 2026-09-18
 
 ### Fixed
@@ -16,8 +32,10 @@ All notable changes to `mh` are documented here. Format loosely follows
   written purely in Codex-CLI terms (`--output-last-message` file, `--output-schema`), which has
   no equivalent on that path; restated as extracting the first balanced JSON object from the
   agent's final message (confirmed against a live fallback run, which returned schema-valid JSON
-  followed by trailing prose after the closing fence) with a named field-presence check.
-  `compliance-audit` has the same gap class on its own Claude fallback, deferred separately.
+  followed by trailing prose after the closing fence) with a named field-presence check that tries
+  every `{` in order rather than just the first, since the validator's own instructions echo a
+  literal `{` before the real answer. `compliance-audit`'s Claude fallback was checked separately
+  and found not to depend on any Codex-only artifact, so it had no comparable gap to defer.
 
 ## [1.1.91] — 2026-09-14
 
