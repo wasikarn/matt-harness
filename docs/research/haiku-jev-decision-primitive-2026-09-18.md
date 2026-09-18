@@ -177,3 +177,22 @@ to that skill's actual shape, not a general-purpose new skill).
   `hooks/gates/*.py`, `hooks/stop/cost-tracker.sh`, `skills/workflow/ideate/SKILL.md`
 - Companion notes: `docs/research/typesafe-ai-system-one-jev-2026-09-18.md`,
   `docs/research/jev-architecture-unmasked-archerhume-2026-09-18.md`
+
+**Correction (2026-09-18, `mh:deep-audit` of this session):** sections above stand as written;
+these were wrong when made.
+
+- Lines 38-39: "10 gate scripts" — `hooks/gates/` holds 7 gates (each a `.py` + `.sh` wrapper
+  pair) plus `_journal.py`; line 59's own list of 7 is the right count.
+- Line 59: the `anthropic|haiku|claude` grep over `hooks/` hits 14 files (model-name strings in
+  `irrecoverable.py`, `config-write-guard.py`, `task-complete-separation.py`,
+  `hook-registry.json`, …), not only `cost-tracker.sh`. The conclusion holds: a grep for actual
+  API-call shapes (`api.anthropic.com|from anthropic|import anthropic|Anthropic(`) over
+  `hooks/ scripts/ skills/` exits 1.
+- Lines 42-43: paraphrase presented as a quote; the verbatim line is
+  `skill-authoring-conventions.md:28`, quoted correctly at lines 126-128.
+- Lines 105-106 and 143-144: "dispatch a fresh Agent with `model: "haiku"` … `tool_choice`,
+  `strict: true`" conflates two routes. The Agent tool carries `model` only; `tool_choice`/`strict`
+  exist on the raw Messages API. `docs/reference/haiku-decision-calls.md` now states both routes
+  and that the strict guarantee needs an API-key script mh doesn't have yet.
+- The worked example the plan called for must carry `additionalProperties: false` on the object
+  (strict-mode requirement); the reference doc was fixed to include it.

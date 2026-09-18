@@ -101,5 +101,27 @@ limitation from the Codex fallback).
   not independently re-benchmarked here — re-check only if a real browser-automation decision in
   this repo would depend on them.
 
-<!-- Reserved: a later pass appends a dated correction here, never rewrites the sections above.
-**Correction (date, mechanism):** ... -->
+**Correction (2026-09-18, `mh:deep-audit` of this session, Claude-fallback checker + transcript
+re-read):** the sections above stand as written; these claims in them were wrong when made.
+
+- Method (line 21): no `qmd` query ran this session — the prior-coverage check was a
+  `docs/research/` + `MEMORY.md` grep only (transcript has zero qmd tool calls).
+- Method (line 26) and the commit message: Codex did not fail "mid-run" — it errored on its
+  first turn, before producing any work (rollout: prompt 12:59:35Z, usage-limit error 12:59:37Z).
+- Method (line 28) and score table (line 84): no `disallowedTools` grant was passed — the Agent
+  tool has no such parameter (per-invocation it accepts `model` only). The dispatch carried
+  `{description, prompt, subagent_type}`; the write ban was in-prompt, and the real backstop was
+  the `git status --porcelain` bracket, which held (subagent used Bash/WebFetch/Read only).
+- Lines 29-30: required wording is "independence is **lost** for that pass"
+  (`docs/reference/codex-integration-map.md:21`), not "reduced".
+- Line 50: `haiku-decision-calls.md:5-6` → the cited text is on line 4.
+- Lines 82, 84, 90: the attacker returned **13** `checked[]` items, not 14; and "9/11 confirmed
+  by both Agent A and the attacker" overstates — the attacker's receipts cover rows 2, 5, 9, 10,
+  11; rows 1, 3, 4, 6 rest on Agent A alone. The deep-audit checker later re-fetched rows 2 and
+  5 (PyPI `0.0.1a2` 2026-09-17; `gh api` 4,225 stars, not fork/archived).
+- Lines 67-68: the doctrine line is a paraphrase, not a quote — `skill-authoring-conventions.md:28`
+  reads "If Claude already clears all 3, the skill should not exist."
+
+Score not re-run: the process errors above don't change any row verdict, but a reader should
+weight the fidelity row's "both analysts confirmed" evidence down to "Agent A plus partial
+attacker coverage."
