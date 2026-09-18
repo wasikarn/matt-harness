@@ -132,6 +132,16 @@ shortfall is entirely the two effort-level numbers above, both fixable by editin
 directly off the live settings file, a live catalog call, or an official changelog line, not
 inferred.
 
+**Correction (found by `/mh:deep-audit`, 2026-09-18, same day):** the two STALE rows above were
+already fixed before this addendum was committed. Dotfiles commit `1e801bd3` (2026-09-18 12:06:01
++0700) edited both lines in `~/.claude/CLAUDE.md` — opus `high`→`xhigh` and the top-level catch-all
+`xhigh`→`high` — 3h44m before this file's own commit (`64b31094`, 15:50:30 +0700), and its own
+message cites this addendum's analysis as the source. So "still describes the pre-fix state" was
+already false at the moment this addendum was committed. Corrected: 9/9 claims current as of
+commit time, score **100/100**. Failure class: weak_verification — the live-settings re-check
+never extended to re-reading CLAUDE.md's own git history before publishing a claim about its
+freshness.
+
 ## Sources
 
 1. https://code.claude.com/docs/en/model-config — Claude Code model configuration (aliases, precedence, effort, 1M, plans).

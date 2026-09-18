@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "costUsd": 0.10,
+  "claudeVersion": "2.1.270",
+  "partial": false,
+  "suite": {
+    "judgeModel": "sonnet",
+    "caseFilter": "model-bench-fixture",
+    "ablation": "none",
+    "plugins": [{"name": "mh", "version": "1.1.94", "problem": "disabled_by_default"}]
+  },
+  "aggregates": {"overallScore": 0.0, "overallPassRate": 0.0, "casesTotal": 0},
+  "cases": []
+}

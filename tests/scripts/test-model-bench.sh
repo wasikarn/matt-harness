@@ -61,6 +61,32 @@ printf '%s\n' "$out" | /usr/bin/grep -qF 'caseFilter differs: fixture-a=model-be
   && ok "mismatch pair: WARN on caseFilter set vs absent(default)" \
   || bad "mismatch pair: caseFilter WARN missing or wrong"
 
+printf '%s\n' "$out" | /usr/bin/grep -qF 'ablation differs: fixture-a=none vs fixture-b=with-without' \
+  && ok "mismatch pair: WARN on ablation none vs with-without" \
+  || bad "mismatch pair: ablation WARN missing or wrong"
+
+printf '%s\n' "$out" | /usr/bin/grep -qF 'claudeVersion differs: fixture-a=2.1.270 vs fixture-b=2.1.275' \
+  && ok "mismatch pair: WARN on claudeVersion 2.1.270 vs 2.1.275" \
+  || bad "mismatch pair: claudeVersion WARN missing or wrong"
+
+printf '%s\n' "$out" | /usr/bin/grep -qF "plugin version differs: fixture-a=['1.1.94'] vs fixture-b=['1.1.95']" \
+  && ok "mismatch pair: WARN on plugin version 1.1.94 vs 1.1.95" \
+  || bad "mismatch pair: plugin version WARN missing or wrong"
+
+# --- plugin-problem arm: must hard-fail, never print a comparison table ---
+out=$(python3 "$DIFF_PY" --label-a fixture-a --label-b fixture-b \
+  "$FIXTURES/clean-a.json" "$FIXTURES/problem-b.json" 2>&1)
+status=$?
+
+if [ "$status" -eq 1 ]; then ok "plugin-problem arm: exit 1 (hard-fail)"; else bad "plugin-problem arm: exit $status (expected 1)"; fi
+printf '%s\n' "$out" | /usr/bin/grep -qF 'HARD-FAIL' \
+  && printf '%s\n' "$out" | /usr/bin/grep -qF 'plugin problem: disabled_by_default' \
+  && ok "plugin-problem arm: HARD-FAIL names the plugin problem" \
+  || bad "plugin-problem arm: HARD-FAIL message missing or wrong"
+printf '%s\n' "$out" | /usr/bin/grep -q 'overallScore\|score=' \
+  && bad "plugin-problem arm: printed score numbers despite hard-fail (numbers would be misleading)" \
+  || ok "plugin-problem arm: no score table printed alongside the hard-fail"
+
 # --- partial arm: must hard-fail, never print a comparison table ---
 out=$(python3 "$DIFF_PY" --label-a fixture-a --label-b fixture-b \
   "$FIXTURES/clean-a.json" "$FIXTURES/partial-b.json" 2>&1)
