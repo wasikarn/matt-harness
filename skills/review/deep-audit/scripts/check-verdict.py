@@ -9,23 +9,31 @@ the only shape check its return value gets.
 stdin: the dispatched agent's raw final message text.
 
 Behavior:
-  - Extracts the first JSON object in the text that actually parses, trying
-    every '{' in order (not just the first byte) -- narration before the real
-    JSON can itself contain a brace, e.g. the agent echoing
-    docs/reference/spawn-brief.md's own return-contract line.
-  - Validates it against the exact contract docs/reference/spawn-brief.md and
-    references/checker-output-schema.json both state: {pass, findings[],
-    scope_ok, unexpected_files[]} and nothing else. `pass`/`scope_ok` must be
-    real booleans; `findings[]` items must be exactly {summary, evidence}
-    (both strings); `unexpected_files[]` must be a list of strings.
+  - Scans every '{' in the text and keeps whichever parse fully validates
+    against the schema below -- narration before the real JSON can itself
+    contain a brace, e.g. the agent echoing docs/reference/spawn-brief.md's
+    own return-contract line (that fragment isn't valid JSON, so it never
+    becomes a candidate).
+  - If more than one *distinct* schema-valid object is found in the same
+    message (e.g. a fully-formed example verdict quoted in narration ahead of
+    the agent's real one), that's ambiguous and rejected rather than silently
+    picking the first or last -- a nested findings[] item ({summary,
+    evidence}) never counts as a second candidate, since it doesn't carry the
+    other three required top-level keys.
+  - Validates each candidate against the exact contract docs/reference/
+    spawn-brief.md and references/checker-output-schema.json both state:
+    {pass, findings[], scope_ok, unexpected_files[]} and nothing else.
+    `pass`/`scope_ok` must be real booleans; `findings[]` items must be
+    exactly {summary, evidence} (both strings); `unexpected_files[]` must be
+    a list of strings.
   - A message that instead carries `NEEDS-DECISION` (docs/reference/
     spawn-brief.md's escalation return) with no parseable verdict object is a
     valid non-guess, not a malformed one -- reported as a distinct outcome.
 
-Exit codes: 0 = valid verdict (printed to stdout as JSON); 1 = malformed or
-rejected (reason on stderr, nothing on stdout -- never reaches a fixer
-brief); 2 = NEEDS-DECISION escalation, no verdict object (the question, if
-found, on stdout; noted on stderr).
+Exit codes: 0 = exactly one valid verdict (printed to stdout as JSON); 1 =
+malformed, rejected, or ambiguous (reason on stderr, nothing on stdout --
+never reaches a fixer brief); 2 = NEEDS-DECISION escalation, no verdict
+object (the question, if found, on stdout; noted on stderr).
 """
 import json
 import re
@@ -36,6 +44,8 @@ FINDING_KEYS = {"summary", "evidence"}
 
 
 def extract_object(text):
+    """First object that merely parses as JSON, valid or not -- used only for
+    error-reporting once no schema-valid candidate exists."""
     dec = json.JSONDecoder()
     i = text.find("{")
     while i != -1:
@@ -45,6 +55,27 @@ def extract_object(text):
         except ValueError:
             i = text.find("{", i + 1)
     return None
+
+
+def extract_valid_candidates(text):
+    """Every schema-valid verdict object found anywhere in the text,
+    deduplicated by content. More than one distinct candidate is ambiguous:
+    a nested findings[] item never qualifies (it lacks the other three
+    required keys), so this only fires on two or more full verdict-shaped
+    objects -- e.g. a decoy example ahead of the agent's real answer."""
+    dec = json.JSONDecoder()
+    seen = {}
+    i = text.find("{")
+    while i != -1:
+        try:
+            obj, _ = dec.raw_decode(text, i)
+        except ValueError:
+            i = text.find("{", i + 1)
+            continue
+        if isinstance(obj, dict) and validate(obj)[0]:
+            seen[json.dumps(obj, sort_keys=True)] = obj
+        i = text.find("{", i + 1)
+    return list(seen.values())
 
 
 def validate(obj):
@@ -75,13 +106,19 @@ def validate(obj):
 
 def main():
     text = sys.stdin.read()
+    candidates = extract_valid_candidates(text)
+    if len(candidates) == 1:
+        json.dump(candidates[0], sys.stdout, indent=2)
+        print()
+        return 0
+    if len(candidates) > 1:
+        print(f"check-verdict: rejected — {len(candidates)} distinct schema-valid "
+              "verdict objects found in the same message; ambiguous, refusing to guess",
+              file=sys.stderr)
+        return 1
     obj = extract_object(text)
     if obj is not None:
-        ok, reason = validate(obj)
-        if ok:
-            json.dump(obj, sys.stdout, indent=2)
-            print()
-            return 0
+        _, reason = validate(obj)
         print(f"check-verdict: rejected — {reason}", file=sys.stderr)
         return 1
     match = re.search(r"NEEDS-DECISION\b.*", text)
@@ -137,6 +174,31 @@ def _selftest():
     echoed = ('Return {pass, findings[], scope_ok, unexpected_files[]} as instructed.\n'
               + good)
     code, out, err = run(echoed)
+    assert code == 0 and json.loads(out) == json.loads(good), (code, out, err)
+
+    # A findings[] item's own {summary, evidence} braces must not be
+    # mistaken for a second candidate -- it lacks pass/scope_ok/
+    # unexpected_files, so it can never validate on its own.
+    with_finding = json.dumps({"pass": False,
+                                "findings": [{"summary": "s", "evidence": "e"}],
+                                "scope_ok": True, "unexpected_files": []})
+    code, out, err = run(with_finding)
+    assert code == 0 and json.loads(out) == json.loads(with_finding), (code, out, err)
+
+    # Decoy bypass: a fully schema-valid example quoted in narration ahead of
+    # the agent's real, differently-valued verdict must be rejected as
+    # ambiguous, not silently accepted as "the first parseable object".
+    decoy = json.dumps({"pass": False, "findings": [], "scope_ok": False,
+                         "unexpected_files": []})
+    real = json.dumps({"pass": True,
+                        "findings": [{"summary": "s", "evidence": "e"}],
+                        "scope_ok": True, "unexpected_files": []})
+    code, out, err = run(f"Example shape: {decoy}\nActual result: {real}")
+    assert code == 1 and "ambiguous" in err and out == "", (code, out, err)
+
+    # The same valid object repeated verbatim is not ambiguous -- content is
+    # identical, so there is exactly one real candidate to report.
+    code, out, err = run(f"{good}\n{good}")
     assert code == 0 and json.loads(out) == json.loads(good), (code, out, err)
 
     escalation = "I can't determine this safely.\nNEEDS-DECISION does file X own behavior Y?"

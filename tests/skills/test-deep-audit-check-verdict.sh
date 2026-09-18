@@ -35,6 +35,11 @@ assert_exit "malformed findings item rejected" 1 '{"pass": false, "findings": [{
 assert_exit "NEEDS-DECISION escalation, not malformed" 2 "I can't tell safely.
 NEEDS-DECISION does gate X apply to Y?"
 
+decoy='{"pass": false, "findings": [], "scope_ok": false, "unexpected_files": []}'
+real='{"pass": true, "findings": [{"summary": "s", "evidence": "e"}], "scope_ok": true, "unexpected_files": []}'
+assert_exit "decoy verdict ahead of the real one rejected as ambiguous" 1 "Example shape: $decoy
+Actual result: $real"
+
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ] && echo "PASS: test-deep-audit-check-verdict"
 exit "$fail"

@@ -18,8 +18,9 @@ denominator, so `total` renormalizes over the weights that actually scored
 arithmetically identical to scoring the dropped item 0.
 
 Fails closed: any input this script cannot compute (a missing/non-numeric
-field, a non-positive max or negative weight, or every item flagged
-insufficient) exits 1 with a one-line reason on stderr and prints no JSON.
+field, a non-positive max or negative weight, a duplicate id, or every item
+flagged insufficient) exits 1 with a one-line reason on stderr and prints no
+JSON.
 The caller must treat that as a hard fail, never as license to score by hand.
 """
 import json
@@ -41,6 +42,7 @@ def score(payload):
     raw_sum = 0.0
     below_floor = []
     floor_pct = payload.get("floorPct", 0.0)
+    seen_ids = set()
     for it in items:
         try:
             item_id, s, m, w = it["id"], it["score"], it["max"], it["weight"]
@@ -53,6 +55,9 @@ def score(payload):
             _die(f"'{item_id}': max must be positive, got {m}")
         if w < 0:
             _die(f"'{item_id}': weight must be non-negative, got {w}")
+        if item_id in seen_ids:
+            _die(f"duplicate id '{item_id}' in scores")
+        seen_ids.add(item_id)
         weight_sum += w
         if insufficient:
             continue
@@ -137,6 +142,15 @@ def _selftest():
     axes_tied = [dict(a) for a in axes]
     axes_tied[1] = {**axes_tied[1], "weight": 40}
     assert score({"scores": axes_tied, "primaryId": "fidelity"})["primaryWeightOk"] is False
+
+    # A duplicate id must not be silently allowed to defeat the strictly-
+    # greatest check by collapsing to one entry in the weights dict.
+    axes_dup = axes + [{**axes[1], "weight": 40}]  # second "fit" entry, tied weight
+    try:
+        score({"scores": axes_dup, "primaryId": "fidelity"})
+        raise AssertionError("expected SystemExit on duplicate id")
+    except SystemExit as e:
+        assert e.code == 1
 
     print("weighted-score.py selftest ok")
 

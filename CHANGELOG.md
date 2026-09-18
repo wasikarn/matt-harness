@@ -3,6 +3,24 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.97] — 2026-09-18
+
+### Fixed
+
+- **`mh:compliance-audit` re-verification of v1.1.96 found 3 real gaps in the two new scripts;
+  all fixed here.** `weighted-score.py` now rejects a duplicate `id` in `scores` (previously it
+  silently collapsed the `primaryId` weights dict to one entry, defeating the strictly-greatest
+  tie check on idea-audit's never-tied-for-first rule). `check-verdict.py`'s object extraction
+  now requires the schema-valid verdict candidate to be unique in the message — previously it
+  took the first substring that merely *parsed* as JSON, so a fully schema-conformant decoy
+  object quoted earlier in an agent's narration (e.g. an example of the expected shape) could
+  silently override the agent's real, differently-valued verdict; two or more distinct
+  schema-valid candidates now reject as ambiguous rather than guessing. `idea-audit/SKILL.md`'s
+  prose said `belowFloor` lists axes "at or under 40%"; the script's actual check is strict `<`,
+  so an axis at exactly the floor doesn't trip it — reworded to match. All three fixes carry new
+  discriminating test cases in both scripts' `--selftest` and the two `tests/skills/test-*.sh`
+  suites.
+
 ## [1.1.96] — 2026-09-18
 
 ### Added

@@ -29,4 +29,12 @@ bad_code=$?
 [ "$bad_code" -ne 0 ] || { echo "FAIL: expected non-zero exit on all-insufficient input"; exit 1; }
 [ -z "$bad_out" ] || { echo "FAIL: expected empty stdout on rejected input, got: $bad_out"; exit 1; }
 
+# A duplicate id must fail closed, not silently collapse in the primaryId
+# weights dict and defeat the strictly-greatest check (idea-audit's
+# never-tied-for-first rule).
+dup_out=$(printf '%s' '{"scores": [{"id": "a", "score": 8, "max": 10, "weight": 40, "insufficient": false}, {"id": "b", "score": 7, "max": 10, "weight": 30, "insufficient": false}, {"id": "b", "score": 7, "max": 10, "weight": 40, "insufficient": false}], "primaryId": "a"}' | python3 "$SCORER" 2>/dev/null)
+dup_code=$?
+[ "$dup_code" -ne 0 ] || { echo "FAIL: expected non-zero exit on duplicate id"; exit 1; }
+[ -z "$dup_out" ] || { echo "FAIL: expected empty stdout on duplicate-id input, got: $dup_out"; exit 1; }
+
 echo "PASS: test-weighted-score"

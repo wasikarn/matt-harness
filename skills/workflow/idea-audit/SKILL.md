@@ -278,7 +278,8 @@ python3 scripts/_lib/weighted-score.py <<< '{"scores": [
 ```
 `total` renormalizes over axes that actually scored, dropping an `insufficient` axis from both
 the numerator and the denominator — never dividing by the full weight sum, which would score it
-0 by another name. `belowFloor` lists axes at or under 40% of their own max — trigger (2) above.
+0 by another name. `belowFloor` lists axes strictly below 40% of their own max (the script's check is `<`, not `<=`
+— an axis at exactly 40% does not trip it) — trigger (2) above.
 `primaryWeightOk` is trigger-adjacent, not a floor: pass `primaryId` and the script confirms that
 axis's weight is *strictly* the largest, catching a tie (two axes both at 40, say) a bare
 sum-to-100 check would miss. Omit `passThreshold` — this phase writes a scored verdict for the
