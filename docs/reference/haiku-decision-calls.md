@@ -71,7 +71,7 @@ a single cheap in-flow decision, not a review pass.
 - [Define tools — Forcing tool use](https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools#forcing-tool-use) — `tool_choice` types, manual-extended-thinking restriction
 - [Strict tool use](https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use) — grammar-constrained sampling guarantee
 - [Structured outputs — JSON Schema limitations](https://platform.claude.com/docs/en/build-with-claude/structured-outputs) — `additionalProperties` must be `false` for objects
-- [Subagents](https://code.claude.com/docs/en/sub-agents) — `model` is the only per-invocation Agent parameter
+- [Subagents](https://code.claude.com/docs/en/sub-agents) — `model` is the only per-invocation Agent parameter that shapes the request (the others pick the agent and carry the prompt)
 - [Claude Haiku 4.5 model page](https://platform.claude.com/docs/en/models/haiku-4-5/overview) — model ID `claude-haiku-4-5-20251001`, manual extended thinking default
 - [Messages API reference](https://platform.claude.com/docs/en/api/messages) — no logprobs/token-probability field exists
 - [Pricing](https://platform.claude.com/docs/en/about-claude/pricing) — Haiku 4.5 $1/$5 per MTok in/out
