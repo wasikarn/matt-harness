@@ -3,6 +3,22 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.92] — 2026-09-18
+
+### Fixed
+
+- **Claude fallback path had no verdict shape.** `docs/reference/spawn-brief.md`'s dispatch
+  template never told a validator its own return contract (`{pass, findings[], scope_ok,
+  unexpected_files[]}` lived outside the fenced brief, so a dispatched validator never received
+  it) — added inside the fence, role-prefixed (`Validator/re-validator:`) so it doesn't leak into
+  the other four dispatch roles. `skills/review/deep-audit/SKILL.md`'s Claude fallback (used when
+  `codex exec --output-schema` is rate-limited or absent) inherited an acceptance criterion
+  written purely in Codex-CLI terms (`--output-last-message` file, `--output-schema`), which has
+  no equivalent on that path; restated as extracting the first balanced JSON object from the
+  agent's final message (confirmed against a live fallback run, which returned schema-valid JSON
+  followed by trailing prose after the closing fence) with a named field-presence check.
+  `compliance-audit` has the same gap class on its own Claude fallback, deferred separately.
+
 ## [1.1.91] — 2026-09-14
 
 ### Fixed

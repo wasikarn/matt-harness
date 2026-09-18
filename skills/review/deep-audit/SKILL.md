@@ -87,9 +87,23 @@ evidenced findings is a successful run that found problems** — never a failure
 trigger.
 
 **On any other outcome** — non-zero exit, empty or malformed output, a schema mismatch, timeout,
-auth failure, or a semantic refusal — fall back to a Claude `Explore`/review agent (same brief)
-and note "independence reduced for this pass" in the final report, matching
-`docs/reference/codex-integration-map.md`'s established fallback language.
+auth failure, or a semantic refusal — fall back to a Claude `Explore`/review agent (same brief,
+which now carries the `Validator/re-validator:` output shape per
+`docs/reference/spawn-brief.md`) and note "independence reduced for this pass" in the final
+report, matching `docs/reference/codex-integration-map.md`'s established fallback language.
+
+On this fallback path there is no `--output-last-message` file and no `--output-schema`, so
+"the output-last-message file parses against the schema" above doesn't apply literally. A live
+run of this path (2026-09-18) returned a schema-valid object followed by unrequested trailing
+prose after the closing code fence — a plain "strip a leading/trailing fence" rule doesn't
+survive that, since the trailing prose sits after the fence, not inside it. Read the criterion
+instead as: **extract the first balanced JSON object from the agent's final message** and check
+it parses with all four fields present, e.g.
+`python3 -c 'import json,sys; t=sys.stdin.read(); d,_=json.JSONDecoder().raw_decode(t, t.index("{")); assert {"pass","findings","scope_ok","unexpected_files"} <= d.keys()'`
+— tolerant of a fence, leading narration, or trailing narration alike, without requiring the
+stricter "nothing before `{` or after `}`" some other agents in this repo are held to. Check
+field presence mechanically rather than by eyeballing it. The substance rule is unchanged either
+way: schema-valid JSON that still refuses in prose is not review evidence.
 
 **Re-fingerprint after the checker returns.** A mismatch against the pre-dispatch manifest — a
 changed hash, a path that appeared or disappeared — means a concurrent session touched scope
