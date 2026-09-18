@@ -18,12 +18,13 @@ denominator, so `total` renormalizes over the weights that actually scored
 arithmetically identical to scoring the dropped item 0.
 
 Fails closed: any input this script cannot compute (a missing/non-numeric
-field, a non-positive max or negative weight, a duplicate id, or every item
-flagged insufficient) exits 1 with a one-line reason on stderr and prints no
-JSON.
+field, a bool or non-finite score/max/weight, a non-positive max or negative
+weight, a duplicate id, or every item flagged insufficient) exits 1 with a
+one-line reason on stderr and prints no JSON.
 The caller must treat that as a hard fail, never as license to score by hand.
 """
 import json
+import math
 import sys
 from typing import NoReturn
 
@@ -49,8 +50,11 @@ def score(payload):
             insufficient = bool(it.get("insufficient", False))
         except (KeyError, TypeError):
             _die(f"malformed score entry: {it!r}")
-        if not all(isinstance(x, (int, float)) for x in (s, m, w)):
-            _die(f"score/max/weight must be numeric: {it!r}")
+        for x in (s, m, w):
+            if isinstance(x, bool) or not isinstance(x, (int, float)):
+                _die(f"score/max/weight must be numeric, not bool: {it!r}")
+            if isinstance(x, float) and not math.isfinite(x):
+                _die(f"score/max/weight must be finite: {it!r}")
         if m <= 0:
             _die(f"'{item_id}': max must be positive, got {m}")
         if w < 0:
@@ -151,6 +155,30 @@ def _selftest():
         raise AssertionError("expected SystemExit on duplicate id")
     except SystemExit as e:
         assert e.code == 1
+
+    # Non-finite and boolean scores must fail closed, not silently coerce or
+    # let json's non-standard Infinity/NaN literals flip a rubric to pass:true.
+    for bad in (
+        [{"id": "a", "score": float("inf"), "max": 10, "weight": 3, "insufficient": False},
+         {"id": "b", "score": 3, "max": 10, "weight": 2, "insufficient": False}],
+        [{"id": "a", "score": float("nan"), "max": 10, "weight": 3, "insufficient": False},
+         {"id": "b", "score": 5, "max": 10, "weight": 2, "insufficient": False}],
+        [{"id": "a", "score": True, "max": 10, "weight": 3, "insufficient": False},
+         {"id": "b", "score": 5, "max": 10, "weight": 2, "insufficient": False}],
+    ):
+        try:
+            score({"scores": bad, "passThreshold": 7.0})
+            raise AssertionError(f"expected SystemExit on non-numeric/non-finite input: {bad}")
+        except SystemExit as e:
+            assert e.code == 1
+
+    # Floor boundary: a score exactly at floorPct * max must NOT trip
+    # belowFloor -- the check is strictly '<', not '<='. Discriminates a
+    # future <= regression, which both idea-audit/SKILL.md and the CHANGELOG
+    # now state as the documented behavior.
+    at_floor = score({"scores": [{"id": "x", "score": 5, "max": 10, "weight": 1,
+                                   "insufficient": False}], "floorPct": 0.5})
+    assert at_floor["belowFloor"] == [], at_floor
 
     print("weighted-score.py selftest ok")
 

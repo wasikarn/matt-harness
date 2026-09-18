@@ -37,4 +37,24 @@ dup_code=$?
 [ "$dup_code" -ne 0 ] || { echo "FAIL: expected non-zero exit on duplicate id"; exit 1; }
 [ -z "$dup_out" ] || { echo "FAIL: expected empty stdout on duplicate-id input, got: $dup_out"; exit 1; }
 
+# A non-finite score must fail closed, not emit the literal (invalid-JSON)
+# token Infinity and flip a failing rubric to pass:true.
+inf_out=$(python3 -c 'import json; print(json.dumps({"scores": [{"id": "a", "score": float("inf"), "max": 10, "weight": 3, "insufficient": False}, {"id": "b", "score": 3, "max": 10, "weight": 2, "insufficient": False}], "passThreshold": 7.0}))' | python3 "$SCORER" 2>/dev/null)
+inf_code=$?
+[ "$inf_code" -ne 0 ] || { echo "FAIL: expected non-zero exit on Infinity score"; exit 1; }
+[ -z "$inf_out" ] || { echo "FAIL: expected empty stdout on Infinity score, got: $inf_out"; exit 1; }
+
+# A boolean score must fail closed, not silently coerce to 1/0 (bool is an
+# int subclass in Python).
+bool_out=$(printf '%s' '{"scores": [{"id": "a", "score": true, "max": 10, "weight": 3, "insufficient": false}, {"id": "b", "score": 5, "max": 10, "weight": 2, "insufficient": false}]}' | python3 "$SCORER" 2>/dev/null)
+bool_code=$?
+[ "$bool_code" -ne 0 ] || { echo "FAIL: expected non-zero exit on boolean score"; exit 1; }
+[ -z "$bool_out" ] || { echo "FAIL: expected empty stdout on boolean score, got: $bool_out"; exit 1; }
+
+# Floor boundary: a score exactly at floorPct * max must not trip
+# belowFloor -- the check is strictly '<', discriminating a future '<='
+# regression.
+floor_out=$(printf '%s' '{"scores": [{"id": "x", "score": 5, "max": 10, "weight": 1, "insufficient": false}], "floorPct": 0.5}' | python3 "$SCORER")
+echo "$floor_out" | /usr/bin/grep -q '"belowFloor": \[\]' || { echo "FAIL: score at exact floor tripped belowFloor, got: $floor_out"; exit 1; }
+
 echo "PASS: test-weighted-score"

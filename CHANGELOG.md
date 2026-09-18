@@ -3,6 +3,27 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.98] — 2026-09-18
+
+### Fixed
+
+- **`mh:deep-audit` of v1.1.97 found 4 more real gaps in the same two scripts, all fixed here.**
+  `weighted-score.py` now rejects a bool or non-finite (`Infinity`/`NaN`) score, max, or weight —
+  previously a single out-of-range score could flip a failing rubric to `pass: true` and emit the
+  literal (invalid-JSON) tokens `Infinity`/`NaN` on stdout, directly contradicting its own
+  "fails closed" docstring. `check-verdict.py` now checks for a literal `NEEDS-DECISION` first,
+  unconditionally, before any JSON extraction: previously a hedged/hypothetical verdict quoted
+  ahead of a real escalation ("if I could conclude, it'd be `{...}` but I can't without seeing the
+  file") was silently accepted as the answer, and a genuine escalation could get misclassified as
+  a rejected/malformed verdict whenever unrelated JSON-shaped prose (an example, a config
+  snippet) appeared in the same message — both now correctly resolve to the escalation exit code.
+  `skills/review/deep-audit/SKILL.md`'s prose describing `check-verdict.py`'s algorithm was stale
+  (still described the pre-1.1.97 single-candidate extraction, never touched by that commit) —
+  reworded to match the actual unique-candidate/ambiguity-rejection behavior. All four fixes carry
+  new discriminating test cases in both scripts' `--selftest` and the two `tests/skills/test-*.sh`
+  suites, including a floor-boundary case (`score` exactly at `floorPct × max`) that 1.1.97's own
+  "all three fixes carry new discriminating test cases" claim had actually left uncovered.
+
 ## [1.1.97] — 2026-09-18
 
 ### Fixed

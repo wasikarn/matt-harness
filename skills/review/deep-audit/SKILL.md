@@ -121,19 +121,26 @@ final message to `scripts/check-verdict.py`:
 ```
 python3 skills/review/deep-audit/scripts/check-verdict.py <<< "$AGENT_FINAL_MESSAGE"
 ```
-It extracts the first JSON object that actually parses (trying every `{` in the text in order,
-not just the first byte — narration before the real JSON can itself contain a brace, e.g. the
-agent echoing `docs/reference/spawn-brief.md`'s own `{pass, findings[], scope_ok,
-unexpected_files[]}` return-contract line), then validates it against the full contract: exact
-key-set equality (not merely all four keys present — an extra invented field is rejected too),
-`pass`/`scope_ok` as real booleans, every `findings[]` item as exactly `{summary, evidence}`
-with string values, `unexpected_files[]` as a list of strings. Exit 0 with the validated JSON on
-stdout means accept; exit 1 with a reason on stderr means reject (a malformed verdict must never
-reach a fixer brief); **exit 2 means the agent correctly returned `NEEDS-DECISION` instead of
-guessing** (`spawn-brief.md:31-33`'s escalation return) — that is a valid non-guess, not a
-rejected verdict, and surfaces to the operator as an open question, not a broken checker. The
-substance rule is unchanged regardless of exit code: schema-valid JSON that still refuses in
-prose is not review evidence.
+A literal `NEEDS-DECISION` anywhere in the text is checked first and always wins over any JSON
+found nearby — the contract is either a verdict object or an escalation, never both, so a
+hedged/hypothetical object quoted ahead of a real escalation can't override it, and unrelated
+JSON-shaped prose after the escalation (an example, a config snippet) can't get misclassified as
+a malformed verdict. Otherwise it scans every `{` in the text (trying every byte in order, not
+just the first — narration before the real JSON can itself contain a brace, e.g. the agent
+echoing `docs/reference/spawn-brief.md`'s own `{pass, findings[], scope_ok,
+unexpected_files[]}` return-contract line) and keeps every candidate that fully validates against
+the contract: exact key-set equality (not merely all four keys present — an extra invented field
+is rejected too), `pass`/`scope_ok` as real booleans, every `findings[]` item as exactly
+`{summary, evidence}` with string values, `unexpected_files[]` as a list of strings. Exactly one
+valid candidate is required — two or more *distinct* schema-valid objects (a decoy example quoted
+ahead of the agent's real, differently-valued verdict) reject as ambiguous rather than silently
+picking the first or last. Exit 0 with the validated JSON on stdout means accept; exit 1 with a
+reason on stderr means reject (a malformed or ambiguous verdict must never reach a fixer brief);
+**exit 2 means the agent correctly returned `NEEDS-DECISION` instead of guessing**
+(`spawn-brief.md:31-33`'s escalation return) — that is a valid non-guess, not a rejected verdict,
+and surfaces to the operator as an open question, not a broken checker. The substance rule is
+unchanged regardless of exit code: schema-valid JSON that still refuses in prose is not review
+evidence.
 
 **Re-fingerprint after the checker returns.** A mismatch against the pre-dispatch manifest — a
 changed hash, a path that appeared or disappeared — means a concurrent session touched scope

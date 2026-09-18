@@ -40,6 +40,12 @@ real='{"pass": true, "findings": [{"summary": "s", "evidence": "e"}], "scope_ok"
 assert_exit "decoy verdict ahead of the real one rejected as ambiguous" 1 "Example shape: $decoy
 Actual result: $real"
 
+assert_exit "hedged verdict ahead of a real escalation does not override it" 2 "If I could conclude, the shape I'd return is $decoy but I can't commit to that without seeing the file.
+NEEDS-DECISION does gate X still apply after the file was deleted?"
+
+assert_exit "escalation not misclassified as malformed by unrelated JSON prose" 2 'the config block looks like {"timeout": 30} in one place and {"timeout": 60} in another.
+NEEDS-DECISION which config value is the source of truth here?'
+
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ] && echo "PASS: test-deep-audit-check-verdict"
 exit "$fail"

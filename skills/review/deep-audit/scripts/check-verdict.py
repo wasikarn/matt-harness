@@ -9,11 +9,19 @@ the only shape check its return value gets.
 stdin: the dispatched agent's raw final message text.
 
 Behavior:
-  - Scans every '{' in the text and keeps whichever parse fully validates
-    against the schema below -- narration before the real JSON can itself
-    contain a brace, e.g. the agent echoing docs/reference/spawn-brief.md's
-    own return-contract line (that fragment isn't valid JSON, so it never
-    becomes a candidate).
+  - Checked first, unconditionally: a literal `NEEDS-DECISION` (docs/
+    reference/spawn-brief.md's escalation return) anywhere in the text wins
+    over any JSON found nearby. The contract is either a verdict object OR
+    an escalation, never both, so a hedged/hypothetical object quoted ahead
+    of a real escalation ("if I could conclude, it'd be {...} but I can't")
+    must not be silently accepted as the answer, and unrelated JSON-shaped
+    prose after the escalation (an example, a config snippet) must not get
+    misclassified as a malformed verdict instead of the escalation it is.
+  - Otherwise scans every '{' in the text and keeps whichever parse fully
+    validates against the schema below -- narration before the real JSON can
+    itself contain a brace, e.g. the agent echoing docs/reference/
+    spawn-brief.md's own return-contract line (that fragment isn't valid
+    JSON, so it never becomes a candidate).
   - If more than one *distinct* schema-valid object is found in the same
     message (e.g. a fully-formed example verdict quoted in narration ahead of
     the agent's real one), that's ambiguous and rejected rather than silently
@@ -26,9 +34,6 @@ Behavior:
     `pass`/`scope_ok` must be real booleans; `findings[]` items must be
     exactly {summary, evidence} (both strings); `unexpected_files[]` must be
     a list of strings.
-  - A message that instead carries `NEEDS-DECISION` (docs/reference/
-    spawn-brief.md's escalation return) with no parseable verdict object is a
-    valid non-guess, not a malformed one -- reported as a distinct outcome.
 
 Exit codes: 0 = exactly one valid verdict (printed to stdout as JSON); 1 =
 malformed, rejected, or ambiguous (reason on stderr, nothing on stdout --
@@ -106,6 +111,19 @@ def validate(obj):
 
 def main():
     text = sys.stdin.read()
+    # Checked first, unconditionally: the spawn-brief contract is either a
+    # verdict object OR a NEEDS-DECISION escalation, never both. A literal
+    # NEEDS-DECISION anywhere in the message means the agent explicitly
+    # declined to guess, so it must win over any JSON found nearby -- a
+    # hedged/hypothetical verdict quoted ahead of it ("if I could conclude,
+    # it'd be {...} but I can't without X") must not be silently accepted as
+    # the real answer, and unrelated JSON-shaped prose after it must not get
+    # misclassified as a malformed verdict instead of the escalation it is.
+    match = re.search(r"NEEDS-DECISION\b.*", text)
+    if match:
+        print(match.group(0).strip())
+        print("check-verdict: escalation (NEEDS-DECISION), not a malformed verdict", file=sys.stderr)
+        return 2
     candidates = extract_valid_candidates(text)
     if len(candidates) == 1:
         json.dump(candidates[0], sys.stdout, indent=2)
@@ -121,11 +139,6 @@ def main():
         _, reason = validate(obj)
         print(f"check-verdict: rejected — {reason}", file=sys.stderr)
         return 1
-    match = re.search(r"NEEDS-DECISION\b.*", text)
-    if match:
-        print(match.group(0).strip())
-        print("check-verdict: escalation (NEEDS-DECISION), not a malformed verdict", file=sys.stderr)
-        return 2
     print("check-verdict: rejected — no parseable JSON object and no NEEDS-DECISION found", file=sys.stderr)
     return 1
 
@@ -205,6 +218,27 @@ def _selftest():
     code, out, err = run(escalation)
     assert code == 2 and out.strip().startswith("NEEDS-DECISION"), (code, out, err)
     assert "escalation" in err
+
+    # A hedged/hypothetical verdict quoted ahead of a real escalation must
+    # not be silently accepted as the answer -- NEEDS-DECISION wins.
+    hedge_then_escalate = (
+        f"If I could conclude, the shape I'd return is {decoy} but I can't "
+        "commit to that without seeing the file.\n"
+        "NEEDS-DECISION does gate X still apply after the file was deleted?"
+    )
+    code, out, err = run(hedge_then_escalate)
+    assert code == 2 and out.strip().startswith("NEEDS-DECISION"), (code, out, err)
+
+    # A genuine escalation must not be misclassified as a malformed verdict
+    # just because unrelated JSON-shaped prose (a quoted config snippet)
+    # appears in the same message.
+    escalation_with_unrelated_json = (
+        'the config block looks like {"timeout": 30} in one place and '
+        '{"timeout": 60} in another.\n'
+        "NEEDS-DECISION which config value is the source of truth here?"
+    )
+    code, out, err = run(escalation_with_unrelated_json)
+    assert code == 2 and out.strip().startswith("NEEDS-DECISION"), (code, out, err)
 
     print("check-verdict.py selftest ok")
 
