@@ -85,6 +85,53 @@ Findings from the dotfiles deep-audit of `claude/settings.json` (full note with 
 - Claude Mythos 5.1/5 appear in the API effort docs but not in Claude Code's model-config page; assumed not selectable in Claude Code [1][3].
 - Claude Code `--help` text was grepped, not read in full; a `/model` picker screenshot was not taken [10].
 
+## Addendum 2026-09-18: re-verified on 2.1.276/0.154.0 — CLAUDE.md's opus/catch-all effort claims are stale
+
+Re-run triggered by an operator request to re-verify every model's effort setting to full
+confidence. Installed: `claude` 2.1.276, `codex-cli` 0.154.0 [19][20].
+
+Per-claim table (claim as written in `~/.claude/CLAUDE.md` "Models + efforts" today vs. live state):
+
+| Claim | Live value | Verdict | Evidence |
+|---|---|---|---|
+| Plan Mode → opus at effort `high` | `modelSettings.claude-opus-5.effortLevel = xhigh` | **STALE** | dotfiles commit `cedd9e78` (2026-09-18 11:36 +0700, author matches this operator's email) [21] |
+| Unlisted model → top-level `effortLevel: xhigh` | top-level `effortLevel = high` | **STALE** | same commit [21] |
+| Every other turn → sonnet at effort `high` | `modelSettings.claude-sonnet-5.effortLevel = high` | current | same commit; unchanged by it [21] |
+| `fable` at effort `low`, inert under opusplan | `modelSettings.claude-fable-5-1.effortLevel = low` | current | [21] |
+| `advisorModel: fable` | `advisorModel = "fable"` | current | [21] |
+| `fallbackModel` is `sonnet`, not `fable` | `fallbackModel = ["sonnet"]` | current | [21] |
+| Every mh agent pins its own `effort:` frontmatter | 20/20 real agent files (excluding `tests/` fixtures) have `effort:` | current | grepped `agents/*.md` in this repo, 2026-09-18 |
+| Codex Astra/Sol/Terra/Luna policy (medium/medium/medium/low bumps) | catalog defaults: Astra/Sol `low`, Terra/Luna/5.5 `medium`; no `minimal`, has `ultra` | current, deliberate bump not drift | `codex debug models` on 0.154.0, 2026-09-18 |
+| Advisor mechanism = `advisor_20260301` server-side tool, no effort field | confirmed by name in official changelog (2.1.275 regression fix) | current, and now independently source-confirmed (not just `strings`-derived) | [20] line "Fixed every request failing with `400 … Input tag 'advisor_20260301'`" |
+| (mechanism refinement, not previously documented) | Advisor's on/off + model decision is now made **once per session** and only re-announced when it changes, not re-decided per request | **new since 09-08** | official changelog, 2.1.264–2.1.276 range [20] |
+
+Root cause of the two stale claims, from the commit message itself: a prior commit (`3905afeb`,
+same day) had "corrected" what it read as effort drift by reverting both opus and sonnet to
+`high`, matching what CLAUDE.md documents. `cedd9e78` traced the actual `/model`+`/effort` command
+history in session `e0d1434b` and found opus's `xhigh` was a real, deliberate, explicitly-saved
+choice — reverting it had been the actual bug. It also dropped the top-level catch-all from
+`xhigh` to `high`, since that catch-all was the demonstrated cause of sonnet silently inheriting
+`xhigh` (2.41x cost) for ~10 days, unnoticed through both the 2026-09-07 and 2026-09-08 research
+passes. CLAUDE.md's doctrine text was last edited 2026-09-14, four days before this fix, so it
+still describes the pre-fix state.
+
+Live session cache lag observed: this session's own transcript recorded `claude-opus-5` /
+`effort: high` at 05:01 UTC, ~25 minutes after the 04:36 UTC settings commit — consistent with
+Claude Code reading `modelSettings` once at session start rather than hot-reloading a live edit to
+`settings.json` mid-session. Not separately verified against the settings-reference doc; noted as
+an operational caveat, not a claim to fix in CLAUDE.md.
+
+New setting discovered in the changelog delta, not yet in use: `maxEffortLevel` (top-level or
+per-model under `modelSettings`) caps the effort level across all providers including
+Bedrock/Vertex/Foundry; not present in current `settings.json`, no impact on today's claims [20].
+
+Score (criteria: doctrine text matches live, machine-checked state; weight equal per claim; 9
+claims total): 7/9 current + accurately described, 2/9 stale = **78/100**, not 100/100 — the
+shortfall is entirely the two effort-level numbers above, both fixable by editing two lines in
+`~/.claude/CLAUDE.md`. Confidence in this verdict itself: high — every "current" row was read
+directly off the live settings file, a live catalog call, or an official changelog line, not
+inferred.
+
 ## Sources
 
 1. https://code.claude.com/docs/en/model-config — Claude Code model configuration (aliases, precedence, effort, 1M, plans).
