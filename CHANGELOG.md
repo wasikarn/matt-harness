@@ -3,6 +3,24 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.95] — 2026-09-18
+
+### Added
+
+- **`mh:model-bench`** — compares two subject models' scored performance on the same
+  `claude plugin eval` case set, reusing every existing grader/rubric under `evals/`. Runs the
+  eval suite once per model (`--model <model>`), then prints a labeled side-by-side diff
+  (`skills/meta/model-bench/scripts/model-bench.sh` orchestrates, `model-bench-diff.py` parses and
+  reports). Defaults `--ablation none` and `--threshold 0` (the CLI's own defaults would double
+  cost via the baseline arm and exit 1 on any normal run), hard-fails the comparison on a partial
+  run or a `disabled_by_default` plugin-load problem on either side, and WARNs on a judge-model,
+  case-filter, ablation, or version mismatch between the two runs rather than silently comparing
+  incomparable numbers. Explicitly caveats — in both `SKILL.md` and the report output itself —
+  that cases dispatching a subagent run it at its `agents/*.md`-pinned model regardless of
+  `--model`; whether `--model` reaches subagent dispatch inside the eval sandbox is unverified and
+  left to a deliberate operator smoke run, not spent during development. `disable-model-invocation:
+  true` — this spends real judge-token cost, so the user decides when to run it.
+
 ## [1.1.94] — 2026-09-18
 
 ### Removed

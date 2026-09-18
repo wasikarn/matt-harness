@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "costUsd": 5.0,
+  "claudeVersion": "2.1.270",
+  "partial": true,
+  "partialReason": "test-interrupted",
+  "suite": {
+    "judgeModel": "sonnet",
+    "caseFilter": "model-bench-fixture",
+    "ablation": "none",
+    "plugins": [{"name": "mh", "version": "1.1.94"}]
+  },
+  "aggregates": {"overallScore": 0.5, "overallPassRate": 0.5, "casesTotal": 1},
+  "cases": [
+    {
+      "name": "shared-skill-case",
+      "promptMarkdown": "Run /mh:cost-report and report the total.",
+      "aggregates": {"score": 0.5, "passRate": 0.5}
+    }
+  ]
+}
