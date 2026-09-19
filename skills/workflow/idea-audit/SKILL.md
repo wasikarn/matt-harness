@@ -201,10 +201,12 @@ with `pass`, `findings[]`, and **`checked[]`** all present, each finding's `summ
 present and each `checked[]` item's `claim`/`evidence` present; the result shows real findings or
 an explicit, legitimate zero-findings pass — not a refusal in prose.
 **Schema presence is not the same as a real citation** — `additionalProperties: false` on each
-finding/checked item stops a stray field, not a hand-wavy `evidence` string. After parsing, check
-each `evidence` value (in both `findings[]` and `checked[]`) against a citation shape (a
-`path:line`, a backticked command, or a grep-result excerpt); an item that fails this post-parse
-check is treated the same as a missing citation.
+finding/checked item stops a stray field, not a hand-wavy `evidence` string. After parsing, pipe
+the parsed object through `scripts/check-citations.py` (stdin: the JSON object) — it mechanically
+checks every `evidence` value (in both `findings[]` and `checked[]`) against a citation shape (a
+`path:line`, a backticked command, or a grep-result excerpt); this is no longer a by-eye check.
+Exit 0 = every citation is real; exit 1 = stderr names each failing item, which is treated the
+same as a missing citation.
 
 **`checked[]` closes the vacuous-pass gap:** `{"pass": true, "findings": []}` alone is
 schema-valid and indistinguishable from an attacker that was told (by injected source content, or

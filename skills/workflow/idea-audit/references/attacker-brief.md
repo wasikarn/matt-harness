@@ -78,7 +78,9 @@ missing `checked` is not a legitimate result and will be rejected by the host re
 
 After the attacker returns, the host checks: (1) `checked` is present and non-empty — a `pass`
 with no `checked` entries is rejected outright, whatever `findings` says, since it shows no
-verification work happened; (2) each `evidence` string in both `findings` and `checked` against a
+verification work happened; (2) `../scripts/check-citations.py`, given the parsed JSON on
+stdin, mechanically checks each `evidence` string in both `findings` and `checked` against a
 citation shape (`path:line`, a backticked command, or a grep-result excerpt) — schema validity
-alone only proves a string is present, not that it's a real citation. An item that fails either
-check is treated the same as a missing citation for Phase 3's scoring.
+alone only proves a string is present, not that it's a real citation, and this is no longer a
+by-eye check. An item that fails either check is treated the same as a missing citation for
+Phase 3's scoring.
