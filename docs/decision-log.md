@@ -22,8 +22,8 @@ steps.
 
 | Date | Decision | Artifact | Verdict | totalRange @ p=0.2 | verdictStable | Confidence | Outcome |
 |------|----------|----------|---------|---------------------|---------------|------------|---------|
-| 2026-09-19 | Weight-sensitivity check | `docs/research/decision-making-methods-2026-09-19.md` §4 row 2 | build (7.35) | [7.26, 7.45] | true | medium — thin evidence on sensitivity analysis' practical yield in this repo specifically | open |
-| 2026-09-19 | Confidence bands + outcome log | `docs/research/decision-making-methods-2026-09-19.md` §4 row 3 | build (7.25) | [6.91, 7.55] | **false** — fragile | medium-high — strong calibration literature, but the *pass* call itself is weight-sensitive | open |
-| 2026-09-19 | ADR status frontmatter | `docs/research/decision-making-methods-2026-09-19.md` §4 row 4 | build (7.65) | [7.40, 7.87] | true | high | open |
-| 2026-09-19 | Name the veto convergence | `docs/research/decision-making-methods-2026-09-19.md` §4 row 5 | build if cheap (6.95) | [6.36, 7.47] | false — fragile (low-risk regardless: doc-only, no code path) | high | open |
-| 2026-09-19 | Frame `revisit_if` as a tripwire | `docs/research/decision-making-methods-2026-09-19.md` §4 row 6 | build if cheap (6.70) | [6.26, 7.19] | false — fragile (low-risk regardless: doc-only, no code path) | high | open |
+| 2026-09-20 | Weight-sensitivity check | `docs/research/decision-making-methods-2026-09-19.md` §4 row 2 | build (7.35) | [7.26, 7.45] | true | medium — thin evidence on sensitivity analysis' practical yield in this repo specifically | open |
+| 2026-09-20 | Confidence bands + outcome log | `docs/research/decision-making-methods-2026-09-19.md` §4 row 3 | build (7.25) | [6.91, 7.55] | **false** — fragile | medium-high — strong calibration literature, but the *pass* call itself is weight-sensitive | open |
+| 2026-09-20 | ADR status frontmatter | `docs/research/decision-making-methods-2026-09-19.md` §4 row 4 | build (7.65) | [7.40, 7.87] | true | high | open |
+| 2026-09-20 | Name the veto convergence | `docs/research/decision-making-methods-2026-09-19.md` §4 row 5 | build if cheap (6.95) | [6.36, 7.47] | false — fragile (low-risk regardless: doc-only, no code path) | high | open |
+| 2026-09-20 | Frame `revisit_if` as a tripwire | `docs/research/decision-making-methods-2026-09-19.md` §4 row 6 | build if cheap (6.70) | [6.26, 7.19] | false — fragile (low-risk regardless: doc-only, no code path) | high | open |
