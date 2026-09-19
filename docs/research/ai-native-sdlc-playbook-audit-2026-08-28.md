@@ -348,10 +348,14 @@ explicitly considered and rejected/deferred, or **(d)** never evaluated at all.
     message and `CHANGELOG.md`: "error/timeout decisions and a jsonl reader are deliberately out
     of scope." The article's per-gate wait-time metric stays underivable without one. This is
     (c)-deferred-with-rationale, not a silent gap — noted here for completeness, not as new.
-12. **`harness-audit-drift.yml` referenced 3 already-deleted scripts** in its own operator-facing
-    GH-issue-comment text (`recursive-improve`, `gate-journal-summary.sh`,
-    `feedback-surface-scan.py`) — a direct consequence of restoring the file "near-verbatim" from
-    before the rebuild that deleted those scripts. **Fixed in this same session** (see below).
+12. **`harness-audit-drift.yml`'s operator-facing GH-issue-comment text told readers to run
+    `/mh:recursive-improve`** — a direct consequence of restoring the file "near-verbatim" from
+    before the rebuild that deleted that skill; that skill no longer exists anywhere in the repo.
+    **Fixed in this same session** (see below). The file's separate, static top-of-file comment
+    also names two already-deleted scripts, `gate-journal-summary.sh` and
+    `feedback-surface-scan.py` — those were never part of the live GH-issue-comment text and were
+    correctly left untouched (doc/historical framing, not an operator-facing pointer), so they are
+    not part of this finding.
 
 **Not gaps — documented decisions, unchanged since Round 1-3 above:**
 13. Managed settings for a regulated enterprise — rejected 2026-08-29 with rationale (this doc,

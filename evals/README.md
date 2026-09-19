@@ -186,7 +186,8 @@ file gained a `#!/usr/bin/env bash` shebang, and 8 `compliance-audit-*` scripts 
 after a `cd` to close a shellcheck SC2164 warning); `test-eval-cases.sh` itself has been updated to
 read either form, to allow `prompt.md`-only cases (no `case.yaml`) and 2-grader cases with at least
 one outcome grader (the two conventions this file's newer suites use), and its hardcoded case count
-now reads 76. Spot-checked against the real CLI on both a trivial case (`cost-report-clean`) and a
+now reads 70 (see the `find` command at the top of this file — don't trust this literal either).
+Spot-checked against the real CLI on both a trivial case (`cost-report-clean`) and a
 complex one (`deep-audit-clean`, git-history scaffold) — both now load and run correctly.
 
 **A follow-up `mh:deep-audit` pass** (fresh-context Codex checker, two rounds — every finding from
