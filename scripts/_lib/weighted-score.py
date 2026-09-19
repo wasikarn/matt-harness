@@ -3,9 +3,19 @@
 
 stdin:  {"scores": [{"id": str, "score": num, "max": num, "weight": num,
                       "insufficient": bool}, ...],
-         "floorPct": 0-1, "passThreshold": num | omitted, "primaryId": str | omitted}
+         "floorPct": 0-1, "passThreshold": num | omitted, "primaryId": str | omitted,
+         "perturb": 0<p<1 | omitted}
 stdout: {"total": float, "weightSum": float, "belowFloor": [id...],
-         "pass": bool | null, "primaryWeightOk": bool | null}
+         "pass": bool | null, "primaryWeightOk": bool | null,
+         "sensitivity": {"perturb": num, "totalRange": [lo, hi],
+                          "verdictStable": bool | null} | omitted}
+
+An optional `perturb` runs a weight-sensitivity check: every SCORED weight is
+independently moved +/-perturb (renormalized -- see _sensitivity's docstring
+for why this is exact, not sampled) and the resulting min/max `total` is
+reported as `totalRange`. `verdictStable` says whether `pass` can change
+anywhere in that box; it is `null` when no `passThreshold` was given (ranges
+alone are still meaningful, e.g. for mh:idea-audit).
 
 The model scores each dimension and writes reasons; this script does the
 arithmetic (weighted total, floor check, pass/fail) so a wrong hand sum or a
@@ -41,6 +51,58 @@ from typing import NoReturn
 def _die(reason: str) -> NoReturn:
     print(f"weighted-score: {reason}", file=sys.stderr)
     sys.exit(1)
+
+
+MAX_PERTURB_AXES = 12  # 2**12 = 4096 corners; above this, fail closed rather than stall
+
+
+def _sensitivity(items, weight_sum, below_floor, perturb, pass_threshold):
+    """Exact min/max of `total` when every SCORED weight independently moves
+    +/-perturb, holding the original `weight_sum` fixed as the external
+    multiplier (never recomputed from the perturbed vector).
+
+    Only relative weight among the SCORED items can move `total` -- weight_sum
+    is a fixed scaling constant here, not something perturbation redistributes,
+    so `total`'s new value is exactly (sum of r_i*w_i') / (sum of w_i') *
+    weight_sum for the perturbed scored weights w_i'. An `insufficient` item's
+    weight never enters that ratio, so perturbing it is a provable no-op, not
+    an approximation -- it is excluded from both the corner enumeration and
+    the axis-count cap below.
+
+    Corners, not a random search: for fixed weight_sum, `total` as a function
+    of the scored weights is a ratio of two functions linear in those weights
+    (linear-fractional, hence quasilinear), so its extrema over the +/-perturb
+    box are exactly at the box's 2**n vertices -- deterministic, no PRNG, same
+    "deterministic script" contract rank.py/plan-verdict-check.py already hold.
+    """
+    if (isinstance(perturb, bool) or not isinstance(perturb, (int, float))
+            or not math.isfinite(perturb) or not 0 < perturb < 1):
+        _die(f"'perturb' must be a finite number strictly between 0 and 1, got {perturb!r}")
+    scored = [(it["score"] / it["max"], it["weight"])
+              for it in items if not bool(it.get("insufficient", False))]
+    n = len(scored)
+    if n > MAX_PERTURB_AXES:
+        _die(f"'perturb' over {n} scored axes needs 2**{n} corners; cap is {MAX_PERTURB_AXES}")
+    lo = hi = None
+    for corner in range(2 ** n):
+        raw = 0.0
+        wsum = 0.0
+        for i, (ratio, w) in enumerate(scored):
+            factor = (1 + perturb) if (corner >> i) & 1 else (1 - perturb)
+            wp = w * factor
+            raw += ratio * wp
+            wsum += wp
+        # wsum == 0 only if every scored weight is 0, which score()'s own
+        # scored_weight_sum == 0 check already rejects before this runs.
+        t = round(raw / wsum * weight_sum, 2)
+        lo = t if lo is None or t < lo else lo
+        hi = t if hi is None or t > hi else hi
+    verdict_stable = None
+    if pass_threshold is not None:
+        # below_floor is a per-axis (s/m) < floorPct test -- weight-independent,
+        # so a floor-pinned pass=False can never flip no matter how weights move.
+        verdict_stable = True if below_floor else (lo >= pass_threshold or hi < pass_threshold)
+    return {"perturb": perturb, "totalRange": [lo, hi], "verdictStable": verdict_stable}
 
 
 def score(payload):
@@ -103,8 +165,12 @@ def score(payload):
         primary_w = weights[primary_id]
         primary_ok = all(primary_w > w for pid, w in weights.items() if pid != primary_id)
 
-    return {"total": total, "weightSum": weight_sum, "belowFloor": below_floor,
-            "pass": verdict, "primaryWeightOk": primary_ok}
+    out = {"total": total, "weightSum": weight_sum, "belowFloor": below_floor,
+           "pass": verdict, "primaryWeightOk": primary_ok}
+    if "perturb" in payload:
+        out["sensitivity"] = _sensitivity(items, weight_sum, below_floor,
+                                           payload["perturb"], pass_threshold)
+    return out
 
 
 def _selftest():
@@ -214,6 +280,93 @@ def _selftest():
     at_floor = score({"scores": [{"id": "x", "score": 5, "max": 10, "weight": 1,
                                    "insufficient": False}], "floorPct": 0.5})
     assert at_floor["belowFloor"] == [], at_floor
+
+    # --- Weight-sensitivity (`perturb`) fixtures ---
+
+    # Stable pass: research-doc row 2 (7/8/7, weights 3/3.5/3.5).
+    row2 = [
+        {"id": "ev", "score": 7, "max": 10, "weight": 3, "insufficient": False},
+        {"id": "ease", "score": 8, "max": 10, "weight": 3.5, "insufficient": False},
+        {"id": "val", "score": 7, "max": 10, "weight": 3.5, "insufficient": False},
+    ]
+    s2 = score({"scores": row2, "passThreshold": 7.0, "perturb": 0.2})
+    assert s2["total"] == 7.35, s2["total"]
+    assert s2["sensitivity"]["totalRange"] == [7.26, 7.45], s2["sensitivity"]
+    assert s2["sensitivity"]["verdictStable"] is True, s2["sensitivity"]
+
+    # Fragile fail: research-doc row 5 (8/10/3) -- already below threshold,
+    # not floor-tripped, and the range straddles it too.
+    row5 = [
+        {"id": "ev", "score": 8, "max": 10, "weight": 3, "insufficient": False},
+        {"id": "ease", "score": 10, "max": 10, "weight": 3.5, "insufficient": False},
+        {"id": "val", "score": 3, "max": 10, "weight": 3.5, "insufficient": False},
+    ]
+    s5 = score({"scores": row5, "passThreshold": 7.0, "perturb": 0.2})
+    assert s5["total"] == 6.95, s5["total"]
+    assert s5["pass"] is False
+    assert s5["sensitivity"]["totalRange"] == [6.36, 7.47], s5["sensitivity"]
+    assert s5["sensitivity"]["verdictStable"] is False, s5["sensitivity"]
+
+    # The case the feature exists for: research-doc row 3 (9/5/8) -- a
+    # pass:true whose range straddles the threshold. A verdictStable
+    # implementation hardcoded to "True whenever pass is True" fails this.
+    row3 = [
+        {"id": "ev", "score": 9, "max": 10, "weight": 3, "insufficient": False},
+        {"id": "ease", "score": 5, "max": 10, "weight": 3.5, "insufficient": False},
+        {"id": "val", "score": 8, "max": 10, "weight": 3.5, "insufficient": False},
+    ]
+    s3 = score({"scores": row3, "floorPct": 0.5, "passThreshold": 7.0, "perturb": 0.2})
+    assert s3["total"] == 7.25 and s3["pass"] is True, s3
+    assert s3["sensitivity"]["totalRange"] == [6.91, 7.55], s3["sensitivity"]
+    assert s3["sensitivity"]["verdictStable"] is False, s3["sensitivity"]
+
+    # Floor-pinned: below_floor must short-circuit verdictStable to True even
+    # though the raw range straddles passThreshold -- pass=False can't move.
+    floor_pinned = [
+        {"id": "ev", "score": 10, "max": 10, "weight": 3, "insufficient": False},
+        {"id": "ease", "score": 10, "max": 10, "weight": 3.5, "insufficient": False},
+        {"id": "val", "score": 2, "max": 10, "weight": 3.5, "insufficient": False},
+    ]
+    sf = score({"scores": floor_pinned, "floorPct": 0.5, "passThreshold": 7.0, "perturb": 0.2})
+    assert sf["belowFloor"] == ["val"] and sf["pass"] is False
+    lo, hi = sf["sensitivity"]["totalRange"]
+    assert lo < 7.0 <= hi, sf["sensitivity"]  # the range genuinely straddles the threshold
+    assert sf["sensitivity"]["verdictStable"] is True, sf["sensitivity"]
+
+    # An insufficient-flagged axis must be excluded from both perturbation and
+    # the axis count -- reuses dims_partial (regression_safety insufficient,
+    # 4 scored axes) and must match out2["total"] == 8.0 exactly.
+    si = score({"scores": dims_partial, "floorPct": 0.5, "passThreshold": 7.0, "perturb": 0.2})
+    assert si["total"] == 8.0 == out2["total"]
+    lo, hi = si["sensitivity"]["totalRange"]
+    assert lo <= si["total"] <= hi, si["sensitivity"]  # range must bracket its own total
+
+    # perturb out of (0, 1), non-finite, or boolean must all fail closed --
+    # including the fail-open this repo's own review found: an unbounded
+    # perturb (>=1) can drive a perturbed weight to <=0 and corrupt the ratio
+    # silently instead of raising, or divide by zero outright.
+    for bad_p in (0, 1, True, 1.5, 2.5, float("nan"), float("inf"), "0.2"):
+        try:
+            score({"scores": row2, "passThreshold": 7.0, "perturb": bad_p})
+            raise AssertionError(f"expected SystemExit on perturb={bad_p!r}")
+        except SystemExit as e:
+            assert e.code == 1
+
+    # More scored axes than the cap must fail closed, not stall on 2**13 corners.
+    many_axes = [{"id": f"a{i}", "score": 5, "max": 10, "weight": 1, "insufficient": False}
+                 for i in range(13)]
+    try:
+        score({"scores": many_axes, "perturb": 0.2})
+        raise AssertionError("expected SystemExit on >12 scored axes")
+    except SystemExit as e:
+        assert e.code == 1
+
+    # Omitting `perturb` must return exactly the original 5 keys -- no
+    # regression in the non-opt-in path.
+    no_perturb = score({"scores": [{"id": "x", "score": 5, "max": 10, "weight": 1,
+                                     "insufficient": False}]})
+    assert set(no_perturb.keys()) == {"total", "weightSum", "belowFloor", "pass",
+                                       "primaryWeightOk"}, no_perturb
 
     print("weighted-score.py selftest ok")
 

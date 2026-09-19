@@ -54,8 +54,12 @@ python3 scripts/_lib/weighted-score.py <<< '{"scores": [
   {"id": "claim_accuracy", "score": <0-10>, "max": 10, "weight": 2, "insufficient": <bool>},
   {"id": "regression_safety", "score": <0-10>, "max": 10, "weight": 2, "insufficient": <bool>},
   {"id": "simplicity", "score": <0-10>, "max": 10, "weight": 1, "insufficient": <bool>}
-], "floorPct": 0.5, "passThreshold": 7.0}'
+], "floorPct": 0.5, "passThreshold": 7.0, "perturb": 0.20}'
 ```
+`perturb` runs a weight-sensitivity check: every scored weight is independently moved ±20%, and
+the output's `sensitivity.verdictStable` says whether `pass` can flip anywhere in that box. `false`
+means the total is closer to the threshold than the bare number reads — report it (see Final
+output below), don't silently drop it.
 An `insufficient`-flagged dimension is dropped from both the numerator and the denominator, so
 the total renormalizes over the dimensions that actually scored — it is never divided by the
 full weight sum, which would be arithmetically identical to scoring the dropped dimension 0.
@@ -239,7 +243,10 @@ criteria. If the score did not move, say so and say why.
 Line one is the **Final Verdict**: pass or fail against the threshold in step 2, with the
 reason and a confidence level, stated plainly — check step 3's hard-fail override first; when it
 fires, it wins regardless of the step-2 total. The total and the pass/fail call are copied from
-`weighted-score.py`'s output, never computed by hand. Then:
+`weighted-score.py`'s output, never computed by hand. When `sensitivity.verdictStable` is `false`,
+append a fragility clause **after** the pass/fail word — e.g. "pass (7.3/10, confidence high;
+fragile — range [6.9, 7.6] under ±20% weight perturbation)" — never before it, so the existing
+grader contract (`Final Verdict… (pass|fail)`) keeps matching. Then:
 
 1. Baseline score (per dimension, weighted total)
 2. Findings, with the checker's and your own marked

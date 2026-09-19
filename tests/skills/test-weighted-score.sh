@@ -57,4 +57,30 @@ bool_code=$?
 floor_out=$(printf '%s' '{"scores": [{"id": "x", "score": 5, "max": 10, "weight": 1, "insufficient": false}], "floorPct": 0.5}' | python3 "$SCORER")
 echo "$floor_out" | /usr/bin/grep -q '"belowFloor": \[\]' || { echo "FAIL: score at exact floor tripped belowFloor, got: $floor_out"; exit 1; }
 
+# Weight-sensitivity: research-doc row 5 (8/10/3) is a fragile fail via stdin.
+sens_out=$(python3 "$SCORER" <<'EOF'
+{"scores": [
+  {"id": "ev", "score": 8, "max": 10, "weight": 3, "insufficient": false},
+  {"id": "ease", "score": 10, "max": 10, "weight": 3.5, "insufficient": false},
+  {"id": "val", "score": 3, "max": 10, "weight": 3.5, "insufficient": false}
+], "passThreshold": 7.0, "perturb": 0.2}
+EOF
+)
+echo "$sens_out" | /usr/bin/grep -q '"verdictStable": false' || { echo "FAIL: expected fragile verdictStable, got: $sens_out"; exit 1; }
+echo "$sens_out" | /usr/bin/grep -q '6.36' || { echo "FAIL: expected totalRange lo 6.36, got: $sens_out"; exit 1; }
+
+# An out-of-range perturb must fail closed with empty stdout, same as any
+# other malformed input -- including the >=1 fail-open this repo's own
+# review found (a perturbed weight going <=0 without raising).
+for bad_p in 0 1 1.5 2.5; do
+  p_out=$(printf '%s' "{\"scores\": [{\"id\": \"x\", \"score\": 5, \"max\": 10, \"weight\": 1, \"insufficient\": false}, {\"id\": \"y\", \"score\": 5, \"max\": 10, \"weight\": 1, \"insufficient\": false}], \"perturb\": $bad_p}" | python3 "$SCORER" 2>/dev/null)
+  p_code=$?
+  [ "$p_code" -ne 0 ] || { echo "FAIL: expected non-zero exit on perturb=$bad_p"; exit 1; }
+  [ -z "$p_out" ] || { echo "FAIL: expected empty stdout on perturb=$bad_p, got: $p_out"; exit 1; }
+done
+
+# Omitting perturb must not add a "sensitivity" key -- backward compatibility.
+noperturb_out=$(printf '%s' '{"scores": [{"id": "x", "score": 5, "max": 10, "weight": 1, "insufficient": false}]}' | python3 "$SCORER")
+echo "$noperturb_out" | /usr/bin/grep -q 'sensitivity' && { echo "FAIL: unexpected sensitivity key with no perturb input, got: $noperturb_out"; exit 1; }
+
 echo "PASS: test-weighted-score"
