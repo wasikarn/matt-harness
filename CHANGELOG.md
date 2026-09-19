@@ -3,6 +3,46 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.103] — 2026-09-20
+
+### Fixed
+
+- **Closed an uncited "external benchmark" claim in Rule 14 doctrine**, repeated near-verbatim in
+  `docs/METHODOLOGY.md`, `agents/plan-reviewer.md`, and `skills/workflow/idea-audit/SKILL.md`.
+  Traced to `coldteadotai/abide`'s replay benchmark, which measured rule scope/subjectivity on
+  different inputs per rule, not a controlled example-anchoring comparison on identical inputs.
+  Replaced with a hedged sentence in all 3 files; full citation trail (Jonsson & Svingby 2007,
+  Landy & Farr 1980, Zheng et al. 2023 App. D.2, PReMISE 2026) now lives in the new
+  `docs/reference/rubric-anchoring-evidence.md`, which `METHODOLOGY.md`'s 4096-byte pre-commit
+  cap can't carry inline.
+
+### Added
+
+- **Rule 14's `confidence` field is now a `{level, reason}` band**, not a bare self-reported
+  number — matching `agents/ideate-critic.md`'s existing shape and what the LLM-confidence-
+  calibration literature actually supports. Updated in `METHODOLOGY.md`,
+  `docs/reference/operating-model.md`'s sibling restatement, and `agents/plan-reviewer.md`'s
+  output template; `docs/reference/haiku-decision-calls.md`'s now-unsupported comparative claim
+  ("weaker than even Jev's own confidence field") is hedged and re-attributed.
+- **`scripts/_lib/weighted-score.py` gains an opt-in weight-sensitivity check** (`"perturb"`
+  input field): every scored weight is independently moved ±p and the exact min/max `total` is
+  reported, with `verdictStable` saying whether `pass` can flip anywhere in that range. Wired into
+  `mh:deep-audit`'s Final Verdict as an appended fragility clause. Bounded to `0 < perturb < 1`
+  and 12 scored axes, closing a fail-open where an unbounded value could drive a perturbed weight
+  non-positive and silently corrupt the ratio.
+- **`docs/adr/0001-0003` gain machine-readable `status:` frontmatter** (upstream
+  `mattpocock-skills` `ADR-FORMAT.md` schema), closing the "which ADRs are still in force" gap —
+  previously discoverable only by reading each file's prose.
+- **`agents/plan-reviewer.md`** now names the fatal-weakness floor's convergence with MCDA
+  outranking-method veto thresholds, and frames `revisit_if` explicitly as a WRAP-style tripwire
+  (a date, metric, or count).
+- **New `docs/decision-log.md`**, seeded with 5 rows from this release's own scored decisions —
+  a markdown-only append log for tracking a Rule-14 confidence band against its later outcome.
+
+Full research and provenance: `docs/research/decision-making-methods-2026-09-19.md` (5-lane
+primary-source drill-down into decision-making methods, followed by 2 rounds of `mh:plan-reviewer`
+adversarial review after Codex CLI hit its usage limit).
+
 ## [1.1.102] — 2026-09-19
 
 ### Fixed
