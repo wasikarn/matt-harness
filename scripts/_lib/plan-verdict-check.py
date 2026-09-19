@@ -21,6 +21,13 @@ stdin: {"findings": [{"severity": "Critical"|"High"|"Medium"|"Low"}, ...],
         "top_blockers_count": int, "verdict": "production-ready"|"ready-with-caveats"|
         "needs-revision"|"not-ready"}
 
+`findings` here is the FULL list from plan-reviewer's `findings:` field, not the (possibly
+truncated) `top_blockers:` display list -- plan-reviewer.md caps `top_blockers` at 10 entries for
+readability, but `top_blockers_count` must be the full, uncapped Critical+High tally from
+`findings`. Found by mh:deep-audit 2026-09-19: a caller computing `top_blockers_count` from
+`len(top_blockers)` on a plan with more than 10 Critical/High findings would get a mechanically
+correct review rejected here for a display artifact, not a real inconsistency.
+
 Exit 0: consistent (or `not-ready`, not checked against findings) -- nothing on stdout.
 Exit 1: verdict doesn't match what `findings` implies, or `top_blockers_count` doesn't equal
 the Critical+High count -- reason on stderr.
@@ -128,6 +135,21 @@ def _selftest():
     ok, reason = run({"findings": [], "top_blockers_count": 0, "verdict": "production-ready",
                        "confidence": 90})
     assert not ok, (ok, reason)
+
+    # top_blockers_count is the FULL Critical+High tally, not the display-capped
+    # top_blockers list length -- 11 Critical findings, correctly counted, must
+    # pass even though plan-reviewer.md's own template caps the displayed list at 10.
+    eleven_criticals = [{"severity": "Critical"} for _ in range(11)]
+    ok, reason = run({"findings": eleven_criticals, "top_blockers_count": 11,
+                       "verdict": "needs-revision"})
+    assert ok, reason
+
+    # The same 11-Critical plan with top_blockers_count taken from the capped
+    # display list (10) instead of the full tally must be rejected, not silently
+    # accepted as "close enough".
+    ok, reason = run({"findings": eleven_criticals, "top_blockers_count": 10,
+                       "verdict": "needs-revision"})
+    assert not ok and "11 Critical/High" in reason, (ok, reason)
 
     print("plan-verdict-check.py selftest ok")
 

@@ -14,9 +14,11 @@ stdin: the verifier's raw final message text (Codex --output-last-message file
 contents, or the Claude-fallback agent's final message).
 
 Behavior:
-  - A literal `NEEDS-DECISION` anywhere in the text wins over any JSON found nearby,
-    same rule as deep-audit's script and for the same reason: the contract is a
-    verdict object OR an escalation, never both.
+  - A literal `NEEDS-DECISION` anywhere OUTSIDE a parsed JSON span wins over any
+    JSON found nearby, same rule as deep-audit's script and for the same reason:
+    the contract is a verdict object OR an escalation, never both. mask_json_spans
+    masks out JSON first so a match found only inside an otherwise-valid verdict's
+    own `note` field isn't mistaken for a real escalation.
   - Scans every '{' in the text and keeps every candidate that fully validates
     against the schema (exact key-set equality) AND the semantic rule below.
     Exactly one valid candidate is required; two or more distinct ones reject as
@@ -47,6 +49,27 @@ REQUIRED_KEYS = {"requirements", "gauntlet", "scope_ok", "unexpected_files"}
 REQUIREMENT_KEYS = {"id", "verdict", "note", "accepted"}
 GAUNTLET_KEYS = {"command", "sha", "exit_code", "output_tail"}
 VERDICTS = {"CONFORMS", "DEVIATED", "MISSING"}
+
+
+def mask_json_spans(text):
+    """Replace every substring that parses as a JSON value with spaces, same
+    length. Mirrors mh:deep-audit's scripts/check-verdict.py's identical
+    function: a NEEDS-DECISION match found only inside an otherwise-valid
+    verdict's own `note` field (e.g. citing this repo's escape hatch by name)
+    isn't mistaken for a real escalation. Found by mh:deep-audit 2026-09-19."""
+    dec = json.JSONDecoder()
+    masked = list(text)
+    i = text.find("{")
+    while i != -1:
+        try:
+            _, end = dec.raw_decode(text, i)
+        except ValueError:
+            i = text.find("{", i + 1)
+            continue
+        for j in range(i, end):
+            masked[j] = " "
+        i = text.find("{", end)
+    return "".join(masked)
 
 
 def extract_object(text):
@@ -136,7 +159,7 @@ def compute_pass(obj):
 
 def main():
     text = sys.stdin.read()
-    match = re.search(r"NEEDS-DECISION\b.*", text)
+    match = re.search(r"NEEDS-DECISION\b.*", mask_json_spans(text))
     if match:
         print(match.group(0).strip())
         print("check-verdict: escalation (NEEDS-DECISION), not a malformed verdict", file=sys.stderr)
@@ -252,6 +275,16 @@ def _selftest():
     decoy["scope_ok"] = False
     code, out, err = run(f"Example shape: {json.dumps(decoy)}\nActual result: {good}")
     assert code == 1 and "ambiguous" in err and out == "", (code, out, err)
+
+    # A fully valid verdict whose OWN `note` field legitimately quotes
+    # "NEEDS-DECISION" (citing this exact escape hatch by name) must be
+    # accepted as the verdict, not misclassified as an escalation.
+    citing = json.loads(good)
+    citing["requirements"][0]["note"] = ("verifier-brief.md says return "
+                                          "NEEDS-DECISION <question> instead of guessing")
+    code, out, err = run(json.dumps(citing))
+    parsed = json.loads(out)
+    assert code == 0 and parsed["pass"] is True, (code, out, err)
 
     print("check-verdict.py (compliance-audit) selftest ok")
 

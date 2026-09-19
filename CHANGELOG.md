@@ -3,6 +3,36 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.101] — 2026-09-19
+
+### Fixed
+
+- **Closed 5 gaps a fresh-context `mh:deep-audit` of v1.1.100's own 7-fix batch found**
+  (self-audit — this repo's review skills auditing their own most recent fix round).
+  deep-audit's Claude-fallback checker brief still cited `spawn-brief.md`'s bare 4-field
+  `Validator/re-validator` shape while `check-verdict.py` now requires `checked[]`
+  unconditionally — a correctly-behaving fallback agent got its valid response rejected,
+  reproduced live 3 ways (direct read, an independently-dispatched checker's own repro,
+  and the checker's actual returned shape piped through the script). This also made
+  1.1.100's own CHANGELOG claim ("added on both the Codex-primary and Claude-fallback
+  paths") false at the time it was written — SKILL.md now states the fallback contract
+  explicitly. `plan-verdict-check.py`'s `top_blockers_count` check required the full
+  Critical+High tally, but `plan-reviewer.md`'s own template caps the displayed
+  `top_blockers` list at 10 — a plan with more than 10 such findings, counted from the
+  capped list, would get a correct review mechanically rejected; clarified in the script,
+  the agent's Caller note, and `spawn-brief.md`. compliance-audit's new base-SHA gauntlet
+  re-run (1.1.100) didn't say how to do it without tripping the existing "verifier modified
+  source" tracked-diff check or the no-checkout constraint — now specifies a second,
+  separate detached worktree pinned at the base SHA, never checking out the one already
+  pinned at head. Both `check-verdict.py` scripts (deep-audit and its compliance-audit
+  mirror) scanned for the `NEEDS-DECISION` escape hatch on raw, unmasked text, so a fully
+  valid verdict whose own evidence/note string legitimately quoted that phrase (plausible
+  in a repo that discusses this contract constantly — the checker's own finding write-up
+  had to dodge the literal string to avoid tripping it) got discarded and misreported as
+  an escalation; both now mask out parsed JSON spans before scanning. `spawn-brief.md` now
+  names `plan-verdict-check.py` directly, since `mh:plan-reviewer` has no calling skill of
+  its own to embed the call in as a mandatory step, unlike its 3 sibling fixes.
+
 ## [1.1.100] — 2026-09-19
 
 ### Fixed

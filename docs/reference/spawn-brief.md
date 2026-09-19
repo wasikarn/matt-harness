@@ -27,6 +27,11 @@ never narrowed on the strength of "already self-checked."
 
 Validator/re-validator: return `{pass, findings[], scope_ok, unexpected_files[]}` and nothing else;
 `scope_ok` fails on either an unexpected file or an owned file the diff never touches.
+Dispatching `mh:plan-reviewer` specifically: it has no calling skill of its own to embed this in
+as a mandatory step, so the dispatcher must remember it here — pipe its
+`{findings, top_blockers_count, verdict}` fields through `scripts/_lib/plan-verdict-check.py`
+(repo root) before trusting the verdict; `agents/plan-reviewer.md`'s own Caller note has the
+exact contract and its `top_blockers`-display-cap gotcha.
 
 Constraints: stage by explicit path only, never stash/reset/checkout/add -A; delete with `trash`;
 return `NEEDS-DECISION <question>` instead of guessing; a ruling made within your own authority

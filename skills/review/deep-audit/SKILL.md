@@ -132,9 +132,18 @@ false` result **with real, evidenced findings is a successful run that found pro
 a failure, never a fallback trigger.
 
 **On any other outcome** — non-zero exit, empty or malformed output, a schema mismatch, timeout,
-auth failure, or a semantic refusal — fall back to a Claude `Explore`/review agent (same brief,
-which now carries the `Validator/re-validator:` output shape per
-`docs/reference/spawn-brief.md`) and note "independence reduced for this pass" in the final
+auth failure, or a semantic refusal — fall back to a Claude `Explore`/review agent (same brief;
+its return contract is `docs/reference/spawn-brief.md`'s `Validator/re-validator:` shape **plus
+the `checked[]` field this skill requires** — `{pass, findings[], checked[], scope_ok,
+unexpected_files[]}`, not the bare 4-field spawn-brief.md line verbatim. Found by `mh:deep-audit`
+2026-09-19: the earlier version of this paragraph pointed the fallback brief at spawn-brief.md's
+generic 4-field shape with no `checked[]` mention, while `check-verdict.py` below validates both
+paths against the same unconditional 5-key contract — a correctly-behaving fallback agent
+following that stale 4-field instruction got its valid response rejected, reproduced live via
+`echo '{"pass": true, "findings": [], "scope_ok": true, "unexpected_files": []}' | python3
+scripts/check-verdict.py` exiting 1 on "missing=['checked']". `docs/reference/spawn-brief.md`'s
+generic shape is intentionally left unchanged — it backs many unrelated Rule-13 validator
+dispatches that don't need this guard) and note "independence reduced for this pass" in the final
 report, matching `docs/reference/codex-integration-map.md`'s established fallback language.
 
 On this fallback path there is no `--output-last-message` file and no `--output-schema`, so

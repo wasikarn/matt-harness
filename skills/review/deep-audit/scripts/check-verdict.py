@@ -10,8 +10,12 @@ stdin: the dispatched agent's raw final message text.
 
 Behavior:
   - Checked first, unconditionally: a literal `NEEDS-DECISION` (docs/
-    reference/spawn-brief.md's escalation return) anywhere in the text wins
-    over any JSON found nearby. The contract is either a verdict object OR
+    reference/spawn-brief.md's escalation return) anywhere OUTSIDE a parsed
+    JSON span wins over any JSON found nearby (mask_json_spans masks out
+    every substring that parses as JSON first, so a match found only inside
+    an otherwise-valid verdict's own string field -- e.g. an `evidence`
+    value that legitimately cites this escape hatch by name -- isn't
+    mistaken for a real escalation). The contract is either a verdict object OR
     an escalation, never both, so a hedged/hypothetical object quoted ahead
     of a real escalation ("if I could conclude, it'd be {...} but I can't")
     must not be silently accepted as the answer, and unrelated JSON-shaped
@@ -53,6 +57,32 @@ import sys
 REQUIRED_KEYS = {"pass", "findings", "checked", "scope_ok", "unexpected_files"}
 FINDING_KEYS = {"summary", "evidence"}
 CHECKED_KEYS = {"claim", "evidence"}
+
+
+def mask_json_spans(text):
+    """Replace every substring that parses as a JSON value (starting at each
+    '{') with spaces, same length. Used so a NEEDS-DECISION match found only
+    inside an otherwise-valid verdict's own string field (e.g. an `evidence`
+    value that legitimately cites this escape hatch by name) isn't mistaken
+    for a real escalation -- only a match that survives outside every parsed
+    JSON span counts. Found by mh:deep-audit 2026-09-19: the escalation scan
+    ran on raw, unmasked text, so a fully valid verdict whose own evidence
+    string quoted "NEEDS-DECISION" (plausible in a repo that discusses this
+    exact contract constantly) got discarded and misreported as an
+    escalation."""
+    dec = json.JSONDecoder()
+    masked = list(text)
+    i = text.find("{")
+    while i != -1:
+        try:
+            _, end = dec.raw_decode(text, i)
+        except ValueError:
+            i = text.find("{", i + 1)
+            continue
+        for j in range(i, end):
+            masked[j] = " "
+        i = text.find("{", end)
+    return "".join(masked)
 
 
 def extract_object(text):
@@ -129,13 +159,16 @@ def main():
     text = sys.stdin.read()
     # Checked first, unconditionally: the spawn-brief contract is either a
     # verdict object OR a NEEDS-DECISION escalation, never both. A literal
-    # NEEDS-DECISION anywhere in the message means the agent explicitly
-    # declined to guess, so it must win over any JSON found nearby -- a
-    # hedged/hypothetical verdict quoted ahead of it ("if I could conclude,
-    # it'd be {...} but I can't without X") must not be silently accepted as
-    # the real answer, and unrelated JSON-shaped prose after it must not get
-    # misclassified as a malformed verdict instead of the escalation it is.
-    match = re.search(r"NEEDS-DECISION\b.*", text)
+    # NEEDS-DECISION anywhere OUTSIDE any parsed JSON span means the agent
+    # explicitly declined to guess, so it must win over any JSON found nearby
+    # -- a hedged/hypothetical verdict quoted ahead of it ("if I could
+    # conclude, it'd be {...} but I can't without X") must not be silently
+    # accepted as the real answer, and unrelated JSON-shaped prose after it
+    # must not get misclassified as a malformed verdict instead of the
+    # escalation it is. Masking first (mask_json_spans) means a match found
+    # only inside a valid verdict's own string field -- data, not a real
+    # escalation -- doesn't win; see that function's docstring.
+    match = re.search(r"NEEDS-DECISION\b.*", mask_json_spans(text))
     if match:
         print(match.group(0).strip())
         print("check-verdict: escalation (NEEDS-DECISION), not a malformed verdict", file=sys.stderr)
@@ -269,6 +302,33 @@ def _selftest():
         "NEEDS-DECISION which config value is the source of truth here?"
     )
     code, out, err = run(escalation_with_unrelated_json)
+    assert code == 2 and out.strip().startswith("NEEDS-DECISION"), (code, out, err)
+
+    # A fully valid verdict whose OWN evidence string legitimately quotes
+    # "NEEDS-DECISION" (citing this exact escape hatch by name, plausible in
+    # this repo) must be accepted as the verdict, not misclassified as an
+    # escalation -- the phrase only appears inside an already-parsed JSON
+    # string field, never outside any JSON span.
+    verdict_citing_escalation = json.dumps({
+        "pass": True,
+        "findings": [],
+        "checked": [{"claim": "verifier-brief.md documents its escape hatch",
+                      "evidence": "verifier-brief.md:44 tells the verifier to return "
+                                  "NEEDS-DECISION <question> instead of guessing"}],
+        "scope_ok": True, "unexpected_files": [],
+    })
+    code, out, err = run(verdict_citing_escalation)
+    assert code == 0 and json.loads(out) == json.loads(verdict_citing_escalation), (code, out, err)
+
+    # Same case, but a REAL escalation also appears outside any JSON span in
+    # the same message -- the real escalation must still win even though the
+    # text also contains a valid-looking verdict citing the phrase in prose.
+    cited_then_real_escalation = (
+        f"{verdict_citing_escalation}\n"
+        "On second thought I can't safely conclude this.\n"
+        "NEEDS-DECISION does the cited line still apply after the file moved?"
+    )
+    code, out, err = run(cited_then_real_escalation)
     assert code == 2 and out.strip().startswith("NEEDS-DECISION"), (code, out, err)
 
     print("check-verdict.py selftest ok")

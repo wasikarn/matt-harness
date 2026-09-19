@@ -123,11 +123,20 @@ must discover independently, then get an independent answer from a different mod
      worktree — and passed cleanly on an unsandboxed run of the identical pinned SHA). On any
      non-zero gauntlet exit, before reporting it as a finding: **the verifier itself** (never
      main, per the re-run rule below) re-runs the identical gauntlet command at the plan's base
-     SHA, in the same sandbox. Identical failure at base → pre-existing/environmental, not this
-     diff's regression → return `NEEDS-DECISION` naming the specific failing test(s) and both
-     exit codes, per `references/verifier-brief.md`'s existing escape hatch, rather than either a
-     silent pass or an unexplained `DEVIATED`. Base SHA passes cleanly in the same sandbox → the
-     failure is real, report it as a genuine gauntlet failure, no exception.
+     SHA, in the same sandbox, **in a second, separate detached worktree pinned at the base SHA
+     (`git worktree add --detach <second-path> <base-sha>`), removed after the re-run — never by
+     checking out the base SHA inside the worktree already pinned at head.** Found by
+     `mh:deep-audit` 2026-09-19: the first version of this bullet didn't say this, and the
+     obvious alternative — checking the existing worktree out to the base SHA and back — either
+     trips the before/after tracked-diff check above (the switch itself is a tracked-file change
+     unless perfectly reverted, which nothing here instructs) or, if reverted cleanly, still adds
+     a checkout the generic dispatched-subagent constraints don't carve out for a purpose-built
+     disposable worktree. A second worktree sidesteps both: the head-pinned worktree the rest of
+     Phase 2 uses is never touched. Identical failure at base → pre-existing/environmental, not
+     this diff's regression → return `NEEDS-DECISION` naming the specific failing test(s) and
+     both exit codes, per `references/verifier-brief.md`'s existing escape hatch, rather than
+     either a silent pass or an unexplained `DEVIATED`. Base SHA passes cleanly in the same
+     sandbox → the failure is real, report it as a genuine gauntlet failure, no exception.
    - **Don't redirect `TMPDIR`/scratch I/O into the worktree to "confine" it further** — the
      before/after tracked-diff check above is the enforcement mechanism, not where temp files
      happen to live. Forcing all scratch I/O inside the worktree makes it a git repo's

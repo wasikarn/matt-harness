@@ -252,5 +252,10 @@ agent should pipe `{"findings": [{"severity": ...}, ...], "top_blockers_count": 
 "verdict": "..."}` through `scripts/_lib/plan-verdict-check.py` (repo root) — it mechanically
 catches the exact self-contradiction the Anti-Patterns list above names (`production-ready`
 alongside a real blocker) instead of relying on the same model not repeating the mistake it was
-just asked to avoid. It does not check `not-ready`, the one verdict this file's own text says
-needs judgment, not arithmetic.
+just asked to avoid. `findings` here is the full list from this agent's own `findings:` field, not
+the `top_blockers:` display list capped at 10 above — `top_blockers_count` is the full,
+uncapped Critical+High tally, never `len(top_blockers)` (found by `mh:deep-audit` 2026-09-19: a
+plan with more than 10 Critical/High findings, counted from the capped display list, would get a
+correct review mechanically rejected). It does not check `not-ready`, the one verdict this file's
+own text says needs judgment, not arithmetic. `docs/reference/spawn-brief.md` also names this
+script, since this agent has no calling skill of its own to embed the call in as a mandatory step.
