@@ -263,9 +263,8 @@ needs one clause of justification in its own table row (not asserted bare); weig
 `blast-radius/reversibility` (cost if adopted and wrong) — drop or add an axis only with the
 justification clause above, so runs stay comparable instead of each inventing an unrelated axis
 list. Anchor every axis's score band with one worked example per level (what a 3 looks like vs an
-8 for *this* source), not a bare number — an unanchored axis reproduces the exact false-positive
-pattern an external benchmark measured: a subjective, example-free criterion scored far worse than
-an anchored one judging the same material.
+8 for *this* source), not a bare number; anchoring is shown to raise judge consistency, not
+established to raise correctness (`docs/reference/rubric-anchoring-evidence.md`).
 
 **Fatal-weakness floor — two triggers, not one:** (1) **if the source side is entirely
 `insufficient evidence`** (the banner path fired, or the attacker never reached the source), that

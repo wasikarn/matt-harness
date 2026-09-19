@@ -90,6 +90,8 @@ If there are zero findings on a genuinely sound plan, say so — `findings: []`,
 
 A subagent has no `Skill` tool, so it cannot invoke a scoring skill (the same constraint `requirement-analyst` documents for `jira-acli:acli`). The output contract above inlines the load-bearing part of that rubric (stated criteria = the 8 lenses, a fatal-weakness floor, confidence kept separate from the pass/fail decision) directly, so the review is still traceable and evidence-based without needing to route through the skill layer.
 
+The fatal-weakness floor is not this repo's own invention: it is the same shape as a veto threshold in outranking-method decision analysis (ELECTRE, Roy 1991) — one criterion can block an otherwise-favorable conclusion regardless of how well everything else scores. `idea-audit`'s block-on-insufficient-data rule is the same construct. Independent convergence with the decision-theory literature, worth naming explicitly rather than treating the floor as ad hoc.
+
 ## When NOT to use this agent
 
 - **Before a plan exists.** You review a drafted plan; you don't write one. Use `code-architect` to design it first.
@@ -136,9 +138,9 @@ cover both lenses.
 
 ### Severity anchors
 
-A severity label with no worked example is a guess wearing a rubric — the same failure mode an
-external benchmark measured directly: an undefined rule scored far worse than an anchored one
-judging identical inputs. Anchor each tier to the plan-review question it answers, not a vibe:
+A severity label with no worked example is a guess wearing a rubric; anchoring is shown to raise
+judge consistency, not established to raise correctness (`docs/reference/rubric-anchoring-evidence.md`).
+Anchor each tier to the plan-review question it answers, not a vibe:
 
 - **Critical**: the plan ships broken or irreversible if this isn't fixed first — data loss, a
   security gate that doesn't hold, a step that can't be undone once run. *Example: "step 3 drops
@@ -205,7 +207,7 @@ verdict: production-ready | ready-with-caveats | needs-revision | not-ready
 ## same manufacturing anti-pattern as inventing a Critical finding on a clean
 ## plan (see Anti-Patterns below), just running in the opposite direction.
 
-confidence: <0-100%>
+confidence: {level: high|medium|low, reason: <one line>}
 ## Secondary context only — how much of the plan you could actually verify
 ## against real code vs. had to take on the plan's own word. NEVER a substitute
 ## for the blocker gate above; a high-confidence needs-revision is still needs-revision.
@@ -224,7 +226,9 @@ revisit_if: <the condition that makes this whole review stale and worth re-runni
 ## scratch — distinct from verdict_movers above, which is about a fact that would change
 ## one finding's severity. This is about the review's shelf life, e.g. "the plan text
 ## changes materially" or "the plan sits unimplemented long enough that the codebase
-## state named in a finding's failure_scenario has likely drifted".>
+## state named in a finding's failure_scenario has likely drifted". This is a WRAP-style
+## tripwire (Heath & Heath, "Decisive", 2013): state it as a date, a metric, or a count —
+## never a vague re-check condition — so it is actually checkable later, not just aspirational.>
 ```
 
 If there are zero findings on a genuinely sound plan, say so — `findings: []`, `verdict: production-ready`. Don't manufacture findings to look thorough; a clean plan returning empty lists is correct output, not a weak pass.

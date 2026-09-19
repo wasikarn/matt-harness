@@ -55,9 +55,9 @@ input context.
   (`thinking: {type: "enabled"}`) is set. Haiku defaults to thinking off; don't turn it on for a
   forced-tool call.
 - **No confidence field.** The Messages API has no logprobs or token-probability field anywhere.
-  A "confidence" number the model writes into its own JSON output is self-reported, not measured —
-  weaker than even Jev's own confidence field. Per Rule 14, don't manufacture one; omit it or
-  return **ข้อมูลไม่เพียงพอ**.
+  A "confidence" number the model writes into its own JSON output is self-reported, not measured.
+  A confidence *band* is not a manufactured number, but this decision class (cheap single calls,
+  no logprobs available) still gets none — omit it or return **ข้อมูลไม่เพียงพอ**.
 
 ## When not to use this
 

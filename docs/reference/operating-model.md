@@ -73,7 +73,7 @@ model's unaided judgment.
 ## 3. Score, not feel
 
 An important decision carries stated criteria, weights, a numeric result, a pass/fail reason,
-and confidence (METHODOLOGY Rule 14). "Important" means the Rule 1 triad flagged it (one-way
+and a confidence band (high/medium/low) with its reason (METHODOLOGY Rule 14). "Important" means the Rule 1 triad flagged it (one-way
 door, wide blast radius) or the user asked for a ranking. Routine calls get one line with the
 reason. Insufficient data is marked `ข้อมูลไม่เพียงพอ` and blocked on the operator; a guessed
 score is worse than none.
