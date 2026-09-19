@@ -31,3 +31,14 @@ not folded into the verdict: the requirement is met on its own terms even though
 exists nearby. Without this distinction, a verifier that traces deep enough to find a real
 bypass has nowhere to put it except downgrading an otherwise-conforming requirement, which hides
 which items are the actual open ones.
+
+**Final output contract.** End your message with exactly one JSON object matching
+`references/verifier-output-schema.json`: `{"requirements": [{"id", "verdict", "note",
+"accepted"}...], "gauntlet": {"command", "sha", "exit_code", "output_tail"}, "scope_ok",
+"unexpected_files": [...]}`. `accepted` is `null` for CONFORMS/MISSING (acceptance isn't a
+question for those) and a real boolean for DEVIATED — leave it `false` unless the main session's
+pre-declared list already sanctioned this exact deviation with a citable reason; you are not the
+one deciding acceptance, only reporting whether it was already sanctioned. Do not compute or
+include a `pass` field yourself — `scripts/check-verdict.py` computes it from this object. If you
+cannot safely determine something (the pinned SHA won't check out, the gauntlet command is
+ambiguous), return `NEEDS-DECISION <question>` instead of guessing — never a hedged JSON object.

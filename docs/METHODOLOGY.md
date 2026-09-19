@@ -31,7 +31,7 @@ Brief shape: `docs/reference/spawn-brief.md`.
 
 ## Rule 14: Score, not feel
 
-An important decision (one Rule 1 flags, or one the user asked to rank, recommend, or compare) carries stated criteria, weights, a numeric result, a pass/fail reason, and confidence. Everything else gets a one-line answer with the reason. If data is insufficient to score a criterion, mark **ข้อมูลไม่เพียงพอ** and block on the operator; never guess the score.
+An important decision (one Rule 1 flags, or one the user asked to rank, recommend, or compare) carries stated criteria, weights, a numeric result, a pass/fail reason, and confidence. Everything else gets a one-line answer with the reason. If data is insufficient to score a criterion, mark **ข้อมูลไม่เพียงพอ** and block on the operator; never guess the score. Each criterion needs one worked example per level, not a bare label — an anchored rubric measurably outperforms an unanchored one judging the same task (an external benchmark found a subjective, example-free rule scoring far worse than an anchored one on identical inputs).
 
 ## Governing constraint
 

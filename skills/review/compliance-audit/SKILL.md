@@ -87,14 +87,27 @@ must discover independently, then get an independent answer from a different mod
    not asserted. Starts empty if you have no first-hand deviation knowledge — step 3 still
    catches anything real.
 2. Dispatch **one** verifier at the pinned worktree from step 1.4. Primary: `codex exec --sandbox workspace-write
-   --cd <worktree> --model <selected-model> -c model_reasoning_effort=<selected-effort>` (sandbox and cwd explicit, not the
-   config-dependent default). Select the model/effort through
-   `docs/reference/codex-integration-map.md`: Terra/medium for explicit requirements,
-   Sol/medium when interpretation is material; check availability and quota first. On
-   rate-limit or Codex's absence, fall back to a Claude `general-purpose` subagent (no new
+   --cd <worktree> --model <selected-model> -c model_reasoning_effort=<selected-effort>
+   --output-last-message <file> --output-schema <schema-file>` (sandbox and cwd explicit, not the
+   config-dependent default). `<schema-file>` is `references/verifier-output-schema.json` (this
+   skill's own JSON Schema for `{requirements[], gauntlet, scope_ok, unexpected_files[]}` —
+   `mh:deep-audit`'s `checker-output-schema.json` is the pattern this copies). Select the
+   model/effort through `docs/reference/codex-integration-map.md`: Terra/medium for explicit
+   requirements, Sol/medium when interpretation is material; check availability and quota first.
+   On rate-limit or Codex's absence, fall back to a Claude `general-purpose` subagent (no new
    bespoke agent type) — note "independence reduced for this pass" in the final report, matching
    `docs/reference/codex-integration-map.md`'s established fallback language for
    `/codex:review`/`/codex:adversarial-review`.
+   - **Validate before trusting, on both paths.** Pipe the verifier's raw output (the
+     `--output-last-message` file's contents on the Codex path; the agent's final message text on
+     the Claude-fallback path) through `scripts/check-verdict.py`. Exit 0 = exactly one
+     schema-valid verdict, with `pass` computed by the script itself (never read from the
+     verifier's own claim — this repeats deep-audit's "no hand sum ever reaches the output"
+     guarantee for this skill's own `pass` rule in Core Principles). Exit 2 = the verifier
+     returned `NEEDS-DECISION` instead of guessing — a valid non-guess, surface it to the
+     operator. Exit 1 = malformed or ambiguous output; retry the dispatch once before treating it
+     as "cannot verify" (`scope_ok: false`) — a rejected verdict must never reach Phase 3's
+     report as if it were ground truth.
    - **Sandbox contract**: `workspace-write`, scoped *only* to the disposable worktree — never
      the shared main tree. This repo's own gauntlet writes (`python3 -m py_compile` leaves
      `__pycache__` next to tracked `.py` files, plus its own log dir) — `read-only` would be
@@ -138,9 +151,12 @@ fix.
 
 **Actions**:
 1. Compare the verifier's independently-found deviations against Phase 2 step 1's pre-declared
-   list. Match on both sides *and* the justification is accepted → justified-and-confirmed.
-   Verifier found one you didn't list, or one you listed but couldn't sanction with plan text or
-   citable sign-off → an unflagged/unaccepted gap; it counts as an open item, `pass: false`.
+   list. Match on both sides *and* the justification is accepted → set that requirement's
+   `accepted: true` before feeding the object to `check-verdict.py`. Verifier found one you didn't
+   list, or one you listed but couldn't sanction with plan text or citable sign-off → an
+   unflagged/unaccepted gap; `accepted: false` (or leave `MISSING` as-is). This reconciliation
+   step is the only hand judgment in Phase 3 — everything after it (`pass`, the per-requirement
+   table) comes from the script's output, not a second eyeball pass.
 2. Report, in this order:
    - One-line verdict headline: N/N conform, open-item count.
    - Per-requirement table: **CONFORMS** / **DEVIATED (accepted)** / **DEVIATED (unaccepted)** /
@@ -152,9 +168,9 @@ fix.
    building that path is simpler than trying to bound it correctly. If real gaps are found, the
    report hands them back — fixing and re-running `/mh:compliance-audit` again is a separate,
    later invocation, not an automatic loop.
-4. **Suggested next step:**
-   - `pass` true (every requirement CONFORMS/accepted-DEVIATED **and** the gauntlet exited 0
-     **and** `scope_ok`) → done; ship/merge if not already.
+4. **Suggested next step**, read straight from `check-verdict.py`'s computed `pass` (Phase 2's
+   validation step) — never re-derived by eye here:
+   - `pass` true → done; ship/merge if not already.
    - `pass` false for any reason — an open requirement, a failed gauntlet, or `scope_ok: false` —
      blocks "done," even with a clean requirement table. Consider `mh:post-mortem` only if a gap
      reveals a systemic pattern, not for a one-off miss.

@@ -134,6 +134,28 @@ in production that nobody touched" is lens 4. A finding can read as either — t
 the `failure_scenario` actually lands, and don't split one real gap into two findings just to
 cover both lenses.
 
+### Severity anchors
+
+A severity label with no worked example is a guess wearing a rubric — the same failure mode an
+external benchmark measured directly: an undefined rule scored far worse than an anchored one
+judging identical inputs. Anchor each tier to the plan-review question it answers, not a vibe:
+
+- **Critical**: the plan ships broken or irreversible if this isn't fixed first — data loss, a
+  security gate that doesn't hold, a step that can't be undone once run. *Example: "step 3 drops
+  the old column before step 5 backfills it — any read between those steps 500s."*
+- **High**: the plan will not work as written, but the failure is recoverable or contained —
+  wrong behavior, not data loss or an open security gap. *Example: "the retry loop has no max
+  attempts, so a persistent downstream 500 spins forever," not fatal, but must fix before ship.*
+- **Medium**: a real gap that degrades quality, ops visibility, or maintainability, but the plan
+  still functions without it. *Example: "no metric emitted for the new failure path — it'll work,
+  but nobody will notice it failing."*
+- **Low**: a genuine improvement, not a functional gap — naming, a missed test-case nicety, a
+  style deviation. *Example: "the new function name doesn't match the module's existing verb-noun
+  convention."*
+
+A finding that could plausibly sit in two tiers goes in the higher one — the floor gate (below)
+treats Critical/High as blocking, so under-classifying is the costlier error.
+
 ### Output Format
 
 The gate is the **fatal-weakness floor**, not a blended score — a single number hides which lens is the actual blocker.

@@ -300,3 +300,128 @@ multiplier.
 - [llm-benchmarks.diegoromero.es](https://llm-benchmarks.diegoromero.es/) — cited by the blog as its external latency comparator; **fetch attempt returned HTTP 403, not independently verified in this review**
 - [OpenRouter — TypeSafe: Jev Latest](https://openrouter.ai/~typesafe/jev-latest) (fetched 2026-09-18; see Section 5 addendum)
 - [docs.typesafe.ai/concepts/use-case-map.md](https://docs.typesafe.ai/concepts/use-case-map.md) (fetched 2026-09-18; see use-case-map addendum)
+
+## Additional real-world use case survey — 2026-09-19
+
+Scope: adopters beyond the four already on record (LangChain `ModelRouterMiddleware`, Browser Use's
+`jev-ultrafast`, TypeSafe's own Agent Skills repo, Near Here's ~5x field test vs. the vendor's
+193x claim, `themsquared/jev-benchmark`'s no-baseline repro). Method: `gh search code` for real
+package-manifest dependencies on TypeSafe's SDK packages (not mentions), `gh api` to confirm each
+repo isn't a fork/spoof, WebSearch/WebFetch for independent write-ups, one HN thread, and
+`qmd query` against `llm-wiki` run this pass (`TypeSafe AI Jev System One models adoption` —
+top hit 0.75, an unrelated agentic-engineering skill doc; nothing TypeSafe/Jev-specific indexed).
+
+### A second, independently-adopted SDK package
+
+`jev-somkiat-blog-audit-2026-09-18.md` row 1 already confirmed `@typesafe-ai/sdk` (TypeSafe's own
+direct JS SDK) as real. This pass found the ecosystem's larger adoption vector is a **different,
+second package**:
+[`@ai-sdk/typesafe-ai`](https://www.npmjs.com/package/@ai-sdk/typesafe-ai), Vercel's own official
+provider for TypeSafe inside the **Vercel AI SDK monorepo** (`vercel/ai`, 26,842 stars, confirmed
+via `gh api repos/vercel/ai` — not a fork). `packages/typesafe-ai/package.json` in that repo is at
+version `3.0.4`, Apache-2.0. This is the single most significant new fact of this pass: Vercel
+shipping and versioning a first-party `@ai-sdk/typesafe-ai` provider is a materially stronger
+adoption signal than any single downstream app, because every project below reaches Jev through it.
+
+### New independent adopters found (real `package.json` dependency, confirmed non-fork via `gh api`)
+
+| Repo | Stars | Task Jev/`@ai-sdk/typesafe-ai` performs | Independence |
+|---|---|---|---|
+| [`coldteadotai/abide`](https://github.com/coldteadotai/abide) | 105 | **Verification** — judges every AI-coding-agent edit/turn against a repo's own `AGENTS.md` rules, one typed yes/no question per rule, blocks/fixes in-session | Third-party product (`npx @coldtea/abide`), no disclosed TypeSafe relationship |
+| [`noelzappy/tripwire`](https://github.com/noelzappy/tripwire) | 2 | **Verification/guardrail** (designed for) — judges LLM responses on 7 checks (PII leak, prompt-injection compliance, hallucination risk, etc.) via one Jev call | Independent OSS, npm-published, CI badge; explicitly not vendor content — **but pre-production**: README states v0.1, "No accuracy numbers against real Jev yet... Do not put this in front of users." Tests run against a mock judge, not real Jev. Not a shipped use. |
+| [`dakdevs/decide-mcp`](https://github.com/dakdevs/decide-mcp) | 0 | **Routing/scoring** — configurable decision MCP server, percentage scores + bias-profile routing | Independent, early-stage |
+| [`rszhd/signalscout`](https://github.com/rszhd/signalscout) | 8 | **Classification** — finds public conversations describing a problem a product solves | Independent |
+| [`jarrodwatts/jev-trader`](https://github.com/jarrodwatts/jev-trader) | 1,011 | **Decision/ranking** — buy/sell call every ~300ms Monad block on a live Kuru MON-USDC order book, real on-chain limit orders | Jarrod Watts: ex-Thirdweb/Polygon Labs DevRel (2022–2024, confirmed via GitHub profile + web search), currently DevRel at Cube Labs — no TypeSafe affiliation found; real trading, real money |
+| [`jkudish/jev-browser`](https://github.com/jkudish/jev-browser) | 123 | **Routing/extraction** — browser-agent action selection (operation + element), separate from `browser-use/jev-ultrafast` already on record | Independent developer repo |
+
+`gh search code` (package-manifest dependency search) is the source for the five rows above.
+Separately, plain **WebSearch** (not code search, not opened/inspected) surfaced more
+"jev-trader"-named repos (`aowang-ai/jev-trade` — targets Hyperliquid, not Kuru, so not obviously a
+copy of `jarrodwatts/jev-trader`; `zadescoxp/Jev-Trades`; `rnjsxodyd90/jev-trading-bot-derived-backup`)
+and "awesome-jev" list repos (`AnotiaWang`, `yibie`, `valentynkit`) — none of these were inspected,
+so they're noted as surfaced, not counted as verified adopters. `genesiscz/GenesisTools` (7 stars)
+also matched the `gh search code` dependency search but its README doesn't mention TypeSafe/Jev
+anywhere (checked); dropped from the table for lack of a verifiable use case.
+
+### `coldteadotai/abide` — most interesting case, self-reported accuracy gap included
+
+Abide's own README ships a measured, methodologically transparent number that **cuts against** the
+vendor's accuracy framing rather than repeating it: replaying 93 real Claude Code sessions (1,256
+edits, 147 turns, cost 22 cents) against each repo's own `AGENTS.md`, "Jev flagged 39 edits and 15
+turns; an independent reviewer confirmed 10 and 11." That is roughly **26% precision at the
+edit level, 73% at the turn level** — the author reports this as-is rather than rounding it up, and
+links the full per-rule table (`benchmarks/replay/README.md`, not fetched in this pass). This is a
+real third party shipping a real verification task on Jev, with an honestly-reported miss rate — a
+more useful and more independent data point than any vendor benchmark, because it's a builder
+reporting against their own product's interest, not TypeSafe's.
+
+### Independent benchmark with disclosed non-affiliation and mixed results
+
+[Robin Lorenz / PrimeLine, "TypeSafe Jev vs Claude Code: 4 Models, 2 Real Jobs"](https://primeline.cc/blog/typesafe-jev-pre-registered-test)
+— no disclosed TypeSafe relationship; author states the test corpus (798 commit messages, 450
+knowledge-base notes) comes from their own machine and is "substantially Claude-influenced text,"
+so results aren't a clean third-party corpus either. Measured: Jev 65.7% vs. Claude Haiku 4.5
+54.8% on commit-message classification; Haiku 97.8% vs. Jev 90.7% on knowledge-category
+classification — i.e. Jev wins one task, loses the other, not a uniform win. Cost claim
+($0.042/M input tokens vs. Haiku's ~$1/M) repeats the vendor's own pricing figure, not an
+independent cost measurement. Partial reproducibility: methodology described in prose, a linked
+repo (`primeline-ai/evolving-lite`) exists but the specific benchmark data/code weren't confirmed
+present in this pass.
+
+### Independent developer deep-dive, no production use yet
+
+[Flavio Copes, "A deep dive into Jev, TypeSafe's System One model"](https://flaviocopes.com/jev/)
+— independent blogger, no disclosed TypeSafe relationship. Explicitly states "I have console
+access, but I haven't put Jev into production yet" and labels his own numbers (1,018 papers
+classified for $0.08, 98,000 listing classifications in 10 minutes, 11/11 on an invoice test) as
+"early experiments, not production case studies." Counts as an honest non-adopter data point, not
+a production use case — included because it's the kind of skeptical-but-fair independent source
+the task asked to capture.
+
+### Independent reproduction attempt, negative on capability (not just speed)
+
+[HN: "Jev: The Model That Gives AI the Properties of Code"](https://news.ycombinator.com/item?id=49716682)
+and the follow-up [HN: "Reverse-engineered Jev-like model"](https://news.ycombinator.com/item?id=49731282)
+(citing an independent open-source recreation, not an official TypeSafe repo). Top critical
+comments in the second thread: a demo's "left and right panels almost never agree on anything"
+(accuracy-vs-speed skepticism), and a small reverse-engineered model "couldn't reliably solve
+basic mazes" — "Jev is not interesting if it's not 'smart,' a 1B param model is most definitely not
+smart." This is independent, unsponsored, and negative — a valid finding under the task's own
+"negative or mixed results count" instruction, distinct from the Near Here/`jev-benchmark` speed
+finding already on record.
+
+### Verdict of this pass
+
+Beyond the four adopters already documented, this pass adds: **one platform-level adoption**
+(Vercel AI SDK's official `@ai-sdk/typesafe-ai` provider package, the real distribution channel for
+most of what follows), **five small independent downstream projects** genuinely depending on it in
+their manifests (abide, decide-mcp, signalscout, jev-trader, jev-browser — trading and
+coding-agent-verification are the two production-shaped, actually-running-against-real-Jev tasks
+among them; tripwire is a sixth manifest dependency but is pre-production, not a shipped use),
+**one self-reported but methodologically transparent accuracy gap** from a real adopter (abide,
+26%/73% precision), **one mixed-result independent benchmark** with disclosed non-affiliation
+(PrimeLine), and **one independent, unsponsored, negative capability finding** (HN
+reverse-engineering thread). No case found here is TypeSafe's own marketing reissued as a "case
+study" via a partner blog — the closest to that risk (PrimeLine, madewithjev.com) both showed
+independent authorship on inspection (madewithjev.com's footer: "Curated by @kraayenjon," a third
+party, not typesafe.ai). Ryan Vogel's email-triage number ("1,700 emails for 18 cents") surfaced
+repeatedly in secondary sources (search-engine summaries, other write-ups) but no primary post by
+Vogel was fetched in this pass — noted, not counted as a verified case. This does not reopen or
+change mh's own adoption verdict, which stays out of scope for this survey.
+
+### Additional sources (this pass)
+
+- [npmjs.com/package/@ai-sdk/typesafe-ai](https://www.npmjs.com/package/@ai-sdk/typesafe-ai)
+- [github.com/vercel/ai](https://github.com/vercel/ai) — `packages/typesafe-ai/package.json`
+- [github.com/coldteadotai/abide](https://github.com/coldteadotai/abide)
+- [github.com/noelzappy/tripwire](https://github.com/noelzappy/tripwire)
+- [github.com/dakdevs/decide-mcp](https://github.com/dakdevs/decide-mcp)
+- [github.com/rszhd/signalscout](https://github.com/rszhd/signalscout)
+- [github.com/genesiscz/GenesisTools](https://github.com/genesiscz/GenesisTools)
+- [github.com/jarrodwatts/jev-trader](https://github.com/jarrodwatts/jev-trader)
+- [github.com/jkudish/jev-browser](https://github.com/jkudish/jev-browser)
+- [madewithjev.com](https://madewithjev.com/) — third-party-curated showcase, not typesafe.ai
+- [primeline.cc/blog/typesafe-jev-pre-registered-test](https://primeline.cc/blog/typesafe-jev-pre-registered-test)
+- [flaviocopes.com/jev](https://flaviocopes.com/jev/)
+- [news.ycombinator.com/item?id=49716682](https://news.ycombinator.com/item?id=49716682)
+- [news.ycombinator.com/item?id=49731282](https://news.ycombinator.com/item?id=49731282)

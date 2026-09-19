@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "compliance-audit verifier result",
+  "type": "object",
+  "required": ["requirements", "gauntlet", "scope_ok", "unexpected_files"],
+  "additionalProperties": false,
+  "properties": {
+    "requirements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "verdict", "note", "accepted"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "verdict": {
+            "type": "string",
+            "enum": ["CONFORMS", "DEVIATED", "MISSING"]
+          },
+          "note": {
+            "type": "string"
+          },
+          "accepted": {
+            "type": ["boolean", "null"]
+          }
+        }
+      }
+    },
+    "gauntlet": {
+      "type": "object",
+      "required": ["command", "sha", "exit_code", "output_tail"],
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "sha": {
+          "type": "string"
+        },
+        "exit_code": {
+          "type": "integer"
+        },
+        "output_tail": {
+          "type": "string"
+        }
+      }
+    },
+    "scope_ok": {
+      "type": "boolean"
+    },
+    "unexpected_files": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}
