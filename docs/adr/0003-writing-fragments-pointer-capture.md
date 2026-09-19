@@ -1,3 +1,7 @@
+---
+status: accepted
+---
+
 # mh captures a pointer to mattpocock-skills:writing-fragments' own file
 
 `writing-fragments` (upstream, `skills/in-progress/writing-fragments/`, unregistered in matt's

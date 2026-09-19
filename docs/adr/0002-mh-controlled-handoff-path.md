@@ -1,3 +1,7 @@
+---
+status: deprecated
+---
+
 # mh writes its own handoff, at a path it controls
 
 *Superseded 2026-09-18: `mh:handoff` and its two `SessionStart` hooks were removed in v1.1.94 —

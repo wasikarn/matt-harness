@@ -1,3 +1,7 @@
+---
+status: accepted
+---
+
 # Gate `codex:setup`'s review-gate toggle; leave `codex:rescue` ungated
 
 Two of the eight `/codex:*` commands ship without `disable-model-invocation: true`:
