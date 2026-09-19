@@ -71,13 +71,35 @@ true is separate current-state work.
 ## 3. Hunt gaps with a Codex-primary fresh-context checker
 
 The maker never grades its own work (`docs/reference/operating-model.md`). Build the checker's
-brief in the `docs/reference/spawn-brief.md` shape, with the scope list and notes from step 1
-and this task: assume the session is complacent; find what it missed across correctness, edge
-cases, failure modes, hidden assumptions, regressions, missing checks, consistency between files
-(doc versus code, two docs disagreeing), and drift between intent and code; every finding cites
-one checkable fact (a path, a command, a line). Add one line to the brief itself: this run is
-investigation-only — reading files and running read-only commands (`git log`, `git diff`, `cat`,
-`rg`) is expected and required.
+brief in the `docs/reference/spawn-brief.md` shape, with **only step 1's scope list** (the
+changed paths and the commit range/diff to review) and this task's framing: assume the session
+is complacent; find what it missed across correctness, edge cases, failure modes, hidden
+assumptions, regressions, missing checks, consistency between files (doc versus code, two docs
+disagreeing), and drift between intent and code; every finding cites one checkable fact (a path,
+a command, a line). **Withhold step 1's own per-file claims/notes and step 2's rubric scores** —
+the checker re-derives its own read of the diff from the artifact itself, never from the
+orchestrator's already-formed opinion of it. Found by `mh:deep-audit` 2026-09-19: handing the
+checker the maker's own claims is the CoVe "joint" failure mode by name — a same-session check
+that shares the generator's own trace tends to inherit its blind spots (`docs/research/
+adversarial-attacker-dispatch-patterns-2026-09-19.md` §1, CoVe's factored-vs-joint ablation:
+"the verification questions might hallucinate similarly to the original baseline response, which
+defeats the purpose"). Add one line to the brief itself: this run is investigation-only —
+reading files and running read-only commands (`git log`, `git diff`, `cat`, `rg`) is expected
+and required.
+
+**Priming the checker with a specific, already-suspected item is different from leaking an
+opinion — but only if the checker's answer is structurally distinguishable from silence.** If
+you already have direct evidence pointing at something specific (not a vague "check everything
+harder" — a concrete claim you can name), it's fine to name it in the brief and ask the checker
+to verify or refute it. But "find what it missed" framing alone makes confirming a named item
+indistinguishable from never having looked: a primed item that's real reads exactly like one the
+checker didn't check. Found live 2026-09-19: a checker primed with 3 specific known findings
+returned 6 new ones and addressed none of the 3 anywhere in its output. **When the brief primes
+any item, require one `findings[]` entry per primed item, `summary` starting `CONFIRMED:` or
+`DISPUTED:`** — this fits the existing schema (`references/checker-output-schema.json`'s
+`findings[]` items are already free-text `summary`/`evidence`, no schema change needed) and
+makes "checked and cleared" and "never looked" different, citable strings instead of the same
+silence.
 
 **Fingerprint scope before dispatch.** For every path step 1 put in scope (committed-diff files,
 any staged/untracked/uncommitted files, any named out-of-git file — memory store, settings),
@@ -93,18 +115,21 @@ Choose `<selected-model>` and `<selected-effort>` using
 for this adversarial checker. Check availability and remaining quota before a substantial run.
 Raise effort only for a concrete reasoning need; acceptance criteria below never weaken.
 `<schema-file>` is `references/checker-output-schema.json` (this skill's own JSON Schema for
-`{pass, findings[], scope_ok, unexpected_files[]}`). This is sandboxed against model-generated
-shell commands (`codex exec --help`'s own wording) plus the brief's no-mutation line above — not
-an unqualified "read-only, guaranteed," since neither layer alone covers every tool an
-environment might load.
+`{pass, findings[], checked[], scope_ok, unexpected_files[]}`). This is sandboxed against
+model-generated shell commands (`codex exec --help`'s own wording) plus the brief's no-mutation
+line above — not an unqualified "read-only, guaranteed," since neither layer alone covers every
+tool an environment might load.
 
 **Accept the result only if all of:** `codex exec` exits 0; the output-last-message file parses
-against the schema with all four fields present; and the result shows real review evidence —
-findings that each cite one checkable fact, or an explicit, legitimate zero-findings pass (see
-below) — and does not state or imply it couldn't or didn't complete the review. Schema-valid
-JSON that still refuses in prose is not review evidence. A `pass: false` result **with real,
-evidenced findings is a successful run that found problems** — never a failure, never a fallback
-trigger.
+against the schema with all five fields present, **`checked[]` non-empty**; and the result shows
+real review evidence — findings that each cite one checkable fact, or an explicit, legitimate
+zero-findings pass (see below) — and does not state or imply it couldn't or didn't complete the
+review. Schema-valid JSON that still refuses in prose is not review evidence. `checked[]` closes
+the vacuous-accept gap `pass: true, findings: []` alone would otherwise leave open — found by
+`mh:deep-audit` 2026-09-19: a checker primed with 3 known-suspect items addressed 0 of them
+anywhere in its output, and `pass: true, findings: []` was schema-valid regardless. A `pass:
+false` result **with real, evidenced findings is a successful run that found problems** — never
+a failure, never a fallback trigger.
 
 **On any other outcome** — non-zero exit, empty or malformed output, a schema mismatch, timeout,
 auth failure, or a semantic refusal — fall back to a Claude `Explore`/review agent (same brief,
@@ -127,11 +152,13 @@ hedged/hypothetical object quoted ahead of a real escalation can't override it, 
 JSON-shaped prose after the escalation (an example, a config snippet) can't get misclassified as
 a malformed verdict. Otherwise it scans every `{` in the text (trying every byte in order, not
 just the first — narration before the real JSON can itself contain a brace, e.g. the agent
-echoing `docs/reference/spawn-brief.md`'s own `{pass, findings[], scope_ok,
-unexpected_files[]}` return-contract line) and keeps every candidate that fully validates against
-the contract: exact key-set equality (not merely all four keys present — an extra invented field
+echoing this skill's own `{pass, findings[], checked[], scope_ok, unexpected_files[]}`
+return-contract line) and keeps every candidate that fully validates against
+the contract: exact key-set equality (not merely all five keys present — an extra invented field
 is rejected too), `pass`/`scope_ok` as real booleans, every `findings[]` item as exactly
-`{summary, evidence}` with string values, `unexpected_files[]` as a list of strings. Exactly one
+`{summary, evidence}` with string values, **`checked[]` non-empty, every item exactly `{claim,
+evidence}` with string values** — required even on a clean pass, closing the same vacuous-accept
+gap the Codex path's schema now closes — `unexpected_files[]` as a list of strings. Exactly one
 valid candidate is required — two or more *distinct* schema-valid objects (a decoy example quoted
 ahead of the agent's real, differently-valued verdict) reject as ambiguous rather than silently
 picking the first or last. Exit 0 with the validated JSON on stdout means accept; exit 1 with a
@@ -154,7 +181,7 @@ say, since its "insufficient evidence, left out of the total" allowance would ot
 checker-less run still pass on its remaining dimensions. Say plainly this means the audit
 couldn't verify the work, not that the work is wrong — the two are different claims.
 
-The checker returns `{pass, findings[], scope_ok, unexpected_files[]}` — its own return value,
+The checker returns `{pass, findings[], checked[], scope_ok, unexpected_files[]}` — its own return value,
 distinct from this skill's Final Verdict and report in "Final output" below.
 
 Reconcile its findings with your own. A finding survives only with a concrete trigger; a

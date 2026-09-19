@@ -28,12 +28,18 @@ Behavior:
     picking the first or last -- a nested findings[] item ({summary,
     evidence}) never counts as a second candidate, since it doesn't carry the
     other three required top-level keys.
-  - Validates each candidate against the exact contract docs/reference/
-    spawn-brief.md and references/checker-output-schema.json both state:
-    {pass, findings[], scope_ok, unexpected_files[]} and nothing else.
-    `pass`/`scope_ok` must be real booleans; `findings[]` items must be
-    exactly {summary, evidence} (both strings); `unexpected_files[]` must be
-    a list of strings.
+  - Validates each candidate against the exact contract
+    references/checker-output-schema.json states: {pass, findings[],
+    checked[], scope_ok, unexpected_files[]} and nothing else. `pass`/
+    `scope_ok` must be real booleans; `findings[]` items must be exactly
+    {summary, evidence} (both strings); `checked[]` must be non-empty, items
+    exactly {claim, evidence} (both strings) -- required even on a clean
+    pass with an empty `findings[]`, closing the vacuous-accept case where
+    `pass: true, findings: []` is schema-valid but shows no verification
+    work happened (found by mh:deep-audit 2026-09-19: a checker primed with
+    3 known-suspect items addressed 0 of them; mirrors mh:idea-audit's
+    identical `checked[]` guard). `unexpected_files[]` must be a list of
+    strings.
 
 Exit codes: 0 = exactly one valid verdict (printed to stdout as JSON); 1 =
 malformed, rejected, or ambiguous (reason on stderr, nothing on stdout --
@@ -44,8 +50,9 @@ import json
 import re
 import sys
 
-REQUIRED_KEYS = {"pass", "findings", "scope_ok", "unexpected_files"}
+REQUIRED_KEYS = {"pass", "findings", "checked", "scope_ok", "unexpected_files"}
 FINDING_KEYS = {"summary", "evidence"}
+CHECKED_KEYS = {"claim", "evidence"}
 
 
 def extract_object(text):
@@ -102,6 +109,15 @@ def validate(obj):
             return False, f"findings[{idx}] is not exactly {{summary, evidence}}: {f!r}"
         if not isinstance(f.get("summary"), str) or not isinstance(f.get("evidence"), str):
             return False, f"findings[{idx}].summary/evidence must be strings: {f!r}"
+    if not isinstance(obj["checked"], list):
+        return False, "'checked' is not a list"
+    if len(obj["checked"]) == 0:
+        return False, "'checked' is empty — no verification work shown, even on a clean pass"
+    for idx, c in enumerate(obj["checked"]):
+        if not isinstance(c, dict) or set(c.keys()) != CHECKED_KEYS:
+            return False, f"checked[{idx}] is not exactly {{claim, evidence}}: {c!r}"
+        if not isinstance(c.get("claim"), str) or not isinstance(c.get("evidence"), str):
+            return False, f"checked[{idx}].claim/evidence must be strings: {c!r}"
     if not isinstance(obj["unexpected_files"], list) or not all(
         isinstance(x, str) for x in obj["unexpected_files"]
     ):
@@ -158,42 +174,56 @@ def _selftest():
                 sys.stdin = old_stdin
         return code, buf_out.getvalue(), buf_err.getvalue()
 
-    good = json.dumps({"pass": True, "findings": [], "scope_ok": True, "unexpected_files": []})
+    checked = [{"claim": "c", "evidence": "e"}]
+    good = json.dumps({"pass": True, "findings": [], "checked": checked, "scope_ok": True,
+                        "unexpected_files": []})
     code, out, err = run(good)
     assert code == 0 and json.loads(out) == json.loads(good), (code, out, err)
 
-    extra_field = json.dumps({"pass": True, "findings": [], "scope_ok": True,
-                               "unexpected_files": [], "notes": "extra"})
+    extra_field = json.dumps({"pass": True, "findings": [], "checked": checked,
+                               "scope_ok": True, "unexpected_files": [], "notes": "extra"})
     code, out, err = run(extra_field)
     assert code == 1 and "key set mismatch" in err, (code, out, err)
 
-    pass_as_string = json.dumps({"pass": "mostly", "findings": [], "scope_ok": True,
-                                  "unexpected_files": []})
+    pass_as_string = json.dumps({"pass": "mostly", "findings": [], "checked": checked,
+                                  "scope_ok": True, "unexpected_files": []})
     code, out, err = run(pass_as_string)
     assert code == 1 and "'pass' is not a boolean" in err, (code, out, err)
 
-    scope_ok_null = json.dumps({"pass": True, "findings": [], "scope_ok": None,
-                                 "unexpected_files": []})
+    scope_ok_null = json.dumps({"pass": True, "findings": [], "checked": checked,
+                                 "scope_ok": None, "unexpected_files": []})
     code, out, err = run(scope_ok_null)
     assert code == 1 and "'scope_ok' is not a boolean" in err, (code, out, err)
 
     bad_finding = json.dumps({"pass": False,
                                "findings": [{"issue": "x", "sev": "high"}],
+                               "checked": checked,
                                "scope_ok": True, "unexpected_files": []})
     code, out, err = run(bad_finding)
     assert code == 1 and "findings[0]" in err, (code, out, err)
 
+    # Vacuous-pass guard: an empty checked[] must be rejected even on an
+    # otherwise clean pass:true/findings:[] -- it shows no verification work
+    # happened. This is the exact shape a checker primed with known-suspect
+    # items and asked to confirm/dispute them produced live: zero findings,
+    # nothing addressing the primed items either.
+    empty_checked = json.dumps({"pass": True, "findings": [], "checked": [],
+                                 "scope_ok": True, "unexpected_files": []})
+    code, out, err = run(empty_checked)
+    assert code == 1 and "'checked' is empty" in err, (code, out, err)
+
     # Narration echoing the return contract's own brace before the real JSON.
-    echoed = ('Return {pass, findings[], scope_ok, unexpected_files[]} as instructed.\n'
-              + good)
+    echoed = ('Return {pass, findings[], checked[], scope_ok, unexpected_files[]} as '
+              'instructed.\n' + good)
     code, out, err = run(echoed)
     assert code == 0 and json.loads(out) == json.loads(good), (code, out, err)
 
-    # A findings[] item's own {summary, evidence} braces must not be
-    # mistaken for a second candidate -- it lacks pass/scope_ok/
-    # unexpected_files, so it can never validate on its own.
+    # A findings[]/checked[] item's own braces must not be mistaken for a
+    # second candidate -- neither carries the other four required top-level
+    # keys, so it can never validate on its own.
     with_finding = json.dumps({"pass": False,
                                 "findings": [{"summary": "s", "evidence": "e"}],
+                                "checked": checked,
                                 "scope_ok": True, "unexpected_files": []})
     code, out, err = run(with_finding)
     assert code == 0 and json.loads(out) == json.loads(with_finding), (code, out, err)
@@ -201,10 +231,11 @@ def _selftest():
     # Decoy bypass: a fully schema-valid example quoted in narration ahead of
     # the agent's real, differently-valued verdict must be rejected as
     # ambiguous, not silently accepted as "the first parseable object".
-    decoy = json.dumps({"pass": False, "findings": [], "scope_ok": False,
-                         "unexpected_files": []})
+    decoy = json.dumps({"pass": False, "findings": [], "checked": checked,
+                         "scope_ok": False, "unexpected_files": []})
     real = json.dumps({"pass": True,
                         "findings": [{"summary": "s", "evidence": "e"}],
+                        "checked": checked,
                         "scope_ok": True, "unexpected_files": []})
     code, out, err = run(f"Example shape: {decoy}\nActual result: {real}")
     assert code == 1 and "ambiguous" in err and out == "", (code, out, err)

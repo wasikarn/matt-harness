@@ -115,6 +115,19 @@ must discover independently, then get an independent answer from a different mod
      any tracked-file change beyond expected build artifacts is itself a finding ("verifier
      modified source"), never a silent pass. The worktree is discarded after, so leftover
      untracked artifacts don't matter.
+   - **A gauntlet failure can be caused by the sandbox itself, not the diff — this direction was
+     unguarded until `mh:deep-audit` found it 2026-09-19.** The bullet above only covers a
+     too-permissive sandbox; a too-restrictive one can produce a false failure just as easily
+     (confirmed live: two pre-existing, diff-unrelated tests failed under `--sandbox
+     workspace-write` — both write scratch state via `mktemp "${TMPDIR:-/tmp}/..."`, outside the
+     worktree — and passed cleanly on an unsandboxed run of the identical pinned SHA). On any
+     non-zero gauntlet exit, before reporting it as a finding: **the verifier itself** (never
+     main, per the re-run rule below) re-runs the identical gauntlet command at the plan's base
+     SHA, in the same sandbox. Identical failure at base → pre-existing/environmental, not this
+     diff's regression → return `NEEDS-DECISION` naming the specific failing test(s) and both
+     exit codes, per `references/verifier-brief.md`'s existing escape hatch, rather than either a
+     silent pass or an unexplained `DEVIATED`. Base SHA passes cleanly in the same sandbox → the
+     failure is real, report it as a genuine gauntlet failure, no exception.
    - **Don't redirect `TMPDIR`/scratch I/O into the worktree to "confine" it further** — the
      before/after tracked-diff check above is the enforcement mechanism, not where temp files
      happen to live. Forcing all scratch I/O inside the worktree makes it a git repo's
@@ -150,7 +163,15 @@ must discover independently, then get an independent answer from a different mod
 fix.
 
 **Actions**:
-1. Compare the verifier's independently-found deviations against Phase 2 step 1's pre-declared
+1. **If more than one verifier dispatch happened for the same requirement** (a retry, or a
+   second run for any reason) **and they returned different verdicts on it** — no protocol
+   existed for this before `mh:deep-audit` found the gap 2026-09-19, and it happened live: two
+   runs on the identical pinned SHA/requirement disagreed (CONFORMS vs. DEVIATED). Don't silently
+   pick one. Read the cited requirement's actual hunk in the diff yourself, record **both raw
+   verdicts** in the requirement's `note`, and default to `DEVIATED`/`accepted: false` unless
+   reading the diff yourself clearly settles which run was right — a disagreement is itself
+   evidence the requirement is closer to the line than a single clean CONFORMS would suggest.
+   Compare the verifier's independently-found deviations against Phase 2 step 1's pre-declared
    list. Match on both sides *and* the justification is accepted → set that requirement's
    `accepted: true`. Verifier found one you didn't list, or one you listed but couldn't sanction
    with plan text or citable sign-off → an unflagged/unaccepted gap; `accepted: false` (or leave

@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "deep-audit checker result",
   "type": "object",
-  "required": ["pass", "findings", "scope_ok", "unexpected_files"],
+  "required": ["pass", "findings", "checked", "scope_ok", "unexpected_files"],
   "additionalProperties": false,
   "properties": {
     "pass": {
@@ -16,6 +16,24 @@
         "additionalProperties": false,
         "properties": {
           "summary": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "checked": {
+      "type": "array",
+      "minItems": 1,
+      "description": "At least one thing actually investigated, required even on a clean pass with an empty findings[] — closes the vacuous-accept case where pass:true/findings:[] is schema-valid but shows no verification work. Found by mh:deep-audit 2026-09-19: a checker primed with 3 known-suspect items addressed 0 of them, indistinguishable from never having looked. Mirrors mh:idea-audit's identical checked[] guard.",
+      "items": {
+        "type": "object",
+        "required": ["claim", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "claim": {
             "type": "string"
           },
           "evidence": {

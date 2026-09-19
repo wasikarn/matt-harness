@@ -19,8 +19,17 @@ arithmetically identical to scoring the dropped item 0.
 
 Fails closed: any input this script cannot compute (a missing/non-numeric
 field, a bool or non-finite score/max/weight, a non-positive max or negative
-weight, a duplicate id, or every item flagged insufficient) exits 1 with a
-one-line reason on stderr and prints no JSON.
+weight, a duplicate id, every item flagged insufficient, or the `primaryId`
+item itself flagged insufficient) exits 1 with a one-line reason on stderr
+and prints no JSON. The last case matters because `insufficient` items are
+dropped from the total's numerator/denominator (see below) with no separate
+signal -- for an ordinary axis that's a fair renormalization, but for the
+axis a caller declared `primaryId` (the one that "can't be diluted to
+parity" per mh:idea-audit's own Rule 14 rationale) it would silently produce
+a complete-looking total with the single most load-bearing axis missing.
+Found by mh:deep-audit 2026-09-19: idea-audit's own SKILL.md deliberately
+omits `passThreshold` for this phase ("a scored verdict... not a single
+pass/fail gate"), so nothing downstream was catching this case either.
 The caller must treat that as a hard fail, never as license to score by hand.
 """
 import json
@@ -43,6 +52,8 @@ def score(payload):
     raw_sum = 0.0
     below_floor = []
     floor_pct = payload.get("floorPct", 0.0)
+    primary_id = payload.get("primaryId")
+    primary_insufficient = False
     seen_ids = set()
     for it in items:
         try:
@@ -64,6 +75,8 @@ def score(payload):
         seen_ids.add(item_id)
         weight_sum += w
         if insufficient:
+            if item_id == primary_id:
+                primary_insufficient = True
             continue
         scored_weight_sum += w
         raw_sum += (s / m) * w
@@ -71,6 +84,10 @@ def score(payload):
             below_floor.append(item_id)
     if scored_weight_sum == 0:
         _die("every item is insufficient evidence; cannot compute a total")
+    if primary_insufficient:
+        _die(f"primaryId '{primary_id}' is insufficient evidence; a total that drops the "
+             f"single largest-weighted axis and renormalizes over the rest is not a "
+             f"meaningful score, it's the floor tripping under another name")
     total = round(raw_sum / scored_weight_sum * weight_sum, 2)
 
     pass_threshold = payload.get("passThreshold")
@@ -78,7 +95,6 @@ def score(payload):
     if pass_threshold is not None:
         verdict = total >= pass_threshold and not below_floor
 
-    primary_id = payload.get("primaryId")
     primary_ok = None
     if primary_id is not None:
         weights = {it["id"]: it["weight"] for it in items}
@@ -146,6 +162,25 @@ def _selftest():
     axes_tied = [dict(a) for a in axes]
     axes_tied[1] = {**axes_tied[1], "weight": 40}
     assert score({"scores": axes_tied, "primaryId": "fidelity"})["primaryWeightOk"] is False
+
+    # The primaryId axis marked insufficient must fail closed, not silently
+    # renormalize the total over the remaining axes as if the primary axis
+    # never existed -- the single largest-weighted axis vanishing without a
+    # trace is the floor tripping under another name.
+    axes_primary_insufficient = [dict(a) for a in axes]
+    axes_primary_insufficient[0] = {**axes_primary_insufficient[0], "insufficient": True}
+    try:
+        score({"scores": axes_primary_insufficient, "primaryId": "fidelity"})
+        raise AssertionError("expected SystemExit when the primaryId axis is insufficient")
+    except SystemExit as e:
+        assert e.code == 1
+
+    # A non-primary axis marked insufficient must NOT trip this new check --
+    # only ever hits the ordinary renormalization path.
+    axes_other_insufficient = [dict(a) for a in axes]
+    axes_other_insufficient[1] = {**axes_other_insufficient[1], "insufficient": True}
+    out_other = score({"scores": axes_other_insufficient, "primaryId": "fidelity"})
+    assert out_other["primaryWeightOk"] is True, out_other
 
     # A duplicate id must not be silently allowed to defeat the strictly-
     # greatest check by collapsing to one entry in the weights dict.
