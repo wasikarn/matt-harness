@@ -14,6 +14,15 @@ A citation shape is: a backticked span `...` (a command), OR a path-like token
 (contains "/" or ".") immediately followed by ":<digits>" -- a path:line cite,
 or the path:line prefix of a grep -n style "path:line:content" excerpt.
 
+# ponytail: shape only, not substance -- `` `trust me` `` passes this check the
+# same as `` `git log --oneline -5` `` does. Verifying the backtick content is
+# an actually-runnable command needs either a real shell parse or another LLM
+# judgment call, which defeats "deterministic, not eyeballed" for a narrow win
+# against a bad-faith attacker (who could game any regex this strict just as
+# easily). Deep-audit 2026-09-19 flagged this residual gap explicitly; the
+# ceiling is raise-if-abused: if a real run is ever caught citing empty
+# backticks, add a minimum-token-count or known-verb check then, not now.
+
 Exit 0: every findings[]/checked[] evidence string has a citation shape --
 nothing on stdout, matching the gauntlet's own quiet-on-success convention.
 Exit 1: at least one evidence string fails -- each failing item printed to

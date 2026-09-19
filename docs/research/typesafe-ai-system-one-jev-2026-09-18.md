@@ -334,7 +334,7 @@ adoption signal than any single downstream app, because every project below reac
 | [`jarrodwatts/jev-trader`](https://github.com/jarrodwatts/jev-trader) | 1,011 | **Decision/ranking** — buy/sell call every ~300ms Monad block on a live Kuru MON-USDC order book, real on-chain limit orders | Jarrod Watts: ex-Thirdweb/Polygon Labs DevRel (2022–2024, confirmed via GitHub profile + web search), currently DevRel at Cube Labs — no TypeSafe affiliation found; real trading, real money |
 | [`jkudish/jev-browser`](https://github.com/jkudish/jev-browser) | 123 | **Routing/extraction** — browser-agent action selection (operation + element), separate from `browser-use/jev-ultrafast` already on record | Independent developer repo |
 
-`gh search code` (package-manifest dependency search) is the source for the five rows above.
+`gh search code` (package-manifest dependency search) is the source for the six rows above.
 Separately, plain **WebSearch** (not code search, not opened/inspected) surfaced more
 "jev-trader"-named repos (`aowang-ai/jev-trade` — targets Hyperliquid, not Kuru, so not obviously a
 copy of `jarrodwatts/jev-trader`; `zadescoxp/Jev-Trades`; `rnjsxodyd90/jev-trading-bot-derived-backup`)

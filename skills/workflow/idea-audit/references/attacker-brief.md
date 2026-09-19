@@ -55,17 +55,21 @@ report findings only in your final message.>
 5. Blast radius / one-way-door-ness of what's being recommended — is this reversible?
 
 ## Done-when
-Every claim verdict in your findings cites a file:line, a command you ran, or a grep result —
+Every claim verdict in your findings cites a `file:line`, a command you ran, or a grep result —
 matching `docs/reference/spawn-brief.md`'s own `## Done-when` contract: exit status plus a
 task-relevant assertion on the output, never presence alone, never a restatement with no
 independent check behind it. A finding whose evidence is not a citable, checkable fact is not
 done — mark that claim `insufficient evidence` instead of asserting a verdict you can't back.
+**Format matters, not just content**: the host's citation check is mechanical, not a human
+reading for intent — write a `path:line` exactly that way (colon, no spaces) and wrap any command
+you ran in backticks (`` `git log --oneline -5` ``, not `ran git log --oneline -5`); an
+un-backticked command reads as prose and gets rejected the same as no citation at all.
 
 ## Output
 Return ONLY JSON matching `references/attacker-output-schema.json`:
-`{"pass": bool, "findings": [{"summary": "...", "evidence": "path:line, a command run, or a grep
-result — never a restated claim with no independent check"}], "checked": [{"claim": "...", "evidence":
-"path:line, a command run, or a grep result"}]}`
+`{"pass": bool, "findings": [{"summary": "...", "evidence": "path:line, a backticked command, or a
+grep result — never a restated claim with no independent check"}], "checked": [{"claim": "...",
+"evidence": "path:line, a backticked command, or a grep result"}]}`
 `checked` is REQUIRED and must have at least 1 entry, whether or not `pass` is true and whether or
 not `findings` is empty — it is your receipts, not your conclusion. A clean, well-evidenced
 zero-findings pass (`pass: true, findings: []`) is still a legitimate result, but only when

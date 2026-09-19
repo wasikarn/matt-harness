@@ -21,6 +21,10 @@ Behavior:
     against the schema (exact key-set equality) AND the semantic rule below.
     Exactly one valid candidate is required; two or more distinct ones reject as
     ambiguous.
+  - `requirements` must be non-empty. An empty list plus a trivially-clean
+    gauntlet (e.g. `exit_code: 0` on an empty `command`) would otherwise satisfy
+    `compute_pass`'s `all()` vacuously — found by deep-audit 2026-09-19, the
+    same vacuous-pass shape idea-audit's `checked[]` already guards against.
   - Semantic rule beyond the JSON Schema: `accepted` must be a bool when
     `verdict == "DEVIATED"` (was it sanctioned or not — null is not an answer for
     a requirement that actually deviated) and must be null otherwise (CONFORMS/
@@ -85,6 +89,8 @@ def validate(obj):
     reqs = obj["requirements"]
     if not isinstance(reqs, list):
         return False, "'requirements' is not a list"
+    if len(reqs) == 0:
+        return False, "'requirements' is empty — no requirement was actually checked"
     for idx, r in enumerate(reqs):
         if not isinstance(r, dict) or set(r.keys()) != REQUIREMENT_KEYS:
             return False, f"requirements[{idx}] is not exactly {{id, verdict, note, accepted}}: {r!r}"
@@ -233,6 +239,13 @@ def _selftest():
     escalation = "I can't determine this safely.\nNEEDS-DECISION is the plan's SHA still resolvable?"
     code, out, err = run(escalation)
     assert code == 2 and out.strip().startswith("NEEDS-DECISION"), (code, out, err)
+
+    # Vacuous pass: empty requirements + trivially-clean gauntlet must be rejected,
+    # not silently accepted as pass:true (Python's all([]) is True).
+    vacuous = json.loads(good)
+    vacuous["requirements"] = []
+    code, out, err = run(json.dumps(vacuous))
+    assert code == 1 and "empty" in err and out == "", (code, out, err)
 
     # Decoy ahead of the real, differently-valued verdict must be rejected as ambiguous.
     decoy = json.loads(good)

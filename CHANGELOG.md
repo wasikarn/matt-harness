@@ -3,7 +3,36 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
-## [1.1.98] — 2026-09-18
+## [1.1.99] — 2026-09-19
+
+### Fixed
+
+- **Closed 5 criteria-quality gaps a 5-agent audit found by applying an external LLM-rubric
+  benchmark's failure pattern (unscoped/subjective criteria cause false positives, not model
+  choice), then closed 6 more that `mh:deep-audit` found in that same fix batch.** First pass:
+  `compliance-audit` gained structural output validation for its Phase 2 verifier (new
+  `verifier-output-schema.json` + `check-verdict.py`, mirroring `deep-audit`'s own mechanism, with
+  `--output-last-message`/`--output-schema` added to its Codex dispatch); `plan-reviewer` gained
+  worked Critical/High/Medium/Low severity examples; `idea-audit` Phase 3 gained a default scoring-
+  axis set (`primary-source-fidelity`/`fit`/`blast-radius`) requiring a worked example per score
+  band; `METHODOLOGY.md` Rule 14 now requires one worked example per criterion level; `idea-audit`
+  gained `check-citations.py`, replacing a prose-only "the host checks by eye" citation-shape
+  check with a deterministic one. Second pass (`mh:deep-audit` on the first): `check-verdict.py`
+  had a vacuous-pass bug — an empty `requirements[]` plus a trivially-clean gauntlet satisfied
+  Python's `all([])` and returned `pass: true` with nothing actually checked; fixed with a
+  `minItems: 1` schema constraint and a matching script-level guard, same shape as `idea-audit`'s
+  own `checked[]` vacuous-pass guard. `compliance-audit/SKILL.md`'s Phase 3 wording pointed
+  "Suggested next step" at Phase 2's raw `check-verdict.py` run, but Phase 3 legitimately
+  overrides `accepted` values first — clarified that the Phase-3 re-run, not Phase 2's, is
+  authoritative. `check-citations.py` rejected legitimate un-backticked command evidence;
+  `attacker-brief.md` now explicitly requires wrapping any command in backticks. Neither new
+  script's `--selftest` was wired into the gauntlet (deep-audit's own script has been since
+  v1.1.86) — added `tests/skills/test-compliance-audit-check-verdict.sh` and
+  `tests/skills/test-idea-audit-check-citations.sh`. `codex-integration-map.md` still described
+  `compliance-audit`'s pre-fix dispatch shape — updated. A bundled research doc had a stale "five
+  rows above" against an actual six-row table — corrected. A memory-store note used `[[wikilink]]`
+  syntax pointing at a repo doc instead of another memory file, leaving a dangling link — fixed to
+  a plain path citation.
 
 ### Fixed
 

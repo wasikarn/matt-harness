@@ -152,11 +152,14 @@ fix.
 **Actions**:
 1. Compare the verifier's independently-found deviations against Phase 2 step 1's pre-declared
    list. Match on both sides *and* the justification is accepted → set that requirement's
-   `accepted: true` before feeding the object to `check-verdict.py`. Verifier found one you didn't
-   list, or one you listed but couldn't sanction with plan text or citable sign-off → an
-   unflagged/unaccepted gap; `accepted: false` (or leave `MISSING` as-is). This reconciliation
-   step is the only hand judgment in Phase 3 — everything after it (`pass`, the per-requirement
-   table) comes from the script's output, not a second eyeball pass.
+   `accepted: true`. Verifier found one you didn't list, or one you listed but couldn't sanction
+   with plan text or citable sign-off → an unflagged/unaccepted gap; `accepted: false` (or leave
+   `MISSING` as-is). This reconciliation step is the only hand judgment in Phase 3. Then **re-run
+   `check-verdict.py` on the object with these `accepted` values applied** — Phase 2's run used
+   the verifier's own `accepted` claims (near-always `false`, since the brief withholds the
+   pre-declared list from it); this second run is the one whose `pass` is authoritative, since
+   only it reflects Phase 3's reconciliation. Everything after this re-run (`pass`, the
+   per-requirement table) comes from the script's output, not a second eyeball pass.
 2. Report, in this order:
    - One-line verdict headline: N/N conform, open-item count.
    - Per-requirement table: **CONFORMS** / **DEVIATED (accepted)** / **DEVIATED (unaccepted)** /
@@ -168,8 +171,8 @@ fix.
    building that path is simpler than trying to bound it correctly. If real gaps are found, the
    report hands them back — fixing and re-running `/mh:compliance-audit` again is a separate,
    later invocation, not an automatic loop.
-4. **Suggested next step**, read straight from `check-verdict.py`'s computed `pass` (Phase 2's
-   validation step) — never re-derived by eye here:
+4. **Suggested next step**, read straight from step 1's Phase-3 re-run of `check-verdict.py`'s
+   computed `pass` — never re-derived by eye here:
    - `pass` true → done; ship/merge if not already.
    - `pass` false for any reason — an open requirement, a failed gauntlet, or `scope_ok: false` —
      blocks "done," even with a clean requirement table. Consider `mh:post-mortem` only if a gap
