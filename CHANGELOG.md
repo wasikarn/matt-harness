@@ -3,6 +3,35 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.102] — 2026-09-19
+
+### Fixed
+
+- **GH #155: `task-complete-separation.py` truthiness-vs-presence gap on `agent_id`,
+  same shape as GH #154's `subagent-spawn-guard.py` fix.** `if not agent_id: sys.exit(0)`
+  treated an empty-string or JSON-null `agent_id` (key present, value falsy) the same as
+  the key being absent, wrongly allowing — changed to `if "agent_id" not in d:`, mirroring
+  #154's fix exactly. Added the matching `taskupdate_payload_forced_id` test helper and two
+  regression tests (empty string, JSON null) to `tests/hooks/test-gates.sh`.
+- **GH #156: every `hooks/gates/*.py` gate fails open on a JSON payload whose integer
+  digit count trips CPython 3.11+'s int-string conversion limit.** A 5000-digit unquoted
+  int literal (e.g. in `agent_id`) raised `ValueError` inside `json.load()` itself, caught
+  by the same broad `except Exception: allow` as ordinary malformed JSON — a
+  well-formed-but-huge-int payload bypassed the gate's actual logic instead of being parsed
+  and checked normally. Fixed across all 7 affected gates (`codex-setup-guard.py`,
+  `config-write-guard.py`, `irrecoverable.py`, `subagent-git-guard.py`,
+  `subagent-spawn-guard.py`, `task-complete-separation.py`, `test-integrity.py`) by calling
+  `sys.set_int_max_str_digits(0)` before parsing, `hasattr`-guarded since the method doesn't
+  exist before Python 3.11 (a bare call crashed with `AttributeError` under the repo's own
+  trashless-test fixture, which resolves an older system `python3` — caught by the existing
+  test suite, not a new one). Added a regression test to `test-gates.sh` reproducing the
+  original 5000-digit repro against `subagent-spawn-guard.sh`.
+
+Both found via `/mcp` GitHub-plugin troubleshooting this session surfacing 6 stale
+gate-hardening issues (#117, #138, #155, #156, #157, #158); the other 4 were verified
+still-open by design (explicitly parked/accepted in their own issue text) and left alone —
+not closed.
+
 ## [1.1.101] — 2026-09-19
 
 ### Fixed

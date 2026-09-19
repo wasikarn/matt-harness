@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 import json, sys
 
+# GH #156: raise the int-string digit limit before parsing so an oversized
+# unquoted int literal doesn't crash json.load() into this gate's fail-open
+# except below (full rationale: codex-setup-guard.py). hasattr-guarded: the
+# method doesn't exist before Python 3.11.
+if hasattr(sys, "set_int_max_str_digits"):
+    sys.set_int_max_str_digits(0)
+
 try:
     from _journal import journal
 except Exception:
@@ -45,9 +52,11 @@ if status != "completed":
 # MAIN session, which legitimately owns completion, so keying on agent_type
 # alone over-blocked that case (found by security review of the sibling
 # agent-recursion-guard.sh gate, 2026-08-31 -- same bug, same fix, here).
-agent_id = d.get("agent_id")
-if not agent_id:
+# Presence, not truthiness: an empty-string or null agent_id is still the
+# signal (GH #155, same gap as #154's subagent-spawn-guard.py fix).
+if "agent_id" not in d:
     sys.exit(0)
+agent_id = d.get("agent_id")
 
 agent_type = d.get("agent_type") or "unknown"
 print(f"[mh:gate] BLOCKED: subagent ({agent_type}) may not mark its own task completed — "

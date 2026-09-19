@@ -63,6 +63,28 @@ print(json.dumps(d))
 ' "$1" "$2" "${3-$2}"
 }
 
+# Same shape as taskupdate_payload but the agent_id KEY is always forced
+# present at an explicit value, including "" or JSON null -- taskupdate_payload
+# above treats a falsy $3 as "omit the key" (main session shape), which cannot
+# express "key present but empty/null" (GH #155: the .py gate's old `if not
+# agent_id` check treated presence-with-empty/null the same as absence, same
+# gap as GH #154 fixed in subagent-spawn-guard.py). $3 == "__NULL__" emits
+# JSON null; anything else is used as the literal string value (including "").
+taskupdate_payload_forced_id() {
+  python3 -c '
+import json, sys
+status, agent, agent_id_raw = sys.argv[1], sys.argv[2], sys.argv[3]
+ti = {"taskId": "T1"}
+if status:
+    ti["status"] = status
+d = {"tool_name": "TaskUpdate", "tool_input": ti}
+if agent:
+    d["agent_type"] = agent
+d["agent_id"] = None if agent_id_raw == "__NULL__" else agent_id_raw
+print(json.dumps(d))
+' "$1" "$2" "$3"
+}
+
 # Build a Bash tool-call payload carrying agent_id (or empty = main
 # session). Separate from bash_payload() (used by many pre-existing tests
 # with no agent fields at all) to avoid touching that signature.
@@ -680,6 +702,14 @@ test_allow "$TASK_COMPLETE" "malformed stdin (fail-safe allow)" \
 # --agent <name>` MAIN session (not a subagent) — keying on it over-blocks that legitimate case.
 test_allow "$TASK_COMPLETE" "--agent main session (agent_type set, no agent_id) may still complete" \
   "$(taskupdate_payload completed some-agent-name '')"
+# GH #155: same truthiness-vs-presence gap GH #154 fixed in subagent-spawn-guard.py --
+# the gate's own stated intent is to key on PRESENCE of agent_id, not a
+# non-empty/non-null value. A real payload capture (2026-09-07) never observed an
+# empty/null agent_id in practice -- these are hardening tests for a theoretical gap.
+test_deny "$TASK_COMPLETE" "GH #155 gap: agent_id present but an empty string still denied" \
+  "$(taskupdate_payload_forced_id completed mh:build-error-resolver '')"
+test_deny "$TASK_COMPLETE" "GH #155 gap: agent_id present but JSON null still denied" \
+  "$(taskupdate_payload_forced_id completed mh:build-error-resolver '__NULL__')"
 
 echo ""
 echo "=== nested-spawn deny (irrecoverable.py: a subagent may not spawn a nested claude session via Bash) ==="
@@ -927,6 +957,13 @@ test_allow "$SUBAGENT_SPAWN_GUARD" "malformed stdin (fail-safe allow)" \
   '{"agent_id": invalid'
 test_allow "$SUBAGENT_SPAWN_GUARD" "valid JSON but non-object payload (fail-safe allow)" \
   '["agent_id"]'
+# GH #156: a 5000-digit UNQUOTED int literal used to raise ValueError inside
+# json.load() itself (CPython 3.11+'s int-string digit limit), caught by the
+# same broad `except Exception: allow` as ordinary malformed JSON -- a
+# well-formed-but-huge-int payload bypassed this gate's actual logic instead
+# of being parsed and denied normally.
+test_deny "$SUBAGENT_SPAWN_GUARD" "GH #156: 5000-digit unquoted agent_id parses and denies, doesn't fail-open past the int-digit limit" \
+  "$(printf '{"tool_name":"Agent","tool_input":{"prompt":"x","description":"y","subagent_type":"general-purpose"},"agent_id":%s}' "$(python3 -c "print('9'*5000)")")"
 
 echo "=== fast-path (bash pre-filter that skips python3 on commands that cannot match, added 2026-08-14) ==="
 # Irrecoverable gained a bash fast-path so a benign command skips the python3 cold-start.
