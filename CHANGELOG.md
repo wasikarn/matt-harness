@@ -3,6 +3,23 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.104] — 2026-09-20
+
+### Fixed
+
+- **`mh:deep-audit` self-review of v1.1.103's own decision-doctrine change** (fresh-context Codex
+  checker, `gpt-5.6-sol`/medium, read-only sandbox) found 3 real gaps, closed here: `docs/decision-log.md`'s
+  kill condition ("delete if fewer than 5 rows") could never fire because the file is seeded with
+  exactly 5 rows — reworded to check for "no row appended since seeding" instead.
+  `scripts/_lib/weighted-score.py`'s `perturb` axis-count cap counted weight-0 axes even though
+  they can't move `total` (same reasoning that already excludes `insufficient` axes) — a
+  placeholder weight-0 axis could push a valid score over the cap and fail closed; excluded them.
+  Documented (no code change needed — no current caller combines the two) that `sensitivity`'s
+  perturbed corners don't re-check the `primaryId`-is-largest invariant `primaryWeightOk` reports
+  on the unperturbed weights only. A 4th finding (gauntlet/harness-audit failing in the checker's
+  own read-only sandbox on `mktemp: Operation not permitted`) reproduced as a known sandbox
+  artifact, not a real defect — both passed clean on the real host.
+
 ## [1.1.103] — 2026-09-20
 
 ### Fixed

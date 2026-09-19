@@ -17,6 +17,14 @@ reported as `totalRange`. `verdictStable` says whether `pass` can change
 anywhere in that box; it is `null` when no `passThreshold` was given (ranges
 alone are still meaningful, e.g. for mh:idea-audit).
 
+Known limitation, found by mh:deep-audit 2026-09-20: `primaryWeightOk` is
+computed once, from the original unperturbed weights; `sensitivity`'s corners
+do not check whether a perturbation could make the primary axis stop being
+the single largest weight. No current caller passes both `primaryId` and
+`perturb` in the same call (mh:idea-audit, the only `primaryId` user, does
+not opt into `perturb` for v1) -- if one ever does, `primaryWeightOk: true`
+would not guarantee the invariant holds at every reported corner.
+
 The model scores each dimension and writes reasons; this script does the
 arithmetic (weighted total, floor check, pass/fail) so a wrong hand sum or a
 hand-renormalized total can never reach a Final Verdict. Mirrors
@@ -67,7 +75,10 @@ def _sensitivity(items, weight_sum, below_floor, perturb, pass_threshold):
     weight_sum for the perturbed scored weights w_i'. An `insufficient` item's
     weight never enters that ratio, so perturbing it is a provable no-op, not
     an approximation -- it is excluded from both the corner enumeration and
-    the axis-count cap below.
+    the axis-count cap below. A weight-0 item is the same no-op for the same
+    reason (0 * any factor is still 0) and is excluded alongside it -- found
+    by mh:deep-audit 2026-09-20: without this, a placeholder weight-0 axis
+    could push an otherwise-fine score over MAX_PERTURB_AXES and fail closed.
 
     Corners, not a random search: for fixed weight_sum, `total` as a function
     of the scored weights is a ratio of two functions linear in those weights
@@ -79,7 +90,8 @@ def _sensitivity(items, weight_sum, below_floor, perturb, pass_threshold):
             or not math.isfinite(perturb) or not 0 < perturb < 1):
         _die(f"'perturb' must be a finite number strictly between 0 and 1, got {perturb!r}")
     scored = [(it["score"] / it["max"], it["weight"])
-              for it in items if not bool(it.get("insufficient", False))]
+              for it in items
+              if not bool(it.get("insufficient", False)) and it["weight"] != 0]
     n = len(scored)
     if n > MAX_PERTURB_AXES:
         _die(f"'perturb' over {n} scored axes needs 2**{n} corners; cap is {MAX_PERTURB_AXES}")
@@ -351,6 +363,18 @@ def _selftest():
             raise AssertionError(f"expected SystemExit on perturb={bad_p!r}")
         except SystemExit as e:
             assert e.code == 1
+
+    # A weight-0 axis must not count toward the perturb axis cap -- it has no
+    # effect on the ratio, same as `insufficient`. Found by mh:deep-audit
+    # 2026-09-20: 12 weight-0 placeholders + 1 real axis used to fail closed
+    # under perturb (13 > MAX_PERTURB_AXES) despite scoring fine without it.
+    zero_weight_axes = ([{"id": f"z{i}", "score": 5, "max": 10, "weight": 0,
+                           "insufficient": False} for i in range(12)]
+                         + [{"id": "eff", "score": 8, "max": 10, "weight": 1,
+                             "insufficient": False}])
+    zw = score({"scores": zero_weight_axes, "passThreshold": 0.7, "perturb": 0.2})
+    assert zw["total"] == 0.8, zw
+    assert zw["sensitivity"]["totalRange"] == [0.8, 0.8], zw["sensitivity"]
 
     # More scored axes than the cap must fail closed, not stall on 2**13 corners.
     many_axes = [{"id": f"a{i}", "score": 5, "max": 10, "weight": 1, "insufficient": False}

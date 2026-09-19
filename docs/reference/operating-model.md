@@ -72,11 +72,11 @@ model's unaided judgment.
 
 ## 3. Score, not feel
 
-An important decision carries stated criteria, weights, a numeric result, a pass/fail reason,
-and a confidence band (high/medium/low) with its reason (METHODOLOGY Rule 14). "Important" means the Rule 1 triad flagged it (one-way
-door, wide blast radius) or the user asked for a ranking. Routine calls get one line with the
-reason. Insufficient data is marked `ข้อมูลไม่เพียงพอ` and blocked on the operator; a guessed
-score is worse than none.
+An important decision carries stated criteria, weights, a numeric result, a pass/fail reason, and
+a confidence band (high/medium/low) with its reason (METHODOLOGY Rule 14). "Important" means the
+Rule 1 triad flagged it (one-way door, wide blast radius) or the user asked for a ranking. Routine
+calls get one line with the reason. Insufficient data is marked `ข้อมูลไม่เพียงพอ` and blocked on
+the operator; a guessed score is worse than none.
 
 Evidence is read in order: deterministic results first (a test exit code, a grep count), then
 the trajectory of this run, then how often work from this source has been rolled back before,

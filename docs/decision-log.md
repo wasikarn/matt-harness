@@ -16,9 +16,11 @@ marked `high`, what fraction held") — not Brier scoring, which needs numeric p
 can't be computed from coarse `{level, reason}` bands. Below 20 rows, any calibration statistic is
 noise.
 
-**Kill condition**: if fewer than 5 rows exist by 2026-12-31, delete this file — checked by the
-next `mh:deep-audit` run on this repo. An append-only log nobody fills is decoration with extra
-steps.
+**Kill condition**: if this file still has only its 5 seeded rows (no row appended since) by
+2026-12-31, delete it — checked by the next `mh:deep-audit` run on this repo. An append-only log
+nobody fills is decoration with extra steps. (A plain row-count threshold can't express this: the
+file is seeded at exactly 5, so "fewer than 5 rows" can never fire — found by `mh:deep-audit`
+2026-09-20.)
 
 | Date | Decision | Artifact | Verdict | totalRange @ p=0.2 | verdictStable | Confidence | Outcome |
 |------|----------|----------|---------|---------------------|---------------|------------|---------|
