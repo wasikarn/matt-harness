@@ -3,6 +3,34 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.100] — 2026-09-19
+
+### Fixed
+
+- **Closed 7 gaps a 5-agent audit found in this repo's own 4 adversarial-dispatch
+  surfaces**, applying a same-day prior-art survey of real attacker/verifier/checker
+  designs (`docs/research/adversarial-attacker-dispatch-patterns-2026-09-19.md`) as the
+  scoring rubric. deep-audit's checker brief carried the maker session's own per-file
+  claims/notes into the checker's context (the CoVe "joint" failure mode by name) —
+  withheld now, the checker re-derives its own read of the diff. compliance-audit had no
+  protocol for a sandbox-caused false gauntlet failure, live today (2 pre-existing tests
+  failed only under `--sandbox workspace-write`, due to scratch writes outside the
+  worktree) — the verifier now re-runs the gauntlet at the base SHA in the same sandbox
+  and routes an identical failure there to `NEEDS-DECISION`. deep-audit's "find what it
+  missed" framing made a checker primed with 3 known findings address 0 of them,
+  indistinguishable from never checking — now requires one `findings[]` entry per primed
+  item, tagged `CONFIRMED:`/`DISPUTED:`. `weighted-score.py` silently dropped a
+  `primaryId` axis marked insufficient from the total with no trigger — the single
+  largest-weighted axis vanishing without a trace — now fails closed. plan-reviewer had
+  no schema/script at all for its fatal-weakness-floor gate — added
+  `scripts/_lib/plan-verdict-check.py`, gauntlet-wired, catching the agent's own
+  documented self-contradiction mechanically. deep-audit's checker output had no
+  `checked[]` receipts field, the same vacuous-pass gap idea-audit already closed — added
+  on both the Codex-primary and Claude-fallback paths. compliance-audit had no
+  escalation path when two verifier dispatches disagreed on the same requirement, live
+  today (CONFORMS then DEVIATED on an identical rerun) — now reads the cited hunk
+  directly and defaults to unaccepted unless the diff settles it.
+
 ## [1.1.99] — 2026-09-19
 
 ### Fixed
