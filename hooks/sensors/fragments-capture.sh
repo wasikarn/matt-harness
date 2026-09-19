@@ -3,10 +3,14 @@
 # (hooks/sensors/fragments-arm.sh) and this write plausibly targets a
 # writing-fragments document, record a durable pointer to it. Never touches,
 # copies, or inlines the document's own content -- only a path pointer and a
-# change-detection snapshot. Never prints anything. Advisory only, silent on
-# any doubt. Full design: docs/adr/0003-writing-fragments-pointer-capture.md.
+# change-detection snapshot. Silent by default; MH_FRAGMENTS_DEBUG=1 traces
+# each decision point to stderr (why a capture did or didn't fire) without
+# touching stdout or the tool result. Advisory only, silent on any doubt.
+# Full design: docs/adr/0003-writing-fragments-pointer-capture.md.
 set -uo pipefail
 umask 077
+
+dbg() { [ "${MH_FRAGMENTS_DEBUG:-}" = "1" ] && printf 'fragments-capture: %s\n' "$1" >&2; }
 
 BASE="${TMPDIR:-/tmp}/mh-fragments-arm"
 
@@ -20,10 +24,10 @@ set -- "$BASE"/*
 [ $# -gt 0 ] || exit 0
 shopt -u nullglob
 
-command -v python3 >/dev/null 2>&1 || exit 0
+command -v python3 >/dev/null 2>&1 || { dbg "python3 not found"; exit 0; }
 
 HERE="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-. "$HERE/../../scripts/_lib/fragments-state.sh" 2>/dev/null || exit 0
+. "$HERE/../../scripts/_lib/fragments-state.sh" 2>/dev/null || { dbg "fragments-state.sh lib missing"; exit 0; }
 
 # Read stdin to a temp file, not a bash variable -- `PAYLOAD=$(cat)`
 # command substitution silently drops embedded NUL bytes (compliance-audit
@@ -57,27 +61,27 @@ SESSION_ID="" TOOL_NAME="" CWD="" HAS_H1="" FILE_PATH=""
 } < <(python3 -B "$HERE/../../scripts/_lib/fragments_capture_parse.py" < "$PAYLOAD_FILE" 2>/dev/null)
 rm -f "$PAYLOAD_FILE" 2>/dev/null
 
-[ -n "$SESSION_ID" ] || exit 0
+[ -n "$SESSION_ID" ] || { dbg "payload parse failed or empty session_id"; exit 0; }
 case "$TOOL_NAME" in
   Write|Edit) ;;
-  *) exit 0 ;;
+  *) dbg "tool_name '$TOOL_NAME' is not Write/Edit"; exit 0 ;;
 esac
-[ -n "$FILE_PATH" ] || exit 0
+[ -n "$FILE_PATH" ] || { dbg "empty file_path"; exit 0; }
 
 # Find this session's live marker via the current-generation pointer, not a
 # glob (round-4 finding: "newest live marker by mtime" let a claimed
 # generation drop out of the glob, making an older, already-superseded
 # marker reselectable). No fallback to scanning for any other marker.
 POINTER="$BASE/${SESSION_ID}.current"
-[ -f "$POINTER" ] && [ ! -L "$POINTER" ] || exit 0
+[ -f "$POINTER" ] && [ ! -L "$POINTER" ] || { dbg "this session is not armed (no pointer)"; exit 0; }
 SUFFIX=$(head -c 64 -- "$POINTER" 2>/dev/null)
 case "$SUFFIX" in
-  '') exit 0 ;;
-  *[!A-Za-z0-9]*) exit 0 ;;
+  '') dbg "pointer file is empty"; exit 0 ;;
+  *[!A-Za-z0-9]*) dbg "pointer suffix has invalid characters"; exit 0 ;;
 esac
 
 MARKER="$BASE/${SESSION_ID}.${SUFFIX}"
-[ -d "$MARKER" ] && [ ! -L "$MARKER" ] || exit 0
+[ -d "$MARKER" ] && [ ! -L "$MARKER" ] || { dbg "marker dir missing for suffix $SUFFIX"; exit 0; }
 
 # Window-expiry sweep, scoped to exactly the one generation the pointer
 # names -- there is never another candidate marker to consider. On a stat
@@ -87,8 +91,9 @@ MARKER="$BASE/${SESSION_ID}.${SUFFIX}"
 # already took the other way; unified here to "skip this write, don't
 # sweep, don't guess" for both).
 NOW=$(date +%s)
-AGE=$(hook_entry_age "$MARKER" "$NOW") || exit 0
+AGE=$(hook_entry_age "$MARKER" "$NOW") || { dbg "could not stat marker age"; exit 0; }
 if [ "$AGE" -gt 1800 ]; then
+  dbg "arm window expired (age=${AGE}s > 1800s), sweeping"
   rmdir "$MARKER" 2>/dev/null
   rm -f "${MARKER}.candidate" 2>/dev/null
   exit 0
@@ -168,7 +173,10 @@ else
   fi
 fi
 
-[ "$MATCH" -eq 1 ] || exit 0
+if [ "$MATCH" -ne 1 ]; then
+  dbg "no match: candidate=$([ -s "$CANDIDATE_FILE" ] && echo present || echo absent) target=$CANONICAL_TARGET"
+  exit 0
+fi
 
 # Claim: rename $MARKER -> ${MARKER}.claimed. Since $MARKER already carries
 # this invocation's own unique mktemp suffix, ${MARKER}.claimed can never
@@ -181,7 +189,7 @@ fi
 # correctly treat this generation as no-longer-armed, never falling back to
 # any other generation.
 CLAIMED="${MARKER}.claimed"
-mv "$MARKER" "$CLAIMED" 2>/dev/null || exit 0
+mv "$MARKER" "$CLAIMED" 2>/dev/null || { dbg "lost claim race for $MARKER"; exit 0; }
 
 # Publish: create-only, the exact handoff-path.sh --publish sequence.
 # Project root must be resolved to the git repo root (matching
@@ -196,6 +204,7 @@ ROOT=""
 DOCS_DIR=""
 [ -n "$ROOT" ] && DOCS_DIR=$(fragments_docs_dir "$ROOT" 2>/dev/null)
 if [ -z "$DOCS_DIR" ]; then
+  dbg "could not resolve docs dir for root '$ROOT'"
   mv "$CLAIMED" "$MARKER" 2>/dev/null
   exit 0
 fi
@@ -206,12 +215,13 @@ DOC_ID=$(python3 -I -c '
 import hashlib, sys
 print(hashlib.sha256(sys.argv[1].encode()).hexdigest()[:16])
 ' "$CANONICAL_TARGET" 2>/dev/null)
-[ -n "$DOC_ID" ] || { mv "$CLAIMED" "$MARKER" 2>/dev/null; exit 0; }
+[ -n "$DOC_ID" ] || { dbg "doc_id hash failed"; mv "$CLAIMED" "$MARKER" 2>/dev/null; exit 0; }
 
 DEST="$DOCS_DIR/$DOC_ID.json"
 if [ -e "$DEST" ]; then
   # Already captured -- nothing to overwrite, never clobber an existing
   # surfaced_snapshot. Counts as success.
+  dbg "already captured at $DEST"
   rm -f "${MARKER}.candidate" 2>/dev/null
   rmdir "$CLAIMED" 2>/dev/null
   exit 0
@@ -219,6 +229,7 @@ fi
 
 TMP_DOC=$(mktemp "$DOCS_DIR/.doc.XXXXXX" 2>/dev/null)
 if [ -z "$TMP_DOC" ]; then
+  dbg "mktemp failed in $DOCS_DIR"
   mv "$CLAIMED" "$MARKER" 2>/dev/null
   exit 0
 fi
@@ -233,6 +244,7 @@ with open(out, "w") as f:
     json.dump(doc, f)
 ' "$CANONICAL_TARGET" "$SESSION_ID" "$CAPTURED_AT" "$TMP_DOC" 2>/dev/null
 if [ ! -s "$TMP_DOC" ]; then
+  dbg "json write to $TMP_DOC failed or empty"
   rm -f "$TMP_DOC" 2>/dev/null
   mv "$CLAIMED" "$MARKER" 2>/dev/null
   exit 0
@@ -241,6 +253,7 @@ fi
 if [ -e "$DEST" ]; then
   # Lost a race to another writer for the same path -- fine, already
   # captured.
+  dbg "lost publish race for $DEST, already captured"
   rm -f "$TMP_DOC" 2>/dev/null
   rm -f "${MARKER}.candidate" 2>/dev/null
   rmdir "$CLAIMED" 2>/dev/null
@@ -251,6 +264,7 @@ if [ -e "$TMP_DOC" ]; then
   # mv -n silently no-op'd -- genuine publish failure. Restore this exact
   # invocation's arm (sidecar untouched) so a later qualifying write in the
   # same window can retry it.
+  dbg "mv -n to $DEST no-op'd, publish failed"
   rm -f "$TMP_DOC" 2>/dev/null
   mv "$CLAIMED" "$MARKER" 2>/dev/null
   exit 0
@@ -260,6 +274,7 @@ if [ -f "$DEST" ] && [ ! -L "$DEST" ]; then
 fi
 
 # Success: fully and correctly disarmed for this invocation.
+dbg "captured $DEST"
 rm -f "${MARKER}.candidate" 2>/dev/null
 rmdir "$CLAIMED" 2>/dev/null
 
