@@ -1,6 +1,9 @@
 # Review-agent and skill evals
 
-Twenty-nine cases in Claude Code's native `claude plugin eval` layout. Twelve cover the six review
+70 cases in Claude Code's native `claude plugin eval` layout (count:
+`find evals -mindepth 1 -maxdepth 1 -type d ! -name results | wc -l`; re-run rather than trust
+this number, it has drifted before — see `docs/research/ai-native-sdlc-playbook-audit-2026-08-28.md`
+Round 3). Twelve cover the six review
 agents, one planted-defect case and one clean control per agent, the same fires/silent pairing
 `tests/skills/harness-audit/known-bad/` uses for audit checks. Each case is
 `prompt.md` (the ask: an agent case dispatches by `subagent_type`, a skill case invokes by `skill:`), `case.yaml` (a
@@ -218,7 +221,9 @@ against each case's own `subagent_type`, `arm` left unset); and `test-eval-cases
 own frontmatter/regex-compile validator entirely for prompt.md-only cases (an early `continue`,
 contradicting its own comment) and counted "outcome graders" via a whole-file grep that a grader's
 body prose could accidentally trip (both now scoped correctly — see the script's own comments).
-All 76 cases still pass under the tightened checks.
+All 70 cases still pass under the tightened checks (this number, like the one at the top of the
+file, drifts as cases are added or removed — verify with the `find` command above rather than
+propagating this literal further).
 
 Run (needs `plugin eval` early access on the account; 2.1.263 prints "currently in early access"
 otherwise):

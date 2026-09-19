@@ -71,12 +71,12 @@ jobs:
               echo "$output"
               echo '```'
               echo ""
-              echo "Note: this is 1 of \`recursive-improve\`'s 3 Observe-step signals. The other"
-              echo "two -- the gate-verdict journal and feedback-memory clusters -- read"
-              echo "local-machine-only state this CI runner can't see (ADR:"
-              echo "\`docs/research/adr-0011-scheduled-recursive-improve-invocation.md\`, rejected"
-              echo "2026-08-28 -- CI can't safely pull them either). Run \`/mh:recursive-improve\`"
-              echo "locally to pick those up; this comment only ever reflects harness-audit."
+              echo "Note: two other signal classes -- the gate-verdict journal and"
+              echo "feedback-memory clusters -- read local-machine-only state this CI runner"
+              echo "can't see (ADR: \`docs/research/adr-0011-scheduled-recursive-improve-invocation.md\`,"
+              echo "rejected 2026-08-28 -- CI can't safely pull them either, and there is"
+              echo "currently no CI-visible read path for them). This comment only ever"
+              echo "reflects harness-audit."
             } > "$comment_file"
             # Comment first, reopen second: if `gh issue reopen` ever fails for
             # any reason, the drift alert is still posted rather than lost.

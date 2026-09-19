@@ -252,3 +252,136 @@ to stay that way: whether an `ask`-tier gate prompt behaves sensibly in a non-in
 background session with nobody to answer it — a standing property of the ask-tier design itself,
 not unique to this build, and not something this repo can verify without a real unattended
 background run to observe.
+
+## Round 3 — post-rebuild gap re-scan (2026-09-19)
+
+### What happened on 2026-09-12, and why this section exists
+
+A separate session ran a fresh 10-agent drill-down (5 analysts + 5 attackers) against this same
+article, independently of this doc — it had no visibility into Round 1/2/3 above. It found that
+the 2026-09-05 v1.0.0 rebuild (commit `10b6230f`) had deleted several of the items this doc's
+Round 1/2 built, including the gate-verdict journal and the weekly `harness-audit-drift.yml`
+cron, with no per-item rationale in the rebuild's own commit message. It restored both
+(v1.1.89, commit `b2134aea`), plus a follow-up fixing 3 gaps a `mh:deep-audit` pass found in that
+restore (`51762591`).
+
+**That session's own tier list was never committed anywhere.** It exists only inside the raw
+session transcript:
+`/Users/kobig/.claude/projects/-Users-kobig-Codes-Personals-matt-harness/83f7669a-6271-4c87-834a-02f99430bb5d.jsonl`,
+assistant message timestamp `2026-09-12T11:48:05.453Z`. This is itself a finding: the article's
+central thesis is that every SDLC stage ends in a committed artifact, and the audit process
+*about* that article failed to follow its own thesis. The tier list below is **reconstructed from
+that transcript**, not independently re-derived — treat it as a faithful summary of what that
+session concluded, not as freshly re-verified evidence in its own right.
+
+### The reconstructed 2026-09-12 tier list
+
+**Recommend building (all 3 shipped):**
+| Item | Status |
+|---|---|
+| Restore gate-verdict logging | Shipped as `hooks/gates/_journal.py`, wired into all 7 gates (v1.1.89) |
+| Restore the weekly harness-audit cron | Shipped as `.github/workflows/harness-audit-drift.yml` (v1.1.89) |
+| Add `run-gauntlet.sh` as a real CI job | Shipped independently by a peer session the same day (`aa5059b5`/`1238e83a`, v1.1.87/88, closing GH #159) |
+
+**Worth a quick decision, cheap either way — silently dropped, not decided:**
+- **`grill-with-docs` pointer** restore (lost in the rebuild with the rest of `hooks/advisory/`).
+  Still absent today.
+- **Run `claude plugin eval` once for real** to check whether the early-access gate that blocked
+  it in August had lifted. Never done.
+- **Cost-report σ-tiers, human-triggered only** (narrower than what ADR 0006 actually rejected,
+  which is *unattended* triggering). Never built or explicitly declined.
+
+**Reject — already tried, or already decided against:**
+- Push-gate / token release gate (built and killed before — 2026-06-25, "paralyzed sessions").
+- σ-band monitoring that auto-writes `intent.md` unattended (forbidden by ADR 0006).
+- REVIEW.md / PR-gated review mechanics (contradicts the single-branch, no-PR model).
+- CI triage + MCP deploy/rollback tools (no deploy target exists in this repo).
+- Verifier-subagent template (same shape already declined 2026-08-28 above).
+- Claude Tag / on-call (no chat-channel integration exists anywhere in the repo).
+
+**Flagged, not resolved:**
+- **Credential-in-diff content scanning** — one analyst in that session wrongly marked this
+  "already declined." It is not: the rebuild only moved *path-read* blocking
+  (`~/.ssh`, `~/.aws`) to native `permissions.deny`; *scanning edit content* for secrets was
+  never addressed, and `credential-guard.sh` itself was deleted in the same rebuild with no
+  rationale. Genuinely open.
+- **Post-edit fast lint** (`PostToolUse` on every edit) — real gap; as a plugin hook it would
+  fire in every project mh loads into, so it needs a repo-scope guard, not a trivial addition.
+- **Doc hygiene**: this doc listed deleted hooks as "Built" (now stale at the time), and
+  `evals/README.md`'s case count had already drifted. Both partially addressed below.
+
+### Today's fresh gap re-scan (2026-09-19)
+
+A stage-by-stage re-read of the article against current repo state (two independent Explore
+passes), classifying each item as **(a)** already does it, **(b)** built by an audit, **(c)**
+explicitly considered and rejected/deferred, or **(d)** never evaluated at all.
+
+**Never evaluated at all (d) — blind spots in every prior pass:**
+1. **Claude Tag / channel-based incident intake** (article's "Claude on call") — zero coverage.
+2. **"Auto mode"** — a distinct claim from the retired L2-L5 autonomy ladder (ADR 0006), never
+   separated from it in any prior pass.
+3. **Legacy systems / source-of-truth linkage** — `hooks/advisory/jira-route-nudge.sh`, the
+   repo's only such linkage mechanism, was deleted with the rest of `hooks/advisory/` in the
+   2026-09-05 rebuild.
+4. **The committed-artifact chain itself** (the article's core mechanic) — evaluated
+   stage-by-stage in every pass, never as its own claim. This Round 3 section's own existence is
+   the proof of the gap: the 09-12 drill-down left no artifact until now.
+5. **The design stage, post-rebuild** — Round 1 (2026-08-28) mapped it to `/to-spec`; that
+   command no longer exists (`commands/` is gone from the repo entirely). No pass has revisited
+   this row since.
+
+**Regressed since this doc's Round 1/2 build (deleted 2026-09-05, no per-item rationale):**
+6. **`merge-door.sh`** — the article's own flagship worked example (a hard block on `gh pr
+   merge`), built for exactly that purpose, then swept in the bulk delete list. No replacement.
+7. **`credential-guard.sh`** — Round 2 (above) flagged the underlying gap; the partial mitigation
+   that existed was then deleted. Zero secret-scanning in this repo today.
+8. **`flow-nudge.sh` grill-with-docs pointer** — the Plan-stage fix from Round 1, gone.
+9. **`address-review`** (the article's `@claude`-reply-loop analog) — deleted in the same rebuild.
+
+**Built, but not closing the article's actual loop:**
+10. **`evals/` exists (70 cases as of today — see the `evals/README.md` fix below) but never runs
+    in CI and gates nothing.** `.github/workflows/` has no job invoking `claude plugin eval`; only
+    a static loader (`tests/evals/test-eval-cases.sh`) runs in CI, and `develop` has no
+    branch-protection rule regardless. This is the single largest gap between "the repo has the
+    thing" and "the repo does the play" found in any pass to date.
+11. **Gate journal has a write path and no reader** — deliberately, per the v1.1.89 commit
+    message and `CHANGELOG.md`: "error/timeout decisions and a jsonl reader are deliberately out
+    of scope." The article's per-gate wait-time metric stays underivable without one. This is
+    (c)-deferred-with-rationale, not a silent gap — noted here for completeness, not as new.
+12. **`harness-audit-drift.yml` referenced 3 already-deleted scripts** in its own operator-facing
+    GH-issue-comment text (`recursive-improve`, `gate-journal-summary.sh`,
+    `feedback-surface-scan.py`) — a direct consequence of restoring the file "near-verbatim" from
+    before the rebuild that deleted those scripts. **Fixed in this same session** (see below).
+
+**Not gaps — documented decisions, unchanged since Round 1-3 above:**
+13. Managed settings for a regulated enterprise — rejected 2026-08-29 with rationale (this doc,
+    third-pass re-audit).
+14. Stage 6 autonomous loop / `bands.yaml` — rejected across ADR-0006, ADR-0009 (dead code),
+    ADR-0011. The accepted alternative is the weekly drift cron itself.
+15. Release-gate hook template — dropped by `AskUserQuestion` on 2026-08-28.
+16. Worktree isolation — a stated position (`docs/reference/branching-model.md`) but **not
+    written as an ADR** — the weakest-documented of the deliberate divergences from the article.
+
+### This session's actual scope, and what's deferred
+
+The user was shown the ranked list above and explicitly chose **doc/hygiene fixes only** for this
+pass — not the "real candidates" bucket (credential-scanning gate, grill-with-docs pointer,
+gate-journal reader, a real `claude plugin eval` probe), not the "bigger scope" bucket
+(evals-in-CI, post-edit lint), and not the "needs-decision" bucket (items 1-5 above, formally
+undecided rather than built or rejected). Those three buckets are handed to a future session as a
+concrete, already-ranked starting point — the explicit point of writing this section at all is so
+they don't need to be re-derived, and don't silently drop out of scope again the way the 09-12
+drill-down's own findings did.
+
+What this session did fix, all doc/hygiene, no behavior change to any hook/skill/agent (no
+plugin-cache version bump needed):
+- Corrected and linked the orphaned Round 1/2/3 memory (`ai-native-sdlc-playbook-audit-2026-08-28`
+  had zero index entries anywhere in the auto-memory store's `MEMORY.md` — confirmed via grep —
+  which is exactly why its "candidate list is closed" claim never got caught as stale).
+- Added a new memory recording this Round 3 (`ai-native-sdlc-playbook-round3-gap-scan-2026-09-19`).
+- Fixed `evals/README.md`'s two drifted case counts (was "29"/"76", real count 70 as of today —
+  `find evals -mindepth 1 -maxdepth 1 -type d ! -name results | wc -l`).
+- Fixed `harness-audit-drift.yml`'s dead-pointer text (finding 12 above): removed the instruction
+  to run `/mh:recursive-improve`, and the possessive reference to that skill's name, from the
+  live GH-issue-comment body — that skill doesn't exist anywhere in the repo (confirmed via grep
+  across `skills/`, `scripts/`, `hooks/`).
