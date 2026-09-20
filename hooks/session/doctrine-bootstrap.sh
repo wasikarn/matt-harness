@@ -17,9 +17,20 @@ fi
 # mid-destructive-command. jq gates the cost tracker the same way (it skips
 # itself silently per-event; this is its one announcement).
 if ! command -v python3 >/dev/null 2>&1; then
+  # Gate list derived from hooks/gates/*.sh (LOW, harness gap-audit
+  # 2026-09-20) instead of a hand-maintained string -- the previous
+  # hardcoded list named 5 of the 7 real gate wrappers, silently missing
+  # subagent-spawn-guard and codex-setup-guard whenever a new gate shipped.
+  _gate_list=""
+  for _g in "${CLAUDE_PLUGIN_ROOT:-}"/hooks/gates/*.sh; do
+    [ -f "$_g" ] || continue
+    _name=$(basename "$_g" .sh)
+    _gate_list="${_gate_list:+$_gate_list / }$_name"
+  done
   echo "<!-- mh:portability-preflight -->"
-  echo "**matt-harness:** \`python3\` not found on PATH. Every gate (irrecoverable / subagent-git-guard / task-complete-separation / test-integrity / config-write-guard) is failing open with a stderr note — destructive-command protection is OFF until python3 is installed."
+  echo "**matt-harness:** \`python3\` not found on PATH. Every gate (${_gate_list:-irrecoverable / subagent-git-guard / subagent-spawn-guard / task-complete-separation / test-integrity / config-write-guard / codex-setup-guard}) is failing open with a stderr note — destructive-command protection is OFF until python3 is installed."
   echo "<!-- /mh:portability-preflight -->"
+  unset _gate_list _g _name
 fi
 if ! command -v jq >/dev/null 2>&1; then
   echo "<!-- mh:portability-preflight -->"

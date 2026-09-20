@@ -12,7 +12,10 @@ stdin: the attacker's already schema-valid JSON (see attacker-output-schema.json
 
 A citation shape is: a backticked span `...` (a command), OR a path-like token
 (contains "/" or ".") immediately followed by ":<digits>" -- a path:line cite,
-or the path:line prefix of a grep -n style "path:line:content" excerpt.
+or the path:line prefix of a grep -n style "path:line:content" excerpt. The
+path-like token must contain at least one letter (harness gap-audit,
+2026-09-20): a bare numeric ratio like "2.5:1" also has a "." followed by
+":<digits>" and previously false-matched as a citation.
 
 # ponytail: shape only, not substance -- `` `trust me` `` passes this check the
 # same as `` `git log --oneline -5` `` does. Verifying the backtick content is
@@ -34,7 +37,7 @@ import json
 import re
 import sys
 
-CITATION_RE = re.compile(r"`[^`]+`|[^\s:`]*[./][^\s:`]*:\d+")
+CITATION_RE = re.compile(r"`[^`]+`|(?=[^\s:`]*[A-Za-z])[^\s:`]*[./][^\s:`]*:\d+")
 
 
 def has_citation(evidence):
@@ -99,6 +102,13 @@ def _selftest():
     code, out, err = run({"findings": [],
                            "checked": [{"claim": "c", "evidence": "the run finished at 3:00"}]})
     assert code == 1 and "checked[0]" in err, (code, out, err)
+
+    # a bare numeric ratio must NOT false-match either (harness gap-audit,
+    # 2026-09-20): "2.5" has a "." followed by ":<digits>", same shape as a
+    # real path:line cite, but no letter anywhere -- not a real path.
+    code, out, err = run({"findings": [{"summary": "s", "evidence": "193x faster, 2.5:1 ratio"}],
+                           "checked": []})
+    assert code == 1 and "findings[0]" in err, (code, out, err)
 
     # checked[] failure reported independently of findings[] passing.
     code, out, err = run({"findings": [{"summary": "s", "evidence": "docs/x.md:1"}],
