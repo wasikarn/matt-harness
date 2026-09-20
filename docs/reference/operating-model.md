@@ -61,7 +61,9 @@ task-completion self-grading tops out near chance). So:
   (`evals/README.md`). `tech-humanize` has five more (three planted, a human-written control, a
   file-input case graded on the file's bytes); `harness-audit`, `memory-lint`, `deep-audit`,
   `post-mortem`, and `cost-report` have a planted case and a clean control each; `ideate` has a
-  run and an abort case. 29 in all. The runner is early-access gated;
+  run and an abort case. Count drifts as suites are added; recompute with
+  `find evals -mindepth 1 -maxdepth 1 -type d ! -name results | wc -l` rather than trust a
+  literal number here (`evals/README.md`). The runner is early-access gated;
   `tests/evals/test-eval-cases.sh` keeps the cases loadable until it opens and proves every
   regex grader against its fixture or verdict sample.
 - `gate:task:complete-separation` makes the rule mechanical for task state.

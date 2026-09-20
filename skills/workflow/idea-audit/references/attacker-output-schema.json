@@ -6,7 +6,8 @@
   "additionalProperties": false,
   "properties": {
     "pass": {
-      "type": "boolean"
+      "type": ["boolean", "null"],
+      "description": "null is the attacker's documented can't-tell state (genuinely unable to determine pass/fail) -- distinct from omitting the field, and rejected by check-verdict.py rather than treated as a guessed value."
     },
     "findings": {
       "type": "array",

@@ -2,20 +2,20 @@
 # fragments-state.sh — sourceable lib shared by hooks/sensors/fragments-arm.sh,
 # hooks/sensors/fragments-capture.sh, and hooks/session/fragments-surface.sh,
 # so the state layout, sanitizer, and lock discipline can't drift apart
-# between the three hooks. Not a CLI like skills/workflow/handoff/scripts/
-# handoff-path.sh -- source it, don't execute it.
+# between the three hooks. Not a CLI -- source it, don't execute it.
 #
 # Storage: $HOME/.claude/state/mh-fragments/<slug>-<hash>/documents/
 #          <sha256(path)[:16]>.json
 # <slug>-<hash> from slug_hash() (scripts/_lib/slug-hash.sh), scoped to the
-# git repo root -- identical derivation to handoff-path.sh and
-# codex-state-path.sh, so two different repos never collide.
+# git repo root -- identical derivation to codex-state-path.sh, so two
+# different repos never collide. (The now-removed mh:handoff skill's
+# handoff-path.sh used the same derivation too; see git history.)
 #
 # The durable state tree gets the same symlink+ownership defense the
 # ephemeral TMPDIR arm marker needs (docs/adr/0003-writing-fragments-
 # pointer-capture.md, round-1 finding) -- every directory in the chain is
 # checked, not just the base. That defense (hook_safe_dir/hook_owner_ok)
-# lives in scripts/_lib/hook-common.sh, shared with the handoff hooks.
+# lives in scripts/_lib/hook-common.sh.
 
 _FRAGMENTS_LIB_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Guarded (deep-audit finding, live-reproduced): an unguarded `.` reports

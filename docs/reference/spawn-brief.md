@@ -35,8 +35,9 @@ exact contract and its `top_blockers`-display-cap gotcha.
 
 Constraints: stage by explicit path only, never stash/reset/checkout/add -A; delete with `trash`;
 return `NEEDS-DECISION <question>` instead of guessing; a ruling made within your own authority
-(not escalated) logs `Ruling: <what>—<why>—<cost if wrong>`; cite one checkable fact per claim —
-illegible evidence is unverified, not absent.
+(not escalated) states it inline in your final message as `Ruling: <what>—<why>—<cost if wrong>`
+(no separate log — the orchestrator reads it from your return value); cite one checkable fact per
+claim — illegible evidence is unverified, not absent.
 ```
 
 When the brief goes to Codex (`/codex:rescue`), name the reasoning effort as an invocation flag,

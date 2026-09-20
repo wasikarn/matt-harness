@@ -221,5 +221,14 @@ PY
 done
 [ "$n" -eq 70 ] || bad "expected 70 cases, found $n"
 
+# README.md and operating-model.md used to hardcode "29" (harness gap-audit,
+# 2026-09-20: the count had drifted to 70 with no test catching it). Both now
+# point at this recompute command instead of a literal -- assert neither
+# regressed back to a bare number that can go stale again.
+RECOMPUTE_CMD='find evals -mindepth 1 -maxdepth 1 -type d ! -name results | wc -l'
+for doc in "$HERE/../../README.md" "$HERE/../../docs/reference/operating-model.md"; do
+  /usr/bin/grep -qF "$RECOMPUTE_CMD" "$doc" || bad "$(basename "$doc"): eval-case count no longer points at the recompute command"
+done
+
 echo "eval-cases: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

@@ -212,7 +212,9 @@ harmless since prose sits after the file's real closing delimiter, but was corre
 the file's own comment claimed otherwise). The remaining four fixes held on re-verification: the 5
 `handoff` `attempted-staging.md` graders checked `tool_used: Bash` with no `input_match` (any Bash
 call passed; now requires `handoff-path.sh`, confirmed as the literal invoked filename in
-`skills/workflow/handoff/SKILL.md`); `code-architect-trivial-no-dispatch` had no check on the
+`skills/workflow/handoff/SKILL.md`) — **historical**: the `mh:handoff` skill and its eval cases
+were removed after this round; `handoff-path.sh`/`SKILL.md` no longer exist, this entry stays only
+as the record of the fix; `code-architect-trivial-no-dispatch` had no check on the
 actual edit's correctness (a half-rename leaving a `NameError` behind would have passed; added a
 `not_contains: usr` check on the file); the 20 should-fire agent-dispatch cases across
 `backend-architect`/`code-architect`/`performance-optimizer`/`ideate-critic` only proved the trace

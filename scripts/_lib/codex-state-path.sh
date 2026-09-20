@@ -4,8 +4,8 @@
 #
 # Ported from the installed plugin's scripts/lib/state.mjs (v1.0.6), not a
 # public contract -- there is no documented, versioned path for this file.
-# The <slug>-<hash> naming itself is shared with skills/workflow/handoff's
-# helper -- see scripts/_lib/slug-hash.sh for that derivation.
+# The <slug>-<hash> naming itself is shared with scripts/_lib/fragments-state.sh
+# -- see scripts/_lib/slug-hash.sh for that derivation.
 # Path = $MH_CODEX_DATA_DIR/state/<slug>-<hash>/state.json, where
 # MH_CODEX_DATA_DIR defaults to Claude Code's own per-plugin data directory
 # for codex@openai-codex (observed consistent across every installed plugin

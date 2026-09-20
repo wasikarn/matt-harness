@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # harness.sh — shared test scaffolding for tests/hooks/test-fragments-{arm,
-# capture,surface}.sh and tests/hooks/test-handoff-{nudge,surface}.sh: the
+# capture,surface}.sh (originally 5 consumers including the now-removed
+# tests/hooks/test-handoff-{nudge,surface}.sh, see git history): the
 # fresh_tmpdir/fresh_repo/_cleanup_trash trio that used to be 5 separate
 # copies, 3 of which were missing the empty-string guard the other 2 had --
 # the exact bug that moved this repo's working tree to Trash mid-session

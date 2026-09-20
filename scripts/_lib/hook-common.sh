@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# hook-common.sh — sourceable lib shared by hooks/sensors/fragments-arm.sh,
-# hooks/sensors/fragments-capture.sh, hooks/session/fragments-surface.sh,
-# hooks/session/handoff-nudge.sh, hooks/session/handoff-surface.sh, and
-# skills/workflow/handoff/scripts/handoff-path.sh, so the symlink/ownership
+# hook-common.sh — sourceable lib pulled in by scripts/_lib/fragments-state.sh,
+# shared by hooks/sensors/fragments-arm.sh, hooks/sensors/fragments-capture.sh,
+# and hooks/session/fragments-surface.sh (the mh:handoff skill and its
+# handoff-nudge.sh/handoff-surface.sh hooks that used to share this file were
+# removed; see git history for that consumer set), so the symlink/ownership
 # defense, snapshot derivation, and git-root resolution these all need can't
 # drift apart between copies the way owner_ok() and the stat-fallback
 # direction already had (docs/adr/0003-writing-fragments-pointer-capture.md).
@@ -28,8 +29,8 @@ hook_owner_ok() {
 # hook_safe_dir <path>: mkdir -p, then reject if it's a symlink or
 # foreign-owned. <path> must carry no trailing slash -- a trailing slash
 # resolves through a symlink before -L ever runs, silently defeating the
-# check (hooks/session/handoff-nudge.sh's own compliance-audit finding,
-# reproduced live there).
+# check (found on the now-removed handoff-nudge.sh, reproduced live there;
+# the fragments hooks above inherit the fix).
 hook_safe_dir() {
   local path="$1"
   mkdir -p "$path" 2>/dev/null
@@ -42,11 +43,12 @@ hook_safe_dir() {
 
 # hook_snapshot <path> <label>: size+mtime, GNU tried first (see
 # hook_owner_ok's comment for why). Each caller MUST pass a DISTINCT <label> -- two independent stat failures at
-# different call sites must never compare equal (handoff-surface.sh's own
-# deep-audit finding: a shared "" fallback let a missing `stat` binary fail
-# the guard open). <label> has no default: an omitted label is a caller
-# bug, not something to paper over with a shared fallback value that would
-# silently reintroduce the exact hazard this function exists to close.
+# different call sites must never compare equal (found on the now-removed
+# handoff-surface.sh's own deep-audit finding: a shared "" fallback let a
+# missing `stat` binary fail the guard open). <label> has no default: an
+# omitted label is a caller bug, not something to paper over with a shared
+# fallback value that would silently reintroduce the exact hazard this
+# function exists to close.
 hook_snapshot() {
   local path="$1" label="${2:?hook_snapshot requires a distinct label}"
   stat -c '%s %Y' "$path" 2>/dev/null || stat -f '%z %m' "$path" 2>/dev/null || printf 'stat-unavailable-%s\n' "$label"

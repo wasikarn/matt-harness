@@ -128,6 +128,8 @@ def validate(obj):
         extra = set(obj.keys()) - REQUIRED_KEYS
         missing = REQUIRED_KEYS - set(obj.keys())
         return False, f"key set mismatch: extra={sorted(extra)} missing={sorted(missing)}"
+    if obj["pass"] is None:
+        return False, "'pass' is null — the checker's documented can't-tell state, not a valid verdict to act on"
     if not isinstance(obj["pass"], bool):
         return False, f"'pass' is not a boolean: {obj['pass']!r}"
     if not isinstance(obj["scope_ok"], bool):
@@ -232,6 +234,14 @@ def _selftest():
                                   "scope_ok": True, "unexpected_files": []})
     code, out, err = run(pass_as_string)
     assert code == 1 and "'pass' is not a boolean" in err, (code, out, err)
+
+    # LOW (harness gap-audit, 2026-09-20): pass:null is the checker's
+    # documented can't-tell state, schema-legal now, but must still be
+    # rejected -- not silently laundered into a guessed true/false.
+    pass_null = json.dumps({"pass": None, "findings": [], "checked": checked,
+                             "scope_ok": True, "unexpected_files": []})
+    code, out, err = run(pass_null)
+    assert code == 1 and "can't-tell state" in err, (code, out, err)
 
     scope_ok_null = json.dumps({"pass": True, "findings": [], "checked": checked,
                                  "scope_ok": None, "unexpected_files": []})
