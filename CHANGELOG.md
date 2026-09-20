@@ -3,6 +3,23 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.105] — 2026-09-20
+
+### Added
+
+- **`gate:agent:subagent-verdict-check`**, a new `SubagentStop` gate (Tier 1 of the
+  "auto-apply the attacker pattern via hooks?" design note, `docs/research/
+  nine-agent-gate-architecture-security-audit-2026-09-20.md`). Stateless and fail-open: blocks
+  (re-prompts once) a subagent whose final message carries a Rule 13 `{pass, findings[],
+  checked[], scope_ok, unexpected_files[]}`-shaped verdict that is vacuous (`pass:true` with both
+  `findings[]` and `checked[]` empty) or self-contradictory (`pass:true` with `scope_ok:false` or
+  a non-empty `unexpected_files[]`). Loop bound is Claude Code's own `stop_hook_active` field, not
+  a counter. Allows on `NEEDS-DECISION`, an ambiguous multi-candidate output, a missing `python3`,
+  or a missing sibling script, matching this repo's other subagent-scoped gates' fail-open
+  posture. Added `hooks/hook-registry.json`'s `SubagentStop` entry and `docs/reference/
+  operating-model.md`'s gate-table row and subagent-scoped-gate count (3 → 4). 13 new tests in
+  `tests/hooks/test-subagent-verdict-gate.sh`, run through the `.sh` wrapper.
+
 ## [1.1.104] — 2026-09-20
 
 ### Fixed
