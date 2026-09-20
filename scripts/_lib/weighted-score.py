@@ -126,6 +126,9 @@ def score(payload):
     raw_sum = 0.0
     below_floor = []
     floor_pct = payload.get("floorPct", 0.0)
+    if (isinstance(floor_pct, bool) or not isinstance(floor_pct, (int, float))
+            or not math.isfinite(floor_pct) or not 0 <= floor_pct <= 1):
+        _die(f"'floorPct' must be a finite number between 0 and 1, got {floor_pct!r}")
     primary_id = payload.get("primaryId")
     primary_insufficient = False
     seen_ids = set()
@@ -144,6 +147,8 @@ def score(payload):
             _die(f"'{item_id}': max must be positive, got {m}")
         if w < 0:
             _die(f"'{item_id}': weight must be non-negative, got {w}")
+        if not (0 <= s <= m):
+            _die(f"'{item_id}': score must be within [0, max], got score={s} max={m}")
         if item_id in seen_ids:
             _die(f"duplicate id '{item_id}' in scores")
         seen_ids.add(item_id)
@@ -165,6 +170,9 @@ def score(payload):
     total = round(raw_sum / scored_weight_sum * weight_sum, 2)
 
     pass_threshold = payload.get("passThreshold")
+    if pass_threshold is not None and (isinstance(pass_threshold, bool)
+            or not isinstance(pass_threshold, (int, float)) or not math.isfinite(pass_threshold)):
+        _die(f"'passThreshold' must be a finite number, got {pass_threshold!r}")
     verdict = None
     if pass_threshold is not None:
         verdict = total >= pass_threshold and not below_floor
@@ -284,6 +292,62 @@ def _selftest():
             raise AssertionError(f"expected SystemExit on non-numeric/non-finite input: {bad}")
         except SystemExit as e:
             assert e.code == 1
+
+    # floorPct/passThreshold must fail closed on non-finite/bool input, not
+    # silently let a -Infinity threshold or a NaN floor rubber-stamp pass:true
+    # (found live: passThreshold=-Infinity made a 1/10 score report pass:true).
+    for bad_payload in (
+        {"scores": [{"id": "a", "score": 1, "max": 10, "weight": 1, "insufficient": False}],
+         "passThreshold": float("-inf")},
+        {"scores": [{"id": "a", "score": 2, "max": 10, "weight": 1, "insufficient": False}],
+         "floorPct": float("nan")},
+        {"scores": [{"id": "a", "score": 1, "max": 10, "weight": 1, "insufficient": False}],
+         "passThreshold": True},
+        {"scores": [{"id": "a", "score": 1, "max": 10, "weight": 1, "insufficient": False}],
+         "floorPct": 1.5},
+    ):
+        try:
+            score(bad_payload)
+            raise AssertionError(f"expected SystemExit on bad floorPct/passThreshold: {bad_payload}")
+        except SystemExit as e:
+            assert e.code == 1
+
+    # A score outside [0, max] must fail closed, not silently inflate the ratio
+    # past 1.0 into the total.
+    try:
+        score({"scores": [{"id": "a", "score": 15, "max": 10, "weight": 1, "insufficient": False}]})
+        raise AssertionError("expected SystemExit on score > max")
+    except SystemExit as e:
+        assert e.code == 1
+
+    # Negative weight must fail closed.
+    try:
+        score({"scores": [{"id": "a", "score": 5, "max": 10, "weight": -1, "insufficient": False}]})
+        raise AssertionError("expected SystemExit on negative weight")
+    except SystemExit as e:
+        assert e.code == 1
+
+    # primaryId not present among scores must fail closed.
+    try:
+        score({"scores": [{"id": "a", "score": 5, "max": 10, "weight": 1, "insufficient": False}],
+               "primaryId": "nonexistent"})
+        raise AssertionError("expected SystemExit on primaryId not found")
+    except SystemExit as e:
+        assert e.code == 1
+
+    # A malformed score entry (missing a required key) must fail closed.
+    try:
+        score({"scores": [{"id": "a", "score": 5, "max": 10}]})  # no "weight"
+        raise AssertionError("expected SystemExit on malformed score entry")
+    except SystemExit as e:
+        assert e.code == 1
+
+    # An empty scores list must fail closed, not raise an unguarded exception.
+    try:
+        score({"scores": []})
+        raise AssertionError("expected SystemExit on empty scores list")
+    except SystemExit as e:
+        assert e.code == 1
 
     # Floor boundary: a score exactly at floorPct * max must NOT trip
     # belowFloor -- the check is strictly '<', not '<='. Discriminates a
