@@ -44,7 +44,30 @@ command -v git >/dev/null 2>&1 || exit 0
 # swept in.
 [ -z "$(git -C "$MEMDIR" status --porcelain -unormal -- '*.md' 2>/dev/null)" ] && exit 0
 
-git -C "$MEMDIR" add -- '*.md' 2>/dev/null
-git -C "$MEMDIR" commit -m "auto-snapshot $(date -u +%Y-%m-%dT%H:%M:%SZ)" --quiet 2>/dev/null
+# H6 (harness gap-audit, 2026-09-20): both git calls used to redirect stderr
+# and never check an exit code -- any commit precondition failing (missing
+# user.name, GPG signing unavailable, a stale index.lock from a concurrent
+# session on this shared tree) silently stopped versioning the memory store
+# forever, with no signal until someone happened to check by hand. Now
+# writes a marker file memory-health-nudge.sh surfaces at next SessionStart
+# (same "keep firing every session until fixed" posture as its M9 crash
+# marker), cleared on the next successful commit.
+mkdir -p "$HOME/.claude/state" 2>/dev/null
+FAILMARKER="$HOME/.claude/state/memory-audit-commit-fail-$ENC"
 
+ADD_ERR=$(git -C "$MEMDIR" add -- '*.md' 2>&1)
+ADD_RC=$?
+if [ "$ADD_RC" -ne 0 ]; then
+  printf 'git add failed (exit %s): %s\n' "$ADD_RC" "$ADD_ERR" > "$FAILMARKER" 2>/dev/null
+  exit 0
+fi
+
+COMMIT_ERR=$(git -C "$MEMDIR" commit -m "auto-snapshot $(date -u +%Y-%m-%dT%H:%M:%SZ)" --quiet 2>&1)
+COMMIT_RC=$?
+if [ "$COMMIT_RC" -ne 0 ]; then
+  printf 'git commit failed (exit %s): %s\n' "$COMMIT_RC" "$COMMIT_ERR" > "$FAILMARKER" 2>/dev/null
+  exit 0
+fi
+
+rm -f "$FAILMARKER" 2>/dev/null
 exit 0

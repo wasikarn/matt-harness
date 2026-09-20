@@ -21,6 +21,19 @@ ENC="${PHYSPWD//\//-}"
 MEMDIR="$HOME/.claude/projects/$ENC/memory"
 [ -d "$MEMDIR" ] || exit 0
 
+# H6 (harness gap-audit, 2026-09-20): memory-audit-commit.sh's Stop hook
+# writes this marker when git add/commit fails, so the memory store's
+# version control silently stops updating. Surfaced here, once per session,
+# every session until a later successful commit clears the marker (same
+# posture as the M9 crash line below).
+FAILMARKER="$HOME/.claude/state/memory-audit-commit-fail-$ENC"
+if [ -f "$FAILMARKER" ]; then
+  printf '%s\n' \
+    "[memory-lint] the memory store's auto-commit failed and is not currently versioned:" \
+    "$(cat "$FAILMARKER" 2>/dev/null)" \
+    "Fix the underlying git issue in the memory store, then it will resolve on the next successful commit."
+fi
+
 # Skip the python3 scan if nothing changed since the last clean run. -maxdepth 1
 # matches collect_state()'s non-recursive listdir; _archive/ never feeds the detector.
 CACHE="$HOME/.claude/state/memory-lint-cache-$ENC"

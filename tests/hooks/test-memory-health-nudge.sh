@@ -234,6 +234,26 @@ else
 fi
 
 echo ""
+echo "--- H6 (2026-09-20): memory-audit-commit.sh's failure marker surfaces here, never silent ---"
+
+init_memdir
+write_memory "topic-a.md" "a fully indexed topic"
+printf '%s\n' "- [topic-a](topic-a.md) — a fully indexed topic" > "$MEMDIR/MEMORY.md"
+rm -f "$FAKE_HOME/.claude/state"/memory-lint-cache-* 2>/dev/null
+FAILMARKER="$FAKE_HOME/.claude/state/memory-audit-commit-fail-$ENC"
+printf 'git commit failed (exit 1): fatal: unable to auto-detect email address\n' > "$FAILMARKER"
+OUT=$(run_hook)
+assert_contains "commit-failure marker surfaces its own line" \
+  "[memory-lint] the memory store's auto-commit failed" "$OUT"
+assert_contains "the captured git stderr is included verbatim" \
+  "unable to auto-detect email address" "$OUT"
+
+rm -f "$FAILMARKER"
+OUT=$(run_hook)
+assert_not_contains "marker cleared (by memory-audit-commit.sh) -> nudge stops firing" \
+  "auto-commit failed" "$OUT"
+
+echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
 [[ "$fail" -eq 0 ]] && exit 0 || exit 1
