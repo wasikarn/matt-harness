@@ -40,6 +40,15 @@ def _validated(item_id, s):
             _die(f"'{item_id}'.{k} must be finite: {v!r}")
         if not (0 <= v <= 10):
             _die(f"'{item_id}'.{k} must be in [0,10]: {v!r}")
+    # deep-audit follow-up (2026-09-20): the docstring above and SKILL.md/
+    # references/algorithm-detail.md all document trap as null-or-a-reason,
+    # never "". M13's `is not None` fix (below, in rank()) legalized trap:""
+    # as "a real trap with no reason" -- reject it here instead, matching
+    # this repo's own \S non-blank convention for comparable free-text
+    # fields (checker-output-schema.json's findings/checked items).
+    trap = s.get("trap")
+    if trap is not None and (not isinstance(trap, str) or not trap.strip()):
+        _die(f"'{item_id}'.trap must be null or a non-blank reason string: {trap!r}")
     return s
 
 
@@ -106,12 +115,26 @@ def _selftest():
         except SystemExit as e:
             assert e.code == 1
 
-    # M13: an empty-string trap reason is still a real trap flag from the
-    # model (`is not None`, not truthiness) -- it must count toward traps[]
-    # and be excluded from ranking, same as a non-empty reason.
+    # deep-audit follow-up (2026-09-20): trap:"" is neither documented
+    # null-trap nor a real reason -- must fail closed, not silently become
+    # "a trap with no reason" (the gap M13's own `is not None` fix left open).
+    for bad_trap in (
+        {"a": {"novelty": 7, "viability": 6, "fit": 8, "trap": ""}},
+        {"a": {"novelty": 7, "viability": 6, "fit": 8, "trap": "   "}},
+        {"a": {"novelty": 7, "viability": 6, "fit": 8, "trap": 5}},
+    ):
+        try:
+            rank({"scores": bad_trap})
+            raise AssertionError(f"expected rank() to reject blank/non-string trap {bad_trap!r}")
+        except SystemExit as e:
+            assert e.code == 1
+
+    # A genuine non-blank trap reason must still count toward traps[] and be
+    # excluded from ranking (already exercised above via "false economy", but
+    # asserted explicitly here alongside the rejection cases for locality).
     out = rank({"topK": 2, "scores": {
         "a": {"novelty": 7, "viability": 6, "fit": 8, "trap": None},
-        "b": {"novelty": 9, "viability": 9, "fit": 9, "trap": ""},
+        "b": {"novelty": 9, "viability": 9, "fit": 9, "trap": "false economy"},
     }})
     assert out["traps"] == ["b"], out["traps"]
     assert out["shortlist"] == ["a"], out["shortlist"]
