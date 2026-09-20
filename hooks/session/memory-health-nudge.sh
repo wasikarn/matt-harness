@@ -43,9 +43,20 @@ else
   OUT=$(python3 "$LINT" 2>/dev/null) || true
 fi
 
+# M9 (harness gap-audit, 2026-09-20): a crash used to fall through this whole
+# function silently -- OUT="" never matches the "findings: [1-9]" emit gate
+# below, so the operator had no way to tell "clean store" from "the check
+# itself broke" across every session until someone happened to run it by
+# hand. Surface it once per session (never cached, so it keeps firing until
+# fixed, same posture as a real dirty-store finding).
+if [ "$CRASHED" -eq 1 ]; then
+  printf '%s\n' "[memory-lint] session-start check crashed — memory findings are unknown this session. Run \`mh:memory-lint\` manually to see the real error."
+  exit 0
+fi
+
 # Cache only a clean, non-crashed run — a dirty store must keep firing every
 # session until fixed (regression test in tests/hooks/test-memory-health-nudge.sh).
-if [ "$CRASHED" -eq 0 ] && ! printf '%s' "$OUT" | command grep -qE 'findings: [1-9]'; then
+if ! printf '%s' "$OUT" | command grep -qE 'findings: [1-9]'; then
   touch "$CACHE" 2>/dev/null
 fi
 

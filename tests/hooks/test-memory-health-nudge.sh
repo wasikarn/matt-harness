@@ -207,6 +207,33 @@ else
 fi
 
 echo ""
+echo "--- M9 (2026-09-20): a crashed memory-lint.py surfaces one line, never silent ---"
+
+FAKE_PLUGIN="$TMP/fakeplugin"
+mkdir -p "$FAKE_PLUGIN/skills/meta/memory-lint/scripts"
+cat > "$FAKE_PLUGIN/skills/meta/memory-lint/scripts/memory-lint.py" <<'EOF'
+#!/usr/bin/env python3
+raise RuntimeError("boom")
+EOF
+
+init_memdir
+write_memory "topic-a.md" "a fully indexed topic"
+: > "$MEMDIR/MEMORY.md"
+rm -f "$FAKE_HOME/.claude/state"/memory-lint-cache-* 2>/dev/null
+OUT=$( cd "$PROJECT_DIR" && CLAUDE_PLUGIN_ROOT="$FAKE_PLUGIN" HOME="$FAKE_HOME" bash "$HOOK" )
+assert_contains "crash surfaces one advisory line, not silence" \
+  "[memory-lint] session-start check crashed" "$OUT"
+
+CACHE_FILE=$(find "$FAKE_HOME/.claude/state" -name 'memory-lint-cache-*' 2>/dev/null | head -1)
+if [ -z "$CACHE_FILE" ] || [ ! -f "$CACHE_FILE" ]; then
+  echo "  ✅ ABSENT: a crashed run is never cached, so it keeps firing until fixed"
+  pass=$((pass + 1))
+else
+  echo "  ❌ UNEXPECTED: a crashed run must not write the cache" >&2
+  fail=$((fail + 1))
+fi
+
+echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
 [[ "$fail" -eq 0 ]] && exit 0 || exit 1
