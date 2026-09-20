@@ -16,10 +16,12 @@
         "additionalProperties": false,
         "properties": {
           "summary": {
-            "type": "string"
+            "type": "string",
+            "pattern": "\\S"
           },
           "evidence": {
-            "type": "string"
+            "type": "string",
+            "pattern": "\\S"
           }
         }
       }
@@ -34,10 +36,12 @@
         "additionalProperties": false,
         "properties": {
           "claim": {
-            "type": "string"
+            "type": "string",
+            "pattern": "\\S"
           },
           "evidence": {
-            "type": "string"
+            "type": "string",
+            "pattern": "\\S"
           }
         }
       }

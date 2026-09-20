@@ -48,7 +48,12 @@ import sys
 REQUIRED_KEYS = {"requirements", "gauntlet", "scope_ok", "unexpected_files"}
 REQUIREMENT_KEYS = {"id", "verdict", "note", "accepted"}
 GAUNTLET_KEYS = {"command", "sha", "exit_code", "output_tail"}
-VERDICTS = {"CONFORMS", "DEVIATED", "MISSING"}
+VERDICTS = {"CONFORMS", "DEVIATED", "MISSING", "UNVERIFIABLE"}
+SHA_RE = re.compile(r"^[0-9a-f]{7,40}$")
+# Mirrors skills/workflow/idea-audit/scripts/check-citations.py's CITATION_RE
+# exactly (M3, harness gap-audit 2026-09-20) -- one regex, not worth a
+# cross-skill-directory import for.
+CITATION_RE = re.compile(r"`[^`]+`|[^\s:`]*[./][^\s:`]*:\d+")
 
 
 def mask_json_spans(text):
@@ -125,6 +130,12 @@ def validate(obj):
         if r["verdict"] == "DEVIATED":
             if not isinstance(accepted, bool):
                 return False, f"requirements[{idx}] is DEVIATED but 'accepted' is not a boolean: {r!r}"
+            # M3 (harness gap-audit, 2026-09-20): a sanctioned deviation needs
+            # real evidence it was actually checked, not just asserted --
+            # same citation shape idea-audit's check-citations.py enforces.
+            if accepted is True and not CITATION_RE.search(r["note"]):
+                return False, (f"requirements[{idx}] is DEVIATED and accepted but 'note' has no "
+                                f"citation shape (backticked command, or path:line): {r!r}")
         elif accepted is not None:
             return False, f"requirements[{idx}] is {r['verdict']} but 'accepted' is not null: {r!r}"
 
@@ -134,6 +145,10 @@ def validate(obj):
     if not isinstance(gauntlet.get("command"), str) or not isinstance(gauntlet.get("sha"), str) \
             or not isinstance(gauntlet.get("output_tail"), str):
         return False, f"gauntlet.command/sha/output_tail must be strings: {gauntlet!r}"
+    if not gauntlet["command"].strip() or not gauntlet["output_tail"].strip():
+        return False, f"gauntlet.command/output_tail must not be blank: {gauntlet!r}"
+    if not SHA_RE.match(gauntlet["sha"]):
+        return False, f"gauntlet.sha is not a 7-40 char lowercase hex commit SHA: {gauntlet['sha']!r}"
     if not isinstance(gauntlet.get("exit_code"), int) or isinstance(gauntlet.get("exit_code"), bool):
         return False, f"gauntlet.exit_code must be an integer: {gauntlet!r}"
 
@@ -158,6 +173,16 @@ def compute_pass(obj):
 
 
 def main():
+    # M5 (harness gap-audit, 2026-09-20): the pinned SHA the orchestrating
+    # skill generated for the detached worktree (compliance-audit/SKILL.md
+    # Phase 1.4) is the only source of truth -- this script never derives
+    # one itself (it runs on the host tree, not inside the pinned worktree,
+    # so a `git rev-parse HEAD` here would be the wrong ref). Optional
+    # positional arg, not required, so existing callers/tests without a
+    # pinned SHA to check against keep working unchanged.
+    args = [a for a in sys.argv[1:] if a != "--selftest"]
+    expected_sha = args[0] if args else None
+
     text = sys.stdin.read()
     match = re.search(r"NEEDS-DECISION\b.*", mask_json_spans(text))
     if match:
@@ -167,6 +192,11 @@ def main():
     candidates = extract_valid_candidates(text)
     if len(candidates) == 1:
         result = dict(candidates[0])
+        if expected_sha is not None and result["gauntlet"]["sha"] != expected_sha:
+            print(f"check-verdict: rejected — gauntlet.sha {result['gauntlet']['sha']!r} does not "
+                  f"match the pinned SHA {expected_sha!r} the orchestrating skill generated",
+                  file=sys.stderr)
+            return 1
         result["pass"] = compute_pass(result)
         json.dump(result, sys.stdout, indent=2)
         print()
@@ -203,9 +233,10 @@ def _selftest():
     good = json.dumps({
         "requirements": [
             {"id": "R1", "verdict": "CONFORMS", "note": "", "accepted": None},
-            {"id": "R2", "verdict": "DEVIATED", "note": "renamed field", "accepted": True},
+            {"id": "R2", "verdict": "DEVIATED", "note": "renamed field, see `git diff HEAD~1 -- foo.py`",
+             "accepted": True},
         ],
-        "gauntlet": {"command": "bash gauntlet.sh", "sha": "abc123", "exit_code": 0, "output_tail": "ok"},
+        "gauntlet": {"command": "bash gauntlet.sh", "sha": "abc1234", "exit_code": 0, "output_tail": "ok"},
         "scope_ok": True,
         "unexpected_files": [],
     })
@@ -285,6 +316,61 @@ def _selftest():
     code, out, err = run(json.dumps(citing))
     parsed = json.loads(out)
     assert code == 0 and parsed["pass"] is True, (code, out, err)
+
+    # M3 (harness gap-audit, 2026-09-20): an accepted deviation needs a real
+    # citation in its note, not just an assertion that it was fine.
+    accepted_no_citation = json.loads(good)
+    accepted_no_citation["requirements"][1]["note"] = "renamed field, looked fine to me"
+    code, out, err = run(json.dumps(accepted_no_citation))
+    assert code == 1 and "no citation shape" in err, (code, out, err)
+
+    # M4: UNVERIFIABLE is a real verdict value and never passes on its own,
+    # same as MISSING.
+    unverifiable = json.loads(good)
+    unverifiable["requirements"].append({"id": "R3", "verdict": "UNVERIFIABLE", "note": "", "accepted": None})
+    code, out, err = run(json.dumps(unverifiable))
+    parsed = json.loads(out)
+    assert code == 0 and parsed["pass"] is False, (code, out, err)
+
+    # UNVERIFIABLE with a stray non-null accepted is rejected, same as CONFORMS/MISSING.
+    unverifiable_bool = json.loads(good)
+    unverifiable_bool["requirements"].append({"id": "R3", "verdict": "UNVERIFIABLE", "note": "", "accepted": True})
+    code, out, err = run(json.dumps(unverifiable_bool))
+    assert code == 1 and "accepted" in err, (code, out, err)
+
+    # M5: gauntlet.sha must be a real commit SHA shape, not an arbitrary string.
+    bad_sha = json.loads(good)
+    bad_sha["gauntlet"]["sha"] = "not-a-sha"
+    code, out, err = run(json.dumps(bad_sha))
+    assert code == 1 and "commit SHA" in err, (code, out, err)
+
+    # M5: blank gauntlet.command/output_tail are schema-valid non-empty-type
+    # but carry no content.
+    blank_command = json.loads(good)
+    blank_command["gauntlet"]["command"] = "   "
+    code, out, err = run(json.dumps(blank_command))
+    assert code == 1 and "must not be blank" in err, (code, out, err)
+
+    # M5: the orchestrating skill's pinned SHA is the source of truth -- a
+    # verifier reporting a different SHA (stale worktree, wrong checkout) is
+    # rejected even though its own object is otherwise schema-valid.
+    def run_with_argv(text, argv_tail):
+        buf_out, buf_err = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(buf_out), contextlib.redirect_stderr(buf_err):
+            old_stdin, old_argv = sys.stdin, sys.argv
+            sys.stdin = io.StringIO(text)
+            sys.argv = ["check-verdict.py"] + argv_tail
+            try:
+                code = main()
+            finally:
+                sys.stdin, sys.argv = old_stdin, old_argv
+        return code, buf_out.getvalue(), buf_err.getvalue()
+
+    code, out, err = run_with_argv(good, ["deadbeef0"])
+    assert code == 1 and "does not match the pinned SHA" in err, (code, out, err)
+
+    code, out, err = run_with_argv(good, ["abc1234"])
+    assert code == 0 and json.loads(out)["pass"] is True, (code, out, err)
 
     print("check-verdict.py (compliance-audit) selftest ok")
 

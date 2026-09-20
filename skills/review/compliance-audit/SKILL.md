@@ -32,7 +32,9 @@ exists; this audits the diff after.
   verifier also confirms is *justified*; one only you listed, with no sanctioning text or
   citable sign-off, is not accepted just because you said so first.
 - **Per-item verdict, not a blended score.** Compliance is a checklist of booleans (CONFORMS /
-  DEVIATED / MISSING), not a graded quality signal. Report the open count, not a percentage.
+  DEVIATED / MISSING / UNVERIFIABLE — the last for a requirement the gauntlet genuinely can't
+  exercise, e.g. it needs a live external service; never used to paper over a verifier that
+  didn't try), not a graded quality signal. Report the open count, not a percentage.
 - **`pass` is never true on requirements alone.** It requires every requirement CONFORMS or is an
   *accepted* DEVIATED, **and** the gauntlet exits 0, **and** `scope_ok` is true. A gauntlet that
   can't be run (missing tool, timeout) is a failure to verify, never a skip-therefore-pass.
@@ -100,14 +102,19 @@ must discover independently, then get an independent answer from a different mod
    `/codex:review`/`/codex:adversarial-review`.
    - **Validate before trusting, on both paths.** Pipe the verifier's raw output (the
      `--output-last-message` file's contents on the Codex path; the agent's final message text on
-     the Claude-fallback path) through `scripts/check-verdict.py`. Exit 0 = exactly one
-     schema-valid verdict, with `pass` computed by the script itself (never read from the
-     verifier's own claim — this repeats deep-audit's "no hand sum ever reaches the output"
-     guarantee for this skill's own `pass` rule in Core Principles). Exit 2 = the verifier
-     returned `NEEDS-DECISION` instead of guessing — a valid non-guess, surface it to the
-     operator. Exit 1 = malformed or ambiguous output; retry the dispatch once before treating it
-     as "cannot verify" (`scope_ok: false`) — a rejected verdict must never reach Phase 3's
-     report as if it were ground truth.
+     the Claude-fallback path) through `scripts/check-verdict.py <pinned-sha>` — the pinned SHA
+     generated in step 1.4 is the script's *only* source of truth for cross-checking
+     `gauntlet.sha` (the script never derives one itself; it runs on the host tree, not inside
+     the pinned worktree, so a `git rev-parse HEAD` there would be the wrong ref). A verifier
+     reporting a different SHA (stale worktree, wrong checkout) is rejected even if its object is
+     otherwise schema-valid. Exit 0 = exactly one schema-valid verdict at the right SHA, with
+     `pass` computed by the script itself (never read from the verifier's own claim — this
+     repeats deep-audit's "no hand sum ever reaches the output" guarantee for this skill's own
+     `pass` rule in Core Principles). Exit 2 = the verifier returned `NEEDS-DECISION` instead of
+     guessing — a valid non-guess, surface it to the operator. Exit 1 = malformed, ambiguous, or
+     SHA-mismatched output; retry the dispatch once before treating it as "cannot verify"
+     (`scope_ok: false`) — a rejected verdict must never reach Phase 3's report as if it were
+     ground truth.
    - **Sandbox contract**: `workspace-write`, scoped *only* to the disposable worktree — never
      the shared main tree. This repo's own gauntlet writes (`python3 -m py_compile` leaves
      `__pycache__` next to tracked `.py` files, plus its own log dir) — `read-only` would be
@@ -157,9 +164,12 @@ must discover independently, then get an independent answer from a different mod
      re-verification — the same crux this file names).
    - The verifier returns, per requirement: **CONFORMS** / **DEVIATED** (state what changed, and
      whether the justification is *accepted* — sanctioned by the plan/requirement text itself, or
-     citable sign-off, not merely restated from the pre-declared list) / **MISSING**. Plus: the
-     exact gauntlet command run, the SHA tested, its exit code, and its **verbatim output or
-     tail** — never a summary; losing this loses the property the agent was kept around for.
+     a **citable** sign-off, e.g. a backticked command or `path:line` — `check-verdict.py`
+     mechanically rejects an *accepted* DEVIATED whose `note` is bare prose, not merely restated
+     from the pre-declared list) / **MISSING** / **UNVERIFIABLE** (the gauntlet genuinely cannot
+     exercise this requirement — never a substitute for actually trying). Plus: the exact
+     gauntlet command run, the SHA tested, its exit code, and its **verbatim output or tail** —
+     never a summary; losing this loses the property the agent was kept around for.
    - Escape hatch only, for genuinely large/multi-repo plans: fan out up to Rule 13's 5-per-wave
      cap, one verifier per natural boundary. Not the default — the common case (single-repo,
      single-phase) stays at exactly one verifier.

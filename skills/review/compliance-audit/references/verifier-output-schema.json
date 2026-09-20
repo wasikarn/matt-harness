@@ -19,7 +19,7 @@
           },
           "verdict": {
             "type": "string",
-            "enum": ["CONFORMS", "DEVIATED", "MISSING"]
+            "enum": ["CONFORMS", "DEVIATED", "MISSING", "UNVERIFIABLE"]
           },
           "note": {
             "type": "string"
@@ -36,16 +36,19 @@
       "additionalProperties": false,
       "properties": {
         "command": {
-          "type": "string"
+          "type": "string",
+          "pattern": "\\S"
         },
         "sha": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,40}$"
         },
         "exit_code": {
           "type": "integer"
         },
         "output_tail": {
-          "type": "string"
+          "type": "string",
+          "pattern": "\\S"
         }
       }
     },

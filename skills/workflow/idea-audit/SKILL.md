@@ -196,13 +196,26 @@ operator's home directory; `docs/research/` is the one directory where this repo
 hardcoded-path hooks (`git-hooks/pre-commit`, `scripts/run-gauntlet.sh`) deliberately don't
 scan — this skill is its own backstop against that leak, not the repo's hooks (see Phase 4).
 
-**Accept the result only if:** `codex exec` exits 0; the output file parses against the schema
-with `pass`, `findings[]`, and **`checked[]`** all present, each finding's `summary`/`evidence`
-present and each `checked[]` item's `claim`/`evidence` present; the result shows real findings or
-an explicit, legitimate zero-findings pass — not a refusal in prose.
+**Accept the result only if:** `codex exec` exits 0 and the `--output-last-message` file's raw
+text validates through `scripts/check-verdict.py` (stdin: that file's contents; mirrors
+`mh:deep-audit`'s own `check-verdict.py`, adapted to this skill's 3-key `{pass, findings[],
+checked[]}` contract — no `scope_ok`/`unexpected_files`, this attacker never touches the repo):
+
+```
+python3 skills/workflow/idea-audit/scripts/check-verdict.py < <output-last-message file>
+```
+
+Exit 0 = exactly one schema-valid verdict (printed to stdout as JSON, pipe that into the
+citation check next); exit 1 = malformed, rejected, or ambiguous — route to the fallback
+triggers below; exit 2 = a genuine `NEEDS-DECISION` escalation, also routed to the fallback
+triggers. This is the same script and contract the Claude-fallback path uses (below) — the
+result shows real findings or an explicit, legitimate zero-findings pass, never a refusal in
+prose that merely happens to parse as JSON.
 **Schema presence is not the same as a real citation** — `additionalProperties: false` on each
-finding/checked item stops a stray field, not a hand-wavy `evidence` string. After parsing, pipe
-the parsed object through `scripts/check-citations.py` (stdin: the JSON object) — it mechanically
+finding/checked item stops a stray field, not a hand-wavy `evidence` string, and
+`check-verdict.py` rejects a blank (whitespace-only) `summary`/`evidence`/`claim` outright. After
+`check-verdict.py` exits 0, pipe its stdout (the parsed, already-validated object) through
+`scripts/check-citations.py` (stdin: the JSON object) — it mechanically
 checks every `evidence` value (in both `findings[]` and `checked[]`) against a citation shape (a
 `path:line`, a backticked command, or a grep-result excerpt); this is no longer a by-eye check.
 Exit 0 = every citation is real; exit 1 = stderr names each failing item, which is treated the
@@ -213,17 +226,22 @@ schema-valid and indistinguishable from an attacker that was told (by injected s
 otherwise) to skip verification and just report clean — the empty `findings[]` array gives nothing
 for the citation-shape check above to even run against. `checked[]` requires at least one
 independently-verified claim, with a real citation, **regardless of `pass`/`findings`** — a `pass`
-whose `checked[]` is missing or empty is rejected outright and routed to the fallback triggers
-below, same as a schema mismatch.
+whose `checked[]` is missing or empty is rejected outright by `check-verdict.py` (exit 1) and
+routed to the fallback triggers below, same as a schema mismatch.
 
 **Fallback triggers (all seven — not just rate-limit):** non-zero exit, empty/malformed output, a
-schema mismatch, timeout, auth failure, a missing/empty `checked[]` (the semantic-refusal case is
-now mechanically detectable via this field, not just inferred from prose), or any other semantic
-refusal not caught by the schema. On any of these: fall back to `general-purpose`, carrying
+schema mismatch, timeout, auth failure, a missing/empty `checked[]` (mechanically detected by
+`check-verdict.py`'s exit 1, not just inferred from prose), or any other semantic refusal not
+caught by the schema. On any of these: fall back to `general-purpose`, carrying
 `references/attacker-brief.md` as its full prompt — **not** `mh:plan-reviewer`, which hard-stops
 when handed a summary rather than a plan artifact (`agents/plan-reviewer.md`). Note "independence
 is lost for that pass," matching `docs/reference/codex-integration-map.md`'s established fallback
 wording exactly (the map's own idea-audit row should carry the same phrase — cross-check it).
+On this fallback path there is no `--output-last-message` file and no `--output-schema` — pipe
+the fallback agent's raw final message to the same `scripts/check-verdict.py` (stdin: the raw
+text, not a pre-parsed object; it scans for the JSON itself, same as the Codex path's file
+contents) before the citation check, exactly as `mh:deep-audit`'s own fallback path does with its
+own copy of this script.
 **The Agent tool has no per-invocation `disallowedTools`** — that field exists only in an
 agent file's frontmatter, and the fallback is a `general-purpose` dispatch, so the fallback keeps
 every tool including `Bash` (unlike the Codex primary, it has no sandbox); a write is only
@@ -361,6 +379,9 @@ Python `os.remove`).
   required and non-empty even on a clean pass — see Phase 2's vacuous-pass note. **Load as
   `--output-schema <skill-dir>/references/attacker-output-schema.json` (absolute path) for the
   Codex dispatch.**
+- `scripts/check-verdict.py` — validates the Codex output file and the Claude-fallback agent's
+  raw final message against the schema above (mirrors `deep-audit`'s own `check-verdict.py`,
+  adapted to this skill's 3-key contract). Run on both paths before `check-citations.py`.
 
 No new agent `.md` files. `general-purpose` ×2 (Phase 1), `codex exec`/`general-purpose` ×1
 (Phase 2) — 3 agents per wave, well under Rule 13's cap of 5.

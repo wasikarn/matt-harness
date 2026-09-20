@@ -139,6 +139,8 @@ def validate(obj):
             return False, f"findings[{idx}] is not exactly {{summary, evidence}}: {f!r}"
         if not isinstance(f.get("summary"), str) or not isinstance(f.get("evidence"), str):
             return False, f"findings[{idx}].summary/evidence must be strings: {f!r}"
+        if not f["summary"].strip() or not f["evidence"].strip():
+            return False, f"findings[{idx}].summary/evidence must not be blank: {f!r}"
     if not isinstance(obj["checked"], list):
         return False, "'checked' is not a list"
     if len(obj["checked"]) == 0:
@@ -148,10 +150,18 @@ def validate(obj):
             return False, f"checked[{idx}] is not exactly {{claim, evidence}}: {c!r}"
         if not isinstance(c.get("claim"), str) or not isinstance(c.get("evidence"), str):
             return False, f"checked[{idx}].claim/evidence must be strings: {c!r}"
+        if not c["claim"].strip() or not c["evidence"].strip():
+            return False, f"checked[{idx}].claim/evidence must not be blank: {c!r}"
     if not isinstance(obj["unexpected_files"], list) or not all(
         isinstance(x, str) for x in obj["unexpected_files"]
     ):
         return False, "'unexpected_files' is not a list of strings"
+    # A checker can't self-report a clean pass over a run that touched the
+    # wrong scope -- scope_ok/unexpected_files are the host's own scope
+    # facts, not something the checker's opinion can override.
+    if obj["pass"] and (not obj["scope_ok"] or obj["unexpected_files"]):
+        return False, ("'pass' is true but scope_ok is false or unexpected_files is "
+                        "non-empty — an out-of-scope run cannot self-report a clean pass")
     return True, ""
 
 
@@ -244,6 +254,38 @@ def _selftest():
                                  "scope_ok": True, "unexpected_files": []})
     code, out, err = run(empty_checked)
     assert code == 1 and "'checked' is empty" in err, (code, out, err)
+
+    # M1 (harness gap-audit, 2026-09-20): pass:true can't override the host's
+    # own scope facts.
+    pass_true_scope_bad = json.dumps({"pass": True, "findings": [], "checked": checked,
+                                       "scope_ok": False, "unexpected_files": []})
+    code, out, err = run(pass_true_scope_bad)
+    assert code == 1 and "cannot self-report a clean pass" in err, (code, out, err)
+
+    pass_true_unexpected_files = json.dumps({"pass": True, "findings": [], "checked": checked,
+                                              "scope_ok": True, "unexpected_files": ["x.py"]})
+    code, out, err = run(pass_true_unexpected_files)
+    assert code == 1 and "cannot self-report a clean pass" in err, (code, out, err)
+
+    # pass:false is unaffected -- a legitimate failing run over the wrong
+    # scope must still be reportable as a failure, not a schema rejection.
+    pass_false_scope_bad = json.dumps({"pass": False, "findings": [], "checked": checked,
+                                        "scope_ok": False, "unexpected_files": []})
+    code, out, err = run(pass_false_scope_bad)
+    assert code == 0, (code, out, err)
+
+    # M6 (harness gap-audit, 2026-09-20): blank summary/evidence/claim strings
+    # are schema-valid non-empty-type but carry no content.
+    blank_finding = json.dumps({"pass": False, "findings": [{"summary": "  ", "evidence": "e"}],
+                                 "checked": checked, "scope_ok": True, "unexpected_files": []})
+    code, out, err = run(blank_finding)
+    assert code == 1 and "must not be blank" in err, (code, out, err)
+
+    blank_checked = json.dumps({"pass": True, "findings": [],
+                                 "checked": [{"claim": "c", "evidence": ""}],
+                                 "scope_ok": True, "unexpected_files": []})
+    code, out, err = run(blank_checked)
+    assert code == 1 and "must not be blank" in err, (code, out, err)
 
     # Narration echoing the return contract's own brace before the real JSON.
     echoed = ('Return {pass, findings[], checked[], scope_ok, unexpected_files[]} as '

@@ -48,6 +48,15 @@ NEEDS-DECISION does gate X still apply after the file was deleted?"
 assert_exit "escalation not misclassified as malformed by unrelated JSON prose" 2 'the config block looks like {"timeout": 30} in one place and {"timeout": 60} in another.
 NEEDS-DECISION which config value is the source of truth here?'
 
+# M1 (harness gap-audit, 2026-09-20): pass:true can't override the host's own scope facts.
+assert_exit "pass:true over scope_ok:false rejected" 1 '{"pass": true, "findings": [], "checked": '"$checked"', "scope_ok": false, "unexpected_files": []}'
+assert_exit "pass:true with non-empty unexpected_files rejected" 1 '{"pass": true, "findings": [], "checked": '"$checked"', "scope_ok": true, "unexpected_files": ["x.py"]}'
+assert_exit "pass:false over scope_ok:false still accepted (a legit failing run)" 0 '{"pass": false, "findings": [], "checked": '"$checked"', "scope_ok": false, "unexpected_files": []}'
+
+# M6: blank summary/evidence/claim strings are schema-valid non-empty-type but carry no content.
+assert_exit "blank findings.summary rejected" 1 '{"pass": false, "findings": [{"summary": "  ", "evidence": "e"}], "checked": '"$checked"', "scope_ok": true, "unexpected_files": []}'
+assert_exit "blank checked.evidence rejected" 1 '{"pass": true, "findings": [], "checked": [{"claim": "c", "evidence": ""}], "scope_ok": true, "unexpected_files": []}'
+
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ] && echo "PASS: test-deep-audit-check-verdict"
 exit "$fail"
