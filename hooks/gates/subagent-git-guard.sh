@@ -8,6 +8,14 @@
 # non-force verbs, for subagents. Coarse pattern match, not a sandbox: quote-
 # splitting or substitution of the word "git" itself is a non-goal, and a
 # heredoc BODY line starting with "git stash" over-blocks (no heredoc parsing).
+#
+# No bash-level fast path on the agent_id key (2026-09-20 audit, same GH #154
+# gap already fixed in subagent-spawn-guard.sh): a raw-text substring check
+# ran before any JSON parsing and could be bypassed by writing that key with
+# a JSON unicode escape instead of a literal underscore -- valid JSON, same
+# decoded key, but absent from the raw text the substring check saw --
+# live-confirmed. Every payload now always reaches python3, matching the
+# sibling gates' convention.
 set -uo pipefail
 
 # Portability guard (#93): announced fail-open when python3 is missing.
@@ -16,9 +24,7 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 0
 fi
 
-# Fast path: main-session calls (no agent_id) never reach python.
 _input=$(cat)
-case "$_input" in *'"agent_id"'*) ;; *) exit 0 ;; esac
 
 _py="$(dirname "$0")/subagent-git-guard.py"
 if [ ! -r "$_py" ]; then

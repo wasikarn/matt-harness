@@ -147,6 +147,54 @@ out=$(payload_edit "$TESTFILE" 'check() {
 ok=1; is_ask "$out" && ok=0
 check "Edit redefining the check() oracle to a no-op -> ask" "$ok"
 
+# --- Positive: 2026-09-20 audit -- FUNC_BLOCK_RE's .search() only ever found
+# the FIRST check(){...} definition, so a SECOND definition appended after a
+# real one shadowed it at runtime (bash executes whichever was defined most
+# recently) while the diff kept comparing against the untouched first one --
+# a live, confirmed bypass. The fix takes the LAST definition found. ---
+# old_string/new_string must carry the WHOLE original check() block in both
+# (same shape as the "redefining check()" test above): the ORIGINAL, real
+# definition stays byte-identical, and new_string appends a SECOND, no-op
+# definition after it. Bash executes whichever was defined most recently, so
+# the second definition is the one that actually runs -- but the old
+# .search()-based regex only ever found the FIRST match, comparing the
+# unchanged real body against itself and missing the shadowing no-op
+# entirely (a live, confirmed bypass). The fix takes the LAST definition.
+out=$(payload_edit "$TESTFILE" 'check() {
+  [ "$2" = 0 ] && pass=$((pass + 1)) || fail=$((fail + 1))
+}' 'check() {
+  [ "$2" = 0 ] && pass=$((pass + 1)) || fail=$((fail + 1))
+}
+check() {
+  pass=$((pass + 1))
+}' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" && ok=0
+check "Edit appending a SECOND, shadowing no-op check() def -> ask (was silently missed by .search()'s first-match-only)" "$ok"
+
+# --- Positive: 2026-09-20 audit -- a decoy nested '{ ... }' block whose own
+# closing brace sits alone on its own line (e.g. an anonymous command group)
+# truncated the old non-greedy '.*?' regex at that FIRST bare '}' line, so
+# the diff never saw the real assertion logic sitting after the decoy -- a
+# live, confirmed bypass. old_string/new_string must carry the WHOLE
+# check(){...} block (this gate diffs Edit's old_string/new_string directly,
+# not the file on disk -- same shape as the "redefining check()" test above),
+# both containing the identical decoy but differing only in the real logic
+# after it. The fix walks brace depth to find the function's REAL closing
+# brace, so it must still see that difference. ---
+out=$(payload_edit "$TESTFILE" 'check() {
+  {
+    :
+  }
+  [ "$2" = 0 ] && pass=$((pass + 1)) || fail=$((fail + 1))
+}' 'check() {
+  {
+    :
+  }
+  pass=$((pass + 1))
+}' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" && ok=0
+check "Edit weakening real logic after a decoy nested brace -> ask (was silently truncated past by the old non-greedy regex)" "$ok"
+
 # --- Positive: deleting the final exit-gate line is invisible to a
 # call-site diff, but it is the line that turns an accumulated fail count
 # into the script's actual exit code -- this repo's own tests (including

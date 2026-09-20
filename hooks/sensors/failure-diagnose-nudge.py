@@ -7,11 +7,14 @@ version, not PostToolUse (confirmed live, deep-audit 2026-09-07) -- a
 PostToolUse registration would only ever see successful calls (exit_code 0),
 so it was dropped rather than kept as an always-no-op.
 
-Capped at 3 nudges per distinct failing command per session (METHODOLOGY
-Rule 13's bounded-retry doctrine: "stop after 3 rounds, the fault is then in
-the plan, not the unit") via a small session-scoped counter file -- the fleet's
-first stateful hook, deliberately narrow in scope: a local rate-limit on one
-advisory nudge, not a cross-agent orchestration layer.
+Capped at 1 nudge per distinct failing command per session (tightened from an
+earlier 3-per-signature cap in v1.1.55; this docstring drifted stale until the
+2026-09-20 audit caught it) via a small session-scoped counter file -- the
+fleet's first stateful hook, deliberately narrow in scope: a local rate-limit
+on one advisory nudge, not a cross-agent orchestration layer. Still framed by
+METHODOLOGY Rule 13's bounded-retry doctrine ("stop after 3 rounds, the fault
+is then in the plan, not the unit") even though the nudge's own cap is
+tighter than that number.
 
 Fires on every non-zero exit (no denylist of "worth nudging on" patterns) --
 a deliberate first cut, narrowing to specific failure shapes is left for a
@@ -87,7 +90,8 @@ def locked(state_path):
     # separate, uncoordinated file opens -- two Bash calls completing close
     # together (a backgrounded one finishing near a foreground one) could
     # interleave their read-modify-write and lose an increment, letting the
-    # 3-per-signature cap under- or over-count. flock on a sibling .lock file
+    # per-signature CAP (see module docstring for its current value) under-
+    # or over-count. flock on a sibling .lock file
     # (not state_path itself, so a reader never blocks on the writer's own
     # rename/truncate) serializes the whole load+save critical section across
     # processes. Advisory-only feature: a lock that can't be acquired (no

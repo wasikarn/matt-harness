@@ -167,8 +167,39 @@ def _mid_merge():
 # as this file's other documented one-level-only unwraps.
 # ponytail: `cat <<EOF | bash` bodies are stripped as inert and not scanned,
 # add heredoc-body scanning if a nested-spawn bypass via heredoc is ever demonstrated.
+#
+# 2026-09-20 audit: a prefix wrapper (env/command/sudo/nice/nohup/time, singly
+# or chained -- "env sudo claude -p x") sat between the anchor and "claude"
+# with nothing to match it, so the anchor never fired and the deny below
+# never ran -- live-confirmed. A bare `\claude` (backslash suppresses alias
+# lookup in real bash; the command itself is unaffected) had the same gap.
+#
+# Fix: an allowance matched against this file's own PREFIX_WRAPPERS word list
+# (below), not a generic "any token" skip -- a generic skip was tried first
+# and reverted: it made this anchor match `claude` wherever it next appeared,
+# including deep inside an unrelated command's quoted argument (broke the
+# existing `git commit -m "mention claude -p in docs"` -> ALLOW regression
+# test in tests/hooks/test-gates.sh, since this anchor runs on the raw
+# command text, not the quote-masked string subagent-git-guard.py's sibling
+# anchor uses). Matching only real wrapper WORDS keeps that same precision:
+# "git", "commit", "-m", or a quoted-string token never satisfy the
+# alternation, so an anchor attempt from string-start still requires
+# "claude" immediately, exactly as before this fix.
+#
+# Bounded on BOTH axes (chain depth <= 3, flags-per-wrapper <= 3) rather than
+# `*`-repeated: `(?:(?:sudo|env)\s+(?:\S+\s+)*)*` nests two unbounded
+# quantifiers over overlapping content (a wrapper word also matches the
+# inner generic token), a classic catastrophic-backtracking shape on a long
+# non-matching line. Two small fixed bounds have no such ambiguity. Three
+# chained wrappers with three flags each covers realistic cases
+# ("env -u X FOO=bar sudo nice -n 10 claude -p x"); a longer chain is a
+# documented, narrow non-goal, not a silent gap -- widen the bounds if one is
+# ever demonstrated.
+PREFIX_WRAPPERS = ("env", "command", "nohup", "nice", "time", "sudo")
+_WRAPPER_PREFIX = r"(?:(?:" + "|".join(PREFIX_WRAPPERS) + r")\s+(?:\S+\s+){0,3}){0,3}"
 _SPAWN_ANCHOR_RE = re.compile(
-    r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(?:\S*/)?claude(?![-\w./])",
+    r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX +
+    r"\\?(?:\S*/)?claude(?![-\w./])",
     re.MULTILINE,
 )
 _SPAWN_FLAG_RE = re.compile(r"-p\b|--print\b|--agent\b|--bg\b|--worktree\b")
@@ -245,7 +276,7 @@ def _nested_spawn(c):
             return True
     return False
 
-if d.get("agent_id") and _nested_spawn(cmd):
+if ("agent_id" in d) and _nested_spawn(cmd):
     print("[mh:gate] BLOCKED: a subagent may not spawn a nested Claude Code session via Bash "
           "(claude -p/--print/--agent/--bg/--worktree) -- only the main session dispatches",
           file=sys.stderr)
@@ -564,7 +595,7 @@ def _unwrap_shell(argv0, rest):
         body = " ".join(rest)
     if not body:
         return
-    if d.get("agent_id") and _nested_spawn(body):
+    if ("agent_id" in d) and _nested_spawn(body):
         deny("a subagent may not spawn a nested Claude Code session via Bash "
              "(claude -p/--print/--agent/--bg/--worktree), inside bash -c / eval either "
              "-- only the main session dispatches")
@@ -609,7 +640,11 @@ for _wi, w in enumerate(windows):
     # env/nice/sudo take flags+values before the wrapped command; command/nohup/
     # time only take bare flags. Every flag test strips PH first: a disguised
     # flag ("env $(true)-u FOO") no longer starts with a dash otherwise.
-    PREFIX_WRAPPERS = {"env", "command", "nohup", "nice", "time", "sudo"}
+    # Shared with _SPAWN_ANCHOR_RE's wrapper allowance above (module-level
+    # PREFIX_WRAPPERS) -- one definition, not two independently-typed lists;
+    # a fix landing in one and not the other is exactly how the agent_id
+    # truthiness bug went unnoticed at 3 of 5 real call sites across two
+    # separate GH issues (2026-09-20 audit).
     while rest and argv0 in PREFIX_WRAPPERS:
         if argv0 == "env":
             i = 0
@@ -721,22 +756,56 @@ for _wi, w in enumerate(windows):
         if argv0 == "find" and any(t.replace(PH, "") == "-delete" for t in rest):
             deny("find -delete detected — destructive delete; " + delete_hint())
 
+        # 2026-09-20 audit: git accepts any unambiguous prefix of a long
+        # option ("--no-veri" for "--no-verify"); the exact-string checks
+        # below missed it -- live-confirmed to actually execute
+        # (--no-veri/--ha/--amen/--forc/--discard-ch/--del all ran for real).
+        # `git push --forc` is NOT exploitable this way: git itself rejects
+        # it as ambiguous with --force-with-lease/--force-if-includes, so
+        # the push check below is untouched.
+        def _is_flag(token, *long_forms):
+            # Checked only against the SPECIFIC long form(s) given at each
+            # call site below, never a global git-flag list -- so this
+            # cannot itself confuse "--force" with an unrelated flag.
+            # Confirmed safe against this file's own documented noisy
+            # neighbors (--find-renames, --format=fuller, --force-with-lease,
+            # --force-if-includes): none is a prefix of any long form checked
+            # here, and a longer arg can never satisfy long_form.startswith().
+            # len()>3 requires 2+ real characters after "--" (a bare "--"
+            # matches nothing). A false-positive abbreviation only costs an
+            # extra deny/confirmation -- the safe direction for this gate
+            # (operating-model.md's fail-closed principle).
+            return token.startswith("--") and len(token) > 3 and any(
+                lf.startswith(token) for lf in long_forms
+            )
+
         if argv0 == "git" and rest:
             # --no-verify skips pre-commit/pre-push hooks; checked per window (a
             # global check over `tokens` only saw the last line). Git-specific
             # so `echo "--no-verify"` does not false-positive.
-            if any(t.replace(PH, "") == "--no-verify" for t in w):
+            if any(_is_flag(t.replace(PH, ""), "--no-verify") for t in w):
                 deny("--no-verify bypasses safety hooks")
             # -c core.hooksPath=<path> (split or joined "-ccore.hooksPath=X")
             # re-points git at a different hooks dir -- same bypass as
             # --no-verify. Only a non-empty value trips it.
+            # Case-insensitive key match (git config keys are case-insensitive;
+            # `-c core.hookspath=` re-points hooks exactly like the canonical
+            # spelling, live-confirmed) -- only the KEY is lowercased for the
+            # comparison, the captured VALUE keeps its original case. The
+            # sibling `config` subcommand branch two arms below already does
+            # this; this arm predated it and was missed.
             hooks_path_val = None
             for idx, t in enumerate(w):
                 t_pf = t.replace(PH, "")
-                if t_pf == "-c" and idx + 1 < len(w) and w[idx + 1].startswith("core.hooksPath="):
-                    hooks_path_val = w[idx + 1].split("=", 1)[1]
-                elif t_pf.startswith("-c") and t_pf[2:].startswith("core.hooksPath="):
-                    hooks_path_val = t_pf[2:].split("=", 1)[1]
+                if t_pf == "-c" and idx + 1 < len(w):
+                    nxt = w[idx + 1]
+                    key, _, val = nxt.partition("=")
+                    if key.lower() == "core.hookspath" and val:
+                        hooks_path_val = val
+                elif t_pf.startswith("-c"):
+                    key, _, val = t_pf[2:].partition("=")
+                    if key.lower() == "core.hookspath" and val:
+                        hooks_path_val = val
             if hooks_path_val:
                 deny("-c core.hooksPath=<path> re-points git at a different hooks dir — same bypass as --no-verify")
             # Walk past leading global flags so ` git -C /repo push --force`
@@ -787,13 +856,14 @@ for _wi, w in enumerate(windows):
                 # wiring value `git-hooks` stays allowed.
                 if sub == "config" and any(t.lower() == "core.hookspath" for t in scan) and "git-hooks" not in scan:
                     deny("git config core.hooksPath rewires/disables the repo git hooks — only `git config core.hooksPath git-hooks` is allowed")
-                if sub == "reset" and "--hard" in scan:
+                if sub == "reset" and any(_is_flag(t, "--hard") for t in scan):
                     deny("git reset --hard discards uncommitted work — confirm with user first")
-                # SHORT bundled cluster counts per-character, LONG option only on
-                # exact "--force" (bare containment false-positived on
-                # "--find-renames" / "--format=fuller" under candidate duplication).
+                # SHORT bundled cluster counts per-character, LONG option via
+                # _is_flag's prefix match (bare containment false-positived on
+                # "--find-renames" / "--format=fuller" under candidate duplication --
+                # _is_flag is safe against both, see its own docstring above).
                 if sub == "clean" and any(
-                    t == "--force" or (t.startswith("-") and not t.startswith("--") and "f" in t)
+                    _is_flag(t, "--force") or (t.startswith("-") and not t.startswith("--") and "f" in t)
                     for t in scan
                 ):
                     deny("git clean -f deletes untracked files — confirm with user first")
@@ -828,20 +898,20 @@ for _wi, w in enumerate(windows):
                     1 if any(t in ("-b", "-B", "--orphan") for t in scan) else 0)
                 if sub == "checkout" and ("--" in scan or "." in scan or
                                             _co_nonflag >= 2 or
-                                            any(t in ("-f", "--force") or _bundled_force(t, ("b", "B")) for t in scan)):
+                                            any(t == "-f" or _is_flag(t, "--force") or _bundled_force(t, ("b", "B")) for t in scan)):
                     deny("git checkout -- / git checkout . / git checkout -f / git checkout <tree> <file> discards working-tree changes — confirm with user first")
-                if sub == "switch" and any(t in ("-f", "--force", "--discard-changes") or _bundled_force(t, ("c", "C")) for t in scan):
+                if sub == "switch" and any(t == "-f" or _is_flag(t, "--force", "--discard-changes") or _bundled_force(t, ("c", "C")) for t in scan):
                     deny("git switch --force discards working-tree changes — confirm with user first")
                 if sub == "branch" and (
                     any(t == "-D" or (t.startswith("-") and not t.startswith("--") and "D" in t) for t in scan)
-                    or ("--delete" in scan and "--force" in scan)
+                    or (any(_is_flag(t, "--delete") for t in scan) and any(_is_flag(t, "--force") for t in scan))
                 ):
                     deny("git branch -D / --delete --force force-deletes a branch, discarding unmerged commits — confirm with user first")
                 if sub == "stash" and args and args[0].replace(PH, "") in ("drop", "clear"):
                     deny("git stash drop/clear discards stashed changes — confirm with user first")
-                if sub == "commit" and "--amend" in scan:
+                if sub == "commit" and any(_is_flag(t, "--amend") for t in scan):
                     deny("git commit --amend rewrites history — confirm with user first")
-                if sub == "add" and any(t in ("-A", "--all", ".") for t in scan) and not _mid_merge():
+                if sub == "add" and any(t in ("-A", ".") or _is_flag(t, "--all") for t in scan) and not _mid_merge():
                     deny("git add -A/. stages everything — stage files by name instead "
                          "(allowed only while a merge is in progress, i.e. MERGE_HEAD exists)")
 

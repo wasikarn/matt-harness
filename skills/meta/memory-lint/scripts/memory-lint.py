@@ -649,8 +649,13 @@ def apply_action_plan(state, plan):
             supersedes_line = f"\n<!-- memory-lint: pointer collapsed {time.strftime('%Y-%m-%d')} (A3 trim) — see MEMORY.md -->\n"
             if supersedes_line.strip() not in topic_txt:
                 atomic_write(topic_path, topic_txt + supersedes_line)
-        except OSError:
-            pass
+        except OSError as e:
+            # 2026-09-20 audit: this secondary write staying best-effort is
+            # fine (the pointer collapse above already succeeded and is
+            # counted in applied["B"] regardless) -- what was missing is any
+            # signal that it didn't land, so a run's "B: N collapsed" count
+            # silently promised an annotation that never landed.
+            print(f"memory-lint: could not annotate {topic_path}: {e}", file=sys.stderr)
 
     # Class C — wikilink rewrites inside surviving files
     for entry in plan["C"]:
@@ -659,7 +664,12 @@ def apply_action_plan(state, plan):
         path = os.path.join(d, entry["file"])
         try:
             txt = open(path, encoding="utf-8").read()
-        except OSError:
+        except OSError as e:
+            # 2026-09-20 audit: a file present at plan time (dry-run) but
+            # gone/unreadable by apply time silently dropped its wikilink
+            # rewrite with no trace -- print_plan's earlier count and this
+            # run's real applied["C"] count would then quietly disagree.
+            print(f"memory-lint: skipping wikilink rewrite in {path}: {e}", file=sys.stderr)
             continue
         if entry["old"] in txt:
             new_txt = txt.replace(entry["old"], entry["new"])

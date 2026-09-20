@@ -64,6 +64,21 @@ def compare(path_a, path_b, label_a, label_b):
         return 1
 
     lines = [f"=== model-bench: {label_a} vs {label_b} ==="]
+    warnings = []
+    # 2026-09-20 audit: this module's own docstring calls these fields
+    # "always present." A .get(key, 0.0) default on a field that's actually
+    # missing (a schema drift, or a truncated/partial result file that still
+    # parses) silently reads as "this model scored 0" -- indistinguishable
+    # from a real zero score -- which could steer a model-selection decision.
+    # hard_fail_reasons() above already hard-fails on other malformed-result
+    # signals; a merely-missing field gets a WARN here instead, using the
+    # same warnings mechanism the comparability checks below already use.
+    for label, data in ((label_a, data_a), (label_b, data_b)):
+        agg = data.get("aggregates", {})
+        for key, holder in (("costUsd", data), ("overallScore", agg), ("overallPassRate", agg)):
+            if key not in holder:
+                warnings.append(f"{label}: '{key}' missing from result file — shown as 0.0 below, not a real score")
+
     for label, data in ((label_a, data_a), (label_b, data_b)):
         agg = data.get("aggregates", {})
         lines.append(
@@ -72,7 +87,6 @@ def compare(path_a, path_b, label_a, label_b):
             f"passRate={agg.get('overallPassRate', 0.0):.3f}"
         )
 
-    warnings = []
     if judge_model_display(suite_a) != judge_model_display(suite_b):
         warnings.append(
             f"judgeModel differs: {label_a}={judge_model_display(suite_a)} "

@@ -158,11 +158,39 @@ def exit_gate_lines(text):
 # (deep-audit 2026-08-28, confirmed live). Compares the function's full
 # body text, not just its definition line, so a reformatted-but-unchanged
 # body does not false-positive.
-FUNC_BLOCK_RE = re.compile(r"^\s*(?:function\s+)?check\s*\(\s*\)\s*\{(.*?)^\s*\}", re.MULTILINE | re.DOTALL)
+#
+# 2026-09-20 audit: the single-regex version above (`.*?` non-greedy up to
+# the first bare "}" line) was defeatable two ways, both confirmed live:
+# (1) a SECOND `check(){...}` definition appended after the real one --
+# bash executes whichever was defined most recently, but `.search()` only
+# ever sees the FIRST match, so a shadowing no-op redefinition was invisible.
+# (2) a decoy nested `{ ... }` block inside the real body (e.g.
+# `if ...; then { ...; }; fi`) whose own closing `}` sits on its own line --
+# the non-greedy capture stopped THERE, hiding a real weakening placed
+# after it in the same function. Fix: a brace-depth-aware scan (not a
+# single regex) that finds each `check ( ) {` opening, then counts `{`/`}`
+# to its real matching close, and returns the LAST such definition (bash's
+# own resolution order) instead of the first.
+FUNC_OPEN_RE = re.compile(r"^\s*(?:function\s+)?check\s*\(\s*\)\s*\{", re.MULTILINE)
 
 def check_helper_body(text):
-    m = FUNC_BLOCK_RE.search(text)
-    return m.group(1) if m else None
+    # ponytail: plain character counting, not quote-aware -- a literal "}"
+    # inside a quoted string in check()'s own body would end the scan early,
+    # the same class of limitation this file already accepts elsewhere for
+    # single-level unwraps. No bypass via that path is demonstrated; widen
+    # this to a real tokenizer if one is.
+    last = None
+    for m in FUNC_OPEN_RE.finditer(text):
+        depth, i, start = 1, m.end(), m.end()
+        while i < len(text) and depth > 0:
+            if text[i] == "{":
+                depth += 1
+            elif text[i] == "}":
+                depth -= 1
+            i += 1
+        if depth == 0:
+            last = text[start:i - 1]
+    return last
 
 def weakened(old_text, new_text):
     removed_assert = assertion_lines(old_text) - assertion_lines(new_text)
@@ -211,7 +239,21 @@ try:
             with open(path, "r", encoding="utf-8", errors="replace") as f:
                 old_text = f.read()
         except Exception:
-            sys.exit(0)  # cannot read the old side — nothing to compare, allow
+            # 2026-09-20 audit: this used to be a silent `sys.exit(0)` (allow)
+            # -- directly contradicting the outer handler seven lines below,
+            # which fails toward asking on the identical class of problem
+            # ("cannot classify this edit"). A permission error, a directory
+            # at this path, or a TOCTOU race with the os.path.exists() check
+            # above all landed here and let a Write that guts a test's
+            # assertions through with zero signal -- exactly the case this
+            # gate exists to catch (METHODOLOGY Rule 4). Match the outer
+            # handler's posture instead of the exact-opposite one.
+            emit_ask(
+                "test-integrity: could not read the existing " + path +
+                " to compare against this Write -- approve manually or deny.",
+                tool, session_id,
+            )
+            sys.exit(0)
         new_text = str(ti.get("content", ""))
         if weakened(old_text, new_text):
             emit_ask(reason(path), tool, session_id)

@@ -36,6 +36,26 @@ run_gate() { # run_gate <command> [agent_id]
   echo "$(payload "$1" "${2:-}")" | bash "$GATE" 2>/dev/null
 }
 
+# payload_forced_id <command> <agent_id_raw>: agent_id KEY always present,
+# even at "" or the literal __NULL__ (JSON null) -- payload() above treats a
+# falsy $2 as "omit the key" (main session shape), which cannot express
+# "key present but empty/null" (the same GH #154/#155 truthiness gap fixed
+# elsewhere: `if not agent_id` treats presence-with-empty/null as absence).
+payload_forced_id() {
+  python3 -c '
+import json, sys
+cmd, agent_id_raw = sys.argv[1], sys.argv[2]
+d = {"tool_name": "Bash", "tool_input": {"command": cmd}}
+d["agent_id"] = None if agent_id_raw == "__NULL__" else agent_id_raw
+d["agent_type"] = "general-purpose"
+print(json.dumps(d))
+' "$1" "$2"
+}
+
+run_gate_forced_id() { # run_gate_forced_id <command> <agent_id_raw>
+  echo "$(payload_forced_id "$1" "$2")" | bash "$GATE" 2>/dev/null
+}
+
 echo "=== subagent-git-guard gate ==="
 
 # --- (1) main session (no agent_id) is untouched, even for the exact
@@ -136,6 +156,24 @@ do
   check "sudo/xargs wrapper fixed, now denied: $cmd" "$ok"
 done
 
+# --- (8b) 2026-09-20 audit: the sudo/xargs wrapper fix above was single-level
+# and had a narrower wrapper vocabulary than irrecoverable.py's. A chained
+# wrapper (env sudo git ...) or a backslash-escaped \git bypassed the anchor
+# live, and the wrapper set didn't include env/command/nohup/nice/time. --- #
+for cmd in \
+  "env git stash" \
+  "env sudo git stash" \
+  "\git stash" \
+  "nohup git stash" \
+  "nice git stash" \
+  "time git stash" \
+  "command git stash"
+do
+  run_gate "$cmd" "agent1"; rc=$?
+  ok=1; [ "$rc" -eq 2 ] && ok=0
+  check "wrapper-chain bypass fixed, now denied: $cmd" "$ok"
+done
+
 # --- (9) missing re.MULTILINE fix (2026-09-04, verifier-found): a genuine
 # multi-line Bash command (heredoc/multi-line script) puts "git reset" at
 # the start of its OWN line, not absolute string offset 0 -- the old
@@ -158,6 +196,19 @@ check "false positive fixed: separator inside quotes no longer anchors" "$ok"
 run_gate 'echo "a; git stash"' "agent1"; rc=$?
 ok=1; [ "$rc" -eq 0 ] && ok=0
 check "false positive fixed: quoted prose with a git verb allowed" "$ok"
+
+# --- (10b) 2026-09-20 audit: agent_id truthiness bug -- an empty-string or
+# null agent_id (key present, value falsy) was treated as "not a subagent"
+# by `agent_id = d.get("agent_id"); if not agent_id: sys.exit(0)`, letting a
+# destructive git command through unguarded. Must deny like any other
+# subagent call. --- #
+run_gate_forced_id "git stash" ""; rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "agent_id truthiness bug: empty-string agent_id still denied" "$ok"
+
+run_gate_forced_id "git stash" "__NULL__"; rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "agent_id truthiness bug: JSON null agent_id still denied" "$ok"
 
 # --- (11) malformed/non-JSON stdin: fail-safe allow --- #
 out=$(echo "not json" | bash "$GATE" 2>/dev/null); rc=$?

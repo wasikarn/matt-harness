@@ -84,6 +84,13 @@ else
   bad "check-04 bad-bucket-whitespace-only fired warn=$WARN_FOUND (want exactly 1)"
 fi
 
+# Check 32: reviewer read-only invariant, bucket-field path. fleet-bad's
+# bad-reviewer.md already covers the name-substring path; this pair proves the
+# 2026-09-20 fix — an unmatched name with bucket: review/analysis must still
+# fire CRIT on a Write/Edit grant, and stay silent when read-only.
+expect_crit   32 check-32-bad-bucket
+expect_silent 32 check-32-good-bucket
+
 # Check 05: trigger-pattern clause. WARN when a routing-length description has
 # no "Use when" clause; silent at the desc_len==20 boundary.
 expect_warn   05 check-05-bad-no-trigger

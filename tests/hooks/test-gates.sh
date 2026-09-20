@@ -639,6 +639,14 @@ test_allow "$IRRECOVERABLE" "git config core.hooksPath git-hooks (documented wir
   "$(bash_payload 'git config core.hooksPath git-hooks')"
 test_allow "$IRRECOVERABLE" "git -c user.name= (benign -c config, must not over-block)" \
   "$(bash_payload 'git -c user.name=x commit -m y')"
+# 2026-09-20 audit: the -c branch did an exact-case startswith("core.hooksPath=")
+# check while the sibling `git config` branch two lines below already lowercased --
+# git itself treats the key case-insensitively, so a differently-cased key bypassed
+# this gate while still working as a real hook-path override.
+test_deny  "$IRRECOVERABLE" "git -c core.HOOKSPATH= (case-insensitive hookspath bypass, was silently ALLOWed)" \
+  "$(bash_payload 'git -c core.HOOKSPATH=/tmp/evil commit -m x')"
+test_deny  "$IRRECOVERABLE" "git -cCore.HooksPath= (joined form, mixed case, was silently ALLOWed)" \
+  "$(bash_payload 'git -cCore.HooksPath=/tmp/evil commit -m x')"
 # --- git branch force-delete: discards unmerged commits ---
 test_deny  "$IRRECOVERABLE" "git branch -D (force-delete short flag)" \
   "$(bash_payload 'git branch -D featurex')"
@@ -650,6 +658,34 @@ test_allow "$IRRECOVERABLE" "git branch newbranch (create, must not over-block)"
   "$(bash_payload 'git branch newbranch')"
 test_allow "$IRRECOVERABLE" "git branch featureD (name containing D, must not over-block)" \
   "$(bash_payload 'git branch featureD')"
+# 2026-09-20 audit: git accepts an unambiguous prefix of any long flag
+# (--no-veri for --no-verify, etc). Every exact-string `== "--force"`-style
+# check below was bypassed live by git's own long-option abbreviation feature.
+# push --force is deliberately NOT tested here: git rejects a shortened
+# --forc as ambiguous with --force-with-lease/--force-if-includes, so that
+# call site is confirmed non-exploitable and was left untouched by the fix.
+test_deny  "$IRRECOVERABLE" "git commit --no-veri (abbreviated --no-verify, was silently ALLOWed)" \
+  "$(bash_payload 'git commit --no-veri -m msg')"
+test_deny  "$IRRECOVERABLE" "git reset --ha (abbreviated --hard, was silently ALLOWed)" \
+  "$(bash_payload 'git reset --ha HEAD~1')"
+test_deny  "$IRRECOVERABLE" "git commit --amen (abbreviated --amend, was silently ALLOWed)" \
+  "$(bash_payload 'git commit --amen')"
+test_deny  "$IRRECOVERABLE" "git clean --forc (abbreviated --force, was silently ALLOWed)" \
+  "$(bash_payload 'git clean --forc')"
+test_deny  "$IRRECOVERABLE" "git branch --del --forc (abbreviated delete+force, was silently ALLOWed)" \
+  "$(bash_payload 'git branch --del --forc featurex')"
+test_deny  "$IRRECOVERABLE" "git switch --discard-ch (abbreviated --discard-changes, was silently ALLOWed)" \
+  "$(bash_payload 'git switch --discard-ch main')"
+test_deny  "$IRRECOVERABLE" "git add --al (abbreviated --all, was silently ALLOWed)" \
+  "$(bash_payload 'git add --al')"
+# Dangerous-direction control: the abbreviation helper must not itself start
+# denying git's own already-documented noisy neighbors (an ambiguous prefix
+# these long forms don't uniquely resolve to, or a flag never named in the
+# specific per-call-site long_forms list).
+test_allow "$IRRECOVERABLE" "git push --force-with-lease still allowed (prefix helper is call-site-scoped, not global)" \
+  "$(bash_payload 'git push --force-with-lease origin develop')"
+test_allow "$IRRECOVERABLE" "git diff --find-renames still allowed (unrelated long flag, not a --force/--hard/--amend prefix)" \
+  "$(bash_payload 'git diff --find-renames')"
 # --- fail-closed internal-error backstop: a payload that makes the
 # Python raise (command is a JSON array, not a string) must still exit 2, never fall open.
 test_deny  "$IRRECOVERABLE" "non-string command payload triggers the fail-closed backstop (exit 2, not fail-open)" \
@@ -742,6 +778,19 @@ test_allow "$IRRECOVERABLE" "subagent echoes the pattern as a string, not a real
   "$(bash_agent_payload 'echo "claude -p"' fork)"
 test_allow "$IRRECOVERABLE" "subagent greps for the pattern (auditing this gate itself)" \
   "$(bash_agent_payload 'grep -r "claude -p" docs/' fork)"
+# 2026-09-20 audit: _SPAWN_ANCHOR_RE required "claude" immediately after the
+# separator/VAR=val chain, with no allowance for a wrapper word -- env/sudo/
+# nohup/nice/time/command prefixes, chained or repeated, all bypassed it live.
+test_deny  "$IRRECOVERABLE" "subagent: env-wrapped claude -p (wrapper-prefix bypass, was silently ALLOWed)" \
+  "$(bash_agent_payload 'env claude -p "evil"' fork)"
+test_deny  "$IRRECOVERABLE" "subagent: chained sudo env claude -p (multi-level wrapper bypass, was silently ALLOWed)" \
+  "$(bash_agent_payload 'sudo env claude -p "evil"' fork)"
+test_deny  "$IRRECOVERABLE" "subagent: backslash-escaped \\claude -p (was silently ALLOWed)" \
+  "$(bash_agent_payload '\claude -p "evil"' fork)"
+test_deny  "$IRRECOVERABLE" "subagent: env with its own -u flag and a VAR=val before claude -p (was silently ALLOWed)" \
+  "$(bash_agent_payload 'env -u X FOO=bar claude -p "evil"' fork)"
+test_allow "$IRRECOVERABLE" "main session: env-wrapped claude -p (no agent_id — always allowed)" \
+  "$(bash_agent_payload 'env claude -p "evil"' '')"
 # A flat [^|;&]* scan treated any &/;/| as end-of-invocation even inside a quoted prompt, so a
 # spawn flag after a quoted separator evaded detection.
 test_deny  "$IRRECOVERABLE" "spawn hidden behind an ampersand inside a quoted prompt" \

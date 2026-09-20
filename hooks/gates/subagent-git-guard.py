@@ -30,9 +30,12 @@ if not isinstance(d, dict):
 if d.get("tool_name") != "Bash":
     sys.exit(0)
 
-# agent_id is present ONLY inside a subagent call.
-agent_id = d.get("agent_id")
-if not agent_id:
+# agent_id is present ONLY inside a subagent call. Presence, not truthiness --
+# an empty-string or null agent_id is still the signal (same fix already
+# applied to subagent-spawn-guard.py:38 (GH #154) and
+# task-complete-separation.py:57 (GH #155); this gate predated both and was
+# missed until the 2026-09-20 audit).
+if "agent_id" not in d:
     sys.exit(0)
 
 ti = d.get("tool_input")
@@ -85,13 +88,33 @@ def _mask_quotes(s):
 masked = _mask_quotes(cmd)
 
 # Anchor: "git" must sit at a real command-start (string/line start, |;&(, &&,
-# ||, optional VAR=val chain, optional sudo/xargs wrapper, or a /path/git).
+# ||, optional VAR=val chain, optional prefix wrapper(s), or a /path/git).
 # re.MULTILINE so each line of a multi-line command anchors. Runs on the masked
 # string, so `git commit -m "fix; git reset was wrong"` never anchors inside
 # the quotes.
+#
+# 2026-09-20 audit: the old wrapper allowance (`sudo`/`xargs` only, one level)
+# missed `env`/`command`/`nice` and a bare `\git` (backslash suppresses alias
+# lookup; the command itself is unaffected) -- live-confirmed to still reach
+# real git for a subagent. Fix: matched against a fixed wrapper-word list,
+# bounded on both chain depth and flags-per-wrapper (not `*`-repeated) --
+# `(?:(?:sudo|env|...)\s+(?:\S+\s+)*)*` nests two unbounded quantifiers over
+# overlapping content (a wrapper word also matches the inner generic token),
+# a catastrophic-backtracking shape on a long non-matching line; two small
+# fixed bounds have no such ambiguity. Matching only real wrapper WORDS
+# (never an arbitrary token) also means this can't skip over unrelated
+# content to anchor on a LATER, unrelated "git" -- moot here since this
+# anchor already runs on the quote-masked string (a wrapper word inside
+# quotes is masked to placeholder chars and can't match), but kept
+# consistent with irrecoverable.py's identical fix to its nested-spawn
+# anchor rather than relying on masking alone. `xargs` kept from the
+# original list (this file never runs its own xargs-unwrap, so the anchor
+# must still recognize it).
+_WRAPPER_WORDS = ("env", "command", "nohup", "nice", "time", "sudo", "xargs")
+_WRAPPER_PREFIX = r"(?:(?:" + "|".join(_WRAPPER_WORDS) + r")\s+(?:\S+\s+){0,3}){0,3}"
 _ANCHOR_RE = re.compile(
-    r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*"
-    r"(?:sudo\s+(?:\S+\s+)*|xargs\s+(?:\S+\s+)*)?(?:\S*/)?git\b",
+    r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX +
+    r"\\?(?:\S*/)?git\b",
     re.MULTILINE,
 )
 # Only stash/reset/clean (see header); read-only `stash list|show` carved out.

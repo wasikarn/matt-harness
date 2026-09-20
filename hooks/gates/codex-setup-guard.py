@@ -45,5 +45,9 @@ try:
         "(see CONTEXT.md, ADR-0001). Confirm this is intentional.",
         d.get("tool_name"), d.get("session_id"),
     )
-except Exception:
+except Exception as e:
+    # 2026-09-20 audit: observability only -- fail-open on a genuinely
+    # unexpected error is unchanged by design; the gap was zero diagnostic
+    # on that path, matching every sibling gate's parse-guard convention.
+    print(f"[mh:gate] codex-setup-guard: internal error, allowing ({e})", file=sys.stderr)
     sys.exit(0)

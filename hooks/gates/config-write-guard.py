@@ -122,5 +122,12 @@ try:
         "one of those keys). Confirm this is intentional.",
         tool, d.get("session_id"),
     )
-except Exception:
+except Exception as e:
+    # 2026-09-20 audit: observability only -- this stays fail-open by design
+    # (a pre-existing, intentional safety net for a genuinely unexpected
+    # error, per this gate's .sh wrapper header), not a change to the
+    # decision path. The gap was that a crash here produced zero diagnostic,
+    # indistinguishable from "nothing to ask about" -- every sibling gate's
+    # parse-guard already prints a stderr note for the same class of failure.
+    print(f"[mh:gate] config-write-guard: internal error, allowing ({e})", file=sys.stderr)
     sys.exit(0)
