@@ -4,7 +4,7 @@
 # audit.sh's fragment integrity guard catches LOST checks, not SILENT ones. Each
 # known-bad fixture below is paired with a clean one; the matching check must
 # FIRE on bad and stay SILENT on good. Per-check fixtures cover 04, 05, 20, 22, 28, 29, 54,
-# 70, 71, 72, 73, 74, 75; the fleet-bad / fleet-good pair covers the other seventeen with at
+# 70, 71, 72, 73, 74, 75, 76; the fleet-bad / fleet-good pair covers the other sixteen with at
 # least one defect per check (43 is driven by the env ceiling, not a planted defect).
 # check-73-bad-missing-command-field and check-73-bad-args-fingerprint-mismatch (below) are
 # deep-audit fixes, 2026-09-10: a Codex-primary fresh-context checker found the original check
@@ -206,6 +206,13 @@ expect_crit   74 check-74-bad-missing-file
 # describing it without that prefix must stay silent.
 expect_crit   75 check-75-bad-excluded-referenced
 expect_silent 75 check-75-good-clean
+
+# Check 76: measurement coverage status freshness (harness gap-audit M14,
+# 2026-09-20). Shallow on purpose -- WARN, not CRIT -- for the retired
+# harness-coverage mechanism's lazy replacement.
+expect_silent 76 check-76-good-populated
+expect_warn   76 check-76-bad-missing-row
+expect_warn   76 check-76-bad-file-missing
 
 # Fleet pair: every check without a per-check fixture. fleet-bad plants one defect per
 # check; fleet-good is a complete clean fleet and doubles as the fake plugin cache for
