@@ -38,6 +38,8 @@ def _validated(item_id, s):
             _die(f"'{item_id}'.{k} must be numeric, not bool: {v!r}")
         if isinstance(v, float) and not math.isfinite(v):
             _die(f"'{item_id}'.{k} must be finite: {v!r}")
+        if not (0 <= v <= 10):
+            _die(f"'{item_id}'.{k} must be in [0,10]: {v!r}")
     return s
 
 
@@ -50,7 +52,10 @@ def rank(payload):
         i: round(s["novelty"] * W[0] + s["viability"] * W[1] + s["fit"] * W[2], 2)
         for i, s in scores.items()
     }
-    traps = [i for i, s in scores.items() if s.get("trap")]
+    # M13 (harness gap-audit, 2026-09-20): `is not None`, not truthiness -- an
+    # empty-string trap reason ("") is still a real trap flag from the model,
+    # not "no trap", and truthiness silently dropped it.
+    traps = [i for i, s in scores.items() if s.get("trap") is not None]
     ranked = sorted((i for i in scores if i not in traps),
                     key=lambda i: (-totals[i], i))
     shortlist = ranked[:top_k]
@@ -87,6 +92,29 @@ def _selftest():
             raise AssertionError(f"expected rank() to reject {bad!r}")
         except SystemExit as e:
             assert e.code == 1
+
+    # M13 (harness gap-audit, 2026-09-20): out-of-range scores must fail
+    # closed too, same class as the non-finite/boolean cases above -- the
+    # docstring's own 0-10 contract was previously unenforced.
+    for bad_range in (
+        {"a": {"novelty": 15, "viability": 8, "fit": 7, "trap": None}},
+        {"a": {"novelty": 5, "viability": -1, "fit": 7, "trap": None}},
+    ):
+        try:
+            rank({"scores": bad_range})
+            raise AssertionError(f"expected rank() to reject out-of-range {bad_range!r}")
+        except SystemExit as e:
+            assert e.code == 1
+
+    # M13: an empty-string trap reason is still a real trap flag from the
+    # model (`is not None`, not truthiness) -- it must count toward traps[]
+    # and be excluded from ranking, same as a non-empty reason.
+    out = rank({"topK": 2, "scores": {
+        "a": {"novelty": 7, "viability": 6, "fit": 8, "trap": None},
+        "b": {"novelty": 9, "viability": 9, "fit": 9, "trap": ""},
+    }})
+    assert out["traps"] == ["b"], out["traps"]
+    assert out["shortlist"] == ["a"], out["shortlist"]
 
     print("rank.py selftest ok")
 

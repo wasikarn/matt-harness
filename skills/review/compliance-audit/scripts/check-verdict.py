@@ -52,8 +52,14 @@ VERDICTS = {"CONFORMS", "DEVIATED", "MISSING", "UNVERIFIABLE"}
 SHA_RE = re.compile(r"^[0-9a-f]{7,40}$")
 # Mirrors skills/workflow/idea-audit/scripts/check-citations.py's CITATION_RE
 # exactly (M3, harness gap-audit 2026-09-20) -- one regex, not worth a
-# cross-skill-directory import for.
-CITATION_RE = re.compile(r"`[^`]+`|[^\s:`]*[./][^\s:`]*:\d+")
+# cross-skill-directory import for (idea-audit isn't even a shipped skill
+# per M12's manifest exclusion, so importing from its directory could break
+# the installed plugin). KEEP THIS IN SYNC with that file's CITATION_RE by
+# hand -- a compliance-audit follow-up (2026-09-20) found this copy had
+# drifted stale after idea-audit's own numeric-ratio fix (LOW batch) added
+# the letter-requiring lookahead here but not there; nothing catches a future
+# re-drift automatically, so check both files on any edit to either.
+CITATION_RE = re.compile(r"`[^`]+`|(?=[^\s:`]*[A-Za-z])[^\s:`]*[./][^\s:`]*:\d+")
 
 
 def mask_json_spans(text):
@@ -322,6 +328,15 @@ def _selftest():
     accepted_no_citation = json.loads(good)
     accepted_no_citation["requirements"][1]["note"] = "renamed field, looked fine to me"
     code, out, err = run(json.dumps(accepted_no_citation))
+    assert code == 1 and "no citation shape" in err, (code, out, err)
+
+    # M3 follow-up (compliance-audit self-check, 2026-09-20): a bare numeric
+    # ratio like "2.5:1" must NOT count as a citation -- this regex drifted
+    # stale from idea-audit's check-citations.py once before (missing the
+    # letter-requiring lookahead); this case pins it so a re-drift fails loud.
+    accepted_numeric_ratio = json.loads(good)
+    accepted_numeric_ratio["requirements"][1]["note"] = "193x faster, 2.5:1 ratio"
+    code, out, err = run(json.dumps(accepted_numeric_ratio))
     assert code == 1 and "no citation shape" in err, (code, out, err)
 
     # M4: UNVERIFIABLE is a real verdict value and never passes on its own,

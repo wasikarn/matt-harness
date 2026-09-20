@@ -99,6 +99,24 @@ print(json.dumps(d))
 ' "$1" "$2"
 }
 
+# Build a Bash tool-call payload with the agent_id KEY forced present at an
+# explicit value, including "" or JSON null (C1b, harness gap-audit
+# 2026-09-20) -- mirrors agent_payload_forced_id() below for the Bash tool,
+# needed because irrecoverable.py's two nested-spawn call sites (top-level
+# command and the bash -c/eval unwrapped body) are gated on agent_id
+# PRESENCE, not truthiness, and bash_agent_payload() above can't express
+# "key present but empty/null" (it omits the key entirely when $2 is falsy).
+# $2 == "__NULL__" emits JSON null; anything else is the literal string value.
+bash_agent_payload_forced_id() {
+  python3 -c '
+import json, sys
+cmd, agent_id_raw = sys.argv[1], sys.argv[2]
+d = {"tool_name": "Bash", "tool_input": {"command": cmd}}
+d["agent_id"] = None if agent_id_raw == "__NULL__" else agent_id_raw
+print(json.dumps(d))
+' "$1" "$2"
+}
+
 # Build an Agent tool-call payload. $1=subagent_type for the dispatch (tool_input),
 # $2=agent_id of the CALLER (empty = main session), $3=agent_type of the caller
 # (optional, for the deny message only — the gate's logic keys on agent_id, not
@@ -803,6 +821,20 @@ else
   fail=$((fail + 1))
 fi
 
+# C1b (harness gap-audit, 2026-09-20): both _nested_spawn call sites (line
+# ~302 top-level command, line ~621 bash -c/eval unwrapped body) gate on
+# `"agent_id" in d` -- presence, not truthiness. An empty-string or JSON-null
+# agent_id is still a subagent call and must still deny, not fall through as
+# if agent_id were absent (main session).
+test_deny  "$IRRECOVERABLE" "C1b: agent_id present but empty string still denies a top-level nested spawn" \
+  "$(bash_agent_payload_forced_id 'claude -p "sneaky"' '')"
+test_deny  "$IRRECOVERABLE" "C1b: agent_id present but JSON null still denies a top-level nested spawn" \
+  "$(bash_agent_payload_forced_id 'claude -p "sneaky"' '__NULL__')"
+test_deny  "$IRRECOVERABLE" "C1b: agent_id present but empty string still denies a bash -c-wrapped nested spawn" \
+  "$(bash_agent_payload_forced_id 'bash -c "claude -p sneaky"' '')"
+test_deny  "$IRRECOVERABLE" "C1b: agent_id present but JSON null still denies a bash -c-wrapped nested spawn" \
+  "$(bash_agent_payload_forced_id 'bash -c "claude -p sneaky"' '__NULL__')"
+
 test_deny  "$IRRECOVERABLE" "subagent spawns via command substitution" \
   "$(bash_agent_payload 'echo $(claude -p "evil")' fork)"
 test_deny  "$IRRECOVERABLE" "subagent spawns with an env-var prefix before claude" \
@@ -997,6 +1029,20 @@ test_deny "$IRRECOVERABLE" "git add -A DENIED in a repo with no MERGE_HEAD" \
   "$(bash_cwd_payload 'git add -A' "$NOMERGE_FIX")"
 test_deny "$IRRECOVERABLE" "git add --all DENIED with no cwd in the payload (falls back to process cwd, not mid-merge)" \
   "$(bash_payload 'git add --all')"
+
+# M7 (harness gap-audit, 2026-09-20): a bad cwd makes _mid_merge()'s own
+# subprocess.run raise (FileNotFoundError), caught by its except -- the deny
+# that follows must be distinguishable from a genuine "not mid-merge" deny.
+mid_merge_err=$(bash_cwd_payload 'git add -A' "/nonexistent/kbg-mid-merge-probe-$$" | bash "$IRRECOVERABLE" 2>&1 1>/dev/null)
+mid_merge_rc=$(bash_cwd_payload 'git add -A' "/nonexistent/kbg-mid-merge-probe-$$" | bash "$IRRECOVERABLE" >/dev/null 2>/dev/null; echo $?)
+if [[ "$mid_merge_rc" == "2" ]] && printf '%s' "$mid_merge_err" | /usr/bin/grep -q "mid-merge check itself failed"; then
+  echo "  ✅ DENY + diagnostic: git add -A with an unreachable cwd denies AND names that the mid-merge check itself failed"
+  pass=$((pass + 1))
+else
+  echo "  ❌ DENY+diagnostic EXPECTED but got exit $mid_merge_rc, stderr: $mid_merge_err" >&2
+  fail=$((fail + 1))
+fi
+
 trash "$MERGE_FIX" "$NOMERGE_FIX" 2>/dev/null || true
 test_deny "$IRRECOVERABLE" "subagent: claude -p hi via Bash denied" \
   "$(bash_agent_payload 'claude -p hi' fork)"

@@ -136,7 +136,14 @@ def _mid_merge():
         r = subprocess.run(["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"],
                            cwd=cwd, capture_output=True, timeout=3)
         return r.returncode == 0
-    except Exception:
+    except Exception as e:
+        # M7 (harness gap-audit, 2026-09-20): a deny caused by this check itself
+        # failing (bad cwd, git missing, timeout) looked identical to a genuine
+        # "not mid-merge" deny -- no way to tell them apart from the deny message
+        # alone. Diagnostic only; the safe-direction return (deny `git add -A`)
+        # is unchanged.
+        print(f"[mh:gate] irrecoverable: mid-merge check itself failed (cwd={cwd!r}): {e}",
+              file=sys.stderr)
         return False
 
 # --- Nested-spawn deny: a subagent (agent_id present) may not spawn a nested
@@ -794,26 +801,38 @@ for _wi, w in enumerate(windows):
             # neighbors (--find-renames, --format=fuller, --force-with-lease,
             # --force-if-includes): none is a prefix of any long form checked
             # here, and a longer arg can never satisfy long_form.startswith().
-            # len()>3 requires 2+ real characters after "--" (a bare "--"
-            # matches nothing). A false-positive abbreviation only costs an
-            # extra deny/confirmation -- the safe direction for this gate
+            # A false-positive abbreviation only costs an extra deny/
+            # confirmation -- the safe direction for this gate
             # (operating-model.md's fail-closed principle).
             #
             # compliance-audit fix-round 2, 2026-09-20: an independent
             # verifier flagged this as not "establishing unambiguity" (e.g.
             # denying `commit --no`, `branch --fo`) and claimed `--n` /
             # `--force=` slip through unguarded. Empirically re-checked
-            # against real git: `--n` and every 2-3-char abbreviation tested
-            # is ALWAYS rejected by git itself as ambiguous (e.g. "ambiguous
-            # option: n (could be --no-atomic or --no-push-option)"), and
-            # `--force=`/`--hard=`/`--amend=`/`--all=`/`--discard-changes=`
-            # are ALWAYS rejected too ("option `force' takes no value") --
-            # none of these boolean flags accept an `=value` suffix at all.
-            # Neither form is a live bypass; over-denying an already-
-            # git-rejected abbreviation (`--no`, `--fo`) is exactly this
-            # helper's documented safe direction, not a gap. No code change:
-            # verified with a live git run, not by assertion.
-            return token.startswith("--") and len(token) > 3 and any(
+            # against real git: `--n` and every 2-3-char `=value`-suffixed
+            # abbreviation tested at the time was ALWAYS rejected by git
+            # itself (ambiguous, or "option takes no value") -- but that
+            # check missed the shorter, plain (no `=`) 2-char-after-`--`
+            # shape entirely, since the len()>3 guard below excluded it from
+            # ever being checked in the first place, regardless of what git
+            # would do with it.
+            #
+            # deep-audit fix-round 3, 2026-09-20: that gap was real and
+            # live -- `git reset --h` and `git clean --f` are BOTH accepted
+            # by real git as unambiguous (only one long option starts with
+            # "h"/"f" for each of those subcommands) and actually executed
+            # destructively, while this gate's old len()>3 guard never even
+            # checked them. Fixed by lowering the guard to len()>2 (still
+            # excludes a bare "--", which has no letters to be an
+            # abbreviation of anything). This does NOT reintroduce the
+            # already-git-rejected forms as a gap: those still fail on the
+            # `long_form.startswith(token)` check itself (git's own
+            # ambiguity has no bearing on that), so lowering the length
+            # floor only newly catches tokens that are BOTH short and an
+            # exact prefix of one specific named long form -- the same
+            # narrow, call-site-scoped match this helper always made, one
+            # character shorter.
+            return token.startswith("--") and len(token) > 2 and any(
                 lf.startswith(token) for lf in long_forms
             )
 

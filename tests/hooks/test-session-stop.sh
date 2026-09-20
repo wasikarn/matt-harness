@@ -482,6 +482,54 @@ sys.exit(0 if d.get("error") == "jq_failed" and d.get("stream") == "orchestrator
 assert "a real jq failure (non-object .message.usage) emits a jq_failed sentinel row + stderr diagnostic, not silence" "$ok"
 trash "$fake_home" "$transcript" "/tmp/mh-test-jqfail-stderr.$$" 2>/dev/null || true
 
+# H8 (harness gap-audit, 2026-09-20): end-to-end proof that a real transcript
+# run through cost-tracker.sh itself actually populates verify_tokens/
+# verify_cache_read/verify_per_return in costs.jsonl -- restored/adapted from
+# commit 6603c384 (removed by 2cac98c8), which every other cost-report test
+# only exercises via pre-fabricated fixture rows, never this emission path.
+# Main transcript: dispatch (Agent tool_use) -> its return as a
+# <task-notification> user line -> two assistant turns (100+0+50, 200+0+80 =
+# 430 verify tokens, 7+3 cache_read) -> next Agent tool_use (counted, closes
+# the window) -> a turn after it (NOT counted).
+fake_home=$(mktemp -d)
+sess_dir=$(mktemp -d)
+transcript="$sess_dir/verify.jsonl"
+mkdir -p "$sess_dir/verify/subagents"
+agent_dispatch='{"type":"assistant","message":{"model":"claude-sonnet-5","content":[{"type":"tool_use","name":"Agent","id":"t1","input":{"subagent_type":"general-purpose"}}],"usage":{"input_tokens":1,"output_tokens":1,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}'
+{ printf '%s\n' "$agent_dispatch"
+  python3 -c 'import json; print(json.dumps({"type":"user","message":{"role":"user","content":"<task-notification>\n<task-id>aaa</task-id>\n<status>completed</status>\n</task-notification>"}}))'
+  make_transcript_line claude-sonnet-5 100 50 7
+  printf '%s\n' '{"type":"assistant","message":{"model":"claude-sonnet-5","content":[{"type":"tool_use","name":"Agent","id":"t2","input":{"subagent_type":"general-purpose"}}],"usage":{"input_tokens":200,"output_tokens":80,"cache_creation_input_tokens":0,"cache_read_input_tokens":3}}}'
+  make_transcript_line claude-sonnet-5 999 999; } > "$transcript"
+make_transcript_line claude-sonnet-5 10 5 > "$sess_dir/verify/subagents/agent-aaa.jsonl"
+printf '{"agentType":"general-purpose","toolUseId":"t1","spawnDepth":1}' > "$sess_dir/verify/subagents/agent-aaa.meta.json"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "verify"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+sub_row=$(/usr/bin/grep '"stream":"subagent"' "$metrics_file" 2>/dev/null)
+orch_row=$(/usr/bin/grep '"stream":"orchestrator"' "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" ]] \
+  && printf '%s' "$sub_row" | /usr/bin/grep -q '"returns":1,"verify_tokens":430,"verify_cache_read":10,"verify_per_return":\[430\]' \
+  && printf '%s' "$orch_row" | /usr/bin/grep -q '"returns":1,"verify_tokens":430' && ok=1 || ok=0
+assert "H8: task-notification -> next Agent tool_use window summed into verify_tokens (430, cache_read 10) via a real cost-tracker.sh run, not a fabricated row; turn after the dispatch excluded" "$ok"
+trash "$fake_home" "$sess_dir" 2>/dev/null || true
+
+# H8 negative case: a transcript with no <task-notification> at all must still
+# write a row, with verify_tokens/verify_cache_read null and returns:0 -- not
+# a crash, not a stale/leftover value from a previous run.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+make_transcript_line claude-sonnet-5 100 50 > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "no-notification"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" ]] && printf '%s' "$row" | /usr/bin/grep -q '"returns":0,"verify_tokens":null,"verify_cache_read":null,"verify_per_return":\[\]' && ok=1 || ok=0
+assert "H8: a transcript with no task-notification writes returns:0, verify_tokens:null via a real cost-tracker.sh run" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
 # Regression (M8): unset/relative HOME must never resolve metrics writes into
 # the current working directory (this exact bug once wrote a metrics file
 # into this repo's own tree, 2026-08-28). Skip metrics entirely, still echo

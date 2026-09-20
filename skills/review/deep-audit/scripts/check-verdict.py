@@ -160,7 +160,14 @@ def validate(obj):
         return False, "'unexpected_files' is not a list of strings"
     # A checker can't self-report a clean pass over a run that touched the
     # wrong scope -- scope_ok/unexpected_files are the host's own scope
-    # facts, not something the checker's opinion can override.
+    # facts, not something the checker's opinion can override. M1's own plan
+    # text said "force pass to false"; this rejects the whole object instead
+    # (exit 1, triggers SKILL.md's retry-once) -- deliberate, not a
+    # deviation: coercing pass in place would silently launder a checker's
+    # bad self-report into a different guessed value with no chance to
+    # correct itself, the same thing the pass:null handling above (L7)
+    # refuses to do. Reject-and-retry matches this file's own established
+    # posture everywhere else it distrusts a self-report.
     if obj["pass"] and (not obj["scope_ok"] or obj["unexpected_files"]):
         return False, ("'pass' is true but scope_ok is false or unexpected_files is "
                         "non-empty — an out-of-scope run cannot self-report a clean pass")
