@@ -13,6 +13,8 @@ is not a hard requirement either way, match whichever this artifact's own topic 
 revision? State the negative form explicitly if not — "No local clone, no pinned revision — the
 repo carries no release tag as of this read.">
 **Verdict:** <one paragraph, opinionated, stated plainly>
+**Score:** <total>/100 — **<PASS/FAIL>** (threshold <N>; confidence <high/medium/low>). Full
+criteria table: see Decision score below.
 
 Every claim below about the source's internals is what it describes as of this read, not a
 verified fact about the source as it exists today or in the future.

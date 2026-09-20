@@ -86,6 +86,16 @@ express it as a small fixed set of terminal first-token codes documented in `## 
 not a free-text sentence. An unconstrained status drifts across independent writers; a closed
 vocabulary fixed at authoring time prevents that.
 
+## 9. Verdict position follows the reading medium
+
+A report's bottom line goes first in a document read top-down (an audit artifact, a
+`docs/research/*.md` file) and last in output destined for a scrolling terminal or chat stream,
+where the final line is what the reader's eye lands on first. `skills/review/deep-audit/SKILL.md:243`'s
+"Final Verdict" on line one and this fleet's "End with a one-line verdict"
+(`agents/type-design-analyzer.md`, `agents/blind-spot-hunter.md`, `agents/test-gap-analyzer.md`,
+`agents/silent-failure-hunter.md`) are the same principle applied to two different media, not a
+contradiction between them.
+
 ## Preloads
 
 Reference material an agent needs lives in the agent file itself (a trailing `# Reference` section);
@@ -100,5 +110,7 @@ the plugin ships no preload-only skills.
 5. If it grades other work: fresh-context, advisory-only, never self-gating.
 6. If it reports findings: state a confidence per finding; zero findings is valid.
 7. If it returns a branchable status: closed set of terminal codes in `## Output Format`.
-8. Run `bash skills/meta/harness-audit/scripts/audit.sh`; checks 04, 09, 24, 41, 54
+8. If it ends in a branchable status meant for a scrolling terminal: put the verdict last
+   (item 9); a top-down artifact leads with it instead.
+9. Run `bash skills/meta/harness-audit/scripts/audit.sh`; checks 04, 09, 24, 41, 54
    touch new agents directly.
