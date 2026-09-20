@@ -6,7 +6,10 @@ Three ideas hold the plugin up. Everything else is a consequence.
 
 A hook can deny a tool call before it runs. That is the only place a rule is a guarantee
 instead of a hope, so the deny list is kept small and literal: the set of actions no later
-step can undo. the PreToolUse entries in `hooks/hooks.json` are the whole list:
+step can undo. The `PreToolUse` entries in `hooks/hooks.json` are the whole list of those; one
+`SubagentStop` entry is listed alongside them for the same reason (it enforces a rule
+mechanically, from a file in `hooks/gates/`), even though it blocks a subagent's *Stop*, not a
+tool call — see its own row below for what that means in practice:
 
 | gate | denies or asks |
 |---|---|
@@ -17,6 +20,7 @@ step can undo. the PreToolUse entries in `hooks/hooks.json` are the whole list:
 | `gate:write:test-integrity` | asks before a write that weakens a test |
 | `gate:write:config-guard` | asks before a write to Claude Code settings `hooks`/`enabledPlugins` |
 | `gate:skill:codex-setup-guard` | asks before a model-invoked `Skill(codex:setup)` call carrying `--enable-review-gate` |
+| `gate:agent:subagent-verdict-check` | `SubagentStop`, not `PreToolUse`: blocks a subagent's Stop and re-prompts it once when its final message contains a Rule 13 `{pass, findings[], checked[], scope_ok, unexpected_files[]}`-shaped object that is vacuous (`pass:true` with both `findings[]` and `checked[]` empty) or self-contradictory (`pass:true` with `scope_ok:false` or a non-empty `unexpected_files[]`); allows on `stop_hook_active:true`, `NEEDS-DECISION`, ambiguous multi-candidate output, or no verdict-shaped output at all |
 
 Everything not in that table is advice: METHODOLOGY.md text, skill prose, agent guardrails.
 Advice is honest about being advice; no doc claims a check enforces a rule unless a file in
@@ -25,8 +29,8 @@ Advice is honest about being advice; no doc claims a check enforces a rule unles
 Each gate owns its error path, and the policy is written in the gate, not assumed: input it
 cannot tokenize asks (`could not safely tokenize`); a missing `python3` always allows, announced
 on stderr (#93); a missing sibling script denies (exit 2) for `irrecoverable.py`, but allows
-(same stderr-note posture) for the three subagent-scoped gates (`subagent-git-guard`,
-`task-complete-separation`, `subagent-spawn-guard`). `scripts/gate-canary.sh` proves
+(same stderr-note posture) for the four subagent-scoped gates (`subagent-git-guard`,
+`task-complete-separation`, `subagent-spawn-guard`, `subagent-verdict-check`). `scripts/gate-canary.sh` proves
 every staged gate still allows benign payloads. The table is the contract; the hook type is
 not. Claude Code's proposed function hooks (anthropics/claude-code#91870, prototype behind
 `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS` since 2.1.260; `claude plugin validate` already lists a
@@ -38,7 +42,7 @@ the event.
 **The principle behind that per-gate table, stated once:** fail closed when the verdict
 authorizes an action; fail open to the native/no-op path when the verdict only optimizes one
 that was already going to happen anyway. `irrecoverable.py` denies on a missing sibling because
-its verdict gates an irreversible command; the three subagent-scoped gates allow on the same
+its verdict gates an irreversible command; the four subagent-scoped gates allow on the same
 failure because their absence just returns the session to unguarded-but-otherwise-normal
 behavior, not to a worse state than before the gate existed. A new gate's error path is decided
 by which side of that line its verdict sits on, not by copying an existing wrapper's style.

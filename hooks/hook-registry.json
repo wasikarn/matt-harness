@@ -103,6 +103,13 @@
         "description": "If the project's memory store is already a git repo (opt-in), commit any dirty changes for an audit trail. No-op otherwise.",
         "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/stop/memory-audit-commit.sh\""
       }
+    ],
+    "SubagentStop": [
+      {
+        "id": "gate:agent:subagent-verdict-check",
+        "description": "Block (re-prompt once) a subagent's Stop when its final message carries a vacuous or self-contradictory Rule 13 {pass, findings[], checked[], scope_ok, unexpected_files[]} verdict object.",
+        "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/subagent-verdict-gate.sh\""
+      }
     ]
   }
 }
