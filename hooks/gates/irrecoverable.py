@@ -206,6 +206,19 @@ _SPAWN_FLAG_RE = re.compile(r"-p\b|--print\b|--agent\b|--bg\b|--worktree\b")
 _SPAWN_TOKEN_RE = re.compile(
     "\"(?:[^\"\\\\]|\\\\.)*\"|" + SQ + "[^" + SQ + "]*" + SQ + "|\\\\+|.", re.DOTALL
 )
+# C1 (harness gap-audit, 2026-09-20): the outer loop over every anchor match
+# times an unbounded inner token scan is O(anchors x remaining-length) -- an
+# unclosed "(" after each anchor keeps depth > 0 so the inner scan never
+# breaks early, consuming the rest of the string every single time. Live-
+# reproduced: 6,000 anchors in a 48,000-char command (well under
+# _CMD_LEN_CAP's 150,000) took 22s, far past this gate's own 8s hooks.json
+# PreToolUse timeout -- and Claude Code's own hooks reference confirms a
+# timed-out PreToolUse command hook lets the tool call continue, so a slow
+# enough payload silently bypasses this entire check. Same budget magnitude
+# and shared-counter pattern as _blank_substitutions's _DEPTH_SCAN_BUDGET
+# above; "return True" (deny) on exhaustion is this file's own documented
+# safe direction -- widening the scan can only over-deny, never under-deny.
+_SPAWN_SCAN_BUDGET = 2_000_000
 
 def _nested_spawn(c):
     # Deep-audit 2026-09-07: a bare separator (&;|\n) inside a paren/backtick
@@ -237,11 +250,15 @@ def _nested_spawn(c):
     # substitution carrying -p back to claude; treating the backtick as
     # escaped there was a false ALLOW, a real bypass, not just an
     # over-cautious false DENY. Parity tracking fixes both directions.
+    work = 0  # shared across every anchor's scan, never reset per-anchor -- see _SPAWN_SCAN_BUDGET above
     for m in _SPAWN_ANCHOR_RE.finditer(c):
         buf, depth, in_backtick = [], 0, False
         escape_next = False    # trailing backslash of an odd-length run
         after_backslash = False  # any backslash run, odd or even, just seen
         for tok in _SPAWN_TOKEN_RE.finditer(c[m.end():]):
+            work += 1
+            if work > _SPAWN_SCAN_BUDGET:
+                return True
             t = tok.group()
             if t and t.count("\\") == len(t):
                 buf.append(t)

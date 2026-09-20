@@ -765,6 +765,27 @@ test_allow "$IRRECOVERABLE" "main session runs 'claude -p' via Bash (no agent_id
   "$(bash_agent_payload 'claude -p "do something"' '')"
 test_allow "$IRRECOVERABLE" "malformed stdin on the Bash leg (fail-safe allow)" \
   '{not valid json'
+
+# C1 (harness gap-audit, 2026-09-20): _nested_spawn's outer loop over every
+# anchor match times an unbounded inner token scan is O(anchors x
+# remaining-length) -- live-reproduced before the fix: 6,000 "claude ("
+# anchors in a 48,000-char command (well under _CMD_LEN_CAP's 150,000) took
+# 22s, far past this gate's own 8s hooks.json PreToolUse timeout, and Claude
+# Code's own hooks reference confirms a timed-out PreToolUse command hook
+# lets the tool call continue -- so a slow enough payload silently bypassed
+# this whole check. `timeout 5` wraps the assertion itself: a regression
+# back to the unbounded scan would make this whole test time out (rc 124),
+# not just fail the deny assertion.
+dos_payload="$(python3 -c 'print("claude (" * 6000)')"
+dos_rc=$(echo "$(bash_agent_payload "$dos_payload" fork)" | timeout 5 bash "$IRRECOVERABLE" 2>/dev/null; echo $?)
+if [[ "$dos_rc" == "2" ]]; then
+  echo "  ✅ DENY (bounded time): 6,000-anchor nested-spawn scan denies well under the 8s PreToolUse timeout, not a silent bypass"
+  pass=$((pass + 1))
+else
+  echo "  ❌ DENY EXPECTED (bounded time) but got exit $dos_rc (124 = timed out, budget regressed): 6,000-anchor nested-spawn scan" >&2
+  fail=$((fail + 1))
+fi
+
 test_deny  "$IRRECOVERABLE" "subagent spawns via command substitution" \
   "$(bash_agent_payload 'echo $(claude -p "evil")' fork)"
 test_deny  "$IRRECOVERABLE" "subagent spawns with an env-var prefix before claude" \
