@@ -78,6 +78,11 @@
         "id": "sensor:write:fragments-capture",
         "description": "If this session is armed (sensor:prompt:fragments-arm) and this write plausibly targets a writing-fragments document, record a durable path pointer to it; never touches or inlines content, never prints anything.",
         "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sensors/fragments-capture.sh\""
+      },
+      {
+        "id": "session:skill-usage-telemetry",
+        "description": "Journal every skill invocation (skill, plugin, ts) to ~/.local/share/kbg/metrics/skill-usage.jsonl. Audit logging only, restored 2026-09-20 (harness gap-audit H9) after deletion in a1055f64.",
+        "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session/skill-usage-telemetry.sh\""
       }
     ],
     "PostToolUseFailure": [

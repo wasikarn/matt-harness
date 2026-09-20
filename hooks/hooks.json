@@ -142,6 +142,16 @@
             "timeout": 8
           }
         ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session/skill-usage-telemetry.sh\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "PostToolUseFailure": [
