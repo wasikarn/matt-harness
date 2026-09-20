@@ -4,8 +4,8 @@
 # audit.sh's fragment integrity guard catches LOST checks, not SILENT ones. Each
 # known-bad fixture below is paired with a clean one; the matching check must
 # FIRE on bad and stay SILENT on good. Per-check fixtures cover 04, 05, 20, 22, 28, 29, 54,
-# 70, 71, 72, 73; the fleet-bad / fleet-good pair covers the other nineteen with at least one
-# defect per check (43 is driven by the env ceiling, not a planted defect).
+# 70, 71, 72, 73, 74; the fleet-bad / fleet-good pair covers the other eighteen with at least
+# one defect per check (43 is driven by the env ceiling, not a planted defect).
 # check-73-bad-missing-command-field and check-73-bad-args-fingerprint-mismatch (below) are
 # deep-audit fixes, 2026-09-10: a Codex-primary fresh-context checker found the original check
 # 73 silently passed a handler missing its "command" field, and never compared the "args" field
@@ -191,6 +191,14 @@ expect_warn   73 check-73-bad-malformed-structure
 expect_warn   73 check-73-bad-duplicate-id
 expect_warn   73 check-73-bad-missing-command-field
 expect_warn   73 check-73-bad-args-fingerprint-mismatch
+
+# Check 74: subagent-scoped gate agent_id presence-check invariant (harness
+# gap-audit, 2026-09-20). A truthiness regression in any of the four files
+# must fire CRIT; a missing file must also fire CRIT (can't verify the
+# invariant); all four present and correct must stay silent.
+expect_silent 74 check-74-good-all-present
+expect_crit   74 check-74-bad-truthiness-regression
+expect_crit   74 check-74-bad-missing-file
 
 # Fleet pair: every check without a per-check fixture. fleet-bad plants one defect per
 # check; fleet-good is a complete clean fleet and doubles as the fake plugin cache for

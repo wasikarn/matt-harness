@@ -229,6 +229,14 @@ test_deny  "$IRRECOVERABLE" "dd to raw device (was a bypass)" \
   "$(bash_payload 'dd if=/dev/zero of=/dev/disk2')"
 test_deny  "$IRRECOVERABLE" "SQL DROP TABLE (was a bypass)" \
   "$(bash_payload 'mysql -e "DROP TABLE users"')"
+# H3 (harness gap-audit, 2026-09-20): the same DROP/TRUNCATE check names all
+# four SQL clients (line 938's argv0 tuple) but only mysql had a test.
+test_deny  "$IRRECOVERABLE" "SQL DROP DATABASE via psql (H3, was untested)" \
+  "$(bash_payload 'psql -c "DROP DATABASE x"')"
+test_deny  "$IRRECOVERABLE" "SQL DROP TABLE via sqlite3 (H3, was untested)" \
+  "$(bash_payload 'sqlite3 db.sqlite "DROP TABLE users"')"
+test_deny  "$IRRECOVERABLE" "SQL TRUNCATE via mariadb (H3, was untested)" \
+  "$(bash_payload 'mariadb -e "TRUNCATE orders"')"
 test_deny  "$IRRECOVERABLE" "git add -A (was prose-only)" \
   "$(bash_payload 'git add -A')"
 test_deny  "$IRRECOVERABLE" "git add . (was prose-only)" \
@@ -765,6 +773,15 @@ test_allow "$IRRECOVERABLE" "main session runs 'claude -p' via Bash (no agent_id
   "$(bash_agent_payload 'claude -p "do something"' '')"
 test_allow "$IRRECOVERABLE" "malformed stdin on the Bash leg (fail-safe allow)" \
   '{not valid json'
+# H4 (harness gap-audit, 2026-09-20): the ABOVE case allows only because it
+# has no destructive token, so the bash fast-path exits before python3 ever
+# runs -- it never actually reached the python-side malformed-payload deny
+# branch (lines 27-31). A malformed payload that DOES carry a destructive
+# substring passes the fast path, then must fail closed once python3's
+# json.load() chokes on the truncation -- the two branches must not be
+# conflated (one's a pre-python allow, the other's a post-python deny).
+test_deny "$IRRECOVERABLE" "truncated JSON carrying a destructive substring reaches python and fails closed (H4, was untested)" \
+  '{"tool_input": {"command": "rm -rf /"'
 
 # C1 (harness gap-audit, 2026-09-20): _nested_spawn's outer loop over every
 # anchor match times an unbounded inner token scan is O(anchors x
