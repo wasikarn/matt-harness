@@ -180,17 +180,37 @@ FUNC_OPEN_RE = re.compile(r"^\s*(?:function\s+)?check\s*\(\s*\)\s*\{", re.MULTIL
 # are literal, double-quote spans honor backslash escapes, output length
 # equals input so brace positions found against the masked text still index
 # correctly into the original (unmasked) text for the returned body slice.
+#
+# deep-audit fix-round 3, 2026-09-20: this was still missing "#" comment
+# awareness (the exact gap subagent-git-guard.py's identical function had
+# too) -- an ordinary comment apostrophe ("# don't skip this") before the
+# real assertion opened an unterminated fake quote span with no closing "'"
+# anywhere in the string, masking the real closing brace away -- live-
+# confirmed to let a real weakening payload through with no ask. Fix: a "#"
+# at a word boundary (start of string, or right after whitespace/;/&/|/(/
+# newline) opens a comment that masks to end-of-line with no quote
+# semantics inside it, matching real bash. ponytail: heuristic word-
+# boundary check, not full tokenization -- widen _WORD_BOUNDARY_CHARS if a
+# real miss traces to an omitted operator.
+_WORD_BOUNDARY_CHARS = set(" \t\n;&|(")
+
 def _mask_quotes_bash(s):
     out = []
     i, n = 0, len(s)
+    at_word_start = True
     while i < n:
         c = s[i]
+        if c == "#" and at_word_start:
+            while i < n and s[i] != "\n":
+                out.append(" "); i += 1
+            continue
         if c == "'":
             out.append(" "); i += 1
             while i < n and s[i] != "'":
                 out.append("Q"); i += 1
             if i < n:
                 out.append(" "); i += 1
+            at_word_start = False
         elif c == '"':
             out.append(" "); i += 1
             while i < n and s[i] != '"':
@@ -200,8 +220,10 @@ def _mask_quotes_bash(s):
                     out.append("Q"); i += 1
             if i < n:
                 out.append(" "); i += 1
+            at_word_start = False
         else:
             out.append(c); i += 1
+            at_word_start = c in _WORD_BOUNDARY_CHARS
     return "".join(out)
 
 def check_helper_body(text):

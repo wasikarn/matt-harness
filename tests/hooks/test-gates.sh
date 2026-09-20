@@ -704,6 +704,14 @@ test_deny  "$IRRECOVERABLE" "git switch --discard-ch (abbreviated --discard-chan
   "$(bash_payload 'git switch --discard-ch main')"
 test_deny  "$IRRECOVERABLE" "git add --al (abbreviated --all, was silently ALLOWed)" \
   "$(bash_payload 'git add --al')"
+# deep-audit fix-round 3, 2026-09-20: the len()>3 guard excluded 2-char-
+# after-"--" tokens from ever being checked, regardless of whether real git
+# accepts them unambiguously -- live-confirmed `git reset --h` and
+# `git clean --f` both ran for real and destroyed data.
+test_deny  "$IRRECOVERABLE" "git reset --h (1-char abbreviated --hard, was silently ALLOWed)" \
+  "$(bash_payload 'git reset --h')"
+test_deny  "$IRRECOVERABLE" "git clean --f (1-char abbreviated --force, was silently ALLOWed)" \
+  "$(bash_payload 'git clean --f')"
 # Dangerous-direction control: the abbreviation helper must not itself start
 # denying git's own already-documented noisy neighbors (an ambiguous prefix
 # these long forms don't uniquely resolve to, or a flag never named in the

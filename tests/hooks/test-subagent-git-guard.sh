@@ -222,6 +222,23 @@ run_gate_forced_id "git stash" "__NULL__"; rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "agent_id truthiness bug: JSON null agent_id still denied" "$ok"
 
+# --- (10c) deep-audit fix-round 3, 2026-09-20: _mask_quotes had no "#"
+# comment awareness -- an ordinary comment apostrophe ("# don't remove")
+# BEFORE a real git command opened an unterminated fake single-quote span
+# (no closing "'" anywhere after it), masking every real char after it,
+# including the literal "git" anchor -- live-confirmed full bypass of this
+# entire gate for any dangerous subcommand, not just one flag. --- #
+apostrophe_cmd="$(printf "echo hi # don't remove\ngit reset --hard")"
+run_gate "$apostrophe_cmd" "agent1"; rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "comment-apostrophe bypass fixed: git reset --hard after a # don't comment now denied" "$ok"
+
+# Comment AFTER the real git call must still deny too (control: the fix must
+# not swallow the anchor when the apostrophe comes later on the same line).
+run_gate "git reset --hard # don't undo this" "agent1"; rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "comment-apostrophe control: apostrophe after the anchor still denies" "$ok"
+
 # --- (11) malformed/non-JSON stdin: fail-safe allow --- #
 out=$(echo "not json" | bash "$GATE" 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0

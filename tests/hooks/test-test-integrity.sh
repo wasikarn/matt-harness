@@ -212,6 +212,23 @@ out=$(payload_edit "$TESTFILE" 'check() {
 ok=1; is_ask "$out" && ok=0
 check "Edit weakening real logic after a QUOTED decoy brace -> ask (was silently truncated past by the old quote-unaware scanner)" "$ok"
 
+# --- Positive: deep-audit fix-round 3, 2026-09-20 -- the quote-masker above
+# still had no "#" comment awareness: an ordinary comment apostrophe
+# ("# don'\''t skip this") before the real assertion opened an unterminated
+# fake single-quote span (no closing "'" anywhere after it in the payload),
+# masking the real closing brace away entirely -- live-confirmed to make
+# check_helper_body() return None for both sides, silently allowing a real
+# weakening payload. ---
+out=$(payload_edit "$TESTFILE" 'check() {
+  # don'\''t skip this
+  [ "$2" = 0 ] && pass=$((pass + 1)) || fail=$((fail + 1))
+}' 'check() {
+  # don'\''t skip this
+  pass=$((pass + 1))
+}' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" && ok=0
+check "Edit weakening real logic after a comment apostrophe -> ask (was silently allowed by the old comment-unaware masker)" "$ok"
+
 # --- Positive: deleting the final exit-gate line is invisible to a
 # call-site diff, but it is the line that turns an accumulated fail count
 # into the script's actual exit code -- this repo's own tests (including

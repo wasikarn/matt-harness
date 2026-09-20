@@ -58,20 +58,40 @@ agent_type = clip(d.get("agent_type") or "unknown")
 # characters in its own source.
 # ponytail: no handling for a backslash-escaped quote OUTSIDE a span; add a
 # one-char lookback if a real false positive/negative traces to it.
+#
+# deep-audit 2026-09-20: a bash "#" comment was NOT recognized at all -- an
+# ordinary comment apostrophe ("# don't ...") before a real "git" command
+# opened an unterminated fake quote span with no closing "'" anywhere in the
+# string, masking every real char after it (including the literal "git"
+# anchor) to placeholder "Q" -- live-confirmed full bypass of this entire
+# gate. Fix: a "#" at a word boundary (start of string, or right after
+# whitespace/;/&/|/(/newline -- the same positions a new command word can
+# start) opens a comment that masks to end-of-line with NO quote semantics
+# inside it, matching real bash. ponytail: this whitespace/separator-based
+# word-boundary check is a heuristic, not full tokenization -- a "#"
+# immediately after some other operator this list omits could still be
+# missed; widen _WORD_BOUNDARY_CHARS if one is demonstrated.
 _SQ = chr(39)
 _DQ = chr(34)
+_WORD_BOUNDARY_CHARS = set(" \t\n;&|(")
 
 def _mask_quotes(s):
     out = []
     i, n = 0, len(s)
+    at_word_start = True
     while i < n:
         c = s[i]
+        if c == "#" and at_word_start:
+            while i < n and s[i] != "\n":
+                out.append(" "); i += 1
+            continue
         if c == _SQ:
             out.append(" "); i += 1
             while i < n and s[i] != _SQ:
                 out.append("Q"); i += 1
             if i < n:
                 out.append(" "); i += 1
+            at_word_start = False
         elif c == _DQ:
             out.append(" "); i += 1
             while i < n and s[i] != _DQ:
@@ -81,8 +101,10 @@ def _mask_quotes(s):
                     out.append("Q"); i += 1
             if i < n:
                 out.append(" "); i += 1
+            at_word_start = False
         else:
             out.append(c); i += 1
+            at_word_start = c in _WORD_BOUNDARY_CHARS
     return "".join(out)
 
 masked = _mask_quotes(cmd)
