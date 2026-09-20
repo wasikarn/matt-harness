@@ -73,6 +73,21 @@ if(typed.length){
   const m=new Map();for(const r of typed){const k=r.agent_type||"(unknown)";const p=m.get(k)||{c:0,t:0};p.c+=cost(r);p.t+=(Number(r.input_tokens)||0)+(Number(r.output_tokens)||0);m.set(k,p);}
   for(const [k,v] of [...m.entries()].sort((a,b)=>b[1].c-a[1].c||b[1].t-a[1].t))console.log(f4(v.c).padStart(12)+"  "+String(v.t).padStart(10)+" tok  "+k);
 }
+// Handoff cost (restored 2026-09-20 from 6603c384; role breakdown stays excluded — that
+// tag was removed separately and is not part of this restore): main's own tokens between
+// a subagent's return and the next dispatch, per return. Rows without verify_per_return
+// are skipped here, not crashed.
+const withVerify=latest.filter(r=>Array.isArray(r.verify_per_return)&&r.verify_per_return.length);
+if(withVerify.length){
+  const q=(a,p)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(p*(s.length-1)+0.5))];};
+  const line=(k,a)=>console.log(String(Math.round(q(a,0.5))).padStart(10)+" med  "+String(Math.round(q(a,0.9))).padStart(10)+" p90  "+String(a.length).padStart(4)+" returns  "+k);
+  console.log("\n=== Handoff cost (main tokens per subagent return: read result + re-verify + decide, until next dispatch; rows tagged 2026-09-20+) ===");
+  const orchV=withVerify.filter(r=>r.stream==="orchestrator");
+  const oTurns=orchV.reduce((s,r)=>s+(Number(r.turns)||0),0),oRet=orchV.reduce((s,r)=>s+(Number(r.returns)||0),0);
+  if(oRet&&oTurns)console.log("returns per orchestrator turn: "+(oRet/oTurns).toFixed(2)+"  ("+oRet+" returns / "+oTurns+" turns)");
+  const subV=withVerify.filter(r=>r.stream==="subagent");
+  if(subV.length)line("all subagents",subV.flatMap(r=>r.verify_per_return));
+}
 console.log("\n=== Last 7 days ===");
 const days=new Map();for(const r of latest){const k=day(r);days.set(k,(days.get(k)||0)+cost(r));}
 [...days.entries()].sort((a,b)=>b[0]<a[0]?-1:1).slice(0,7).forEach(([k,v])=>console.log(k+"  "+f4(v)));

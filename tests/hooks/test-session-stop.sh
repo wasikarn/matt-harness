@@ -457,6 +457,46 @@ metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
 assert "an all-non-Claude transcript (glm-5.2 only) writes no metrics row at all" "$ok"
 trash "$fake_home" "$transcript" 2>/dev/null || true
 
+# Regression (H7): a real jq failure (a transcript line whose .message.usage is
+# a non-object, which the pipeline's own `try fromjson` can't catch since the
+# error is in the *selector*, not the parse) must not silently look like the
+# legitimate "no Claude usage this session" case. Before the fix, `usages=''`
+# either way and NO row was written at all -- indistinguishable from a clean
+# empty session. After the fix, a sentinel row with error:"jq_failed" is
+# written and a diagnostic is printed to stderr.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+printf '%s\n' '{"type":"assistant","message":{"model":"claude-sonnet-5","usage":"not-an-object","id":"m1"}}' > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "jq-fail-test"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/tmp/mh-test-jqfail-stderr.$$)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" && "$out" == "$payload" && -f "$metrics_file" ]] \
+  && /usr/bin/grep -q "jq failed" /tmp/mh-test-jqfail-stderr.$$ \
+  && printf '%s' "$row" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+sys.exit(0 if d.get("error") == "jq_failed" and d.get("stream") == "orchestrator" else 1)
+' 2>/dev/null && ok=1 || ok=0
+assert "a real jq failure (non-object .message.usage) emits a jq_failed sentinel row + stderr diagnostic, not silence" "$ok"
+trash "$fake_home" "$transcript" "/tmp/mh-test-jqfail-stderr.$$" 2>/dev/null || true
+
+# Regression (M8): unset/relative HOME must never resolve metrics writes into
+# the current working directory (this exact bug once wrote a metrics file
+# into this repo's own tree, 2026-08-28). Skip metrics entirely, still echo
+# the payload through cleanly.
+transcript=$(mktemp)
+make_transcript_line claude-sonnet-5 100 50 > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "home-unset-test"}))' "$transcript")
+before_count=$(find "$ROOT" -name costs.jsonl 2>/dev/null | wc -l | tr -d ' ')
+out=$(printf '%s' "$payload" | env -u HOME bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+after_count=$(find "$ROOT" -name costs.jsonl 2>/dev/null | wc -l | tr -d ' ')
+[[ "$rc" == "0" && "$out" == "$payload" && "$before_count" == "$after_count" ]] && ok=1 || ok=0
+assert "unset HOME skips metrics entirely instead of writing into the repo tree" "$ok"
+trash "$transcript" 2>/dev/null || true
+
 echo ""
 echo "=== memory-audit-commit hook (Stop) ==="
 

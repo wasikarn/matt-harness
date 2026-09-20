@@ -211,6 +211,45 @@ rc=$?
 assert "modern-only data prints no era note" "$ok"
 trash "$fake_home" 2>/dev/null || true
 
+# Handoff cost (restored 2026-09-20): rows carrying verify_per_return render the section
+# (returns per orchestrator turn, then one combined "all subagents" median/p90/count line,
+# no role breakdown). A legacy row without the field is skipped there, never a crash.
+# subagent windows [100,300,500] -> med 300, p90 500.
+fake_home=$(mktemp -d)
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir"
+cat > "$metrics_dir/costs.jsonl" <<'EOF'
+{"timestamp":"2026-09-20T00:00:00Z","session_id":"hv","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"dedup_usage":true,"usage_pick":"last","stream":"orchestrator","turns":10,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"returns":3,"verify_tokens":900,"verify_cache_read":0,"verify_per_return":[100,300,500],"rate_verified":true,"estimated_cost_usd":1.0}
+{"timestamp":"2026-09-20T00:00:01Z","session_id":"hv","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"dedup_usage":true,"usage_pick":"last","stream":"subagent","agent_type":"general-purpose","turns":2,"input_tokens":10,"output_tokens":5,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"returns":3,"verify_tokens":900,"verify_cache_read":0,"verify_per_return":[100,300,500],"rate_verified":true,"estimated_cost_usd":2.0}
+{"timestamp":"2026-08-07T00:00:01Z","session_id":"legacy","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"subagent","agent_type":"Explore","turns":1,"input_tokens":5,"output_tokens":2,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"rate_verified":true,"estimated_cost_usd":3.0}
+EOF
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
+rc=$?
+hv_section=$(printf '%s' "$out" | awk '/=== Handoff cost/{f=1;next} /^$/{f=0} f')
+[[ "$rc" == "0" ]] \
+  && printf '%s' "$out" | /usr/bin/grep -q '^total:     \$6.0000' \
+  && printf '%s' "$hv_section" | /usr/bin/grep -q 'returns per orchestrator turn: 0.30' \
+  && printf '%s' "$hv_section" | /usr/bin/grep -qE '300 med +500 p90 +3 returns  all subagents$' \
+  && ! printf '%s' "$hv_section" | /usr/bin/grep -qi 'untagged\|(unknown)' && ok=1 || ok=0
+assert "Handoff cost section: returns/turn 0.30, all-subagents med 300 p90 500 over 3 returns; legacy row without verify_per_return skipped, total still \$6" "$ok"
+trash "$fake_home" 2>/dev/null || true
+
+# Restored fields don't duplicate or corrupt existing rows: a plain row with no
+# verify_per_return still dedups/sums exactly as before the restore (no Handoff section
+# appears, cost total unaffected by the absent fields).
+fake_home=$(mktemp -d)
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir"
+cat > "$metrics_dir/costs.jsonl" <<'EOF'
+{"timestamp":"2026-09-05T00:00:00Z","session_id":"plain","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"dedup_usage":true,"usage_pick":"last","stream":"orchestrator","turns":2,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":1.5}
+EOF
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
+rc=$?
+total=$(printf '%s' "$out" | /usr/bin/grep '^total:' | /usr/bin/grep -oE '\$[0-9.]+' | tr -d '$')
+[[ "$rc" == "0" && "$total" == "1.5000" ]] && ! printf '%s' "$out" | /usr/bin/grep -q '=== Handoff cost' && ok=1 || ok=0
+assert "row without verify_per_return: no Handoff section, total unaffected by the restored fields (got total=\$${total:-?})" "$ok"
+trash "$fake_home" 2>/dev/null || true
+
 # Missing file: the script itself reports the tracker as not set up (exit 0), so the
 # skill body need not pre-check the path — the eval clean case relies on this message.
 fake_home=$(mktemp -d)

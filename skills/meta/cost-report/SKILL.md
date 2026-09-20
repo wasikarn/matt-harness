@@ -50,6 +50,9 @@ Quote the script's numbers as printed. Add only what a reader needs to interpret
   difference across that date is a schema change, not a spending change.
 - **Codex invocations are counts.** Codex exposes no local per-call price, so that section
   never has a dollar column; it is absent until a session has used `codex:*`.
+- **Handoff cost (2026-09-20+ rows) prices reading a subagent's return.** Median/p90 tokens
+  main spends per subagent return (`verify_tokens`), plus returns per orchestrator turn. Rows
+  before this restore carry no `verify_per_return` and the section is omitted if none do.
 
 Never re-estimate prices from raw tokens. `estimated_cost_usd` is the tracker's number; the
 rate table lives in `hooks/stop/cost-tracker.sh` and changes there.

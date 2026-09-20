@@ -33,6 +33,15 @@ mh_version=$(jq -r .version "${CLAUDE_PLUGIN_ROOT:-/nonexistent}/.claude-plugin/
 cwd=$(printf '%s' "$payload" | jq -r '.cwd // empty' 2>/dev/null)
 head_commit=$(git -C "${cwd:-/nonexistent}" rev-parse HEAD 2>/dev/null)
 
+# Unset/relative HOME must never resolve into the current working directory --
+# this exact bug once wrote a sibling metrics file into this repo's own tree
+# (2026-08-28; see .gitignore's ".local/" comment and CHANGELOG.md).
+# hooks/gates/_journal.py carries the identical guard for gate-decisions.jsonl.
+if [ -z "${HOME:-}" ] || [[ "$HOME" != /* ]]; then
+  printf '%s' "$payload"
+  exit 0
+fi
+
 metrics_dir="$HOME/.local/share/kbg/metrics"
 mkdir -p "$metrics_dir"
 
@@ -59,12 +68,14 @@ sonnet_rate='{"i":2.0,"o":10.0,"cw":2.50,"cr":0.20}'
 # emit_rows treats a file absent from the map as agent_type:null.
 # Each map value is {t: <agent_type>}.
 build_type_map() {
-  local parent="$1" out='{}' f meta t tu; shift
-  local parent_map
+  local parent="$1" out='{}' f meta t tu id; shift
+  local parent_map vmap
   parent_map=$(jq -nRc '[inputs | try fromjson | select(.type == "assistant")
     | (.message.content // [])[]? | select(.type == "tool_use" and .name == "Agent")
     | {(.id): (.input.subagent_type // empty)}] | add // {}' "$parent" 2>/dev/null) || parent_map='{}'
+  vmap=$(build_verify_map "$parent")
   for f in "$@"; do
+    id=$(basename "$f" .jsonl); id="${id#agent-}"
     meta="${f%.jsonl}.meta.json"
     t=$([[ -f "$meta" ]] && jq -r '.agentType // empty' "$meta" 2>/dev/null)
     if [[ -z "$t" && -f "$meta" ]]; then
@@ -72,9 +83,46 @@ build_type_map() {
       [[ -n "$tu" ]] && t=$(printf '%s' "$parent_map" | jq -r --arg k "$tu" '.[$k] // empty' 2>/dev/null)
     fi
     [[ -z "$t" ]] && t="unknown"
-    out=$(printf '%s' "$out" | jq -c --arg f "$f" --arg t "$t" '. + {($f): {t: $t}}' 2>/dev/null) || out='{}'
+    out=$(printf '%s' "$out" | jq -c --arg f "$f" --arg t "$t" --arg id "$id" --argjson vmap "$vmap" \
+      '. + {($f): {t: $t, v: ($vmap[$id] // [])}}' 2>/dev/null) || out='{}'
   done
   printf '%s' "$out"
+}
+
+# build_verify_map <parent-transcript>
+# The third handoff cost (docs/research/delegation-criteria-field-survey-2026-09-04.md
+# gap G1): main's own tokens spent reading a subagent's return, re-reading files to
+# verify it, and deciding — between that return and the next Agent dispatch. Each
+# return lands in the main transcript as a `user` line whose string content starts
+# `<task-notification>` with `<task-id>` = the subagent's file id (agent-<id>.jsonl);
+# the Agent tool_result itself only says "Async agent launched" (verified against a
+# real 23-dispatch session, 2026-09-04). A window opens at each notification and
+# closes at the next notification, the first assistant line carrying an Agent
+# tool_use (that line counts — deciding to dispatch is part of the handoff), or EOF.
+# `v` sums input + cache_write + output (cache_write IS fresh input under prompt
+# caching; raw input_tokens is ~2/turn), `c` keeps cache_read separate — the rent,
+# not the work. Same-message.id duplicate lines count once per line, matching
+# emit_rows' `turns`. Output: {"<agent-id>": [{v,c}, ...]} — one entry per return
+# (the same agent can notify more than once). Fail-open: any parse error → {}.
+#
+# 2026-09-20 restore note: reapplied from commit 6603c384 (removed alongside the
+# unrelated [role:] tag in 2cac98c8) verbatim except for the role-grouping half,
+# which stays removed per M14 — this mechanism is independent of role and answers
+# a still-open question (docs/research/matt-harness-gap-audit-2026-09-20.md, H8).
+build_verify_map() {
+  jq -nRc 'reduce (inputs | try fromjson | select(.type == "user" or .type == "assistant")) as $l
+    ({cur: null, m: {}};
+     if $l.type == "user" then
+       (($l.message.content | strings | select(startswith("<task-notification>"))
+         | capture("<task-id>(?<id>[^<]+)</task-id>") | .id) // null) as $id
+       | if $id then .cur = $id | .m[$id] += [{v: 0, c: 0}] else . end
+     elif .cur != null and ($l.message.usage != null) then
+       .cur as $id | ((.m[$id] | length) - 1) as $i
+       | .m[$id][$i].v += (($l.message.usage.input_tokens // 0) + ($l.message.usage.cache_creation_input_tokens // 0) + ($l.message.usage.output_tokens // 0))
+       | .m[$id][$i].c += ($l.message.usage.cache_read_input_tokens // 0)
+       | if (($l.message.content // []) | arrays | any(.type == "tool_use" and .name == "Agent")) then .cur = null else . end
+     else . end)
+    | .m' "$1" 2>/dev/null || printf '{}'
 }
 
 # emit_rows <stream-label> <type-map-json> <transcript-file>...
@@ -104,7 +152,8 @@ build_type_map() {
 emit_rows() {
   local stream="$1" typemap="$2"; shift 2
   (( $# )) || return 0
-  local usages
+  local usages jq_err jq_rc
+  jq_err=$(mktemp 2>/dev/null) || jq_err=/dev/null
   usages=$(jq -nRc --argjson typemap "$typemap" '
     [ inputs | try fromjson |
       select(.type == "assistant") |
@@ -123,17 +172,41 @@ emit_rows() {
         else .byid[$x.f + "\u0000" + $x.id] = $x end)
     | .out + (.byid | [.[]])
     | group_by([.m, .t])
-    | map({
+    | map(([.[].f] | unique | map($typemap[.].v // []) | add // []) as $w
+      | {
         model: .[0].m,
         agent_type: .[0].t,
         turns: length,
         input_tokens: ((map(.in) | add) // 0),
         output_tokens: ((map(.out) | add) // 0),
         cache_write_tokens: ((map(.cw) | add) // 0),
-        cache_read_tokens: ((map(.cr) | add) // 0)
+        cache_read_tokens: ((map(.cr) | add) // 0),
+        returns: ($w | length),
+        verify_tokens: (if ($w | length) > 0 then ($w | map(.v) | add) else null end),
+        verify_cache_read: (if ($w | length) > 0 then ($w | map(.c) | add) else null end),
+        verify_per_return: ($w | map(.v))
       })
     | map(select(.input_tokens + .output_tokens + .cache_write_tokens + .cache_read_tokens > 0))
-  ' "$@" 2>/dev/null) || usages=''
+  ' "$@" 2>"$jq_err")
+  jq_rc=$?
+  if [[ $jq_rc -ne 0 ]]; then
+    # A real jq failure (malformed transcript shape jq's own `try fromjson`
+    # can't catch -- e.g. .message.usage indexed on a non-object -- or any
+    # other runtime error) produced the exact same empty `usages` as the
+    # documented legitimate case (a session with no claude-model turns at
+    # all). Distinguish them: emit a sentinel row instead of silently
+    # reading as zero spend, so mh:cost-report can surface the gap rather
+    # than a misleading "no spend that turn."
+    echo "[mh:cost-tracker] emit_rows($stream): jq failed rc=$jq_rc on: $*" >&2
+    cat "$jq_err" >&2 2>/dev/null
+    rm -f "$jq_err" 2>/dev/null
+    jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg sid "$session_id" \
+      --arg tp "$transcript" --arg stream "$stream" --arg files "$*" \
+      '{timestamp: $ts, session_id: $sid, transcript_path: $tp, stream: $stream,
+        error: "jq_failed", files: $files}' 2>/dev/null
+    return 0
+  fi
+  rm -f "$jq_err" 2>/dev/null
   [[ -z "$usages" || "$usages" == "[]" ]] && return 0
   printf '%s' "$usages" | jq -c \
     --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
@@ -163,6 +236,8 @@ emit_rows() {
       input_tokens: $u.input_tokens, output_tokens: $u.output_tokens,
       cache_write_tokens: $u.cache_write_tokens, cache_read_tokens: $u.cache_read_tokens,
       cache_read_per_turn: (if $u.turns > 0 then ($u.cache_read_tokens / $u.turns | round) else 0 end),
+      returns: $u.returns, verify_tokens: $u.verify_tokens, verify_cache_read: $u.verify_cache_read,
+      verify_per_return: $u.verify_per_return,
       rate_verified: $r.v,
       mh_version: (if $mhv == "" or $mhv == "null" then null else $mhv end),
       head_commit: (if $head == "" then null else $head end),
@@ -204,7 +279,12 @@ emit_codex_invocations() {
 }
 
 if [[ -n "$transcript" && -f "$transcript" ]]; then
-  rows=$(emit_rows orchestrator '{}' "$transcript")
+  # Orchestrator row: every return window in the whole session, so its
+  # verify_tokens is the session total handoff-verification cost.
+  orch_typemap=$(build_verify_map "$transcript" | jq -c --arg f "$transcript" \
+    '{($f): {v: ([.[]] | add // [])}}' 2>/dev/null)
+  [[ -z "$orch_typemap" ]] && orch_typemap='{}'
+  rows=$(emit_rows orchestrator "$orch_typemap" "$transcript")
 
   # Claude Code writes each subagent to its own file under a sibling
   # <session-id>/subagents/ directory — NOT into the main transcript, which never

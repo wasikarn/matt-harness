@@ -12,8 +12,8 @@ so the latest row per key is the session's current total, not an increment.
 ```
 { timestamp, session_id, transcript_path, model, model_scoped, dedup_usage, usage_pick,
   stream, agent_type, turns, input_tokens, output_tokens, cache_write_tokens,
-  cache_read_tokens, cache_read_per_turn, rate_verified, mh_version, head_commit,
-  estimated_cost_usd }
+  cache_read_tokens, cache_read_per_turn, returns, verify_tokens, verify_cache_read,
+  verify_per_return, rate_verified, mh_version, head_commit, estimated_cost_usd }
 ```
 
 - `stream`: `orchestrator` (the main transcript) or `subagent` (each `subagents/agent-*.jsonl`).
@@ -23,6 +23,26 @@ so the latest row per key is the session's current total, not an increment.
 - A separate row shape `{ timestamp, session_id, codex_invocations: {name: count} }` counts
   `codex:*` Skill and Agent calls; it has no model and is summed on its own.
 - Older rows carry fields from retired schemas; unknown keys are ignored.
+
+## `returns`, `verify_tokens`, `verify_cache_read`, `verify_per_return` (restored 2026-09-20)
+
+Handoff cost: main's own tokens spent reading a subagent's result, re-reading files to verify
+it, and deciding — the cost the validation chain never priced. A subagent's return does not
+arrive as the Agent tool_result (that only says "Async agent launched"); it lands later as a
+`user` line whose string content starts `<task-notification>` and whose `<task-id>` is the
+subagent's file id (`agent-<id>.jsonl`). `cost-tracker.sh`'s `build_verify_map` opens a window
+at each such line and closes it at the next notification, the first assistant line carrying an
+Agent `tool_use` (counted — deciding to dispatch is part of the handoff), or EOF; every
+assistant line inside contributes input + cache_write + output to `v` and cache_read to `c`.
+`cache_write` counts as fresh input because under prompt caching raw `input_tokens` is ~2 per
+turn — leaving it out would report the cost as near zero. Fail-open: any parse error gives an
+empty map, so rows keep `returns: 0`, `verify_tokens: null` rather than vanishing. Not in the
+dedup key (derived per file, not a population split). On the orchestrator row the fields cover
+every return in the session. This was first shipped in `6603c384` (2026-09-04) grouped by the
+`role` tag, then both were deleted together in `2cac98c8`; this restore deliberately keeps
+`role` out (tracked separately, see the harness gap-audit's M14) and reports one combined
+"all subagents" line instead of a per-role breakdown. Rows before this restore carry none of
+these fields and the Handoff cost section skips them.
 
 ## Eras
 
