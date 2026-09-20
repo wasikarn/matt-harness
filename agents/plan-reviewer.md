@@ -249,8 +249,9 @@ This citation-honesty rule isn't limited to `cleared_decoys` — it applies anyw
 Done when the review's own output matches the Output Format template above field-for-field, and
 none of the 8 Anti-Patterns bullets describes what this pass just did.
 
-**Caller note (not for this agent to act on):** this is the one adversarial surface in the repo
-with no structural validation of its own gate — Critical/High/Medium/Low and the resulting
+**Caller note (not for this agent to act on):** this is one of two adversarial surfaces in the
+repo with no structural validation of its own gate (`requirement-analyst.md` has the identical
+gap and no sibling script — confirmed 2026-09-20, not fixed here) — Critical/High/Medium/Low and the resulting
 `verdict` are both model-assigned in prose. Before trusting the result, whoever dispatches this
 agent should pipe `{"findings": [{"severity": ...}, ...], "top_blockers_count": <int>,
 "verdict": "..."}` through `scripts/_lib/plan-verdict-check.py` (repo root) — it mechanically

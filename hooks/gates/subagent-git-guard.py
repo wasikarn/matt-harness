@@ -50,62 +50,49 @@ def clip(s):
 
 agent_type = clip(d.get("agent_type") or "unknown")
 
-# Quote-aware masking: every char inside a quoted span (quotes included) becomes
-# a placeholder that matches neither a separator, "git", nor a flag; output
-# length equals input so match positions still line up with cmd. Single-quote
-# spans are literal, double-quote spans honor backslash escapes, as in bash.
-# chr() for the quote chars keeps this masking logic free of literal quote
-# characters in its own source.
-# ponytail: no handling for a backslash-escaped quote OUTSIDE a span; add a
-# one-char lookback if a real false positive/negative traces to it.
-#
-# deep-audit 2026-09-20: a bash "#" comment was NOT recognized at all -- an
-# ordinary comment apostrophe ("# don't ...") before a real "git" command
-# opened an unterminated fake quote span with no closing "'" anywhere in the
-# string, masking every real char after it (including the literal "git"
-# anchor) to placeholder "Q" -- live-confirmed full bypass of this entire
-# gate. Fix: a "#" at a word boundary (start of string, or right after
-# whitespace/;/&/|/(/newline -- the same positions a new command word can
-# start) opens a comment that masks to end-of-line with NO quote semantics
-# inside it, matching real bash. ponytail: this whitespace/separator-based
-# word-boundary check is a heuristic, not full tokenization -- a "#"
-# immediately after some other operator this list omits could still be
-# missed; widen _WORD_BOUNDARY_CHARS if one is demonstrated.
-_SQ = chr(39)
-_DQ = chr(34)
-_WORD_BOUNDARY_CHARS = set(" \t\n;&|(")
-
-def _mask_quotes(s):
-    out = []
-    i, n = 0, len(s)
-    at_word_start = True
-    while i < n:
-        c = s[i]
-        if c == "#" and at_word_start:
-            while i < n and s[i] != "\n":
+# 2026-09-20: extracted to a shared hooks/gates/_quotemask.py after this
+# function and test-integrity.py's identical _mask_quotes_bash drifted into
+# byte-for-byte copies that independently missed, then independently fixed,
+# the same "#"-comment bug (deep-audit 2026-09-20: an ordinary comment
+# apostrophe before a real "git" command opened an unterminated fake quote
+# span, masking the literal "git" anchor away -- a full gate bypass).
+# Defensive import, same posture as _journal.py: an ImportError here must
+# never become a machine-wide Bash lockout on this deny-tier gate, so the
+# fallback is the same inline copy this file carried before extraction.
+try:
+    from _quotemask import mask_quotes as _mask_quotes
+except Exception:
+    def _mask_quotes(s):
+        out = []
+        i, n = 0, len(s)
+        at_word_start = True
+        while i < n:
+            c = s[i]
+            if c == "#" and at_word_start:
+                while i < n and s[i] != "\n":
+                    out.append(" "); i += 1
+                continue
+            if c == "'":
                 out.append(" "); i += 1
-            continue
-        if c == _SQ:
-            out.append(" "); i += 1
-            while i < n and s[i] != _SQ:
-                out.append("Q"); i += 1
-            if i < n:
-                out.append(" "); i += 1
-            at_word_start = False
-        elif c == _DQ:
-            out.append(" "); i += 1
-            while i < n and s[i] != _DQ:
-                if s[i] == "\\" and i + 1 < n:
-                    out.append("Q"); out.append("Q"); i += 2
-                else:
+                while i < n and s[i] != "'":
                     out.append("Q"); i += 1
-            if i < n:
+                if i < n:
+                    out.append(" "); i += 1
+                at_word_start = False
+            elif c == '"':
                 out.append(" "); i += 1
-            at_word_start = False
-        else:
-            out.append(c); i += 1
-            at_word_start = c in _WORD_BOUNDARY_CHARS
-    return "".join(out)
+                while i < n and s[i] != '"':
+                    if s[i] == "\\" and i + 1 < n:
+                        out.append("Q"); out.append("Q"); i += 2
+                    else:
+                        out.append("Q"); i += 1
+                if i < n:
+                    out.append(" "); i += 1
+                at_word_start = False
+            else:
+                out.append(c); i += 1
+                at_word_start = c in set(" \t\n;&|(")
+        return "".join(out)
 
 masked = _mask_quotes(cmd)
 

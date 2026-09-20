@@ -25,8 +25,10 @@ what's cheap to fix. This is a private pass, not the pass/fail decision, and you
 done it — the fresh-context validator still independently re-verifies every claim, and its brief is
 never narrowed on the strength of "already self-checked."
 
-Validator/re-validator: return `{pass, findings[], scope_ok, unexpected_files[]}` and nothing else;
-`scope_ok` fails on either an unexpected file or an owned file the diff never touches.
+Validator/re-validator: return `{pass, findings[], checked[], scope_ok, unexpected_files[]}` and
+nothing else; `checked[]` holds ≥1 `{claim, evidence}` even on a clean pass — this is where
+Rule 13's "one checkable fact" lands, and an empty `checked[]` is not verified, same as a missing
+field. `scope_ok` fails on either an unexpected file or an owned file the diff never touches.
 Dispatching `mh:plan-reviewer` specifically: it has no calling skill of its own to embed this in
 as a mandatory step, so the dispatcher must remember it here — pipe its
 `{findings, top_blockers_count, verdict}` fields through `scripts/_lib/plan-verdict-check.py`
