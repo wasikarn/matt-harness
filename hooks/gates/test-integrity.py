@@ -173,19 +173,49 @@ def exit_gate_lines(text):
 # own resolution order) instead of the first.
 FUNC_OPEN_RE = re.compile(r"^\s*(?:function\s+)?check\s*\(\s*\)\s*\{", re.MULTILINE)
 
+# compliance-audit fix-round 2, 2026-09-20: the ponytail limitation below
+# was live-demonstrated -- a quoted "}" before the real assertion truncated
+# the scan and let a real weakening payload through. Same quote-masking
+# posture as subagent-git-guard.py's own _mask_quotes: single-quote spans
+# are literal, double-quote spans honor backslash escapes, output length
+# equals input so brace positions found against the masked text still index
+# correctly into the original (unmasked) text for the returned body slice.
+def _mask_quotes_bash(s):
+    out = []
+    i, n = 0, len(s)
+    while i < n:
+        c = s[i]
+        if c == "'":
+            out.append(" "); i += 1
+            while i < n and s[i] != "'":
+                out.append("Q"); i += 1
+            if i < n:
+                out.append(" "); i += 1
+        elif c == '"':
+            out.append(" "); i += 1
+            while i < n and s[i] != '"':
+                if s[i] == "\\" and i + 1 < n:
+                    out.append("Q"); out.append("Q"); i += 2
+                else:
+                    out.append("Q"); i += 1
+            if i < n:
+                out.append(" "); i += 1
+        else:
+            out.append(c); i += 1
+    return "".join(out)
+
 def check_helper_body(text):
-    # ponytail: plain character counting, not quote-aware -- a literal "}"
-    # inside a quoted string in check()'s own body would end the scan early,
-    # the same class of limitation this file already accepts elsewhere for
-    # single-level unwraps. No bypass via that path is demonstrated; widen
-    # this to a real tokenizer if one is.
+    # ponytail: still not a full shell tokenizer (no backtick/$()-aware
+    # nesting for braces inside command substitutions). No bypass via that
+    # narrower path is demonstrated; widen further if one is.
+    masked = _mask_quotes_bash(text)
     last = None
-    for m in FUNC_OPEN_RE.finditer(text):
+    for m in FUNC_OPEN_RE.finditer(masked):
         depth, i, start = 1, m.end(), m.end()
-        while i < len(text) and depth > 0:
-            if text[i] == "{":
+        while i < len(masked) and depth > 0:
+            if masked[i] == "{":
                 depth += 1
-            elif text[i] == "}":
+            elif masked[i] == "}":
                 depth -= 1
             i += 1
         if depth == 0:

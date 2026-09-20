@@ -195,6 +195,23 @@ out=$(payload_edit "$TESTFILE" 'check() {
 ok=1; is_ask "$out" && ok=0
 check "Edit weakening real logic after a decoy nested brace -> ask (was silently truncated past by the old non-greedy regex)" "$ok"
 
+# --- Positive: compliance-audit fix-round 2, 2026-09-20 -- the brace-depth
+# scanner above still wasn't quote-aware: a literal '}' inside a double-
+# quoted string ("decoy }") was counted as a real closing brace, ending the
+# scan before the real assertion -- live-confirmed to make helper_changed
+# False for old_string/new_string that differ only after the quoted decoy.
+# Fixed by quote-masking before the brace walk (same posture as
+# subagent-git-guard.py's own _mask_quotes). ---
+out=$(payload_edit "$TESTFILE" 'check() {
+  echo "decoy }"
+  [ "$2" = 0 ] && pass=$((pass + 1)) || fail=$((fail + 1))
+}' 'check() {
+  echo "decoy }"
+  pass=$((pass + 1))
+}' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" && ok=0
+check "Edit weakening real logic after a QUOTED decoy brace -> ask (was silently truncated past by the old quote-unaware scanner)" "$ok"
+
 # --- Positive: deleting the final exit-gate line is invisible to a
 # call-site diff, but it is the line that turns an accumulated fail count
 # into the script's actual exit code -- this repo's own tests (including

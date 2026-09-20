@@ -174,6 +174,18 @@ do
   check "wrapper-chain bypass fixed, now denied: $cmd" "$ok"
 done
 
+# --- (8c) compliance-audit fix-round 2, 2026-09-20: a first fix bounded the
+# wrapper chain at depth<=3 to dodge a catastrophic-backtracking shape; an
+# independent verifier chained 13 wrappers and got past that cap live. --- #
+long_chain="$(python3 -c 'print("env sudo nohup nice time command " * 13 + "git reset --hard")')"
+run_gate "$long_chain" "agent1"; rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "13-deep wrapper chain past the old depth<=3 bound, now denied" "$ok"
+
+run_gate "env -u A -u B git reset --hard" "agent1"; rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "env with its own -u flags before git reset, now denied" "$ok"
+
 # --- (9) missing re.MULTILINE fix (2026-09-04, verifier-found): a genuine
 # multi-line Bash command (heredoc/multi-line script) puts "git reset" at
 # the start of its OWN line, not absolute string offset 0 -- the old

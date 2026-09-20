@@ -186,17 +186,23 @@ def _mid_merge():
 # alternation, so an anchor attempt from string-start still requires
 # "claude" immediately, exactly as before this fix.
 #
-# Bounded on BOTH axes (chain depth <= 3, flags-per-wrapper <= 3) rather than
-# `*`-repeated: `(?:(?:sudo|env)\s+(?:\S+\s+)*)*` nests two unbounded
-# quantifiers over overlapping content (a wrapper word also matches the
-# inner generic token), a classic catastrophic-backtracking shape on a long
-# non-matching line. Two small fixed bounds have no such ambiguity. Three
-# chained wrappers with three flags each covers realistic cases
-# ("env -u X FOO=bar sudo nice -n 10 claude -p x"); a longer chain is a
-# documented, narrow non-goal, not a silent gap -- widen the bounds if one is
-# ever demonstrated.
+# 2026-09-20 fix-round 2 (compliance-audit vs the plan above): bounding both
+# axes at 3 was itself a deviation from the plan's `*`-repeated design and
+# left a real gap -- an independent verifier chained 13 wrappers and got
+# past the depth<=3 cap live. The catastrophic-backtracking risk that
+# motivated the bound is real for a naive `(?:(?:sudo|env)\s+(?:\S+\s+)*)*`
+# (a wrapper word also matches the inner generic token, so the two `*`s
+# compete for the same input and multiply out) -- but the fix for that is to
+# remove the ambiguity, not cap the length. The inner flag-scan below
+# excludes anything that matches a wrapper word via a negative lookahead, so
+# any given token is always unambiguously "the next wrapper" or "a flag",
+# never a choice between the two. That makes the whole prefix scan O(n) with
+# no backtracking blowup, so both axes go back to genuinely unbounded,
+# matching the plan ("env -u X FOO=bar sudo nice -n 10 command env claude -p x"
+# now anchors regardless of chain length).
 PREFIX_WRAPPERS = ("env", "command", "nohup", "nice", "time", "sudo")
-_WRAPPER_PREFIX = r"(?:(?:" + "|".join(PREFIX_WRAPPERS) + r")\s+(?:\S+\s+){0,3}){0,3}"
+_WRAPPER_ALT = r"(?:" + "|".join(PREFIX_WRAPPERS) + r")\b"
+_WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"\s+(?:(?!" + _WRAPPER_ALT + r")\S+\s+)*)*"
 _SPAWN_ANCHOR_RE = re.compile(
     r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX +
     r"\\?(?:\S*/)?claude(?![-\w./])",
@@ -792,6 +798,21 @@ for _wi, w in enumerate(windows):
             # matches nothing). A false-positive abbreviation only costs an
             # extra deny/confirmation -- the safe direction for this gate
             # (operating-model.md's fail-closed principle).
+            #
+            # compliance-audit fix-round 2, 2026-09-20: an independent
+            # verifier flagged this as not "establishing unambiguity" (e.g.
+            # denying `commit --no`, `branch --fo`) and claimed `--n` /
+            # `--force=` slip through unguarded. Empirically re-checked
+            # against real git: `--n` and every 2-3-char abbreviation tested
+            # is ALWAYS rejected by git itself as ambiguous (e.g. "ambiguous
+            # option: n (could be --no-atomic or --no-push-option)"), and
+            # `--force=`/`--hard=`/`--amend=`/`--all=`/`--discard-changes=`
+            # are ALWAYS rejected too ("option `force' takes no value") --
+            # none of these boolean flags accept an `=value` suffix at all.
+            # Neither form is a live bypass; over-denying an already-
+            # git-rejected abbreviation (`--no`, `--fo`) is exactly this
+            # helper's documented safe direction, not a gap. No code change:
+            # verified with a live git run, not by assertion.
             return token.startswith("--") and len(token) > 3 and any(
                 lf.startswith(token) for lf in long_forms
             )

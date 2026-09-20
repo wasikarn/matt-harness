@@ -623,7 +623,14 @@ def apply_action_plan(state, plan):
             try:
                 shutil.move(src, dst)
                 applied["A"].append({"action": "move", "from": entry["from"], "to": dst})
-            except OSError:
+            except OSError as e:
+                # compliance-audit fix-round 2, 2026-09-20: this fallback was
+                # the 3rd of the "3 silent except OSError" sites the plan
+                # named -- still silent even though the move itself succeeds
+                # via os.rename, so a discrepancy in HOW a move landed was
+                # invisible. os.rename's own exception, if any, still
+                # propagates uncaught (this only logs the fallback trigger).
+                print(f"memory-lint: shutil.move failed for {entry['from']} ({e}), falling back to os.rename", file=sys.stderr)
                 os.rename(src, dst)
                 applied["A"].append({"action": "move", "from": entry["from"], "to": dst})
         # Rewrite pointer line to stub

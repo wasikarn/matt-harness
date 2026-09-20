@@ -827,6 +827,12 @@ test_deny  "$IRRECOVERABLE" "subagent: backslash-escaped \\claude -p (was silent
   "$(bash_agent_payload '\claude -p "evil"' fork)"
 test_deny  "$IRRECOVERABLE" "subagent: env with its own -u flag and a VAR=val before claude -p (was silently ALLOWed)" \
   "$(bash_agent_payload 'env -u X FOO=bar claude -p "evil"' fork)"
+# compliance-audit fix-round 2, 2026-09-20: a first fix bounded the wrapper
+# chain at depth<=3 to dodge a catastrophic-backtracking shape; an
+# independent verifier chained 13 wrappers and got past that cap live.
+long_chain="$(python3 -c 'print("env sudo nohup nice time command " * 13 + "claude -p \"evil\"")')"
+test_deny  "$IRRECOVERABLE" "subagent: 13-deep wrapper chain past the old depth<=3 bound (was silently ALLOWed)" \
+  "$(bash_agent_payload "$long_chain" fork)"
 test_allow "$IRRECOVERABLE" "main session: env-wrapped claude -p (no agent_id — always allowed)" \
   "$(bash_agent_payload 'env claude -p "evil"' '')"
 # A flat [^|;&]* scan treated any &/;/| as end-of-invocation even inside a quoted prompt, so a

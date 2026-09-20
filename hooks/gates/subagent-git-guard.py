@@ -96,22 +96,24 @@ masked = _mask_quotes(cmd)
 # 2026-09-20 audit: the old wrapper allowance (`sudo`/`xargs` only, one level)
 # missed `env`/`command`/`nice` and a bare `\git` (backslash suppresses alias
 # lookup; the command itself is unaffected) -- live-confirmed to still reach
-# real git for a subagent. Fix: matched against a fixed wrapper-word list,
-# bounded on both chain depth and flags-per-wrapper (not `*`-repeated) --
-# `(?:(?:sudo|env|...)\s+(?:\S+\s+)*)*` nests two unbounded quantifiers over
-# overlapping content (a wrapper word also matches the inner generic token),
-# a catastrophic-backtracking shape on a long non-matching line; two small
-# fixed bounds have no such ambiguity. Matching only real wrapper WORDS
-# (never an arbitrary token) also means this can't skip over unrelated
-# content to anchor on a LATER, unrelated "git" -- moot here since this
-# anchor already runs on the quote-masked string (a wrapper word inside
-# quotes is masked to placeholder chars and can't match), but kept
-# consistent with irrecoverable.py's identical fix to its nested-spawn
-# anchor rather than relying on masking alone. `xargs` kept from the
-# original list (this file never runs its own xargs-unwrap, so the anchor
-# must still recognize it).
+# real git for a subagent. Fix: matched against a fixed wrapper-word list.
+# `xargs` kept from the original list (this file never runs its own
+# xargs-unwrap, so the anchor must still recognize it).
+#
+# 2026-09-20 fix-round 2 (compliance-audit): a first attempt bounded both
+# chain depth and flags-per-wrapper at 3 to dodge the catastrophic-
+# backtracking shape of `(?:(?:sudo|env|...)\s+(?:\S+\s+)*)*` (a wrapper word
+# also matches the inner generic token, so the two `*`s compete for the same
+# input) -- but that bound was itself a live-demonstrated gap (a 13-wrapper
+# chain got through). The actual fix is to remove the ambiguity instead: the
+# inner flag-scan excludes anything matching a wrapper word via a negative
+# lookahead, so a token is always unambiguously "the next wrapper" or "a
+# flag", never a choice between the two -- O(n), no backtracking, and both
+# axes are genuinely unbounded again, matching irrecoverable.py's identical
+# fix to its nested-spawn anchor.
 _WRAPPER_WORDS = ("env", "command", "nohup", "nice", "time", "sudo", "xargs")
-_WRAPPER_PREFIX = r"(?:(?:" + "|".join(_WRAPPER_WORDS) + r")\s+(?:\S+\s+){0,3}){0,3}"
+_WRAPPER_ALT = r"(?:" + "|".join(_WRAPPER_WORDS) + r")\b"
+_WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"\s+(?:(?!" + _WRAPPER_ALT + r")\S+\s+)*)*"
 _ANCHOR_RE = re.compile(
     r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX +
     r"\\?(?:\S*/)?git\b",
