@@ -549,6 +549,43 @@ after_count=$(find "$ROOT" -name costs.jsonl 2>/dev/null | wc -l | tr -d ' ')
 assert "unset HOME skips metrics entirely instead of writing into the repo tree" "$ok"
 trash "$transcript" 2>/dev/null || true
 
+# GH #117: cost-tracker is stateless by design, re-deriving cumulative totals
+# from the full transcript on every Stop -- so if the same Stop event ever
+# fires twice for one turn (transcript unchanged in between), the append had
+# no completion marker to recognize that and would double-write the row,
+# inflating cumulative totals. Same session_id + same transcript path + same
+# transcript byte size = the identical prior state, not a new turn.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+make_transcript_line claude-sonnet-5 100 50 > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "dup-stop"}))' "$transcript")
+out1=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc1=$?
+out2=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc2=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+[[ "$rc1" == "0" && "$rc2" == "0" && "$out1" == "$payload" && "$out2" == "$payload" ]] \
+  && [[ "$(wc -l < "$metrics_file" | tr -d ' ')" == "1" ]] && ok=1 || ok=0
+assert "GH #117: the same Stop event firing twice for an unchanged transcript writes the cost row only once" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
+# Control: a real second turn (transcript grew) must NOT be swallowed by the
+# dedup marker -- only an exact repeat of the prior state is skipped.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+make_transcript_line claude-sonnet-5 100 50 > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "grown-stop"}))' "$transcript")
+out1=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc1=$?
+make_transcript_line claude-sonnet-5 200 80 >> "$transcript"
+out2=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc2=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+[[ "$rc1" == "0" && "$rc2" == "0" ]] \
+  && [[ "$(wc -l < "$metrics_file" | tr -d ' ')" == "2" ]] && ok=1 || ok=0
+assert "a real second turn (transcript grew) after the first Stop still writes its own row" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
 echo ""
 echo "=== memory-audit-commit hook (Stop) ==="
 

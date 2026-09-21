@@ -289,6 +289,28 @@ emit_codex_invocations() {
 }
 
 if [[ -n "$transcript" && -f "$transcript" ]]; then
+  # Completion marker (#117): re-deriving totals from the transcript on every
+  # Stop had no way to tell "already processed this turn" from "new turn" --
+  # if the same Stop event ever fired twice for one turn, the append below
+  # had no lease to recognize that and would double-write the row (same bug
+  # shape as vercel/workflow#2376: a lease that dies the instant the
+  # operation finishes lets a retry redo it from scratch instead of seeing it
+  # already ran). The transcript only ever grows, so an unchanged byte size
+  # for the same session_id + transcript_path means this Stop event has
+  # already been processed for this exact state -- skip re-deriving and
+  # re-appending entirely. One marker file per session_id (overwritten, not
+  # appended) is enough: a duplicate Stop fires right after the original, not
+  # some unbounded time later, so only the most recent key needs remembering.
+  marker_dir="$metrics_dir/.markers"
+  mkdir -p "$marker_dir" 2>/dev/null
+  marker_file="$marker_dir/$session_id"
+  transcript_size=$(wc -c < "$transcript" 2>/dev/null | tr -d ' ')
+  dedup_key="$transcript"$'\t'"$transcript_size"
+  if [[ -f "$marker_file" && "$(cat "$marker_file" 2>/dev/null)" == "$dedup_key" ]]; then
+    printf '%s' "$payload"
+    exit 0
+  fi
+
   # Orchestrator row: every return window in the whole session, so its
   # verify_tokens is the session total handoff-verification cost.
   orch_typemap=$(build_verify_map "$transcript" | jq -c --arg f "$transcript" \
@@ -329,6 +351,7 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
   # corruption, not privilege escalation — the attacker already needs
   # same-user write access to plant the symlink) but the guard is one line.
   [[ -n "$rows" && ! -L "$metrics_file" ]] && printf '%s\n' "$rows" >> "$metrics_file"
+  printf '%s' "$dedup_key" > "$marker_file" 2>/dev/null
 fi
 
 printf '%s' "$payload"
