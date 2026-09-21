@@ -51,6 +51,8 @@ else
     LOG=$LOGDIR
     fail=0
     $REPORT_BODY
+    # pid 0 is not a job report() can wait on, so 'wait 0' errors and
+    # report() takes its FAIL branch, printing \$LOGDIR/tests in full.
     report tests 0
     false
   " 2>&1 || true)
