@@ -12,9 +12,11 @@
 # reached through one of those would silently never match without -P.
 set -uo pipefail
 
-LINT="${CLAUDE_PLUGIN_ROOT:-}/skills/meta/memory-lint/scripts/memory-lint.py"
-[ -f "$LINT" ] || exit 0
-command -v python3 >/dev/null 2>&1 || exit 0
+# Unset/relative HOME: skip silently, same guard as hooks/stop/cost-tracker.sh
+# (M8) -- under set -u an unset HOME used to crash this hook.
+if [ -z "${HOME:-}" ] || [[ "$HOME" != /* ]]; then
+  exit 0
+fi
 
 PHYSPWD="$(pwd -P)"
 ENC="${PHYSPWD//\//-}"
@@ -25,7 +27,9 @@ MEMDIR="$HOME/.claude/projects/$ENC/memory"
 # writes this marker when git add/commit fails, so the memory store's
 # version control silently stops updating. Surfaced here, once per session,
 # every session until a later successful commit clears the marker (same
-# posture as the M9 crash line below).
+# posture as the M9 crash line below). Runs BEFORE the lint-script/python3
+# gates: the Stop hook needs neither to write the marker, so exiting on them
+# first used to hide it (2026-09-21 deep-audit finding).
 FAILMARKER="$HOME/.claude/state/memory-audit-commit-fail-$ENC"
 if [ -f "$FAILMARKER" ]; then
   printf '%s\n' \
@@ -33,6 +37,10 @@ if [ -f "$FAILMARKER" ]; then
     "$(cat "$FAILMARKER" 2>/dev/null)" \
     "Fix the underlying git issue in the memory store, then it will resolve on the next successful commit."
 fi
+
+LINT="${CLAUDE_PLUGIN_ROOT:-}/skills/meta/memory-lint/scripts/memory-lint.py"
+[ -f "$LINT" ] || exit 0
+command -v python3 >/dev/null 2>&1 || exit 0
 
 # Skip the python3 scan if nothing changed since the last clean run. -maxdepth 1
 # matches collect_state()'s non-recursive listdir; _archive/ never feeds the detector.

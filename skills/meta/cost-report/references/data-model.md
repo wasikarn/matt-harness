@@ -56,6 +56,11 @@ these fields and the Handoff cost section skips them.
 No legacy era is rewritten. The report prints a `note:` line for each of the two token-count
 eras present; the no-`stream` era shows as a missing section instead.
 
+A row with `error: "jq_failed"` (and no token fields) is the tracker's sentinel for a jq pass
+that died; the report never aggregates it, and prints one `warning:` line per session with the
+row count and the session id prefix (2026-09-21). `returns per orchestrator turn` divides by
+the turns of every orchestrator row carrying `verify_per_return`, including zero-return rows.
+
 ## Aggregation rule
 
 For each session with any `model_scoped` row: take the latest row per

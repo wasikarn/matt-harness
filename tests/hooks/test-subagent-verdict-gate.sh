@@ -105,6 +105,66 @@ run 'I explored the codebase and found three files matching the pattern.'
 run '{"pass": true, "findings": [], "scope_ok": true, "unexpected_files": []}' active
 [ -z "$OUT" ]; check "stop_hook_active:true: never blocks a second time" "$?"
 
+# --- 2026-09-21 deep-audit: _find_json_dicts was O(n x braces): 30,000
+# leading "{" before a vacuous verdict took ~15s through the .sh wrapper,
+# past the 8s SubagentStop timeout, so the block was dropped. `timeout 5`
+# wraps the run: a regression to the unbounded scan fails by rc 124. ---
+run_braces() { # run_braces <n-leading-braces> -> $OUT, $CODE
+  local f
+  f="$(mktemp)"
+  python3 -c "
+import json, sys
+n = int(sys.argv[1])
+msg = '{' * n + ' {\"pass\": true, \"findings\": [], \"scope_ok\": true, \"unexpected_files\": []}'
+d = {'hook_event_name': 'SubagentStop', 'agent_type': 'general-purpose',
+     'session_id': 'test-session', 'last_assistant_message': msg}
+print(json.dumps(d))
+" "$1" > "$f"
+  OUT="$(timeout 5 /bin/bash "$SH" < "$f" 2>/dev/null)"
+  CODE=$?
+  rm -f "$f"
+}
+run_braces 30000
+[ "$CODE" -ne 124 ]; check "30k leading braces: finishes under timeout 5 (rc $CODE, not 124), no silent timeout-drop" "$?"
+run_braces 10000
+echo "$OUT" | grep -q '"decision": *"block"' && ok=0 || ok=1
+check "10k leading braces before a vacuous verdict: still blocks" "$ok"
+
+# --- validator catch, same day: the first budget charged every popped span's
+# full length, so 1500 NESTED braces ({...{}...}) before a vacuous verdict
+# cost N(N+1) work and took the fail-open ALLOW path -- a cheaper bypass
+# than the one just closed. Work is charged per character walked only. ---
+run_nested_braces() { # run_nested_braces <n> -> $OUT, $CODE
+  local f
+  f="$(mktemp)"
+  python3 -c "
+import json, sys
+n = int(sys.argv[1])
+msg = '{' * n + '}' * n + ' {\"pass\": true, \"findings\": [], \"scope_ok\": true, \"unexpected_files\": []}'
+d = {'hook_event_name': 'SubagentStop', 'agent_type': 'general-purpose',
+     'session_id': 'test-session', 'last_assistant_message': msg}
+print(json.dumps(d))
+" "$1" > "$f"
+  OUT="$(timeout 5 /bin/bash "$SH" < "$f" 2>/dev/null)"
+  CODE=$?
+  rm -f "$f"
+}
+run_nested_braces 1500
+echo "$OUT" | grep -q '"decision": *"block"' && ok=0 || ok=1
+check "1500 nested braces before a vacuous verdict: still blocks (rc $CODE), no budget fail-open" "$ok"
+
+# --- 2026-09-21 deep-audit: two IDENTICAL pass-bearing objects were counted
+# as "2 distinct, ambiguous" and allowed; dedupe by canonical JSON first. ---
+run '{"pass": true, "findings": [], "scope_ok": true, "unexpected_files": []} ... as I said: {"pass": true, "findings": [], "scope_ok": true, "unexpected_files": []}'
+echo "$OUT" | grep -q '"decision": *"block"' && ok=0 || ok=1
+check "the same vacuous verdict printed twice: still blocks (identical objects are one verdict, not two)" "$ok"
+run '{"pass": true, "findings": [], "scope_ok": true, "unexpected_files": []} vs {"pass": true, "findings": [], "checked": [{"claim":"x","evidence":"y"}], "scope_ok": true, "unexpected_files": []}'
+[ -z "$OUT" ]; check "two DISTINCT pass:true objects: still allow (ambiguous)" "$?"
+
+# --- GH #156 drift guard: every gate raises the int-string digit limit
+# before json.load(); this one was missing it. ---
+command grep -q 'sys.set_int_max_str_digits(0)' "$ROOT/hooks/gates/subagent-verdict-gate.py"; check "GH #156 guard present (set_int_max_str_digits) in subagent-verdict-gate.py" "$?"
+
 # --- fail-open on missing python3 ---
 run_no_python3() {
   # Write the payload to a file first, not a pipe -- with `set -o pipefail`,

@@ -73,11 +73,21 @@ def compare(path_a, path_b, label_a, label_b):
     # hard_fail_reasons() above already hard-fails on other malformed-result
     # signals; a merely-missing field gets a WARN here instead, using the
     # same warnings mechanism the comparability checks below already use.
+    cases_totals = []
     for label, data in ((label_a, data_a), (label_b, data_b)):
         agg = data.get("aggregates", {})
         for key, holder in (("costUsd", data), ("overallScore", agg), ("overallPassRate", agg)):
             if key not in holder:
                 warnings.append(f"{label}: '{key}' missing from result file — shown as 0.0 below, not a real score")
+        # 2026-09-21 deep-audit: a missing casesTotal is the same silent-zero
+        # -- it read as 0 and skipped the per-case table while cases[] had
+        # entries. WARN and fall back to len(cases) instead.
+        if "casesTotal" in agg:
+            cases_totals.append(agg["casesTotal"])
+        else:
+            n = len(data.get("cases", []))
+            warnings.append(f"{label}: 'casesTotal' missing from result file — using len(cases)={n} instead")
+            cases_totals.append(n)
 
     for label, data in ((label_a, data_a), (label_b, data_b)):
         agg = data.get("aggregates", {})
@@ -115,8 +125,7 @@ def compare(path_a, path_b, label_a, label_b):
         lines.append("WARN: results may not be directly comparable:")
         lines.extend(f"  - {w}" for w in warnings)
 
-    cases_total_a = data_a.get("aggregates", {}).get("casesTotal", 0)
-    cases_total_b = data_b.get("aggregates", {}).get("casesTotal", 0)
+    cases_total_a, cases_total_b = cases_totals
     if cases_total_a == 0 or cases_total_b == 0:
         empty_side = label_a if cases_total_a == 0 else label_b
         lines.append(f"NOTE: casesTotal is 0 on {empty_side} — no cases ran, skipping per-case table.")

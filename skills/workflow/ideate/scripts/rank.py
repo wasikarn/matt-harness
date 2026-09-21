@@ -56,7 +56,11 @@ def rank(payload):
     scores = payload["scores"]
     for i, s in scores.items():
         _validated(i, s)
-    top_k = int(payload.get("topK", 3))
+    # 2026-09-21 deep-audit: same fail-closed class as _validated() -- int()
+    # coerced -1 (rc 0, ranked[:-1]), 0 (empty shortlist) and null (TypeError).
+    top_k = payload.get("topK", 3)
+    if isinstance(top_k, bool) or not isinstance(top_k, int) or top_k < 1:
+        _die(f"'topK' must be an integer >= 1, not bool: {top_k!r}")
     totals = {
         i: round(s["novelty"] * W[0] + s["viability"] * W[1] + s["fit"] * W[2], 2)
         for i, s in scores.items()
@@ -138,6 +142,18 @@ def _selftest():
     }})
     assert out["traps"] == ["b"], out["traps"]
     assert out["shortlist"] == ["a"], out["shortlist"]
+
+    # 2026-09-21 deep-audit: topK must be an integer >= 1 (not a bool). -1
+    # returned rc 0 with a nonsense shortlist (ranked[:-1]), 0 an empty one,
+    # and null a TypeError -- same input class the score guards above reject.
+    ok_scores = {"a": {"novelty": 7, "viability": 6, "fit": 8, "trap": None}}
+    for bad_k in (-1, 0, None, True, 2.0, "2"):
+        try:
+            rank({"topK": bad_k, "scores": ok_scores})
+            raise AssertionError(f"expected rank() to reject topK={bad_k!r}")
+        except SystemExit as e:
+            assert e.code == 1
+    assert rank({"scores": ok_scores})["shortlist"] == ["a"]  # absent topK still defaults to 3
 
     print("rank.py selftest ok")
 

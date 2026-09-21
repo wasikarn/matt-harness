@@ -38,6 +38,9 @@ Quote the script's numbers as printed. Add only what a reader needs to interpret
 
 - **Whole machine, not this project.** Every project writes to the same log and the report never
   groups by project. Compare a trend over days, not one total against another project.
+- **`warning:` lines mean unknown, not zero.** A session listed there had only `jq_failed`
+  sentinel rows (the tracker's jq pass died); it is left out of every total, so say its spend
+  is unknown rather than reading the total as complete.
 - **`note:` lines first.** Rows written before 2026-09-04 summed tokens per transcript line,
   so their turns, tokens, and cost run about 2.4x high; a short run after that kept a streaming
   placeholder and reads about 39% low on output. The script does not rewrite either era, so a

@@ -52,6 +52,18 @@ out2=$(CLAUDE_PLUGIN_ROOT="$fixture" PATH="$strip_path" /bin/bash "$SCRIPT" 2>/d
 echo "$out2" | /usr/bin/grep -q "gamma-gate" && ok=1 || ok=0
 assert "a newly-added gate file appears in the message with no script edit" "$ok"
 
+# (2026-09-21) The glob-empty fallback used to be a second hand-maintained
+# literal list (7 names, hooks/gates/ had 8). No real gate basename may appear
+# in the script's code lines at all; comments are stripped first because the
+# history note above the loop legitimately names two gates.
+hardcoded=0
+for g in "$ROOT"/hooks/gates/*.sh; do
+  name=$(basename "$g" .sh)
+  sed 's/#.*$//' "$SCRIPT" | /usr/bin/grep -q -- "$name" && hardcoded=$((hardcoded + 1))
+done
+[[ "$hardcoded" == "0" ]] && ok=1 || ok=0
+assert "no real gate name is hardcoded in the script's code (found $hardcoded)" "$ok"
+
 trash "$fixture" "$noop_bin" 2>/dev/null || true
 
 echo

@@ -6,13 +6,13 @@
 # snapshot-diff and records what it shows; --reinject (matcher compact, id
 # session:fragments-reinject) skips that filter entirely and reprints every
 # on-record document unconditionally, never recording -- the opposite
-# inclusion from session:handoff-surface, since a fragments file is a
+# inclusion the former session:handoff-surface had (removed v1.1.94), since a fragments file is a
 # living artifact whose one stated path is exactly the kind of thing
 # compaction loses. Advisory only; content is never inlined, only a path
 # pointer and a change-detection snapshot. Full design and every round-N
 # finding this script encodes: docs/adr/0003-writing-fragments-pointer-capture.md.
 #
-# Never reads stdin (same posture as handoff-surface.sh, for the same
+# Never reads stdin (the posture the former handoff-surface.sh had, removed v1.1.94, for the same
 # run-gauntlet backgrounded-test-runner stdin-inheritance hang risk).
 set -uo pipefail
 umask 077

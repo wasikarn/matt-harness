@@ -28,7 +28,7 @@ if ! command -v python3 >/dev/null 2>&1; then
     _gate_list="${_gate_list:+$_gate_list / }$_name"
   done
   echo "<!-- mh:portability-preflight -->"
-  echo "**matt-harness:** \`python3\` not found on PATH. Every gate (${_gate_list:-irrecoverable / subagent-git-guard / subagent-spawn-guard / task-complete-separation / test-integrity / config-write-guard / codex-setup-guard}) is failing open with a stderr note — destructive-command protection is OFF until python3 is installed."
+  echo "**matt-harness:** \`python3\` not found on PATH. Every gate (${_gate_list:-every hooks/gates/*.sh wrapper}) is failing open with a stderr note — destructive-command protection is OFF until python3 is installed."
   echo "<!-- /mh:portability-preflight -->"
   unset _gate_list _g _name
 fi

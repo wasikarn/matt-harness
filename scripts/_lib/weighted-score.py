@@ -35,8 +35,9 @@ denominator, so `total` renormalizes over the weights that actually scored
 -- never divides by the full declared weight sum, which would be
 arithmetically identical to scoring the dropped item 0.
 
-Fails closed: any input this script cannot compute (a missing/non-numeric
-field, a bool or non-finite score/max/weight, a non-positive max or negative
+Fails closed: any input this script cannot compute (a non-object payload, a
+missing/non-numeric field, a bool or non-finite score/max/weight, a non-bool
+`insufficient` -- the string "false" is truthy, a non-positive max or negative
 weight, a duplicate id, every item flagged insufficient, or the `primaryId`
 item itself flagged insufficient) exits 1 with a one-line reason on stderr
 and prints no JSON. The last case matters because `insufficient` items are
@@ -118,6 +119,8 @@ def _sensitivity(items, weight_sum, below_floor, perturb, pass_threshold):
 
 
 def score(payload):
+    if not isinstance(payload, dict):
+        _die(f"payload must be a JSON object, got {type(payload).__name__}")
     items = payload.get("scores")
     if not isinstance(items, list) or not items:
         _die("'scores' must be a non-empty list")
@@ -135,9 +138,11 @@ def score(payload):
     for it in items:
         try:
             item_id, s, m, w = it["id"], it["score"], it["max"], it["weight"]
-            insufficient = bool(it.get("insufficient", False))
+            insufficient = it.get("insufficient", False)
         except (KeyError, TypeError):
             _die(f"malformed score entry: {it!r}")
+        if not isinstance(insufficient, bool):
+            _die(f"'insufficient' must be a bool, not {insufficient!r}: {it!r}")
         for x in (s, m, w):
             if isinstance(x, bool) or not isinstance(x, (int, float)):
                 _die(f"score/max/weight must be numeric, not bool: {it!r}")
@@ -455,6 +460,31 @@ def _selftest():
                                      "insufficient": False}]})
     assert set(no_perturb.keys()) == {"total", "weightSum", "belowFloor", "pass",
                                        "primaryWeightOk"}, no_perturb
+
+    # 2026-09-21 deep-audit: `insufficient` must be a real bool. A string
+    # "false" is truthy, so bool("false") silently dropped the axis -- a 0/10
+    # score vanished from belowFloor with no error. Same posture as the
+    # bool/numeric guard on score/max/weight: reject, don't coerce.
+    for bad_insuff in ("false", "true", 0, 1, None):
+        try:
+            score({"scores": [{"id": "a", "score": 0, "max": 10, "weight": 1,
+                               "insufficient": bad_insuff},
+                              {"id": "b", "score": 8, "max": 10, "weight": 1,
+                               "insufficient": False}], "floorPct": 0.5})
+            raise AssertionError(f"expected SystemExit on insufficient={bad_insuff!r}")
+        except SystemExit as e:
+            assert e.code == 1
+    # Absent `insufficient` still defaults to False (the documented default).
+    absent = score({"scores": [{"id": "a", "score": 0, "max": 10, "weight": 1}], "floorPct": 0.5})
+    assert absent["belowFloor"] == ["a"], absent
+
+    # A non-object payload (a JSON list) must fail closed with the one-line
+    # reason, not escape as an AttributeError traceback.
+    try:
+        score([{"id": "a", "score": 5, "max": 10, "weight": 1, "insufficient": False}])
+        raise AssertionError("expected SystemExit on non-object payload")
+    except SystemExit as e:
+        assert e.code == 1
 
     print("weighted-score.py selftest ok")
 

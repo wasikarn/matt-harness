@@ -55,6 +55,22 @@ OUT=$(mask 'git reset --hard # comment after, with an apostrophe don'"'"'t matte
 ok=1; [[ "$OUT" == "git reset --hard"* ]] && ok=0
 check "comment apostrophe AFTER the real command: command text stays intact" "$ok"
 
+# 2026-09-21 deep-audit: ")" is a bash metacharacter, so "#" right after it
+# starts a comment ("(true)#don't" is a comment from "#" on), but it was
+# missing from _WORD_BOUNDARY_CHARS -- the apostrophe opened a fake
+# single-quote span that masked the real "git stash" on the next line away.
+OUT=$(mask "(true)#don't
+git stash")
+ok=1; [[ "$OUT" == *$'\n'"git stash" ]] && ok=0
+check "comment right after a ')' (metacharacter): 'git stash' on the next line survives" "$ok"
+
+# Control: a backtick is NOT a metacharacter, so "\`true\`#don't" is one word
+# and the "'" really does open a quote in bash -- must still be masked.
+OUT=$(mask "\`true\`#don't
+git stash")
+ok=1; [[ "$OUT" != *"git stash" ]] && ok=0
+check "control: '#' right after a backtick is not a comment, the quote span still masks" "$ok"
+
 echo ""
 echo "=== drift check: both consumers actually import the shared module ==="
 echo ""

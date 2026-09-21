@@ -15,7 +15,10 @@
 # what regex/anchor runs against the masked string and their own fail
 # direction, per operating-model.md's "each gate owns its error path" line.
 
-_WORD_BOUNDARY_CHARS = set(" \t\n;&|(")
+# ")" added 2026-09-21 (deep-audit): "(true)#don't" is a comment from "#" on
+# in real bash. "}" and a backtick are NOT metacharacters ("}#x" is one
+# word), so they stay out on purpose.
+_WORD_BOUNDARY_CHARS = set(" \t\n;&|()")
 
 
 def mask_quotes(s):
@@ -24,7 +27,7 @@ def mask_quotes(s):
     # equals input so match positions found against the masked string still
     # line up with the original. Single-quote spans are literal, double-quote
     # spans honor backslash escapes, as in bash. A "#" at a word boundary
-    # (start of string, or right after whitespace/;/&/|/(/newline) opens a
+    # (start of string, or right after whitespace/;/&/|/(/)/newline) opens a
     # bash comment that masks to end-of-line with no quote semantics inside
     # it -- the fix for the live bug both prior copies independently hit.
     #

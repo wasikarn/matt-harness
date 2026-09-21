@@ -270,6 +270,43 @@ check \"case two\" \"\$ok2\"
 ok=1; is_ask "$out" && ok=0
 check "Edit relocating an assertion into a ': ...' no-op block -> ask" "$ok"
 
+# --- Positive: 2026-09-21 deep-audit -- ")" was missing from the shared
+# masker's word-boundary set, so "(true)#don't skip" did not open a comment
+# and its apostrophe masked the real closing brace away, same class as the
+# fix-round 3 case above. ---
+out=$(payload_edit "$TESTFILE" 'check() {
+  (true)#don'\''t skip
+  [ "$2" = 0 ] && pass=$((pass + 1)) || fail=$((fail + 1))
+}' 'check() {
+  (true)#don'\''t skip
+  pass=$((pass + 1))
+}' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" && ok=0
+check "Edit weakening real logic after a ')#' comment apostrophe -> ask (was silently allowed)" "$ok"
+
+# --- Positive: 2026-09-21 deep-audit -- FUNC_OPEN_RE only matched a
+# line-start `check() {`. Real bash also honors `function check {` (no
+# parens), `check() ( ... )` (subshell body) and a mid-line `true; check() {`,
+# so a shadowing no-op in any of those three spellings was invisible to the
+# last-definition-wins scan. Same shape as the shadowing test above: the
+# real definition stays byte-identical, new_string appends the shadow. ---
+for shadow in 'function check {
+  pass=$((pass + 1))
+}' 'check() (
+  pass=$((pass + 1))
+)' 'true; check() {
+  pass=$((pass + 1))
+}'; do
+  out=$(payload_edit "$TESTFILE" 'check() {
+  [ "$2" = 0 ] && pass=$((pass + 1)) || fail=$((fail + 1))
+}' "check() {
+  [ \"\$2\" = 0 ] && pass=\$((pass + 1)) || fail=\$((fail + 1))
+}
+$shadow" | bash "$GATE" 2>/dev/null)
+  ok=1; is_ask "$out" && ok=0
+  check "Edit appending a shadowing no-op check def spelled '${shadow%%$'\n'*}' -> ask (was silently missed)" "$ok"
+done
+
 # --- Negative: only adding a new assertion -> noask ---
 out=$(payload_edit "$TESTFILE" 'check "case two" "$ok2"' 'check "case two" "$ok2"
 check "case three" "$ok3"' | bash "$GATE" 2>/dev/null)

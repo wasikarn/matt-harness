@@ -7,7 +7,7 @@ effort: medium
 
 # Harness Audit
 
-Runs 30 structural checks over `agents/`, `skills/`, and `hooks/` and reports CRIT / WARN / INFO.
+Runs every check under `scripts/checks/` over `agents/`, `skills/`, and `hooks/` and reports CRIT / WARN / INFO.
 Exit code = CRIT count; WARN and INFO never change it.
 
 ```bash

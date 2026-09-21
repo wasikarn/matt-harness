@@ -4,7 +4,7 @@
 # audit.sh's fragment integrity guard catches LOST checks, not SILENT ones. Each
 # known-bad fixture below is paired with a clean one; the matching check must
 # FIRE on bad and stay SILENT on good. Per-check fixtures cover 04, 05, 20, 22, 28, 29, 54,
-# 70, 71, 72, 73, 74, 75, 76; the fleet-bad / fleet-good pair covers the other sixteen with at
+# 70, 71, 72, 73, 74 (five fixtures, two added 2026-09-21), 75, 76; the fleet-bad / fleet-good pair covers the other sixteen with at
 # least one defect per check (43 is driven by the env ceiling, not a planted defect).
 # check-73-bad-missing-command-field and check-73-bad-args-fingerprint-mismatch (below) are
 # deep-audit fixes, 2026-09-10: a Codex-primary fresh-context checker found the original check
@@ -199,6 +199,11 @@ expect_warn   73 check-73-bad-args-fingerprint-mismatch
 expect_silent 74 check-74-good-all-present
 expect_crit   74 check-74-bad-truthiness-regression
 expect_crit   74 check-74-bad-missing-file
+# (2026-09-21 deep-audit) the check used to strip only # comments, so the idiom
+# inside a docstring passed, and it accepted one match for irrecoverable.py,
+# which has two _nested_spawn call sites to keep in step.
+expect_crit   74 check-74-bad-docstring-only
+expect_crit   74 check-74-bad-one-site-regressed
 
 # Check 75: manifest skill-reference drift (harness gap-audit M12, 2026-09-20).
 # "bar" is a real skill dir excluded from its fixture plugin.json's skills

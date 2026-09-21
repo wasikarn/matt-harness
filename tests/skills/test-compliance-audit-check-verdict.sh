@@ -69,6 +69,38 @@ else
   echo "FAIL: pinned-SHA match accepted — expected exit 0 with pass:true, got $match_rc: $match_out"
 fi
 
+# 2026-09-21 deep-audit: a 40-char pin vs the report's 7-char SHA is the same
+# commit -- prefix match, not a false rejection. A <7-char pin is rejected.
+full_sha="abc1234000000000000000000000000000000000"
+prefix_out=$(printf '%s' "$good" | python3 "$CHECK" "$full_sha")
+prefix_rc=$?
+if [ "$prefix_rc" -eq 0 ] && printf '%s' "$prefix_out" | /usr/bin/grep -q '"pass": true'; then
+  pass=$((pass + 1))
+else
+  fail=$((fail + 1))
+  echo "FAIL: 40-char pin vs 7-char report accepted — expected exit 0 with pass:true, got $prefix_rc: $prefix_out"
+fi
+short_out=$(printf '%s' "$good" | python3 "$CHECK" abc 2>&1 >/dev/null)
+short_rc=$?
+if [ "$short_rc" -eq 1 ] && printf '%s' "$short_out" | /usr/bin/grep -q "pinned SHA"; then
+  pass=$((pass + 1))
+else
+  fail=$((fail + 1))
+  echo "FAIL: 3-char pin rejected — expected exit 1 with a pinned-SHA message, got $short_rc: $short_out"
+fi
+
+# 2026-09-21 deep-audit: unexpected_files non-empty -> pass:false, even with
+# scope_ok:true and every requirement CONFORMS.
+stray='{"requirements": [{"id": "R1", "verdict": "CONFORMS", "note": "", "accepted": null}], "gauntlet": {"command": "bash gauntlet.sh", "sha": "abc1234", "exit_code": 0, "output_tail": "ok"}, "scope_ok": true, "unexpected_files": ["stray.py"]}'
+stray_out=$(printf '%s' "$stray" | python3 "$CHECK")
+stray_rc=$?
+if [ "$stray_rc" -eq 0 ] && printf '%s' "$stray_out" | /usr/bin/grep -q '"pass": false'; then
+  pass=$((pass + 1))
+else
+  fail=$((fail + 1))
+  echo "FAIL: unexpected_files non-empty — expected exit 0 with pass:false, got $stray_rc: $stray_out"
+fi
+
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ] && echo "PASS: test-compliance-audit-check-verdict"
 exit "$fail"

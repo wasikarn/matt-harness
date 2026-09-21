@@ -105,6 +105,23 @@ else
   fail=$((fail + 1))
 fi
 
+# (2026-09-21 deep-audit) tool_input present but NOT an object (a string) used
+# to make `.tool_input.skill?` yield nothing, so the row vanished -- against
+# the hook's own "every malformed path -> unknown" comment. Line count +1 and
+# the LAST row must be the fallback shape (earlier cases already logged
+# unknown rows, so a bare select() would pass regardless).
+payload_badinput='{"session_id":"sess-1","hook_event_name":"PostToolUse","tool_name":"Skill","tool_input":"design"}'
+lines_before=$(wc -l <"$LOG_FILE" | tr -d ' ')
+run_hook "$payload_badinput" >/dev/null 2>&1
+lines_after=$(wc -l <"$LOG_FILE" | tr -d ' ')
+if [[ "$lines_after" == "$((lines_before + 1))" ]] && tail -1 "$LOG_FILE" | jq -e '.skill == "unknown" and .plugin == "unnamespaced" and .session_id == "sess-1"' >/dev/null 2>&1; then
+  echo "  ✅ NON-OBJECT tool_input: a string tool_input still appends a skill=unknown/plugin=unnamespaced row, not silently dropped"
+  pass=$((pass + 1))
+else
+  echo "  ❌ a non-object tool_input should append a fallback row, not vanish silently (before=$lines_before after=$lines_after last=$(tail -1 "$LOG_FILE"))" >&2
+  fail=$((fail + 1))
+fi
+
 # Malformed payload must not crash the hook or corrupt the log.
 run_hook 'not json' >/tmp/sut-stdout2.$$ 2>/tmp/sut-stderr2.$$
 rc=$?

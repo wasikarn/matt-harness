@@ -250,6 +250,41 @@ total=$(printf '%s' "$out" | /usr/bin/grep '^total:' | /usr/bin/grep -oE '\$[0-9
 assert "row without verify_per_return: no Handoff section, total unaffected by the restored fields (got total=\$${total:-?})" "$ok"
 trash "$fake_home" 2>/dev/null || true
 
+# (2026-09-21) jq_failed sentinel rows: cost-tracker.sh emits {error:"jq_failed"} when its
+# jq pass dies. The report used to push a sentinel-only session as a $0 row and count it
+# as a session. Now: one warning line per session naming the count and the id prefix,
+# and the sentinel never reaches `latest`.
+fake_home=$(mktemp -d)
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir"
+cat > "$metrics_dir/costs.jsonl" <<'EOF'
+{"timestamp":"2026-09-21T00:00:00Z","session_id":"deadbeef-cafe-4000-8000-000000000001","transcript_path":"/t","stream":"orchestrator","error":"jq_failed","files":"/t"}
+{"timestamp":"2026-09-21T00:00:01Z","session_id":"deadbeef-cafe-4000-8000-000000000001","transcript_path":"/t","stream":"subagent","error":"jq_failed","files":"/t/a"}
+EOF
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
+rc=$?
+[[ "$rc" == "0" ]] \
+  && printf '%s' "$out" | /usr/bin/grep -q '^warning: 2 jq_failed sentinel rows for session deadbeef' \
+  && printf '%s' "$out" | /usr/bin/grep -q '^total:     \$0.0000  (0 sessions)' && ok=1 || ok=0
+assert "sentinel-only session prints one warning (count 2, id prefix) and is not counted as a \$0 session (0 sessions)" "$ok"
+trash "$fake_home" 2>/dev/null || true
+
+# (2026-09-21) returns per orchestrator turn: a zero-return orchestrator row (returns:0,
+# verify_per_return:[] -- the shape the H8 negative test proves cost-tracker emits) must
+# stay in the denominator. 2 returns/10 turns + 0 returns/10 turns = 0.10, not 0.20.
+fake_home=$(mktemp -d)
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir"
+cat > "$metrics_dir/costs.jsonl" <<'EOF'
+{"timestamp":"2026-09-21T00:00:00Z","session_id":"busy","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"dedup_usage":true,"usage_pick":"last","stream":"orchestrator","turns":10,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"returns":2,"verify_tokens":400,"verify_cache_read":0,"verify_per_return":[100,300],"rate_verified":true,"estimated_cost_usd":1.0}
+{"timestamp":"2026-09-21T00:00:01Z","session_id":"quiet","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"dedup_usage":true,"usage_pick":"last","stream":"orchestrator","turns":10,"input_tokens":100,"output_tokens":50,"cache_write_tokens":0,"cache_read_tokens":0,"cache_read_per_turn":0,"returns":0,"verify_tokens":null,"verify_cache_read":null,"verify_per_return":[],"rate_verified":true,"estimated_cost_usd":1.0}
+EOF
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
+rc=$?
+[[ "$rc" == "0" ]] && printf '%s' "$out" | /usr/bin/grep -q 'returns per orchestrator turn: 0.10  (2 returns / 20 turns)' && ok=1 || ok=0
+assert "returns per orchestrator turn counts a zero-return orchestrator row's turns in the denominator (2/20 = 0.10)" "$ok"
+trash "$fake_home" 2>/dev/null || true
+
 # Missing file: the script itself reports the tracker as not set up (exit 0), so the
 # skill body need not pre-check the path — the eval clean case relies on this message.
 fake_home=$(mktemp -d)

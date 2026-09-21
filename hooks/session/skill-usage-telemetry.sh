@@ -39,9 +39,13 @@ mkdir -p "$log_dir"
 #     fleet have no plugin prefix) used to fall through split(":")[0] and
 #     report plugin == skill, showing up in the health panel as its own
 #     fake single-skill "plugin". Now reported as "unnamespaced" instead.
+# `.tool_input.skill?` on a non-object tool_input yields NOTHING (not null), so
+# the whole program used to emit no row (2026-09-21). `// null` turns that
+# empty into null and the value is bound once, never re-indexed.
 jq -c --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" '
-  (if (.tool_input.skill? | type) == "string" and (.tool_input.skill | length) > 0
-   then .tool_input.skill else "unknown" end) as $skill |
+  (.tool_input.skill? // null) as $raw |
+  (if ($raw | type) == "string" and ($raw | length) > 0
+   then $raw else "unknown" end) as $skill |
   {
     ts: $ts,
     session_id: (.session_id // "unknown"),

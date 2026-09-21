@@ -20,7 +20,9 @@ the report; this version does not auto-fix). An out-of-family gap (new attack cl
 log as a known-gap for the user's decision; do not silently widen scope.
 
 **Per-requirement verdict.** Return one verdict per requirement: **CONFORMS** / **DEVIATED**
-(state what changed, and whether the justification is *accepted*) / **MISSING**. When an
+(state what changed, and whether the justification is *accepted*) / **MISSING** /
+**UNVERIFIABLE** (the check genuinely can't be exercised here, e.g. it needs a live external
+service — it never counts as a pass on its own; `accepted` stays `null`). When an
 adversarial-completeness finding surfaces a bypass, it downgrades the verdict only if the bypass
 falls within the scenario the requirement's own text names — e.g. a requirement to validate "the
 incoming signature" that turns out to validate the wrong bytes is still about validating the

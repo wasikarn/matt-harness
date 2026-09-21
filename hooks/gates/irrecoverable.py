@@ -660,7 +660,24 @@ KNOWN_GIT_SUBS = ("push", "reset", "clean", "restore", "checkout", "switch", "br
 def _has_raw_subst(t):
     return "`" in t or "$(" in t or "${" in t
 
+# 2026-09-21 deep-audit: a bare `NAME=value` prefix (`FOO=bar rm -rf x`) made
+# argv0 "FOO=bar", so every token-dispatched deny below fell through. Returns
+# the assignment's (key, value) or None; the same env-var hook bypass the -c
+# branch denies is checked here too (GIT_CONFIG_PARAMETERS / GIT_CONFIG_KEY_n
+# carrying core.hooksPath is exactly `-c core.hooksPath=`, via the
+# environment) -- one helper for the bare prefix and the `env` wrapper below.
+def _assignment(t):
+    key, eq, val = t.replace(PH, "").partition("=")
+    if not eq or not key.isidentifier():
+        return None
+    if (key == "GIT_CONFIG_PARAMETERS" or key.startswith("GIT_CONFIG_KEY_")) \
+            and "core.hookspath" in val.lower():
+        deny("-c core.hooksPath=<path> re-points git at a different hooks dir — same bypass as --no-verify")
+    return key, val
+
 for _wi, w in enumerate(windows):
+    while w and _assignment(w[0]):
+        w = w[1:]
     if not w:
         continue
     argv0, rest = basename(w[0]), w[1:]
@@ -684,7 +701,7 @@ for _wi, w in enumerate(windows):
                     i += 2
                 elif t.startswith("-"):
                     i += 1
-                elif "=" in t and t.split("=", 1)[0].isidentifier():
+                elif _assignment(rest[i]):
                     i += 1
                 else:
                     break
@@ -861,6 +878,16 @@ for _wi, w in enumerate(windows):
                         hooks_path_val = val
                 elif t_pf.startswith("-c"):
                     key, _, val = t_pf[2:].partition("=")
+                    if key.lower() == "core.hookspath" and val:
+                        hooks_path_val = val
+                # --config-env=KEY=VAR / --config-env KEY=VAR: git reads the
+                # value from env var VAR, same effect as -c (2026-09-21 audit).
+                elif t_pf == "--config-env" and idx + 1 < len(w):
+                    key, _, val = w[idx + 1].partition("=")
+                    if key.lower() == "core.hookspath" and val:
+                        hooks_path_val = val
+                elif t_pf.startswith("--config-env="):
+                    key, _, val = t_pf[len("--config-env="):].partition("=")
                     if key.lower() == "core.hookspath" and val:
                         hooks_path_val = val
             if hooks_path_val:

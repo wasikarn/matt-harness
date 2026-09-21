@@ -171,7 +171,17 @@ def exit_gate_lines(text):
 # single regex) that finds each `check ( ) {` opening, then counts `{`/`}`
 # to its real matching close, and returns the LAST such definition (bash's
 # own resolution order) instead of the first.
-FUNC_OPEN_RE = re.compile(r"^\s*(?:function\s+)?check\s*\(\s*\)\s*\{", re.MULTILINE)
+#
+# 2026-09-21 deep-audit: the line-start-only `check() {` anchor missed three
+# spellings real bash honors -- `function check {` (no parens), `check() (`
+# (subshell body, closed by ")") and a mid-line `true; check() {` -- so a
+# shadowing no-op in any of them was invisible. group(1) is the opener; the
+# scan below counts its matching pair. Preceded by line start or a
+# separator/grouping char, never mid-word.
+FUNC_OPEN_RE = re.compile(
+    r"(?:^|[;&|(){}])\s*(?:function\s+check\s*(?:\(\s*\))?|check\s*\(\s*\))\s*([{(])",
+    re.MULTILINE,
+)
 
 # 2026-09-20: extracted to a shared hooks/gates/_quotemask.py after this
 # function and subagent-git-guard.py's identical _mask_quotes drifted into
@@ -213,7 +223,7 @@ except Exception:
                 at_word_start = False
             else:
                 out.append(c); i += 1
-                at_word_start = c in set(" \t\n;&|(")
+                at_word_start = c in set(" \t\n;&|()")
         return "".join(out)
 
 def check_helper_body(text):
@@ -223,11 +233,13 @@ def check_helper_body(text):
     masked = _mask_quotes_bash(text)
     last = None
     for m in FUNC_OPEN_RE.finditer(masked):
+        opener = m.group(1)
+        closer = "}" if opener == "{" else ")"
         depth, i, start = 1, m.end(), m.end()
         while i < len(masked) and depth > 0:
-            if masked[i] == "{":
+            if masked[i] == opener:
                 depth += 1
-            elif masked[i] == "}":
+            elif masked[i] == closer:
                 depth -= 1
             i += 1
         if depth == 0:

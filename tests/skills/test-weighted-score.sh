@@ -83,4 +83,19 @@ done
 noperturb_out=$(printf '%s' '{"scores": [{"id": "x", "score": 5, "max": 10, "weight": 1, "insufficient": false}]}' | python3 "$SCORER")
 echo "$noperturb_out" | /usr/bin/grep -q 'sensitivity' && { echo "FAIL: unexpected sensitivity key with no perturb input, got: $noperturb_out"; exit 1; }
 
+# A string "false" in `insufficient` is truthy -- it must fail closed, not
+# silently drop a 0/10 axis from belowFloor (2026-09-21 deep-audit).
+str_out=$(printf '%s' '{"scores": [{"id": "a", "score": 0, "max": 10, "weight": 1, "insufficient": "false"}, {"id": "b", "score": 8, "max": 10, "weight": 1, "insufficient": false}], "floorPct": 0.5}' | python3 "$SCORER" 2>/dev/null)
+str_code=$?
+[ "$str_code" -ne 0 ] || { echo "FAIL: expected non-zero exit on string insufficient"; exit 1; }
+[ -z "$str_out" ] || { echo "FAIL: expected empty stdout on string insufficient, got: $str_out"; exit 1; }
+
+# A non-object payload (a JSON list) must fail with the one-line stderr
+# reason, never an AttributeError traceback.
+list_err=$(printf '%s' '[{"id": "a", "score": 5, "max": 10, "weight": 1, "insufficient": false}]' | python3 "$SCORER" 2>&1 >/dev/null)
+list_code=$?
+[ "$list_code" -eq 1 ] || { echo "FAIL: expected exit 1 on list payload, got $list_code"; exit 1; }
+printf '%s' "$list_err" | /usr/bin/grep -q '^weighted-score: ' || { echo "FAIL: expected one-line weighted-score: reason on list payload, got: $list_err"; exit 1; }
+printf '%s' "$list_err" | /usr/bin/grep -q 'Traceback' && { echo "FAIL: list payload leaked a traceback: $list_err"; exit 1; }
+
 echo "PASS: test-weighted-score"

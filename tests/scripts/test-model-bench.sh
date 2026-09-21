@@ -111,5 +111,24 @@ printf '%s\n' "$out" | /usr/bin/grep -qF 'casesTotal is 0' \
   && ok "zero-case arm: explicit note instead of a crash or misleading 0-vs-0 table" \
   || bad "zero-case arm: missing the casesTotal==0 note"
 
+# --- missing-casesTotal arm: WARN like the other always-present fields, still render per-case ---
+# 2026-09-21 deep-audit: a deleted aggregates.casesTotal read as 0 and skipped the per-case
+# table while cases[] had entries -- the exact silent-zero the docstring says is guarded.
+out=$(python3 "$DIFF_PY" --label-a fixture-a --label-b fixture-b \
+  "$FIXTURES/clean-a.json" "$FIXTURES/no-cases-total-b.json" 2>&1)
+status=$?
+
+if [ "$status" -eq 0 ]; then ok "missing-casesTotal arm: exit 0"; else bad "missing-casesTotal arm: exit $status (expected 0)"; fi
+printf '%s\n' "$out" | /usr/bin/grep -qF "fixture-b: 'casesTotal' missing" \
+  && ok "missing-casesTotal arm: WARN names the missing field" \
+  || bad "missing-casesTotal arm: no WARN for the missing casesTotal"
+printf '%s\n' "$out" | /usr/bin/grep -qF 'shared-skill-case' \
+  && printf '%s\n' "$out" | /usr/bin/grep -qF '+0.050' \
+  && ok "missing-casesTotal arm: per-case table still rendered from cases[]" \
+  || bad "missing-casesTotal arm: per-case table skipped despite cases[] having entries"
+printf '%s\n' "$out" | /usr/bin/grep -qF 'casesTotal is 0' \
+  && bad "missing-casesTotal arm: printed the casesTotal==0 note for a file that has cases" \
+  || ok "missing-casesTotal arm: no misleading casesTotal==0 note"
+
 echo "model-bench-diff.py self-test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

@@ -673,6 +673,26 @@ test_deny  "$IRRECOVERABLE" "git -c core.HOOKSPATH= (case-insensitive hookspath 
   "$(bash_payload 'git -c core.HOOKSPATH=/tmp/evil commit -m x')"
 test_deny  "$IRRECOVERABLE" "git -cCore.HooksPath= (joined form, mixed case, was silently ALLOWed)" \
   "$(bash_payload 'git -cCore.HooksPath=/tmp/evil commit -m x')"
+# 2026-09-21 deep-audit: real git honors --config-env=KEY=VAR / --config-env KEY=VAR
+# exactly like -c KEY=<value of VAR>, but only -c was checked.
+test_deny  "$IRRECOVERABLE" "git --config-env=core.hooksPath=VAR (joined form, hook bypass, was silently ALLOWed)" \
+  "$(bash_payload 'git --config-env=core.hooksPath=EVIL commit -m x')"
+test_deny  "$IRRECOVERABLE" "git --config-env core.hookspath=VAR (split form, lowercase key, was silently ALLOWed)" \
+  "$(bash_payload 'git --config-env core.hookspath=EVIL commit -m x')"
+test_allow "$IRRECOVERABLE" "git --config-env=user.name=X (benign key, must not over-block)" \
+  "$(bash_payload 'git --config-env=user.name=X commit -m x')"
+# 2026-09-21 deep-audit: a bare NAME=value assignment prefix made argv0 "FOO=bar",
+# so every token-dispatched deny (rm, git push --force, ...) fell through.
+test_deny  "$IRRECOVERABLE" "FOO=bar rm -rf (assignment prefix, was silently ALLOWed)" \
+  "$(bash_payload 'FOO=bar rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "FOO=bar git push --force (assignment prefix, was silently ALLOWed)" \
+  "$(bash_payload 'FOO=bar git push --force origin main')"
+test_deny  "$IRRECOVERABLE" "GIT_CONFIG_PARAMETERS=core.hooksPath=... git commit (env-var hook bypass, was silently ALLOWed)" \
+  "$(bash_payload 'GIT_CONFIG_PARAMETERS="'"'"'core.hooksPath=/dev/null'"'"'" git commit -m x')"
+test_deny  "$IRRECOVERABLE" "env GIT_CONFIG_PARAMETERS=core.hooksPath=... git commit (same via env wrapper)" \
+  "$(bash_payload 'env GIT_CONFIG_PARAMETERS="'"'"'core.hooksPath=/dev/null'"'"'" git commit -m x')"
+test_allow "$IRRECOVERABLE" "FOO=bar ls (assignment prefix on a benign command)" \
+  "$(bash_payload 'FOO=bar ls')"
 # --- git branch force-delete: discards unmerged commits ---
 test_deny  "$IRRECOVERABLE" "git branch -D (force-delete short flag)" \
   "$(bash_payload 'git branch -D featurex')"

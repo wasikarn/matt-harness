@@ -254,6 +254,50 @@ assert_not_contains "marker cleared (by memory-audit-commit.sh) -> nudge stops f
   "auto-commit failed" "$OUT"
 
 echo ""
+echo "--- (2026-09-21) the H6 marker surfaces even when the lint gates would exit early ---"
+# memory-audit-commit.sh needs neither python3 nor CLAUDE_PLUGIN_ROOT to write
+# the marker, so this hook must show it before either gate. PATH holds only
+# what the marker path itself needs (cat) and no python3 -- same trick as
+# tests/hooks/test-doctrine-bootstrap.sh.
+printf 'git commit failed (exit 1): fatal: unable to auto-detect email address\n' > "$FAILMARKER"
+noop_bin=$(mktemp -d "$TMP/nobin.XXXXXX")
+ln -s /bin/cat "$noop_bin/cat"
+ln -s /usr/bin/find "$noop_bin/find"
+ln -s /usr/bin/head "$noop_bin/head"
+OUT=$( cd "$PROJECT_DIR" && CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$FAKE_HOME" PATH="$noop_bin" /bin/bash "$HOOK" 2>&1 )
+assert_contains "python3 missing from PATH: the auto-commit-failed line still prints" \
+  "[memory-lint] the memory store's auto-commit failed" "$OUT"
+OUT=$( cd "$PROJECT_DIR" && CLAUDE_PLUGIN_ROOT='' HOME="$FAKE_HOME" bash "$HOOK" 2>&1 )
+assert_contains "CLAUDE_PLUGIN_ROOT empty: the auto-commit-failed line still prints" \
+  "[memory-lint] the memory store's auto-commit failed" "$OUT"
+rm -f "$FAILMARKER"
+
+echo ""
+echo "--- (2026-09-21) unset / relative HOME: skip silently, never crash under set -u or write into cwd ---"
+before=$(ls -A "$PROJECT_DIR" | wc -l | tr -d ' ')
+OUT=$( cd "$PROJECT_DIR" && env -u HOME CLAUDE_PLUGIN_ROOT="$ROOT" bash "$HOOK" </dev/null 2>&1 ); rc=$?
+after=$(ls -A "$PROJECT_DIR" | wc -l | tr -d ' ')
+if [ "$rc" -eq 0 ] && [ -z "$OUT" ] && [ "$before" = "$after" ]; then
+  echo "  ✅ unset HOME -> rc 0, silent, nothing written into cwd"; pass=$((pass + 1))
+else
+  echo "  ❌ unset HOME should exit 0 silently (rc=$rc out=<$OUT> before=$before after=$after)" >&2; fail=$((fail + 1))
+fi
+# Discriminating relative-HOME case: plant a dirty store where HOME=rel WOULD
+# resolve (cwd/rel/...). An unguarded hook lints it (prints findings) and
+# mkdirs rel/.claude/state inside the project cwd; the guard must do neither.
+REL_MEMDIR="$PROJECT_DIR/rel/.claude/projects/$ENC/memory"
+mkdir -p "$REL_MEMDIR"
+printf -- '---\nname: plain-target\ndescription: "unindexed"\nmetadata:\n  type: project\n---\nn/a\n' > "$REL_MEMDIR/plain-target.md"
+: > "$REL_MEMDIR/MEMORY.md"
+OUT=$( cd "$PROJECT_DIR" && HOME=rel CLAUDE_PLUGIN_ROOT="$ROOT" bash "$HOOK" </dev/null 2>&1 ); rc=$?
+if [ "$rc" -eq 0 ] && [ -z "$OUT" ] && [ ! -d "$PROJECT_DIR/rel/.claude/state" ]; then
+  echo "  ✅ relative HOME -> rc 0, silent, no rel/.claude/state in cwd, planted dirty store never linted"; pass=$((pass + 1))
+else
+  echo "  ❌ relative HOME should exit 0 silently without touching cwd (rc=$rc out=<$OUT>)" >&2; fail=$((fail + 1))
+fi
+trash "$PROJECT_DIR/rel" 2>/dev/null || true
+
+echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
 [[ "$fail" -eq 0 ]] && exit 0 || exit 1

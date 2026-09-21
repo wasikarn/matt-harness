@@ -91,7 +91,7 @@ except Exception:
                 at_word_start = False
             else:
                 out.append(c); i += 1
-                at_word_start = c in set(" \t\n;&|(")
+                at_word_start = c in set(" \t\n;&|()")
         return "".join(out)
 
 masked = _mask_quotes(cmd)

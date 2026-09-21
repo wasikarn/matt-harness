@@ -191,9 +191,9 @@ fi
 CLAIMED="${MARKER}.claimed"
 mv "$MARKER" "$CLAIMED" 2>/dev/null || { dbg "lost claim race for $MARKER"; exit 0; }
 
-# Publish: create-only, the exact handoff-path.sh --publish sequence.
+# Publish: create-only, the exact --publish sequence the former handoff-path.sh used (removed v1.1.94).
 # Project root must be resolved to the git repo root (matching
-# fragments-arm.sh / handoff-path.sh) before scoping -- using the raw cwd
+# fragments-arm.sh, as the former handoff-path.sh did) before scoping -- using the raw cwd
 # directly would scope this record to a subdirectory instead of the
 # project root whenever the write happened from one. An empty $CWD must
 # fail closed, not fall back to hook_repo_root's own ambient-cwd

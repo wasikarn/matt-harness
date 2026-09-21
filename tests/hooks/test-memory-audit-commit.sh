@@ -99,6 +99,36 @@ ok=1; [ -z "$OUT" ] && ok=0
 check "clean tree (nothing to commit) -> silent no-op" "$ok"
 
 echo ""
+echo "--- (2026-09-21) a clean store clears a stale marker: the operator committed by hand ---"
+init_memdir
+printf 'git commit failed (exit 1): stale\n' > "$FAILMARKER"
+run_hook
+ok=1; [ ! -f "$FAILMARKER" ] && ok=0
+check "marker is cleared when the store is clean (nothing to commit = no failure)" "$ok"
+
+echo ""
+echo "--- (2026-09-21) unset / relative HOME: skip silently, never crash under set -u or write into cwd ---"
+init_memdir
+echo "n/a" > "$MEMDIR/topic3.md"
+before=$(ls -A "$PROJECT_DIR" | wc -l | tr -d ' ')
+OUT=$( cd "$PROJECT_DIR" && env -u HOME bash "$HOOK" </dev/null 2>&1 ); rc=$?
+after=$(ls -A "$PROJECT_DIR" | wc -l | tr -d ' ')
+ok=1; [ "$rc" -eq 0 ] && [ -z "$OUT" ] && [ "$before" = "$after" ] && ok=0
+check "unset HOME -> rc 0, silent, nothing written into cwd (rc=$rc out=<$OUT>)" "$ok"
+# Discriminating relative-HOME case: plant a dirty store where HOME=rel WOULD
+# resolve (cwd/rel/...). An unguarded hook commits it and mkdirs
+# rel/.claude/state inside the project cwd; the guard must do neither.
+REL_MEMDIR="$PROJECT_DIR/rel/.claude/projects/$ENC/memory"
+mkdir -p "$REL_MEMDIR"
+( cd "$REL_MEMDIR" && git init -q && git config user.email "t@example.com" && git config user.name "t" )
+echo "n/a" > "$REL_MEMDIR/topic.md"
+OUT=$( cd "$PROJECT_DIR" && HOME=rel bash "$HOOK" </dev/null 2>&1 ); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$OUT" ] && [ ! -d "$PROJECT_DIR/rel/.claude/state" ] \
+  && [ -n "$(git -C "$REL_MEMDIR" status --porcelain)" ] && ok=0
+check "relative HOME -> rc 0, silent, no rel/.claude/state in cwd, planted store left uncommitted (rc=$rc out=<$OUT>)" "$ok"
+trash "$PROJECT_DIR/rel" 2>/dev/null || true
+
+echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
 [[ "$fail" -eq 0 ]] && exit 0 || exit 1

@@ -239,6 +239,14 @@ run_gate "git reset --hard # don't undo this" "agent1"; rc=$?
 ok=1; [ "$rc" -eq 2 ] && ok=0
 check "comment-apostrophe control: apostrophe after the anchor still denies" "$ok"
 
+# 2026-09-21 deep-audit: ")" was missing from the masker's word-boundary set,
+# so "(true)#don't" did not open a comment and its apostrophe swallowed the
+# real "git stash" on the next line into a fake quote span -- silent ALLOW.
+paren_comment_cmd="$(printf "(true)#don't\ngit stash")"
+run_gate "$paren_comment_cmd" "agent1"; rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "comment right after ')' then git stash on the next line: denied (was silently ALLOWed)" "$ok"
+
 # --- (11) malformed/non-JSON stdin: fail-safe allow --- #
 out=$(echo "not json" | bash "$GATE" 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0

@@ -21,8 +21,12 @@ if(process.argv[2]==="csv"){
 
 if(!fs.existsSync(f)){console.log("Cost tracker not set up: "+f+" not found. Enable the stop:cost-tracker hook and finish a session first.");process.exit(0);}
 const rows=fs.readFileSync(f,"utf8").split(/\r?\n/).filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(Boolean);
+// jq_failed sentinel rows (cost-tracker's emit_rows fallback) carry no spend; they used to
+// reach `latest` as a $0 row and count as a session (2026-09-21). Tallied per session and
+// warned about below instead.
+const sentinels=new Map();
 const bySession=new Map();
-for(const r of rows){if(r.codex_invocations)continue;const k=r.session_id||r.transcript_path||r.timestamp;if(!bySession.has(k))bySession.set(k,[]);bySession.get(k).push(r);}
+for(const r of rows){if(r.codex_invocations)continue;const k=r.session_id||r.transcript_path||r.timestamp;if(r.error==="jq_failed"){sentinels.set(k,(sentinels.get(k)||0)+1);continue;}if(!bySession.has(k))bySession.set(k,[]);bySession.get(k).push(r);}
 const latest=[];
 for(const rs of bySession.values()){
   const scoped=rs.filter(r=>r.model_scoped===true);
@@ -44,6 +48,7 @@ const d=fmtLocal(new Date(Date.now()-864e5));
 const sum=a=>a.reduce((s,r)=>s+cost(r),0);
 const f4=n=>"$"+n.toFixed(4);
 console.log("=== Cost summary ===");
+for(const [k,n] of sentinels)console.log("warning: "+n+" jq_failed sentinel rows for session "+String(k).slice(0,8)+" — that session's spend is unknown, not zero (see hooks/stop/cost-tracker.sh emit_rows)");
 // Two eras (2026-09-04): rows without dedup_usage summed one line per content block, ~2.4x high on
 // turns/tokens; dedup_usage rows without usage_pick:"last" (v0.68.639) kept the first line per
 // message.id, whose output_tokens is a streaming placeholder — ~39% low on output_tokens.
@@ -82,7 +87,9 @@ if(withVerify.length){
   const q=(a,p)=>{const s=[...a].sort((x,y)=>x-y);return s[Math.min(s.length-1,Math.floor(p*(s.length-1)+0.5))];};
   const line=(k,a)=>console.log(String(Math.round(q(a,0.5))).padStart(10)+" med  "+String(Math.round(q(a,0.9))).padStart(10)+" p90  "+String(a.length).padStart(4)+" returns  "+k);
   console.log("\n=== Handoff cost (main tokens per subagent return: read result + re-verify + decide, until next dispatch; rows tagged 2026-09-20+) ===");
-  const orchV=withVerify.filter(r=>r.stream==="orchestrator");
+  // Denominator: every orchestrator row that tracks returns (verify_per_return present,
+  // even empty) — a zero-return session's turns count too (2026-09-21).
+  const orchV=latest.filter(r=>r.stream==="orchestrator"&&Array.isArray(r.verify_per_return));
   const oTurns=orchV.reduce((s,r)=>s+(Number(r.turns)||0),0),oRet=orchV.reduce((s,r)=>s+(Number(r.returns)||0),0);
   if(oRet&&oTurns)console.log("returns per orchestrator turn: "+(oRet/oTurns).toFixed(2)+"  ("+oRet+" returns / "+oTurns+" turns)");
   const subV=withVerify.filter(r=>r.stream==="subagent");

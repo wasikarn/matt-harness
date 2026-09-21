@@ -29,6 +29,12 @@ import json
 import sys
 from typing import NoReturn
 
+# GH #156: raise the int-string digit limit before parsing so an oversized
+# unquoted int literal doesn't crash json.load() (full rationale:
+# codex-setup-guard.py). hasattr-guarded: absent before Python 3.11.
+if hasattr(sys, "set_int_max_str_digits"):
+    sys.set_int_max_str_digits(0)
+
 try:
     from _journal import journal
 except Exception:
@@ -44,6 +50,10 @@ def _allow(note=None) -> NoReturn:
     sys.exit(0)
 
 
+_SCAN_BUDGET = 2_000_000
+_MAX_SPAN_DEPTH = 32
+
+
 def _find_json_dicts(text):
     # String-aware brace matching: for each '{', walk forward tracking quote
     # state so a '{'/'}' inside a JSON string value never miscounts depth,
@@ -51,42 +61,75 @@ def _find_json_dicts(text):
     # findings[] item's own {summary, evidence} object) are found too but
     # filtered out downstream by the "has a bool `pass` key" check -- they
     # parse fine on their own, they just aren't the verdict object.
+    #
+    # 2026-09-21 deep-audit: the old per-"{" rescan was O(n x braces) -- 30,000
+    # leading "{" before a vacuous verdict took ~15s, past the 8s SubagentStop
+    # timeout, so the block was silently dropped. Now one pass per start
+    # keeps a stack of open positions and pops a candidate span on each "}",
+    # marking every "{" it pushed as visited; a later pass only starts at a
+    # "{" that every earlier pass saw inside a string (fresh, not-in-string
+    # state there, exactly what the old per-"{" rescan did). Same spans found,
+    # ordinary input is one pass. `work` is charged once per char walked,
+    # shared across passes and never reset (same pattern as irrecoverable.py's
+    # _SPAWN_SCAN_BUDGET); on exhaustion raise so the caller takes this
+    # gate's documented fail-open path fast. Validator catch, same day: a
+    # first cut also charged each popped span's full length, so 1500 NESTED
+    # braces cost N(N+1) and hit the budget -- a cheaper bypass than the one
+    # being closed. json.loads is the only remaining super-linear cost, so a
+    # span whose own nesting is deeper than _MAX_SPAN_DEPTH is never handed
+    # to it (a real verdict is ~3 deep; json.loads would RecursionError near
+    # 1000 anyway). `depths` mirrors `stack`: the deepest level seen inside
+    # each still-open span.
     out = []
     n = len(text)
-    i = 0
-    while i < n:
-        if text[i] == "{":
-            depth = 0
-            in_str = False
-            esc = False
-            j = i
-            while j < n:
-                c = text[j]
-                if in_str:
-                    if esc:
-                        esc = False
-                    elif c == "\\":
-                        esc = True
-                    elif c == '"':
-                        in_str = False
-                else:
-                    if c == '"':
-                        in_str = True
-                    elif c == "{":
-                        depth += 1
-                    elif c == "}":
-                        depth -= 1
-                        if depth == 0:
-                            try:
-                                obj = json.loads(text[i:j + 1])
-                                if isinstance(obj, dict):
-                                    out.append(obj)
-                            except Exception:
-                                pass
-                            break
-                j += 1
-        i += 1
+    visited = bytearray(n)
+    work = 0
+    for start in range(n):
+        if text[start] != "{" or visited[start]:
+            continue
+        stack = []
+        depths = []
+        in_str = False
+        esc = False
+        j = start
+        while j < n:
+            work += 1
+            if work > _SCAN_BUDGET:
+                raise RuntimeError("verdict-scan budget exceeded")
+            c = text[j]
+            if in_str:
+                if esc:
+                    esc = False
+                elif c == "\\":
+                    esc = True
+                elif c == '"':
+                    in_str = False
+            elif stack:
+                if c == '"':
+                    in_str = True
+                elif c == "{":
+                    stack.append(j)
+                    depths.append(len(stack))
+                    visited[j] = 1
+                elif c == "}":
+                    i = stack.pop()
+                    deepest = depths.pop()
+                    if depths:
+                        depths[-1] = max(depths[-1], deepest)
+                    if deepest - len(stack) <= _MAX_SPAN_DEPTH:
+                        try:
+                            obj = json.loads(text[i:j + 1])
+                            if isinstance(obj, dict):
+                                out.append(obj)
+                        except Exception:
+                            pass
+            elif c == "{":
+                stack.append(j)
+                depths.append(1)
+                visited[j] = 1
+            j += 1
     return out
+
 
 
 try:
@@ -124,6 +167,16 @@ if "NEEDS-DECISION" in msg:
 try:
     candidates = _find_json_dicts(msg)
     verdicts = [c for c in candidates if isinstance(c.get("pass"), bool)]
+    # 2026-09-21 deep-audit: the same verdict printed twice (a draft echoed
+    # verbatim as the final) is one verdict, not two "distinct" ones -- dedupe
+    # by canonical JSON before the ambiguity check below.
+    seen, uniq = set(), []
+    for v in verdicts:
+        k = json.dumps(v, sort_keys=True)
+        if k not in seen:
+            seen.add(k)
+            uniq.append(v)
+    verdicts = uniq
 except Exception as e:
     _allow(f"verdict-scan crashed, allowing ({e})")
 

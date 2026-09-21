@@ -499,6 +499,10 @@ agent_dispatch='{"type":"assistant","message":{"model":"claude-sonnet-5","conten
 { printf '%s\n' "$agent_dispatch"
   python3 -c 'import json; print(json.dumps({"type":"user","message":{"role":"user","content":"<task-notification>\n<task-id>aaa</task-id>\n<status>completed</status>\n</task-notification>"}}))'
   make_transcript_line claude-sonnet-5 100 50 7
+  # (2026-09-21) a background-Bash completion uses the same <task-notification>
+  # tag with a task-id that matches no agent-<id>.jsonl. It must neither open a
+  # second window (returns 2) nor close the real one early (verify_tokens 100).
+  python3 -c 'import json; print(json.dumps({"type":"user","message":{"role":"user","content":"<task-notification>\n<task-id>bash-0042</task-id>\n<status>completed</status>\n</task-notification>"}}))'
   printf '%s\n' '{"type":"assistant","message":{"model":"claude-sonnet-5","content":[{"type":"tool_use","name":"Agent","id":"t2","input":{"subagent_type":"general-purpose"}}],"usage":{"input_tokens":200,"output_tokens":80,"cache_creation_input_tokens":0,"cache_read_input_tokens":3}}}'
   make_transcript_line claude-sonnet-5 999 999; } > "$transcript"
 make_transcript_line claude-sonnet-5 10 5 > "$sess_dir/verify/subagents/agent-aaa.jsonl"
@@ -512,7 +516,7 @@ orch_row=$(/usr/bin/grep '"stream":"orchestrator"' "$metrics_file" 2>/dev/null)
 [[ "$rc" == "0" ]] \
   && printf '%s' "$sub_row" | /usr/bin/grep -q '"returns":1,"verify_tokens":430,"verify_cache_read":10,"verify_per_return":\[430\]' \
   && printf '%s' "$orch_row" | /usr/bin/grep -q '"returns":1,"verify_tokens":430' && ok=1 || ok=0
-assert "H8: task-notification -> next Agent tool_use window summed into verify_tokens (430, cache_read 10) via a real cost-tracker.sh run, not a fabricated row; turn after the dispatch excluded" "$ok"
+assert "H8: task-notification -> next Agent tool_use window summed into verify_tokens (430, cache_read 10) via a real cost-tracker.sh run, not a fabricated row; turn after the dispatch excluded; a background-command notification (no agent-<id>.jsonl) neither adds a return nor closes the window" "$ok"
 trash "$fake_home" "$sess_dir" 2>/dev/null || true
 
 # H8 negative case: a transcript with no <task-notification> at all must still

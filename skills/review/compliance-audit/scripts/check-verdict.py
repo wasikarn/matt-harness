@@ -32,7 +32,8 @@ Behavior:
     a requirement that actually deviated) and must be null otherwise (CONFORMS/
     MISSING don't have an acceptance question to answer).
   - Computes `pass` per SKILL.md Core Principles: every requirement is CONFORMS or
-    an accepted DEVIATED, AND gauntlet.exit_code == 0, AND scope_ok is true. A
+    an accepted DEVIATED, AND gauntlet.exit_code == 0, AND scope_ok is true, AND
+    unexpected_files is empty. A
     verifier-supplied `pass` field is never read — this script is the only
     arithmetic, same reason weighted-score.py is the only place a score total is
     computed.
@@ -170,12 +171,28 @@ def validate(obj):
 
 def compute_pass(obj):
     """SKILL.md Core Principles, transcribed: pass requires every requirement
-    CONFORMS or accepted-DEVIATED, AND the gauntlet exits 0, AND scope_ok."""
+    CONFORMS or accepted-DEVIATED, AND the gauntlet exits 0, AND scope_ok,
+    AND no unexpected_files. The last clause mirrors deep-audit's sibling
+    (its validate() rejects a self-reported pass over a non-empty
+    unexpected_files); this verifier never supplies `pass`, so there is no
+    self-report to reject -- it is simply computed false. Found by
+    mh:deep-audit 2026-09-21: scope_ok:true + ["stray.py"] passed."""
     reqs_ok = all(
         r["verdict"] == "CONFORMS" or (r["verdict"] == "DEVIATED" and r["accepted"] is True)
         for r in obj["requirements"]
     )
-    return bool(reqs_ok and obj["gauntlet"]["exit_code"] == 0 and obj["scope_ok"])
+    return bool(reqs_ok and obj["gauntlet"]["exit_code"] == 0 and obj["scope_ok"]
+                and not obj["unexpected_files"])
+
+
+def sha_matches(reported, expected):
+    """Both sides are 7-40 hex chars per SHA_RE, so the same commit can be
+    reported at different lengths; one being a prefix of the other is a
+    match. A pin under 7 chars never matches (SHA_RE rejects it) -- "abc"
+    would otherwise prefix-match anything."""
+    if not SHA_RE.match(expected):
+        return False
+    return reported.startswith(expected) or expected.startswith(reported)
 
 
 def main():
@@ -198,7 +215,7 @@ def main():
     candidates = extract_valid_candidates(text)
     if len(candidates) == 1:
         result = dict(candidates[0])
-        if expected_sha is not None and result["gauntlet"]["sha"] != expected_sha:
+        if expected_sha is not None and not sha_matches(result["gauntlet"]["sha"], expected_sha):
             print(f"check-verdict: rejected — gauntlet.sha {result['gauntlet']['sha']!r} does not "
                   f"match the pinned SHA {expected_sha!r} the orchestrating skill generated",
                   file=sys.stderr)
@@ -386,6 +403,37 @@ def _selftest():
 
     code, out, err = run_with_argv(good, ["abc1234"])
     assert code == 0 and json.loads(out)["pass"] is True, (code, out, err)
+
+    # 2026-09-21 deep-audit: the schema allows 7-40 hex chars on both sides,
+    # so a full 40-char pin vs a short report (or vice versa) is the same
+    # commit, not a mismatch -- accept when one is a prefix of the other.
+    full = "abc1234" + "0" * 33
+    code, out, err = run_with_argv(good, [full])
+    assert code == 0 and json.loads(out)["pass"] is True, (code, out, err)
+    good_full = json.loads(good)
+    good_full["gauntlet"]["sha"] = full
+    code, out, err = run_with_argv(json.dumps(good_full), ["abc1234"])
+    assert code == 0 and json.loads(out)["pass"] is True, (code, out, err)
+    # A real mismatch still rejects, and a pin shorter than 7 hex chars is
+    # rejected outright -- otherwise "abc" would prefix-match anything.
+    code, out, err = run_with_argv(good, ["abc1234" + "f" * 33])
+    assert code == 0, (code, out, err)  # same 7-char prefix, still a prefix match
+    code, out, err = run_with_argv(json.dumps(good_full), ["abc1234" + "f" * 33])
+    assert code == 1 and "does not match the pinned SHA" in err, (code, out, err)
+    for short_pin in ("abc", "abc123", "ABC1234", "not-a-sha"):
+        code, out, err = run_with_argv(good, [short_pin])
+        assert code == 1 and "pinned SHA" in err, (short_pin, code, out, err)
+
+    # 2026-09-21 deep-audit: `unexpected_files` non-empty means the diff
+    # touched something the plan never named -- an out-of-scope run cannot
+    # pass, same rule deep-audit's sibling applies. compliance-audit's
+    # verifier never supplies its own `pass`, so there is no self-report to
+    # reject; `pass` is simply computed false.
+    stray = json.loads(good)
+    stray["unexpected_files"] = ["stray.py"]
+    code, out, err = run_with_argv(json.dumps(stray), [])
+    parsed = json.loads(out)
+    assert code == 0 and parsed["pass"] is False, (code, out, err)
 
     print("check-verdict.py (compliance-audit) selftest ok")
 

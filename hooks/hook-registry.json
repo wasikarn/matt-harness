@@ -64,7 +64,7 @@
       },
       {
         "id": "gate:write:config-guard",
-        "description": "Ask before creating a Claude Code settings file, or editing an existing one's hooks / enabledPlugins keys.",
+        "description": "Ask before creating a Claude Code settings file, or editing an existing one's hooks / enabledPlugins / env keys.",
         "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/config-write-guard.sh\""
       },
       {

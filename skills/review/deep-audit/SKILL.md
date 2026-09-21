@@ -177,7 +177,7 @@ ahead of the agent's real, differently-valued verdict) reject as ambiguous rathe
 picking the first or last. Exit 0 with the validated JSON on stdout means accept; exit 1 with a
 reason on stderr means reject (a malformed or ambiguous verdict must never reach a fixer brief);
 **exit 2 means the agent correctly returned `NEEDS-DECISION` instead of guessing**
-(`spawn-brief.md:31-33`'s escalation return) — that is a valid non-guess, not a rejected verdict,
+(`spawn-brief.md:39`'s escalation return) — that is a valid non-guess, not a rejected verdict,
 and surfaces to the operator as an open question, not a broken checker. The substance rule is
 unchanged regardless of exit code: schema-valid JSON that still refuses in prose is not review
 evidence.

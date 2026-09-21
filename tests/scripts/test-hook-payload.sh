@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # test-hook-payload.sh — unit tests for scripts/_lib/hook_payload.py, the
 # shared session_id validator that replaced 3 near-identical embedded
-# python3 -c copies (hooks/session/handoff-nudge.sh,
+# python3 -c copies (the former hooks/session/handoff-nudge.sh, removed v1.1.94,
 # hooks/sensors/fragments-arm.sh, hooks/sensors/fragments-capture.sh).
-# Test list matches the exact cases handoff-nudge.sh's own comment names.
+# Test list matches the exact cases the former handoff-nudge.sh's own comment named.
 #
 # Every assertion is against a HARDCODED expected value.
 #
@@ -61,7 +61,7 @@ else
   bad "validate_session_id: expected RESULT 14/14, got '$RESULT_LINE'"
 fi
 
-# --- module run as a script (handoff-nudge.sh's call shape) ---
+# --- module run as a script (the former handoff-nudge.sh's call shape) ---
 run_script() {
   printf '%s' "$1" | PYTHONPATH="$LIB_DIR" python3 -B "$MODULE"
 }

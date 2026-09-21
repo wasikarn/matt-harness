@@ -19,12 +19,23 @@
 # once, not something a Stop hook does silently on their real data.
 set -uo pipefail
 
+# Unset/relative HOME: skip silently, same guard as hooks/stop/cost-tracker.sh
+# (M8) -- under set -u an unset HOME used to crash this hook on the line below.
+if [ -z "${HOME:-}" ] || [[ "$HOME" != /* ]]; then
+  exit 0
+fi
+
 PHYSPWD="$(pwd -P)"
 ENC="${PHYSPWD//\//-}"
 MEMDIR="$HOME/.claude/projects/$ENC/memory"
 [ -d "$MEMDIR/.git" ] || exit 0   # not opted in — nothing to do
 
 command -v git >/dev/null 2>&1 || exit 0
+
+# H6 marker path (see below). Resolved before the clean-tree exit so a clean
+# store also clears a stale marker: nothing to commit means no failure, e.g.
+# after the operator committed by hand (2026-09-21 deep-audit finding).
+FAILMARKER="$HOME/.claude/state/memory-audit-commit-fail-$ENC"
 
 # Dirty check first (cheap) — skip the add/commit round-trip when clean.
 # One `git status --porcelain` covers unstaged, staged, and untracked in a
@@ -42,7 +53,10 @@ command -v git >/dev/null 2>&1 || exit 0
 # _archive/, and also stages deletions of tracked .md files, not just adds).
 # A non-.md file dropped here by hand for the user's own reference is never
 # swept in.
-[ -z "$(git -C "$MEMDIR" status --porcelain -unormal -- '*.md' 2>/dev/null)" ] && exit 0
+if [ -z "$(git -C "$MEMDIR" status --porcelain -unormal -- '*.md' 2>/dev/null)" ]; then
+  rm -f "$FAILMARKER" 2>/dev/null
+  exit 0
+fi
 
 # H6 (harness gap-audit, 2026-09-20): both git calls used to redirect stderr
 # and never check an exit code -- any commit precondition failing (missing
@@ -53,7 +67,6 @@ command -v git >/dev/null 2>&1 || exit 0
 # (same "keep firing every session until fixed" posture as its M9 crash
 # marker), cleared on the next successful commit.
 mkdir -p "$HOME/.claude/state" 2>/dev/null
-FAILMARKER="$HOME/.claude/state/memory-audit-commit-fail-$ENC"
 
 ADD_ERR=$(git -C "$MEMDIR" add -- '*.md' 2>&1)
 ADD_RC=$?

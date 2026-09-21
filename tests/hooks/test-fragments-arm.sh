@@ -66,7 +66,7 @@ else
 fi
 
 # --- malformed JSON / a wrong-typed session_id: silent, exit 0, nothing
-# armed (same discipline as handoff-nudge.sh) ---
+# armed (the discipline the former handoff-nudge.sh had, removed v1.1.94) ---
 T=$(fresh_tmpdir)
 OUT=$(run 'not json' "$T" 2>"$T/err")
 rc=$?

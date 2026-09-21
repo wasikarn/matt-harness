@@ -36,7 +36,8 @@ exists; this audits the diff after.
   exercise, e.g. it needs a live external service; never used to paper over a verifier that
   didn't try), not a graded quality signal. Report the open count, not a percentage.
 - **`pass` is never true on requirements alone.** It requires every requirement CONFORMS or is an
-  *accepted* DEVIATED, **and** the gauntlet exits 0, **and** `scope_ok` is true. A gauntlet that
+  *accepted* DEVIATED, **and** the gauntlet exits 0, **and** `scope_ok` is true, **and**
+  `unexpected_files` is empty (a diff that touched something the plan never named). A gauntlet that
   can't be run (missing tool, timeout) is a failure to verify, never a skip-therefore-pass.
 - **No remediation in this version.** A real gap gets reported, not silently auto-fixed — see
   Phase 3.
@@ -192,7 +193,11 @@ fix.
    evidence the requirement is closer to the line than a single clean CONFORMS would suggest.
    Compare the verifier's independently-found deviations against Phase 2 step 1's pre-declared
    list. Match on both sides *and* the justification is accepted → set that requirement's
-   `accepted: true`. Verifier found one you didn't list, or one you listed but couldn't sanction
+   `accepted: true` **and write the sanctioning citation into its `note`** in a citation shape
+   (a backticked command, or `path:line` — the plan-text location or sign-off commit that
+   sanctioned it); `check-verdict.py` rejects an accepted DEVIATED whose `note` is bare prose,
+   so the re-run below fails on a note that only says "matched the pre-declared list".
+   Verifier found one you didn't list, or one you listed but couldn't sanction
    with plan text or citable sign-off → an unflagged/unaccepted gap; `accepted: false` (or leave
    `MISSING` as-is). This reconciliation step is the only hand judgment in Phase 3. Then **re-run
    `check-verdict.py` on the object with these `accepted` values applied** — Phase 2's run used
@@ -214,7 +219,8 @@ fix.
 4. **Suggested next step**, read straight from step 1's Phase-3 re-run of `check-verdict.py`'s
    computed `pass` — never re-derived by eye here:
    - `pass` true → done; ship/merge if not already.
-   - `pass` false for any reason — an open requirement, a failed gauntlet, or `scope_ok: false` —
+   - `pass` false for any reason — an open requirement, a failed gauntlet, `scope_ok: false`, or
+     a non-empty `unexpected_files[]` —
      blocks "done," even with a clean requirement table. Consider `mh:post-mortem` only if a gap
      reveals a systemic pattern, not for a one-off miss.
 

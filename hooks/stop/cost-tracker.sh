@@ -109,12 +109,22 @@ build_type_map() {
 # unrelated [role:] tag in 2cac98c8) verbatim except for the role-grouping half,
 # which stays removed per M14 — this mechanism is independent of role and answers
 # a still-open question (docs/research/matt-harness-gap-audit-2026-09-20.md, H8).
+#
+# Only a <task-id> that resolves to a sibling agent-<id>.jsonl opens or closes a
+# window: a background-Bash completion uses the same tag with a task-id that
+# matches no agent file, and used to inflate `returns` and cut real windows
+# short (2026-09-21 deep-audit finding).
 build_verify_map() {
-  jq -nRc 'reduce (inputs | try fromjson | select(.type == "user" or .type == "assistant")) as $l
+  local _d="${1%.jsonl}/subagents" _f _ids=()
+  shopt -s nullglob
+  for _f in "$_d"/agent-*.jsonl; do _f=$(basename "$_f" .jsonl); _ids+=("${_f#agent-}"); done
+  shopt -u nullglob
+  jq -nRc --argjson ids "$(jq -nc '$ARGS.positional' --args ${_ids[@]+"${_ids[@]}"})" \
+    'reduce (inputs | try fromjson | select(.type == "user" or .type == "assistant")) as $l
     ({cur: null, m: {}};
      if $l.type == "user" then
        (($l.message.content | strings | select(startswith("<task-notification>"))
-         | capture("<task-id>(?<id>[^<]+)</task-id>") | .id) // null) as $id
+         | capture("<task-id>(?<id>[^<]+)</task-id>") | .id | select(IN($ids[]))) // null) as $id
        | if $id then .cur = $id | .m[$id] += [{v: 0, c: 0}] else . end
      elif .cur != null and ($l.message.usage != null) then
        .cur as $id | ((.m[$id] | length) - 1) as $i
