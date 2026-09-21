@@ -11,6 +11,9 @@ GAUNTLET="$ROOT/scripts/run-gauntlet.sh"
 pass=0; fail=0
 ok()  { pass=$((pass + 1)); echo "  PASS: $1"; }
 bad() { fail=$((fail + 1)); echo "  FAIL: $1" >&2; }
+# trash "" resolves to the cwd and deletes it (documented repo incident) — a
+# test that mktemp's off its own output must never pass an unchecked result.
+safe_trash() { [ -n "${1:-}" ] && trash "$1" 2>/dev/null; return 0; }
 
 echo "=== gauntlet log preservation on failure (GH #158) ==="
 
@@ -24,7 +27,7 @@ else
   ( LOG="$PASS_LOG"; fail=0; : "$LOG"; eval "trap '$TRAP_CMD' EXIT" )
   if [ -d "$PASS_LOG" ]; then
     bad "log dir survived a passing run (should be trashed): $PASS_LOG"
-    trash "$PASS_LOG" 2>/dev/null || true
+    safe_trash "$PASS_LOG"
   else
     ok "log dir is cleaned up after a passing run (fail=0)"
   fi
@@ -36,7 +39,7 @@ else
   else
     bad "log dir was trashed even though fail=1 (original #158 gap)"
   fi
-  trash "$FAIL_LOG" 2>/dev/null || true
+  safe_trash "$FAIL_LOG"
 fi
 
 # report() must print the whole failing layer's log, not tail -n 40 — a
@@ -46,7 +49,7 @@ if [ -z "$REPORT_BODY" ]; then
   bad "could not extract report() from run-gauntlet.sh"
 else
   LOGDIR=$(mktemp -d)
-  { echo "first-line-marker-must-survive"; seq 2 50; } >"$LOGDIR/tests"
+  printf 'marker-line-%02d\n' $(seq 1 50) >"$LOGDIR/tests"
   out=$(cd "$ROOT" && bash -c "
     LOG=$LOGDIR
     fail=0
@@ -56,11 +59,15 @@ else
     report tests 0
     false
   " 2>&1 || true)
-  trash "$LOGDIR" 2>/dev/null || true
-  if printf '%s\n' "$out" | /usr/bin/grep -q "first-line-marker-must-survive"; then
-    ok "report() prints the full failing log, not a 40-line tail"
+  safe_trash "$LOGDIR"
+  # Count every fixture line, not just one marker: a partial print (e.g. only
+  # the first or last line) would pass a single-marker check while still
+  # dropping most of the failing layer.
+  matched=$(printf '%s\n' "$out" | /usr/bin/grep -c '^      marker-line-')
+  if [ "$matched" -eq 50 ]; then
+    ok "report() prints all 50 lines of the failing log, not a 40-line tail"
   else
-    bad "report() dropped the top of a >40-line failing log (tail -n 40 regression)"
+    bad "report() printed $matched/50 fixture lines (tail -n 40 regression or truncation)"
   fi
 fi
 

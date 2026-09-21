@@ -26,7 +26,10 @@ LOG="$(mktemp -d)"
 # the old unconditional trap deleted the only copy of a flaky failure's full
 # output before anyone could inspect it. $fail is set later in the script;
 # this trap command string is re-evaluated at EXIT time, after $fail is final.
-trap '[ "${fail:-0}" -eq 0 ] && trash "$LOG" 2>/dev/null; true' EXIT
+# -n "$LOG" guards a failed mktemp (LOG left empty, uncaught since there's no
+# set -e): trash "" resolves to the cwd and deletes it, a documented repo
+# incident (CHANGELOG.md), so a bare $LOG must never reach trash unchecked.
+trap '[ -n "$LOG" ] && [ "${fail:-0}" -eq 0 ] && trash "$LOG" 2>/dev/null; true' EXIT
 
 run_validate() {
   claude plugin validate . --strict &&
