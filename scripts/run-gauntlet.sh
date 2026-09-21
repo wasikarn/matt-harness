@@ -22,7 +22,11 @@ cd "$ROOT" || exit 1
 # of the fixture dir. Clear them before the test layer runs.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE
 LOG="$(mktemp -d)"
-trap 'trash "$LOG" 2>/dev/null || true' EXIT
+# Keep $LOG on a failing run instead of trashing it unconditionally (GH #158):
+# the old unconditional trap deleted the only copy of a flaky failure's full
+# output before anyone could inspect it. $fail is set later in the script;
+# this trap command string is re-evaluated at EXIT time, after $fail is final.
+trap '[ "${fail:-0}" -eq 0 ] && trash "$LOG" 2>/dev/null; true' EXIT
 
 run_validate() {
   claude plugin validate . --strict &&
@@ -102,11 +106,15 @@ report() {
     echo "PASS  $name"
   else
     echo "FAIL  $name"; fail=1
-    tail -n 40 "$LOG/$name" | sed 's/^/      /'
+    sed 's/^/      /' "$LOG/$name"
   fi
 }
 report validate "$p1"
 report lint "$p2"
 report tests "$p3"
-[ "$fail" -eq 0 ] && echo "gauntlet: all layers passed" || echo "gauntlet: FAILED" >&2
+if [ "$fail" -eq 0 ]; then
+  echo "gauntlet: all layers passed"
+else
+  echo "gauntlet: FAILED (full logs kept at $LOG)" >&2
+fi
 exit "$fail"
