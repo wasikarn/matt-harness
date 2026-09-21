@@ -130,6 +130,16 @@
             "timeout": 8
           }
         ]
+      },
+      {
+        "matcher": "SubagentHandback",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/subagent-verdict-gate.sh\"",
+            "timeout": 8
+          }
+        ]
       }
     ],
     "PostToolUse": [

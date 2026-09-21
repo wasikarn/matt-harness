@@ -1078,6 +1078,25 @@ test_deny "$IRRECOVERABLE" "subagent: claude --worktree x denied (new flag in th
   "$(bash_agent_payload 'claude --worktree x' fork)"
 test_deny "$IRRECOVERABLE" "subagent: claude --bg denied" \
   "$(bash_agent_payload 'claude --bg "run it"' fork)"
+# GH #157: a backslash-escaped quote outside a quoted span is a literal
+# character in real bash, never a string opener -- the tokenizer must not
+# let it swallow the real ";" and credit othertool's -p back to claude.
+test_allow "$IRRECOVERABLE" "#157: escaped double quote before a real ; is literal, othertool's -p stays with othertool" \
+  "$(bash_agent_payload 'claude \" ; othertool -p "x"' fork)"
+test_allow "$IRRECOVERABLE" "#157: escaped single quote before a real ; is literal" \
+  "$(bash_agent_payload "claude \\' ; othertool -p 'x'" fork)"
+test_allow "$IRRECOVERABLE" "#157 control: escaped quote then claude with no flag" \
+  "$(bash_agent_payload 'echo \" ; claude' fork)"
+test_allow "$IRRECOVERABLE" "#157 control: claude with a lone escaped quote and no flag" \
+  "$(bash_agent_payload 'claude \"' fork)"
+test_deny  "$IRRECOVERABLE" "#157 control: real -p after a literal escaped quote still denied" \
+  "$(bash_agent_payload 'claude \"x\" -p y' fork)"
+test_deny  "$IRRECOVERABLE" "#157 control: real double-quoted span containing ; still swallows it, -p denied" \
+  "$(bash_agent_payload 'claude "a ; b" -p y' fork)"
+test_deny  "$IRRECOVERABLE" "#157 control: single-quoted escaped quote is a real span, -p denied" \
+  "$(bash_agent_payload "claude '\\\"' -p y" fork)"
+test_deny  "$IRRECOVERABLE" "#157 control: even backslash run before a quote leaves the quote live, ; swallowed, -p denied" \
+  "$(bash_agent_payload 'claude \\"a ; b" -p y' fork)"
 test_allow "$IRRECOVERABLE" "main session: claude --worktree x allowed (no agent_id)" \
   "$(bash_agent_payload 'claude --worktree x' '')"
 test_allow "$SUBAGENT_GIT_GUARD" "subagent: git stash list allowed (read-only carve-out)" \

@@ -161,6 +161,53 @@ check "the same vacuous verdict printed twice: still blocks (identical objects a
 run '{"pass": true, "findings": [], "scope_ok": true, "unexpected_files": []} vs {"pass": true, "findings": [], "checked": [{"claim":"x","evidence":"y"}], "scope_ok": true, "unexpected_files": []}'
 [ -z "$OUT" ]; check "two DISTINCT pass:true objects: still allow (ambiguous)" "$?"
 
+
+# --- GH #160: on CC >= 2.1.271 in auto mode the report is delivered via the
+# SubagentHandback tool, and last_assistant_message holds only the closing
+# text. The same check runs as a PreToolUse hook on tool_input.message
+# (code.claude.com/docs/en/hooks.md, SubagentStop section), denying with the
+# hookSpecificOutput shape. ---
+# handback_payload <message> [event] [tool_name]
+handback_payload() {
+  python3 -c "
+import json, sys
+msg, event, tool = sys.argv[1], sys.argv[2], sys.argv[3]
+d = {'tool_name': tool, 'tool_input': {'message': msg}, 'agent_id': 'agent-1',
+     'agent_type': 'general-purpose', 'session_id': 'test-session'}
+if event != '-':
+    d['hook_event_name'] = event
+print(json.dumps(d))
+" "$1" "${2:-PreToolUse}" "${3:-SubagentHandback}"
+}
+run_handback() { # run_handback <message> [event] [tool_name] -> $OUT, $CODE
+  OUT="$(handback_payload "$1" "${2:-PreToolUse}" "${3:-SubagentHandback}" | bash "$SH" 2>/dev/null)"
+  CODE=$?
+}
+
+run_handback '{"pass": true, "findings": [], "scope_ok": true, "unexpected_files": []}'
+echo "$OUT" | grep -q '"permissionDecision": *"deny"' && echo "$OUT" | grep -q '"hookEventName": *"PreToolUse"' && ok=0 || ok=1
+check "PreToolUse SubagentHandback: vacuous pass in tool_input.message denies (hookSpecificOutput deny JSON)" "$ok"
+[ "$CODE" -eq 0 ]; check "PreToolUse deny is exit 0 (JSON on stdout, not an exit-2 crash)" "$?"
+
+run_handback '{"pass": true, "findings": [], "checked": [{"claim": "x", "evidence": "y"}], "scope_ok": true, "unexpected_files": []}'
+[ -z "$OUT" ] && [ "$CODE" -eq 0 ]; check "PreToolUse SubagentHandback: real pass with checked[] evidence: silent allow" "$?"
+
+run_handback 'Handing back: I explored the codebase and found three files matching the pattern.'
+[ -z "$OUT" ] && [ "$CODE" -eq 0 ]; check "PreToolUse SubagentHandback: non-verdict report text: silent allow" "$?"
+
+run_handback '{"pass": true, "findings": [], "scope_ok": true, "unexpected_files": []}' -
+[ -z "$OUT" ] && [ "$CODE" -eq 0 ]; check "PreToolUse payload with hook_event_name missing: silent allow (fail-open)" "$?"
+
+run_handback '{"pass": true, "findings": [], "scope_ok": true, "unexpected_files": []}' PreToolUse Agent
+[ -z "$OUT" ] && [ "$CODE" -eq 0 ]; check "PreToolUse on a different tool_name: silent allow" "$?"
+
+run_handback_malformed() { # truncated JSON on stdin -> $OUT, $CODE
+  OUT="$(printf '{"hook_event_name": "PreToolUse", "tool_name": "SubagentHandback", "tool_input": {"message": ' | bash "$SH" 2>/dev/null)"
+  CODE=$?
+}
+run_handback_malformed
+[ -z "$OUT" ] && [ "$CODE" -eq 0 ]; check "PreToolUse malformed stdin (truncated JSON): exit 0, no deny JSON (fail-open)" "$?"
+
 # --- GH #156 drift guard: every gate raises the int-string digit limit
 # before json.load(); this one was missing it. ---
 command grep -q 'sys.set_int_max_str_digits(0)' "$ROOT/hooks/gates/subagent-verdict-gate.py"; check "GH #156 guard present (set_int_max_str_digits) in subagent-verdict-gate.py" "$?"

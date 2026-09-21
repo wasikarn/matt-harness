@@ -229,6 +229,20 @@ out=$(payload_edit "$TESTFILE" 'check() {
 ok=1; is_ask "$out" && ok=0
 check "Edit weakening real logic after a comment apostrophe -> ask (was silently allowed by the old comment-unaware masker)" "$ok"
 
+# --- Positive: GH #157 sibling (2026-09-21) -- an `echo \"` line before the
+# real assertion: the escaped quote is a literal in bash, but the old masker
+# opened an unterminated fake double-quote span at it, masking the closing
+# brace away, same class as the comment-apostrophe case above. ---
+out=$(payload_edit "$TESTFILE" 'check() {
+  echo \" marker
+  [ "$2" = 0 ] && pass=$((pass + 1)) || fail=$((fail + 1))
+}' 'check() {
+  echo \" marker
+  pass=$((pass + 1))
+}' | bash "$GATE" 2>/dev/null)
+ok=1; is_ask "$out" && ok=0
+check "Edit weakening real logic after an escaped-quote line -> ask (was silently allowed by the old masker)" "$ok"
+
 # --- Positive: deleting the final exit-gate line is invisible to a
 # call-site diff, but it is the line that turns an accumulated fail count
 # into the script's actual exit code -- this repo's own tests (including

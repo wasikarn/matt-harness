@@ -107,18 +107,24 @@ for group in d['hooks'].values():
     for entry in group:
         if name in entry.get('command', ''):
             print(entry.get('id', ''))
-            sys.exit(0)
 " "$1" "$REGISTRY"
 }
+# ids_in_registry <id> <newline-separated ids> -> 0 if <id> is one of them
+ids_in_registry() { printf '%s\n' "$2" | /usr/bin/grep -qxF -- "$1"; }
 
 ok=0
 for f in "$ROOT"/hooks/gates/*.py; do
   [ "$(basename "$f")" = "_journal.py" ] && continue
-  id=$(/usr/bin/grep -oE 'GATE_ID = "[^"]+"' "$f" | head -1 | sed 's/GATE_ID = "//; s/"$//')
-  [ -z "$id" ] && continue  # this gate has no journal wiring (none expected today)
+  # One .sh can back several hook events (subagent-verdict-gate.sh: SubagentStop
+  # + PreToolUse, GH #160), each with its own registry id and its own GATE_ID*
+  # constant in the .py -- so every GATE_ID* must be one of THAT .sh's ids.
+  ids=$(/usr/bin/grep -oE 'GATE_ID[A-Z_]* = "[^"]+"' "$f" | sed 's/.* = "//; s/"$//')
+  [ -z "$ids" ] && continue  # this gate has no journal wiring (none expected today)
   sh_name="$(basename "$f" .py).sh"
-  registry_id=$(registry_id_for "$sh_name")
-  [ "$registry_id" = "$id" ] || { echo "  drift: $f's GATE_ID=$id but hook-registry.json's $sh_name entry has id=$registry_id" >&2; ok=1; }
+  registry_ids=$(registry_id_for "$sh_name")
+  for id in $ids; do
+    ids_in_registry "$id" "$registry_ids" || { echo "  drift: $f's GATE_ID=$id is not among hook-registry.json's ids for $sh_name ($(echo "$registry_ids" | tr '\n' ' '))" >&2; ok=1; }
+  done
 done
 check "every gate's GATE_ID matches hook-registry.json's own entry for that gate" "$ok"
 
@@ -131,9 +137,20 @@ MUTANT="$WORK/mutant-irrecoverable.py"
 cp "$ROOT/hooks/gates/irrecoverable.py" "$MUTANT"
 sed -i.bak 's/GATE_ID = "gate:bash:irrecoverable"/GATE_ID = "gate:write:config-guard"/' "$MUTANT"
 mutant_id=$(/usr/bin/grep -oE 'GATE_ID = "[^"]+"' "$MUTANT" | head -1 | sed 's/GATE_ID = "//; s/"$//')
-mutant_registry_id=$(registry_id_for "irrecoverable.sh")
-ok=1; [ "$mutant_id" = "gate:write:config-guard" ] && [ "$mutant_registry_id" = "gate:bash:irrecoverable" ] && [ "$mutant_id" != "$mutant_registry_id" ] && ok=0
+mutant_registry_ids=$(registry_id_for "irrecoverable.sh")
+ok=1; [ "$mutant_id" = "gate:write:config-guard" ] && [ "$mutant_registry_ids" = "gate:bash:irrecoverable" ] && ! ids_in_registry "$mutant_id" "$mutant_registry_ids" && ok=0
 check "mutation proof: an ID swapped to a different real gate's id is caught (not a raw substring hit)" "$ok"
+
+# --- Case 4c: same proof for a two-event gate -- subagent-verdict-gate.sh has
+# two registry ids; a GATE_ID that is a real id of a DIFFERENT gate must still
+# be caught, while both of its own ids are accepted. ---
+verdict_ids=$(registry_id_for "subagent-verdict-gate.sh")
+ok=1
+[ "$(printf '%s\n' "$verdict_ids" | /usr/bin/grep -c .)" -eq 2 ] \
+  && ids_in_registry "gate:agent:subagent-verdict-check" "$verdict_ids" \
+  && ids_in_registry "gate:agent:subagent-verdict-check-handback" "$verdict_ids" \
+  && ! ids_in_registry "gate:bash:irrecoverable" "$verdict_ids" && ok=0
+check "two-event gate: both own ids accepted, another gate's real id rejected" "$ok"
 
 # --- Case 5: MH_GATE_JOURNAL_PATH override is honored (the mechanism
 # scripts/run-gauntlet.sh's hook-test layer relies on, instead of swapping

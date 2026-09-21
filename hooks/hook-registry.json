@@ -71,6 +71,11 @@
         "id": "gate:skill:codex-setup-guard",
         "description": "Ask before a model-invoked Skill(codex:setup) call carrying --enable-review-gate; the paired Codex plugin's review gate stays off by design.",
         "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/codex-setup-guard.sh\""
+      },
+      {
+        "id": "gate:agent:subagent-verdict-check-handback",
+        "description": "Deny (re-prompt) a SubagentHandback call whose report (tool_input.message) carries a vacuous or self-contradictory Rule 13 verdict object -- the auto-mode delivery path SubagentStop cannot see (GH #160).",
+        "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/subagent-verdict-gate.sh\""
       }
     ],
     "PostToolUse": [

@@ -71,6 +71,35 @@ git stash")
 ok=1; [[ "$OUT" != *"git stash" ]] && ok=0
 check "control: '#' right after a backtick is not a comment, the quote span still masks" "$ok"
 
+# GH #157 sibling (2026-09-21): a backslash-escaped quote OUTSIDE a span is
+# a literal character in real bash, never a span opener -- an odd backslash
+# run escapes the quote, an even run is literal backslashes and leaves the
+# quote live. The old masker opened a span at any bare quote, so
+# `echo \" ; git stash` masked the real "git stash" away: a bypass.
+OUT=$(mask 'echo \" ; git stash')
+ok=1; [[ "$OUT" == *"; git stash" ]] && ok=0
+check "escaped double quote outside a span is literal (odd run): 'git stash' after it survives" "$ok"
+
+OUT=$(mask "echo \\' ; git stash")
+ok=1; [[ "$OUT" == *"; git stash" ]] && ok=0
+check "escaped single quote outside a span is literal (odd run): 'git stash' after it survives" "$ok"
+
+OUT=$(mask 'echo \\" ; git stash"')
+ok=1; [[ "$OUT" != *"git stash"* ]] && ok=0
+check "even backslash run before a double quote leaves the quote live: span still masks" "$ok"
+
+OUT=$(mask "echo \\\\' ; git stash'")
+ok=1; [[ "$OUT" != *"git stash"* ]] && ok=0
+check "even backslash run before a single quote leaves the quote live: span still masks" "$ok"
+
+OUT=$(mask "echo '\\' ; git stash")
+ok=1; [[ "$OUT" == *"; git stash" ]] && ok=0
+check "backslash inside single quotes is literal: the span closes at the next quote, 'git stash' survives" "$ok"
+
+OUT=$(mask 'echo "\" ; git stash"')
+ok=1; [[ "$OUT" != *"git stash"* ]] && ok=0
+check "control: backslash-escaped quote INSIDE a double-quoted span stays inside it" "$ok"
+
 echo ""
 echo "=== drift check: both consumers actually import the shared module ==="
 echo ""

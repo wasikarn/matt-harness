@@ -77,6 +77,24 @@ do
   check "subagent denied: $cmd" "$ok"
 done
 
+# --- (2b) GH #157 sibling: an escaped quote outside a span must not mask
+# the real "git stash" after it (was a bypass, false ALLOW) --- #
+run_gate 'echo \" ; git stash' "agent1"; rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "subagent denied: echo \\\" ; git stash (escaped quote before a real stash)" "$ok"
+run_gate "echo \\' ; git stash" "agent1"; rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "subagent denied: echo \\' ; git stash (escaped single quote before a real stash)" "$ok"
+run_gate 'echo "a ; b" ; git stash' "agent1"; rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "subagent denied: real double-quoted span then a real stash" "$ok"
+run_gate "echo '\\' ; git stash" "agent1"; rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "subagent denied: backslash inside single quotes is literal, span closes, real stash follows" "$ok"
+run_gate 'echo "\" ; git stash"' "agent1"; rc=$?
+ok=1; [ "$rc" -eq 0 ] && ok=0
+check "subagent allowed: stash inside a real double-quoted span (escaped quote inside the span)" "$ok"
+
 # --- (3) subagent: unrelated git/non-git commands allowed --- #
 for cmd in \
   "git status" \

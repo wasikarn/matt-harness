@@ -33,9 +33,9 @@ def mask_quotes(s):
     #
     # ponytail: heuristic word-boundary check, not full tokenization (no
     # backtick/$()-aware nesting either) -- widen _WORD_BOUNDARY_CHARS if a
-    # real miss traces to an omitted operator. No handling for a backslash-
-    # escaped quote OUTSIDE a span; add a one-char lookback if a real false
-    # positive/negative traces to it.
+    # real miss traces to an omitted operator. A backslash-escaped quote
+    # OUTSIDE a span is a literal (GH #157 sibling, 2026-09-21); other
+    # escaped characters outside spans are left as-is.
     out = []
     i, n = 0, len(s)
     at_word_start = True
@@ -70,6 +70,22 @@ def mask_quotes(s):
             if i < n:
                 out.append(" ")
                 i += 1
+            at_word_start = False
+        elif c == "\\":
+            # GH #157 sibling: backslashes outside a span pair up, and an
+            # ODD run escapes the character after it. Only an escaped quote
+            # is masked (it is a literal in real bash, never a span opener);
+            # every other escaped character is left as-is so a backslash-
+            # escaped "git" anchor bypass stays visible to the callers' own
+            # anchor regexes. An even run leaves a following quote live.
+            j = i
+            while j < n and s[j] == "\\":
+                out.append("\\")
+                j += 1
+            if (j - i) % 2 == 1 and j < n and s[j] in "'\"":
+                out.append("Q")
+                j += 1
+            i = j
             at_word_start = False
         else:
             out.append(c)

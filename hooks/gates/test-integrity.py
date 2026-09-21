@@ -221,6 +221,14 @@ except Exception:
                 if i < n:
                     out.append(" "); i += 1
                 at_word_start = False
+            elif c == "\\":  # GH #157 sibling: an odd backslash run escapes a following quote (literal, not a span)
+                j = i
+                while j < n and s[j] == "\\":
+                    out.append("\\"); j += 1
+                if (j - i) % 2 == 1 and j < n and s[j] in "'\"":
+                    out.append("Q"); j += 1
+                i = j
+                at_word_start = False
             else:
                 out.append(c); i += 1
                 at_word_start = c in set(" \t\n;&|()")

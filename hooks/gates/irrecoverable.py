@@ -216,7 +216,15 @@ _SPAWN_ANCHOR_RE = re.compile(
     re.MULTILINE,
 )
 _SPAWN_FLAG_RE = re.compile(r"-p\b|--print\b|--agent\b|--bg\b|--worktree\b")
+# GH #157: an ODD backslash run directly before a quote escapes that quote
+# in real bash (`claude \" ; othertool -p x` -- the `"` is a literal argument
+# character, not a string opener), so it is captured as one literal token
+# here, ahead of the quoted-span alternatives that would otherwise start a
+# span at that quote and swallow the real ";" after it. An even run
+# (`\\"a ; b"`) leaves the quote live, falls through to the run + span
+# alternatives below, and still swallows the ";" -- the deny direction.
 _SPAWN_TOKEN_RE = re.compile(
+    "\\\\(?:\\\\\\\\)*[\"" + SQ + "]|"
     "\"(?:[^\"\\\\]|\\\\.)*\"|" + SQ + "[^" + SQ + "]*" + SQ + "|\\\\+|.", re.DOTALL
 )
 # C1 (harness gap-audit, 2026-09-20): the outer loop over every anchor match

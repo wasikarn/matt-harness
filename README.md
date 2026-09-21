@@ -3,7 +3,7 @@
 A Claude Code plugin (`mh@wasikarn`) that composes `mattpocock-skills` instead of duplicating
 it — checked first, before any native surface gets built. Beyond that, it adds only what native
 Claude Code and the plugins it sits next to (`ponytail`, `diagram-design`, `qmd`) can't already
-do: 7 deny/ask gates, a 4 KB methodology injected at session start, and a small set of skills and
+do: deny/ask gates on PreToolUse plus a verdict-check gate on SubagentStop/SubagentHandback, a 4 KB methodology injected at session start, and a small set of skills and
 agents that earned their place.
 
 ## How it works
@@ -51,7 +51,7 @@ The plugin ships `defaultEnabled: false`; add `"mh@wasikarn": true` to `settings
 | `gate:write:test-integrity` | asks before a write that weakens a test |
 | `gate:write:config-guard` | asks before a write to Claude Code settings `hooks`/`enabledPlugins` |
 | `gate:skill:codex-setup-guard` | asks before a model-invoked `--enable-review-gate` call to the paired Codex plugin's `/codex:setup` |
-| `gate:agent:subagent-verdict-check` | `SubagentStop`, not `PreToolUse`: blocks a subagent's Stop and re-prompts it once when its final message carries a vacuous or self-contradictory Rule 13 `{pass, findings[], checked[], scope_ok, unexpected_files[]}` verdict; allows on `stop_hook_active:true`, `NEEDS-DECISION`, or no verdict-shaped output |
+| `gate:agent:subagent-verdict-check` | `SubagentStop`, plus a `PreToolUse` twin on `SubagentHandback` (`gate:agent:subagent-verdict-check-handback`, same check on `tool_input.message` for auto mode on CC >= 2.1.271): blocks a subagent's Stop and re-prompts it once when its final message carries a vacuous or self-contradictory Rule 13 `{pass, findings[], checked[], scope_ok, unexpected_files[]}` verdict; allows on `stop_hook_active:true`, `NEEDS-DECISION`, or no verdict-shaped output |
 
 Each PreToolUse gate is its own entry with an 8 s timeout (the SubagentStop entry has the same
 timeout). Claude Code runs matching hooks in parallel and merges deny > ask > allow (verified
