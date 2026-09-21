@@ -3,6 +3,31 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.106] — 2026-09-21
+
+### Fixed
+
+- **Week-scope `mh:deep-audit` of 2026-09-14..21 (71 commits) closed 27 gaps in that week's own
+  fixes**, found by 5 fresh-context Fable checkers (Codex primary hit its usage limit) and
+  re-validated by 2 more. Gates: `_quotemask.py`'s `#`-comment fix lacked `)` as a word boundary
+  (a `(true)#don't` comment before `git stash` bypassed `subagent-git-guard` and
+  `test-integrity`); `test-integrity`'s `check()` shadow detector missed `function check {`,
+  `check() (…)`, and mid-line forms; `subagent-verdict-gate` took 15 s on 30k leading braces
+  (past its 8 s timeout, dropping the block), allowed an identical verdict printed twice, and
+  lacked the GH #156 int-digit guard; `irrecoverable` missed `--config-env[=]core.hooksPath` and
+  a bare `NAME=value` prefix before `rm`/`git`. Hooks: `memory-audit-commit.sh` /
+  `memory-health-nudge.sh` crashed on unset `$HOME`, the H6 marker was never cleared on a clean
+  store nor surfaced without python3; `doctrine-bootstrap.sh`'s fallback list re-hardcoded 7 of 8
+  gates; check 74 ignored docstrings and needed only one of `irrecoverable.py`'s two call sites;
+  `cost-tracker.sh`'s H8 window counted background-Bash notifications as subagent returns; the H7
+  `jq_failed` sentinel was never read by `cost-report`. Scripts: `weighted-score.py`
+  truthiness-coerced `insufficient` (string `"false"` dropped an axis); compliance-audit's
+  `check-verdict.py` passed with non-empty `unexpected_files` and false-rejected a short-vs-full
+  SHA pin; `rank.py` accepted `topK: -1`; `model-bench-diff.py` read a missing `casesTotal` as
+  zero. Docs: CHANGELOG `## [1.1.98]` heading restored (6b7a2daa had renamed it), 1.1.105's 18
+  omitted commits listed, README gate and check counts un-hardcoded, 4 stale cites fixed.
+  Code in 3f81fdb8, docs in the commit after it. Deep-audit baseline 6.6/10 (fail) → 8.6/10.
+
 ## [1.1.105] — 2026-09-20
 
 ### Added
