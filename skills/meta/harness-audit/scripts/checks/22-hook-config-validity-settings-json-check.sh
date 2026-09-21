@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # 22. Hook config validity — hooks/hooks.json or settings.json (checks C–F).
-# Verified against code.claude.com/docs/en/hooks (31-event canonical set, re-confirmed
+# Verified against code.claude.com/docs/en/hooks (32-event canonical set, re-confirmed
 # 2026-08-07 via raw fetch — added DirectoryAdded, shipped in Claude Code 2.1.219,
-# which the 2026-07-31 set below had missed). Findings are WARN not CRIT: vendor docs
-# lag features (Rule 1), so
+# which the 2026-07-31 set below had missed; PostModelSwitch added 2026-09-21 after a
+# plan-review pass confirmed it's real and documented, v2.1.251+ — PreModelSwitch and a
+# few other newer events from the same doc pass are still missing from this list).
+# Findings are WARN not CRIT: vendor docs lag features (Rule 1), so
 # an unrecognized event/type may be real-but-undocumented — flag for a human, do
 # not fail the build. A bad regex, by contrast, genuinely never matches.
 # Plugin mode: the hook config is hooks/hooks.json (settings.json exists only in
@@ -23,7 +25,7 @@ DOC_EVENTS = {
     "TaskCreated","TaskCompleted","Stop","StopFailure","TeammateIdle",
     "InstructionsLoaded","ConfigChange","CwdChanged","FileChanged","WorktreeCreate",
     "WorktreeRemove","DirectoryAdded","PreCompact","PostCompact","Elicitation",
-    "ElicitationResult","SessionEnd",
+    "ElicitationResult","SessionEnd","PostModelSwitch",
 }
 VALID_TYPES = {"command","http","mcp","agent","prompt"}
 AC_MAX = 10000
