@@ -3,6 +3,30 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.109] — 2026-09-21
+
+### Fixed
+
+- **GH #117 closed**: `hooks/stop/cost-tracker.sh` keys a per-session completion marker on
+  `(transcript_path, transcript byte size)` before re-deriving and appending, so a Stop event
+  that fires twice for one unchanged turn writes the cost row once. The marker is only set when
+  the append persisted (a symlink-blocked or otherwise failed append leaves it unset, so a
+  retry still writes the row), `session_id` is sanitised with the same character class as
+  `scripts/_lib/hook_payload.py` before it becomes a path component, and the marker write
+  carries the same `-L` symlink guard as the `costs.jsonl` append. Sequential duplicates
+  only: the Stop hook is async and the check is check-then-write, no lock. Correction to the
+  issue text: the summarized `mh:cost-report` keeps the latest row per session and was never
+  inflated by a duplicate; only raw-row consumers (CSV mode) saw it.
+- **GH #158 (still open)**: `scripts/run-gauntlet.sh` keeps its log directory on a failing
+  run and prints the whole failing layer instead of a 40-line tail, so a flaky failure can be
+  diagnosed after the fact. A failed `mktemp -d` now aborts before any layer can write to
+  `"$LOG/<name>"` with `LOG` empty, and the EXIT trap never passes an empty path to `trash`.
+  The flake itself is unreproduced; the issue stays open.
+- Deep-audit of the two peer sessions' work above (Codex Sol/medium checker, 6 findings, 4
+  fixed): the marker symlink guard, the `mktemp` abort, the sequential-only statement, and
+  the cost-report wording. Regression tests for each are in `tests/hooks/test-session-stop.sh`
+  and the new `tests/scripts/test-gauntlet-log-preservation.sh`.
+
 ## [1.1.108] — 2026-09-21
 
 ### Fixed

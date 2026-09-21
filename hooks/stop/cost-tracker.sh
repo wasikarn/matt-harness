@@ -301,6 +301,10 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
   # re-appending entirely. One marker file per session_id (overwritten, not
   # appended) is enough: a duplicate Stop fires right after the original, not
   # some unbounded time later, so only the most recent key needs remembering.
+  # Sequential duplicates only: this is check-then-write with no lock, and the
+  # hook runs async (hooks.json), so two overlapping cost-tracker processes for
+  # one session would both pass the check and both append. No observed case;
+  # add a mkdir lock if one ever shows up.
   marker_dir="$metrics_dir/.markers"
   mkdir -p "$marker_dir" 2>/dev/null
   # session_id is taken verbatim from the Stop payload with no validation --
@@ -379,7 +383,9 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
       printf '%s\n' "$rows" >> "$metrics_file" || append_ok=0
     fi
   fi
-  (( append_ok )) && printf '%s' "$dedup_key" > "$marker_file" 2>/dev/null
+  # Same `-L` guard as the costs.jsonl append above: a pre-planted symlink at
+  # .markers/<session_id> must not redirect this truncating write.
+  (( append_ok )) && [[ ! -L "$marker_file" ]] && printf '%s' "$dedup_key" > "$marker_file" 2>/dev/null
 fi
 
 printf '%s' "$payload"

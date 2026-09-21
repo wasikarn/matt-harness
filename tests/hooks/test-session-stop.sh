@@ -552,9 +552,11 @@ trash "$transcript" 2>/dev/null || true
 # GH #117: cost-tracker is stateless by design, re-deriving cumulative totals
 # from the full transcript on every Stop -- so if the same Stop event ever
 # fires twice for one turn (transcript unchanged in between), the append had
-# no completion marker to recognize that and would double-write the row,
-# inflating cumulative totals. Same session_id + same transcript path + same
-# transcript byte size = the identical prior state, not a new turn.
+# no completion marker to recognize that and would double-write the row. The
+# summarized mh:cost-report is unaffected (it keeps the latest row per session
+# and model key, see skills/meta/cost-report/references/data-model.md); raw-row consumers such
+# as the CSV mode see the duplicate. Same session_id + same transcript path +
+# same transcript byte size = the identical prior state, not a new turn.
 fake_home=$(mktemp -d)
 transcript=$(mktemp)
 make_transcript_line claude-sonnet-5 100 50 > "$transcript"
@@ -656,6 +658,28 @@ escape_target="$fake_home/.local/share/evil-mh-test-marker"
   && [[ -f "$metrics_dir/.markers/default" ]] && ok=1 || ok=0
 assert "a session_id containing .. doesn't let the completion marker write escape .markers/" "$ok"
 trash "$fake_home" "$transcript" 2>/dev/null || true
+
+# Regression (deep-audit finding, 2026-09-21): the marker write is `>` into
+# .markers/<session_id>; a pre-planted symlink there would be followed and the
+# target truncated + overwritten with the dedup key -- the same threat the
+# costs.jsonl append already guards with `-L`. The row must still be appended
+# (the guard skips only the marker write) and the decoy must be untouched.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+make_transcript_line claude-sonnet-5 100 50 > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "marker-symlink"}))' "$transcript")
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir/.markers"
+decoy=$(mktemp)
+printf 'decoy-untouched\n' > "$decoy"
+ln -s "$decoy" "$metrics_dir/.markers/marker-symlink"
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+[[ "$rc" == "0" && "$out" == "$payload" ]] \
+  && [[ "$(cat "$decoy")" == "decoy-untouched" ]] \
+  && [[ "$(wc -l < "$metrics_dir/costs.jsonl" | tr -d ' ')" == "1" ]] && ok=1 || ok=0
+assert "a symlinked .markers/<session_id> is not followed: decoy untouched, row still appended" "$ok"
+trash "$fake_home" "$transcript" "$decoy" 2>/dev/null || true
 
 echo ""
 echo "=== memory-audit-commit hook (Stop) ==="

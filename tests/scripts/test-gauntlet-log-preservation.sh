@@ -71,5 +71,31 @@ else
   fi
 fi
 
+# A failed `mktemp -d` (GNU mktemp honours a bad TMPDIR; a full /tmp) must stop
+# the run before any layer writes to "$LOG/<name>" with LOG empty, i.e. to
+# /validate. Extract the LOG assignment line (same style as the trap check
+# above -- running the whole gauntlet here would recurse into this test) and
+# eval it with a failing mktemp shimmed on PATH: the line must exit non-zero
+# and name mktemp, never fall through with LOG empty.
+LOG_LINE=$(/usr/bin/grep -m1 '^LOG="\$(mktemp -d)"' "$GAUNTLET")
+SHIM=$(mktemp -d)
+if [ -z "$LOG_LINE" ]; then
+  bad "run-gauntlet.sh has no top-level LOG=\"\$(mktemp -d)\" line to extract"
+elif [ -z "$SHIM" ]; then
+  bad "mktemp -d failed for the shim dir"
+else
+  printf '#!/bin/sh\nexit 1\n' > "$SHIM/mktemp"
+  chmod +x "$SHIM/mktemp"
+  out=$(PATH="$SHIM:$PATH" bash -c "set -uo pipefail; $LOG_LINE; echo \"fell-through LOG=<\$LOG>\"" 2>&1)
+  rc=$?
+  safe_trash "$SHIM"
+  if [ "$rc" -ne 0 ] && printf '%s\n' "$out" | /usr/bin/grep -q 'mktemp' \
+     && ! printf '%s\n' "$out" | /usr/bin/grep -q 'fell-through'; then
+    ok "a failed mktemp -d aborts before any layer can use an empty LOG (rc=$rc)"
+  else
+    bad "a failed mktemp -d did not abort (rc=$rc): $(printf '%s' "$out" | tr '\n' '|')"
+  fi
+fi
+
 echo "self-test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

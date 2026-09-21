@@ -21,14 +21,14 @@ cd "$ROOT" || exit 1
 # in its env, which hijacks those git-init calls onto the real repo instead
 # of the fixture dir. Clear them before the test layer runs.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE
-LOG="$(mktemp -d)"
+LOG="$(mktemp -d)" && [ -d "$LOG" ] || { echo "gauntlet: mktemp -d failed, refusing to run with an empty log dir" >&2; exit 1; }
 # Keep $LOG on a failing run instead of trashing it unconditionally (GH #158):
 # the old unconditional trap deleted the only copy of a flaky failure's full
 # output before anyone could inspect it. $fail is set later in the script;
 # this trap command string is re-evaluated at EXIT time, after $fail is final.
-# -n "$LOG" guards a failed mktemp (LOG left empty, uncaught since there's no
-# set -e): trash "" resolves to the cwd and deletes it, a documented repo
-# incident (CHANGELOG.md), so a bare $LOG must never reach trash unchecked.
+# -n "$LOG" is defense in depth behind the mktemp abort above: trash ""
+# resolves to the cwd and deletes it, a documented repo incident
+# (CHANGELOG.md), so a bare $LOG must never reach trash unchecked.
 trap '[ -n "$LOG" ] && [ "${fail:-0}" -eq 0 ] && trash "$LOG" 2>/dev/null; true' EXIT
 
 run_validate() {
