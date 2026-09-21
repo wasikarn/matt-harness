@@ -3,6 +3,19 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.108] — 2026-09-21
+
+### Fixed
+
+- **GH #161 closed**: the shared quote masker (`_quotemask.py` and both inline fallbacks) now
+  models bash ANSI-C quoting `$'…'` (backslash escapes the next char, span ends at the first
+  unescaped `'`), so `echo $'\'' ; git stash` no longer masks the real `git stash` away for a
+  subagent. A `$` escaped by a backslash, or an even `$$` run (a PID), does not open an ANSI-C
+  span. Three copies fuzz-verified equivalent, length preserved. A backslash-newline
+  continuation before `git` stays a conservative false deny: the masker cannot tell an
+  argument `git` from a command `git`, and the fresh-context validator showed that treating the
+  pair as a literal let `\<newline>git stash` through the anchor.
+
 ## [1.1.107] — 2026-09-21
 
 ### Fixed
