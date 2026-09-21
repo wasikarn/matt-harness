@@ -20,6 +20,54 @@ All notable changes to `mh` are documented here. Format loosely follows
   operating-model.md`'s gate-table row and subagent-scoped-gate count (3 → 4). 13 new tests in
   `tests/hooks/test-subagent-verdict-gate.sh`, run through the `.sh` wrapper.
 
+**Correction (2026-09-21):** this entry originally documented only the SubagentStop gate; 18
+other shipped-path commits landed between f2a67cf6 (the last v1.1.103 fix) and this release with
+no entry anywhere.
+Paraphrased from each commit body:
+
+- `3d501cd4` — 8 CRITICAL live gate bypasses + 6 mechanical gaps from the 9-agent audit
+  (`docs/research/nine-agent-gate-architecture-security-audit-2026-09-20.md`): wrapper-chain
+  prefixes (`env`/`sudo`/`nohup`/...) and a leading backslash before a nested `claude`/`git`
+  spawn, git long-flag abbreviation bypasses (`--no-veri`, `--amen`, ...) via a new `_is_flag()`.
+- `a523b9fe` — C1: `_nested_spawn`'s per-anchor inner scan was O(anchors × length); 6,000
+  anchors took 22 s, past the 8 s PreToolUse timeout, so the tool call ran. Now a call-wide work
+  counter fails closed past 2,000,000 tokens.
+- `282819da` — `weighted-score.py` fails closed on a bool/non-finite `floorPct`/`passThreshold`
+  and on a score above `max` (gap-audit H1/H2; `passThreshold:-Infinity` passed a 1/10).
+- `357262b0` — cost-tracker: H7 `jq` failure emits a stderr diagnostic + `error:"jq_failed"`
+  row instead of reading as zero spend; M8 `$HOME` guard; H8 restores the `verify_tokens`
+  handoff-cost field deleted in 2cac98c8 (without the `[role:]` breakdown, tracked under M14).
+- `5cfb963b` — H9: `hooks/session/skill-usage-telemetry.sh` PostToolUse hook restored from
+  a1055f64^ with a `$HOME` guard, re-registered in `hooks.json` and `hook-registry.json`.
+- `af0e6c6f` — M1–M6: deep-audit's checker can't self-report `pass:true` over a run the host
+  knows is out of scope; idea-audit gets its own `check-verdict.py`; compliance-audit's accepted
+  DEVIATED needs a citation-shaped note and gains an `UNVERIFIABLE` verdict.
+- `0102878d` — M9: `memory-health-nudge.sh` prints an uncached advisory line on a memory-lint
+  crash instead of falling through the "findings >= 1" gate silently.
+- `b561758c` — H3/H4/H5 test coverage (psql/sqlite3/mariadb DROP cases, a malformed-stdin case
+  that actually reaches the python deny branch, 9 cases for `codex-setup-guard.py`) + harness-
+  audit check 74 (agent_id presence).
+- `e72a957b` — M12: README no longer presents `mh:idea-audit` as shipped; harness-audit check 75
+  cross-checks every `mh:<name>` reference against `plugin.json`'s skills prefixes.
+- `ba23132c` — M14: `docs/reference/measurement-coverage-status.md`, a 3-row tracker for the
+  measurement-dependent gates (G1/H8, H9, `[role:]`), guarded by harness-audit check 76.
+- `5ebdce0c`, `d4ca84c4` — LOW batch: `check-citations.py` no longer takes a bare `2.5:1` ratio
+  as a citation; `doctrine-bootstrap.sh` derives its gate list from the directory; README and
+  operating-model point at the eval recompute command instead of a stale literal (test-guarded);
+  stale `mh:handoff` header comments and a `spawn-brief.md` claim about a never-written log fixed.
+- `273fd032`, `b252ee12`, `1242e74a` — compliance-audit and deep-audit follow-ups on 3d501cd4:
+  the wrapper-chain depth cap (itself a bypass at 13 wrappers) replaced by a negative-lookahead
+  scan that is O(n) and unbounded; M7 `_mid_merge()` failure diagnostic; C1b empty/null
+  `agent_id` tests; and a CRITICAL `#`-comment apostrophe bypass in both `_mask_quotes`
+  variants, which masked every character after `# don't`.
+- `789ed571` — `rank.py` rejects a blank or non-string trap reason, fail-closed like its numeric
+  guards.
+- `d11175e0` — H6: `memory-audit-commit.sh` writes a failure marker on a failed `git add`/
+  `commit` that `memory-health-nudge.sh` surfaces every SessionStart until a later commit clears it.
+- `b6f88d58` — `hooks/gates/_quotemask.py` extracted from the two byte-identical `_mask_quotes`
+  copies (with an import fallback + drift test); `spawn-brief.md` and `METHODOLOGY.md`'s generic
+  validator contract now require `checked[]`; agent-file sync for the same.
+
 ## [1.1.104] — 2026-09-20
 
 ### Fixed
@@ -166,6 +214,10 @@ not closed.
 
 ## [1.1.99] — 2026-09-19
 
+**Correction (2026-09-21):** the `## [1.1.98] — 2026-09-18` heading below was deleted by
+6b7a2daa, which renamed it to 1.1.99 and put this entry's content above the 1.1.98 content under
+one heading; restored, so this section now holds only 6b7a2daa's content.
+
 ### Fixed
 
 - **Closed 5 criteria-quality gaps a 5-agent audit found by applying an external LLM-rubric
@@ -194,6 +246,8 @@ not closed.
   rows above" against an actual six-row table — corrected. A memory-store note used `[[wikilink]]`
   syntax pointing at a repo doc instead of another memory file, leaving a dangling link — fixed to
   a plain path citation.
+
+## [1.1.98] — 2026-09-18
 
 ### Fixed
 

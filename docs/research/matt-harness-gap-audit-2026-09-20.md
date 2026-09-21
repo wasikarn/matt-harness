@@ -101,6 +101,10 @@ pipelines died in the same commit. **Fix:** `git show 6603c384` and restore the 
 this is a revert, not new work. If the question no longer matters, close it explicitly in
 `docs/decision-log.md` instead of leaving the gate silently unreachable.
 
+**Correction (2026-09-21):** "removed one commit later" is wrong — `git rev-list --count
+6603c384..2cac98c8^` is 42 commits, ~45 h apart (2026-09-04 01:24 → 2026-09-05 22:13). The
+add/remove pair and the conclusion stand; only the distance was overstated.
+
 ### H9. `skill-usage.jsonl` telemetry dark for 15 days repo-wide
 Removed at `a1055f64` (v1.0.1, 2026-09-05), justified as "`/skill-doctor` covers it" — but
 `/skill-doctor` (a real CC v2.1.261 feature) appears to be per-session, not the persistent

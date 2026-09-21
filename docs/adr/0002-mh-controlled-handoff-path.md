@@ -4,7 +4,7 @@ status: deprecated
 
 # mh writes its own handoff, at a path it controls
 
-*Superseded 2026-09-18: `mh:handoff` and its two `SessionStart` hooks were removed in v1.1.94 —
+*Deprecated 2026-09-18: `mh:handoff` and its two `SessionStart` hooks were removed in v1.1.94 —
 a composer-not-creator violation given upstream's existence. mh now defers to
 `mattpocock-skills:handoff` directly and ships nothing of its own here. This ADR stays for the
 rejected-design record below.*

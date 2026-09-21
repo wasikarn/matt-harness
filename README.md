@@ -40,21 +40,22 @@ The plugin ships `defaultEnabled: false`; add `"mh@wasikarn": true` to `settings
 `enable` did not. Same-version edits never reach the cache — bump `plugin.json` before
 `claude plugin update`. Uninstall: `/plugin uninstall mh@wasikarn`.
 
-## The 7 gates (`hooks/hooks.json`)
+## The gates (`hooks/hooks.json`)
 
 | gate | effect |
 |---|---|
-| `gate:bash:irrecoverable` | denies `rm -rf`, `find -delete`, `--no-verify`, `push --force`, `reset --hard`, `clean -f`, discarding `restore`/`checkout`, `branch -D`, `stash drop/clear`, `commit --amend`, `dd`, SQL `DROP`, `git add -A` outside a merge, nested `claude` spawns from a subagent |
+| `gate:bash:irrecoverable` | denies `rm -rf`, `find -delete`, `--no-verify`, `core.hooksPath` edits, `push --force`, `reset --hard`, `clean -f`, discarding `restore`/`checkout`, `branch -D`, `stash drop/clear`, `commit --amend`, `dd`, SQL `DROP`, `git add -A` outside a merge, nested `claude` spawns from a subagent |
 | `gate:bash:subagent-git-guard` | denies `git stash`/`reset`/`clean` from a dispatched subagent |
 | `gate:agent:subagent-spawn-guard` | denies a subagent calling the Agent tool to spawn its own reviewer/validator |
 | `gate:task:complete-separation` | denies a subagent marking its own task complete |
 | `gate:write:test-integrity` | asks before a write that weakens a test |
 | `gate:write:config-guard` | asks before a write to Claude Code settings `hooks`/`enabledPlugins` |
 | `gate:skill:codex-setup-guard` | asks before a model-invoked `--enable-review-gate` call to the paired Codex plugin's `/codex:setup` |
+| `gate:agent:subagent-verdict-check` | `SubagentStop`, not `PreToolUse`: blocks a subagent's Stop and re-prompts it once when its final message carries a vacuous or self-contradictory Rule 13 `{pass, findings[], checked[], scope_ok, unexpected_files[]}` verdict; allows on `stop_hook_active:true`, `NEEDS-DECISION`, or no verdict-shaped output |
 
-Each is its own PreToolUse entry with an 8 s timeout. Claude Code runs matching hooks in
-parallel and merges deny > ask > allow (verified empirically 2026-09-05); a timed-out gate does
-not block.
+Each PreToolUse gate is its own entry with an 8 s timeout (the SubagentStop entry has the same
+timeout). Claude Code runs matching hooks in parallel and merges deny > ask > allow (verified
+empirically 2026-09-05); a timed-out gate does not block.
 
 ## What it injects
 
@@ -65,11 +66,11 @@ score not feel. `git-hooks/pre-commit` refuses a `docs/METHODOLOGY.md` over 4096
 
 ## What it ships
 
-- **Skills:** `mh:harness-audit` (30 structural checks), `mh:memory-lint`, `mh:cost-report`,
+- **Skills:** `mh:harness-audit` (structural checks), `mh:memory-lint`, `mh:cost-report`,
   `mh:deep-audit`, `mh:ideate`, `mh:post-mortem`,
-  `mh:tech-humanize`. (This list has drifted before — `learn` and `compliance-audit`
-  ship but aren't named here; not closed in this pass, out of scope. `idea-audit` and `ste-lint`
-  exist in the repo and are tested, but `.claude-plugin/plugin.json`'s skills list deliberately
+  `mh:tech-humanize`. (This list has drifted before — `learn`, `compliance-audit` and
+  `model-bench` ship but aren't named here; not closed in this pass, out of scope. `idea-audit`
+  and `ste-lint` exist in the repo and are tested, but `.claude-plugin/plugin.json`'s skills list deliberately
   excludes both — they do not ship with the plugin.)
 - **Agents (10):** backend-architect, blind-spot-hunter, code-architect, ideate-critic,
   performance-optimizer, plan-reviewer, requirement-analyst, silent-failure-hunter,

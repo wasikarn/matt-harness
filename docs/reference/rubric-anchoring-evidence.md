@@ -53,7 +53,9 @@ specifically — raises self-consistency without established gains in correctnes
 increase how exploitable the rubric is. Rule 14's requirement stands on reliability/reproducibility
 grounds, not on a "far worse without it" magnitude claim. Treat a Rule-14-scored verdict's
 confidence accordingly: a band with a stated reason, never a bare self-reported number (see
-`docs/reference/haiku-decision-calls.md` and the calibration literature it cites).
+`docs/reference/haiku-decision-calls.md` for the primitive, and
+`docs/research/decision-making-methods-2026-09-19.md` §1.5 for the calibration literature it
+cites — Xiong et al. 2023, Tian et al. 2023).
 
 ## References
 

@@ -188,6 +188,10 @@ checked separately and found not to depend on any Codex-only artifact in the fir
 `spawn-brief`/`output-schema`/`output-last-message` reference in its SKILL.md), so there was no
 comparable gap to defer there.
 
+**Correction (2026-09-21):** "weeks before" overstates it — `checker-output-schema.json` was
+created 2026-09-07 (`b90cc11c`, 11 days before) and `attacker-output-schema.json` 2026-09-11
+(`0d1621cb`, 7 days before). The "already had the equivalent" point stands.
+
 ## Addendum, 2026-09-18: `concepts/use-case-map.md` drill-down
 
 Fetched [docs.typesafe.ai/concepts/use-case-map.md](https://docs.typesafe.ai/concepts/use-case-map.md)
