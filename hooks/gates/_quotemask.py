@@ -35,7 +35,10 @@ def mask_quotes(s):
     # backtick/$()-aware nesting either) -- widen _WORD_BOUNDARY_CHARS if a
     # real miss traces to an omitted operator. A backslash-escaped quote
     # OUTSIDE a span is a literal (GH #157 sibling, 2026-09-21); other
-    # escaped characters outside spans are left as-is.
+    # escaped characters outside spans are left as-is. A backslash-newline
+    # pair deliberately stays a line boundary: masking it hid a real
+    # `\<nl>git stash` from the callers' git anchor, so `echo \<nl>git stash`
+    # is a conservative false deny by design (GH #161 round 2).
     out = []
     i, n = 0, len(s)
     at_word_start = True
@@ -52,6 +55,37 @@ def mask_quotes(s):
             while i < n and s[i] != "'":
                 out.append("Q")
                 i += 1
+            if i < n:
+                out.append(" ")
+                i += 1
+            at_word_start = False
+        elif c == "$":
+            # GH #161: ANSI-C quoting $'...' -- a backslash escapes the next
+            # char, so $'\'' is one complete string. Without this branch the
+            # bare "'" opened a fake span that masked the rest of the line.
+            # Only the LAST "$" of an odd-length run can open it: "$$" is the
+            # PID and leaves a following quote plain ("$$$'x'" is "$$" then
+            # "$'x'"). An escaped "\$" never reaches here (see the backslash
+            # branch, which masks it).
+            j = i
+            while j < n and s[j] == "$":
+                out.append("$")
+                j += 1
+            if (j - i) % 2 == 0 or j >= n or s[j] != "'":
+                i = j
+                at_word_start = False
+                continue
+            out[-1] = " "
+            out.append(" ")
+            i = j + 1
+            while i < n and s[i] != "'":
+                if s[i] == "\\" and i + 1 < n:
+                    out.append("Q")
+                    out.append("Q")
+                    i += 2
+                else:
+                    out.append("Q")
+                    i += 1
             if i < n:
                 out.append(" ")
                 i += 1
@@ -82,7 +116,7 @@ def mask_quotes(s):
             while j < n and s[j] == "\\":
                 out.append("\\")
                 j += 1
-            if (j - i) % 2 == 1 and j < n and s[j] in "'\"":
+            if (j - i) % 2 == 1 and j < n and s[j] in "'\"$":
                 out.append("Q")
                 j += 1
             i = j

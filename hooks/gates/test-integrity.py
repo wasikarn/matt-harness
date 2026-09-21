@@ -211,6 +211,22 @@ except Exception:
                 if i < n:
                     out.append(" "); i += 1
                 at_word_start = False
+            elif c == "$":  # GH #161: ANSI-C $'...', backslash escapes the next char; only the last "$" of an odd run opens it ("$$" is the PID)
+                j = i
+                while j < n and s[j] == "$":
+                    out.append("$"); j += 1
+                if (j - i) % 2 == 0 or j >= n or s[j] != "'":
+                    i = j; at_word_start = False
+                    continue
+                out[-1] = " "; out.append(" "); i = j + 1
+                while i < n and s[i] != "'":
+                    if s[i] == "\\" and i + 1 < n:
+                        out.append("Q"); out.append("Q"); i += 2
+                    else:
+                        out.append("Q"); i += 1
+                if i < n:
+                    out.append(" "); i += 1
+                at_word_start = False
             elif c == '"':
                 out.append(" "); i += 1
                 while i < n and s[i] != '"':
@@ -225,7 +241,7 @@ except Exception:
                 j = i
                 while j < n and s[j] == "\\":
                     out.append("\\"); j += 1
-                if (j - i) % 2 == 1 and j < n and s[j] in "'\"":
+                if (j - i) % 2 == 1 and j < n and s[j] in "'\"$":  # an escaped "$" is literal too, never an ANSI-C opener
                     out.append("Q"); j += 1
                 i = j
                 at_word_start = False

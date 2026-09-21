@@ -95,6 +95,36 @@ run_gate 'echo "\" ; git stash"' "agent1"; rc=$?
 ok=1; [ "$rc" -eq 0 ] && ok=0
 check "subagent allowed: stash inside a real double-quoted span (escaped quote inside the span)" "$ok"
 
+# --- (2c) GH #161: ANSI-C $'\'' is one complete string; the old masker
+# opened a fake single-quote span at the escaped apostrophe and masked the
+# real "git stash" away (false ALLOW) --- #
+run_gate "echo \$'\\'' ; git stash" "agent1"; rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "subagent denied: echo \$'\\'' ; git stash (ANSI-C span before a real stash)" "$ok"
+run_gate "echo \$'a ; git stash'" "agent1"; rc=$?
+ok=1; [ "$rc" -eq 0 ] && ok=0
+check "subagent allowed: stash inside an ANSI-C \$'...' span" "$ok"
+# Backslash-newline stays a boundary (validator round 2): masking the pair
+# hid `\<nl>git stash`, a real stash, from _ANCHOR_RE -- a bypass. So
+# `echo \<nl>git stash` (really `echo git stash`) is a deliberate
+# conservative false deny, and the three real-stash shapes must deny.
+run_gate $'echo \\\ngit stash' "agent1"; rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "subagent denied (conservative false deny, by design): echo \\<nl>git stash" "$ok"
+for cmd in $'\\\ngit stash' $'echo; \\\ngit stash' $'env \\\ngit stash'; do
+  run_gate "$cmd" "agent1"; rc=$?
+  ok=1; [ "$rc" -eq 2 ] && ok=0
+  check "subagent denied: real stash after a backslash-newline: $(printf '%q' "$cmd")" "$ok"
+done
+# Round 2: an escaped "\$" or a "$$" PID before a plain single-quoted string
+# must not open an ANSI-C span whose "\'" swallows the real stash.
+run_gate "\\\$'a\\'; git stash; echo 'x'" "agent1"; rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "subagent denied: \\\$'a\\'; git stash; echo 'x' (escaped \$, plain single quotes)" "$ok"
+run_gate "\$\$'a\\'; git stash; echo 'x'" "agent1"; rc=$?
+ok=1; [ "$rc" -eq 2 ] && ok=0
+check "subagent denied: \$\$'a\\'; git stash; echo 'x' (PID, plain single quotes)" "$ok"
+
 # --- (3) subagent: unrelated git/non-git commands allowed --- #
 for cmd in \
   "git status" \

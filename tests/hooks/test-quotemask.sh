@@ -100,6 +100,59 @@ OUT=$(mask 'echo "\" ; git stash"')
 ok=1; [[ "$OUT" != *"git stash"* ]] && ok=0
 check "control: backslash-escaped quote INSIDE a double-quoted span stays inside it" "$ok"
 
+# GH #161 (2026-09-21): bash ANSI-C quoting $'...' -- a backslash inside it
+# escapes the next char, so $'\'' is a complete one-apostrophe string. The
+# old masker saw the bare "'" and masked the rest of the line, so
+# `echo $'\'' ; git stash` hid the real "git stash": a bypass (false ALLOW).
+OUT=$(mask "echo \$'\\'' ; git stash")
+ok=1; [[ "$OUT" == *"; git stash" ]] && ok=0
+check "ANSI-C \$'\\'' is one complete span: 'git stash' after it survives" "$ok"
+
+OUT=$(mask "echo \$'a\\'b' ; git stash")
+ok=1; [[ "$OUT" == *"; git stash" ]] && ok=0
+check "ANSI-C \$'a\\'b' is one span: 'git stash' after it survives" "$ok"
+
+OUT=$(mask "echo \$'x' ; git stash")
+ok=1; [[ "$OUT" == *"; git stash" ]] && ok=0
+check "ANSI-C \$'x' then a real stash: 'git stash' stays visible" "$ok"
+
+OUT=$(mask "echo \$'a ; git stash'")
+ok=1; [[ "$OUT" != *"git stash"* ]] && ok=0
+check "control: stash INSIDE an ANSI-C span is masked" "$ok"
+
+OUT=$(mask 'echo $x ; git stash')
+ok=1; [ "$OUT" = 'echo $x ; git stash' ] && ok=0
+check "a \$ not followed by a quote is untouched" "$ok"
+
+OUT=$(mask "echo \"\$'\" ; git stash")
+ok=1; [[ "$OUT" == *"; git stash" ]] && ok=0
+check "\$' inside a double-quoted span stays inside it: 'git stash' after the span survives" "$ok"
+
+# Backslash-newline outside a span stays a LINE BOUNDARY on purpose: masking
+# the pair to "\Q" hid `\<nl>git stash` (a real stash) from the callers' git
+# anchor, a bypass. The masker cannot tell "git as argument" from "git as
+# command"; that is the anchor's job, so `echo \<nl>git stash` stays a
+# conservative false deny (2026-09-21 validator round 2).
+OUT=$(mask $'echo \\\ngit stash')
+ok=1; [[ "$OUT" == *$'\n'"git stash" ]] && ok=0
+check "backslash-newline outside a span is kept as a line boundary (conservative: false deny over bypass)" "$ok"
+
+# Round 2: a "$" is only an ANSI-C opener when it is itself live. An odd
+# backslash run before it makes it literal ("\$'a\'" is a plain single-quoted
+# string in bash), and an even run of "$" ("$$" is the PID) leaves the
+# following quote plain. "$$$'x'" is "$$" then a real "$'x'".
+OUT=$(mask "\\\$'a\\'; git stash; echo 'x'")
+ok=1; [[ "$OUT" == *"; git stash; echo "* ]] && ok=0
+check "escaped \\\$ then a plain single-quoted string: 'git stash' after it survives" "$ok"
+
+OUT=$(mask "\$\$'a\\'; git stash; echo 'x'")
+ok=1; [[ "$OUT" == *"; git stash; echo "* ]] && ok=0
+check "\$\$ (PID) then a plain single-quoted string: 'git stash' after it survives" "$ok"
+
+OUT=$(mask "\$\$\$'a\\'' ; git stash")
+ok=1; [[ "$OUT" == *"; git stash" ]] && ok=0
+check "\$\$\$'a\\'' is \$\$ then a real ANSI-C span: 'git stash' after it survives" "$ok"
+
 echo ""
 echo "=== drift check: both consumers actually import the shared module ==="
 echo ""
