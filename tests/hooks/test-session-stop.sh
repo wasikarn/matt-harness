@@ -586,6 +586,31 @@ metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
 assert "a real second turn (transcript grew) after the first Stop still writes its own row" "$ok"
 trash "$fake_home" "$transcript" 2>/dev/null || true
 
+# Regression: the completion marker must not be set when the symlink guard
+# blocked a real (non-empty) append -- a lease set on a write that never
+# happened would let a later retry (transcript unchanged) skip forever
+# without ever persisting the row. Plant costs.jsonl as a symlink so the
+# guard fires, then remove it and retry: the retry must still write the row.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+make_transcript_line claude-sonnet-5 100 50 > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "symlink-blocked"}))' "$transcript")
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir"
+decoy=$(mktemp)
+ln -s "$decoy" "$metrics_dir/costs.jsonl"
+out1=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc1=$?
+trash "$metrics_dir/costs.jsonl" 2>/dev/null || rm -f "$metrics_dir/costs.jsonl"
+out2=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc2=$?
+metrics_file="$metrics_dir/costs.jsonl"
+[[ "$rc1" == "0" && "$rc2" == "0" && "$out1" == "$payload" && "$out2" == "$payload" ]] \
+  && [[ -f "$metrics_file" && ! -L "$metrics_file" ]] \
+  && [[ "$(wc -l < "$metrics_file" | tr -d ' ')" == "1" ]] && ok=1 || ok=0
+assert "a symlink-blocked append doesn't set the completion marker, so a retry still persists the row" "$ok"
+trash "$fake_home" "$transcript" "$decoy" 2>/dev/null || true
+
 echo ""
 echo "=== memory-audit-commit hook (Stop) ==="
 

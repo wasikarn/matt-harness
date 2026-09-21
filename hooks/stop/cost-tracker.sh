@@ -351,7 +351,13 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
   # corruption, not privilege escalation — the attacker already needs
   # same-user write access to plant the symlink) but the guard is one line.
   [[ -n "$rows" && ! -L "$metrics_file" ]] && printf '%s\n' "$rows" >> "$metrics_file"
-  printf '%s' "$dedup_key" > "$marker_file" 2>/dev/null
+  # Only mark this transcript state done if there was nothing to persist, or
+  # it was persisted. If the symlink guard above blocked a real non-empty
+  # $rows, writing the marker anyway would be the exact bug this fix closes,
+  # inverted: a completion lease set on a write that never happened, so a
+  # later retry (transcript unchanged) would never get another chance to
+  # append it.
+  [[ -n "$rows" && -L "$metrics_file" ]] || printf '%s' "$dedup_key" > "$marker_file" 2>/dev/null
 fi
 
 printf '%s' "$payload"
