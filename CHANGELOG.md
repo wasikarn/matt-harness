@@ -7,7 +7,7 @@ All notable changes to `mh` are documented here. Format loosely follows
 
 ### Fixed
 
-- **Week-scope `mh:deep-audit` of 2026-09-14..21 (71 commits) closed 27 gaps in that week's own
+- **Week-scope `mh:deep-audit` of 2026-09-14..21 (71 commits) closed 36 gaps (27 code, 9 doc) in that week's own
   fixes**, found by 5 fresh-context Fable checkers (Codex primary hit its usage limit) and
   re-validated by 2 more. Gates: `_quotemask.py`'s `#`-comment fix lacked `)` as a word boundary
   (a `(true)#don't` comment before `git stash` bypassed `subagent-git-guard` and
