@@ -611,6 +611,52 @@ metrics_file="$metrics_dir/costs.jsonl"
 assert "a symlink-blocked append doesn't set the completion marker, so a retry still persists the row" "$ok"
 trash "$fake_home" "$transcript" "$decoy" 2>/dev/null || true
 
+# Regression (deep-audit finding, MEDIUM): the symlink guard is only ONE way
+# the append can fail to persist a real row -- any other append failure must
+# also not set the marker. Structural failure, uid-independent (a chmod-based
+# fixture is a no-op as root -- same ENOTDIR-style precedent as
+# tests/hooks/test-gate-journal.sh's case 3): plant costs.jsonl as a
+# DIRECTORY, so `>> costs.jsonl` fails with "Is a directory" without ever
+# tripping the `-L` (symlink) check.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+make_transcript_line claude-sonnet-5 100 50 > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "append-failed"}))' "$transcript")
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir/costs.jsonl"
+out1=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc1=$?
+rmdir "$metrics_dir/costs.jsonl" 2>/dev/null
+out2=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc2=$?
+metrics_file="$metrics_dir/costs.jsonl"
+[[ "$rc1" == "0" && "$rc2" == "0" && "$out1" == "$payload" && "$out2" == "$payload" ]] \
+  && [[ -f "$metrics_file" ]] \
+  && [[ "$(wc -l < "$metrics_file" | tr -d ' ')" == "1" ]] && ok=1 || ok=0
+assert "a non-symlink append failure (Is a directory) doesn't set the completion marker either, so a retry still persists the row" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
+# Regression (deep-audit finding, path traversal): session_id is taken
+# verbatim from the Stop payload and interpolated into a filesystem path
+# (marker_dir/$session_id) with no validation, unlike scripts/_lib/
+# hook_payload.py's shared session_id validator used elsewhere in this repo.
+# A session_id containing ".." must not let the marker write escape
+# .markers/ -- confirm no file appears at the traversal target and the
+# marker instead lands at the safe fallback.
+fake_home=$(mktemp -d)
+transcript=$(mktemp)
+make_transcript_line claude-sonnet-5 100 50 > "$transcript"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "../../evil-mh-test-marker"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+escape_target="$fake_home/.local/share/evil-mh-test-marker"
+[[ "$rc" == "0" && "$out" == "$payload" ]] \
+  && [[ ! -e "$escape_target" ]] \
+  && [[ -f "$metrics_dir/.markers/default" ]] && ok=1 || ok=0
+assert "a session_id containing .. doesn't let the completion marker write escape .markers/" "$ok"
+trash "$fake_home" "$transcript" 2>/dev/null || true
+
 echo ""
 echo "=== memory-audit-commit hook (Stop) ==="
 

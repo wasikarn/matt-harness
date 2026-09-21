@@ -303,7 +303,20 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
   # some unbounded time later, so only the most recent key needs remembering.
   marker_dir="$metrics_dir/.markers"
   mkdir -p "$marker_dir" 2>/dev/null
-  marker_file="$marker_dir/$session_id"
+  # session_id is taken verbatim from the Stop payload with no validation --
+  # deep-audit finding (2026-09-21): every other use of session_id in this
+  # repo treats it as a data field, never a path component, and
+  # scripts/_lib/hook_payload.py already carries a shared validator
+  # (`[A-Za-z0-9._-]+`, rejecting "." and "..") for exactly this reason.
+  # Mirror that same character class here (this file is bash, that module is
+  # Python) so a session_id containing "/" or ".." can't walk the marker
+  # write outside $marker_dir. Low real-world severity -- normal Stop
+  # payloads are produced by the Claude Code host, not by prompt-injectable
+  # tool output -- but the guard is one line, same cost/benefit as the
+  # existing symlink guard below.
+  marker_id="$session_id"
+  [[ "$marker_id" =~ ^[A-Za-z0-9._-]+$ && "$marker_id" != "." && "$marker_id" != ".." ]] || marker_id="default"
+  marker_file="$marker_dir/$marker_id"
   transcript_size=$(wc -c < "$transcript" 2>/dev/null | tr -d ' ')
   dedup_key="$transcript"$'\t'"$transcript_size"
   if [[ -f "$marker_file" && "$(cat "$marker_file" 2>/dev/null)" == "$dedup_key" ]]; then
@@ -350,14 +363,23 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
   # symlink into an arbitrary writable file. Narrower threat here (data
   # corruption, not privilege escalation — the attacker already needs
   # same-user write access to plant the symlink) but the guard is one line.
-  [[ -n "$rows" && ! -L "$metrics_file" ]] && printf '%s\n' "$rows" >> "$metrics_file"
   # Only mark this transcript state done if there was nothing to persist, or
-  # it was persisted. If the symlink guard above blocked a real non-empty
-  # $rows, writing the marker anyway would be the exact bug this fix closes,
-  # inverted: a completion lease set on a write that never happened, so a
-  # later retry (transcript unchanged) would never get another chance to
-  # append it.
-  [[ -n "$rows" && -L "$metrics_file" ]] || printf '%s' "$dedup_key" > "$marker_file" 2>/dev/null
+  # it was actually persisted. Marking it done on ANY failed append (blocked
+  # by the symlink guard, or any other append error -- deep-audit finding,
+  # 2026-09-21: the symlink-only version of this check missed a plain write
+  # failure, e.g. a full disk or a broken path) would be the exact bug this
+  # fix closes, inverted: a completion lease set on a write that never
+  # happened, so a later retry (transcript unchanged) would never get
+  # another chance to append it.
+  append_ok=1
+  if [[ -n "$rows" ]]; then
+    if [[ -L "$metrics_file" ]]; then
+      append_ok=0
+    else
+      printf '%s\n' "$rows" >> "$metrics_file" || append_ok=0
+    fi
+  fi
+  (( append_ok )) && printf '%s' "$dedup_key" > "$marker_file" 2>/dev/null
 fi
 
 printf '%s' "$payload"
