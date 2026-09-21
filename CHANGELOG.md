@@ -3,6 +3,26 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.107] — 2026-09-21
+
+### Fixed
+
+- **GH #157 closed**: `irrecoverable.py`'s nested-spawn tokenizer treated a backslash-escaped
+  quote outside a span as a string opener (`claude \" ; othertool -p "x"` false-DENIED); an odd
+  backslash run plus a quote is now a literal token, even runs still open a span.
+- **Escaped-quote bypass in the shared quote masker** (`_quotemask.py` and both inline
+  fallbacks): `echo \" ; git stash` masked the real `git stash` away, a false ALLOW in
+  `subagent-git-guard` and a gap in `test-integrity`. Same run-parity rule; fuzzed across the
+  three copies. Found while fixing #157.
+- **GH #160 closed**: the verdict-check gate now also runs as a `PreToolUse` hook matched on
+  `SubagentHandback` (`tool_input.message`), so a vacuous or self-contradictory Rule 13 verdict
+  delivered through the handback tool (CC >= 2.1.271, auto mode) is denied instead of never
+  seen. Paired `hooks.json` / `hook-registry.json` entry
+  `gate:agent:subagent-verdict-check-handback`; `test-gate-journal.sh` accepts a wrapper mapped
+  to more than one id and still fails on a real drift.
+- README.md line 6 and the gate rows in README / `operating-model.md` no longer hardcode a gate
+  count or the "SubagentStop, not PreToolUse" clause.
+
 ## [1.1.106] — 2026-09-21
 
 ### Fixed
