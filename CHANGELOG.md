@@ -3,6 +3,23 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.111] — 2026-09-22
+
+### Fixed
+
+- **Observability**: `/mh:deep-audit` on the v1.1.110 single-scan cost-tracker fix (commit
+  `dc91edd6`) found two gaps and one pre-existing, out-of-scope risk. Fixed:
+  `docs/research/cost-tracker-single-scan-perf-2026-09-22.md`'s Verification section claimed
+  36/36 tests (2 new) — actual was 37/37 (3 new), corrected. `scan_transcript()`'s `usages`
+  sub-expression caught runtime errors via a bare `catch {__error: true}`, discarding jq's
+  actual error text before it reached stderr (the `jq_failed` sentinel row was still correct,
+  just less debuggable) — now carries `msg: .` through the catch and logs it; the H7 test
+  asserts on the specific error fragment, not just the generic "jq failed" substring. Left
+  open: `emit_codex_invocations "${sub_files[@]}"`'s unguarded empty-array expansion throws
+  under macOS system bash 3.2 when no subagents exist — confirmed to predate this fix and
+  confirmed contained inside a subshell, so the hook still exits 0 with a correct row either
+  way. Deep-audit score: 8.6 → 9.4/10.
+
 ## [1.1.110] — 2026-09-22
 
 ### Fixed
