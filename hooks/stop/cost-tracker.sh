@@ -352,7 +352,7 @@ scan_transcript() {
               if $x.id == null then .out += [$x]
               else .byid[$x.id] = $x end)
           | .out + (.byid | [.[]])
-        ) catch {__error: true} ),
+        ) catch {__error: true, msg: .} ),
         codex: ( try (
           [$lines[] | select(.type == "assistant") |
             { c: (.message.content // []), id: (.message.id // null) }]
@@ -468,7 +468,8 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
     usages_failed=1
   fi
   if [[ $usages_failed -eq 1 ]]; then
-    echo "[mh:cost-tracker] emit_rows(orchestrator): jq failed extracting usage records on: $transcript" >&2
+    usages_msg=$(printf '%s' "$main_usages" | jq -r '.msg // empty' 2>/dev/null)
+    echo "[mh:cost-tracker] emit_rows(orchestrator): jq failed extracting usage records on: $transcript${usages_msg:+ -- $usages_msg}" >&2
     rows=$(jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg sid "$session_id" \
       --arg tp "$transcript" --arg stream orchestrator --arg files "$transcript" \
       '{timestamp: $ts, session_id: $sid, transcript_path: $tp, stream: $stream,

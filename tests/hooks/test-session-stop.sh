@@ -464,6 +464,14 @@ trash "$fake_home" "$transcript" 2>/dev/null || true
 # either way and NO row was written at all -- indistinguishable from a clean
 # empty session. After the fix, a sentinel row with error:"jq_failed" is
 # written and a diagnostic is printed to stderr.
+#
+# 2026-09-22 deep-audit finding: scan_transcript's usages sub-expression used
+# to swallow the actual jq error text via a bare `catch {__error: true}` --
+# the sentinel row was still correct, but the specific error (e.g. "Cannot
+# index string with...") never reached stderr, only a generic log line. Fixed
+# by carrying `msg: .` through the catch; asserted here via the exact error
+# fragment jq produces for this fixture, not just the generic "jq failed"
+# substring (which passed both before and after that fix).
 fake_home=$(mktemp -d)
 transcript=$(mktemp)
 printf '%s\n' '{"type":"assistant","message":{"model":"claude-sonnet-5","usage":"not-an-object","id":"m1"}}' > "$transcript"
@@ -474,12 +482,13 @@ metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
 row=$(tail -1 "$metrics_file" 2>/dev/null)
 [[ "$rc" == "0" && "$out" == "$payload" && -f "$metrics_file" ]] \
   && /usr/bin/grep -q "jq failed" /tmp/mh-test-jqfail-stderr.$$ \
+  && /usr/bin/grep -q 'Cannot index string with string' /tmp/mh-test-jqfail-stderr.$$ \
   && printf '%s' "$row" | python3 -c '
 import json, sys
 d = json.load(sys.stdin)
 sys.exit(0 if d.get("error") == "jq_failed" and d.get("stream") == "orchestrator" else 1)
 ' 2>/dev/null && ok=1 || ok=0
-assert "a real jq failure (non-object .message.usage) emits a jq_failed sentinel row + stderr diagnostic, not silence" "$ok"
+assert "a real jq failure (non-object .message.usage) emits a jq_failed sentinel row + the actual jq error text on stderr (not just a generic log line)" "$ok"
 trash "$fake_home" "$transcript" "/tmp/mh-test-jqfail-stderr.$$" 2>/dev/null || true
 
 # H8 (harness gap-audit, 2026-09-20): end-to-end proof that a real transcript

@@ -85,10 +85,35 @@ this changes nothing for real usage; it only stops a crash on malformed input.
 
 ## Verification
 
-- `bash tests/hooks/test-session-stop.sh` — 36/36 (34 pre-existing regression tests
-  unchanged + 2 new: the pass-count assertion and the codex-merge assertion).
+- `bash tests/hooks/test-session-stop.sh` — 37/37 (34 pre-existing regression tests
+  unchanged + 3 new: the pass-count assertion, the codex-merge assertion, and the
+  open-verify-window jq_failed regression assertion from the "Bug found during the
+  TDD loop" section above).
 - `bash skills/meta/harness-audit/scripts/audit.sh` — 0 CRIT.
 - `bash scripts/run-gauntlet.sh` — all layers pass.
+
+## `/mh:deep-audit` follow-up (2026-09-22, same day)
+
+A `/mh:deep-audit` pass on commit `dc91edd6` (this fix) scored 8.6/10 pass, weight-stable
+under ±20% perturbation. Two findings applied:
+
+- This doc's own Verification section above previously read "36/36 (2 new)" — wrong on both
+  counts (see the corrected line above). Caught by both an independent Claude re-run and a
+  fresh-context checker agent recounting `assert` calls directly against the diff.
+- `scan_transcript`'s `usages` sub-expression caught a runtime error via a bare
+  `catch {__error: true}`, which preserved the jq_failed sentinel row's correctness but
+  discarded jq's actual error text (e.g. `Cannot index string with string
+  ("input_tokens")`) before it ever reached stderr — only a generic log line survived.
+  Fixed by carrying `msg: .` through the catch and logging it at the call site; the H7 test
+  now asserts on the specific error fragment, not just the generic "jq failed" substring.
+
+One finding was surfaced and left open, out of scope for this diff: `emit_codex_invocations
+"${sub_files[@]}"` throws "unbound variable" under macOS system `/bin/bash` (3.2.57) with
+`set -u` when there are no subagents that turn — confirmed to predate this commit (the old
+call site had the identical exposure) and confirmed live that the throw is contained inside
+a subshell, so the hook still exits 0 with a correct orchestrator row either way. Not a
+regression from this fix; `/opt/homebrew/bin/bash` (what `#!/usr/bin/env bash` resolves to
+on the operator's machine) is unaffected.
 
 ## Declined in the same session
 
