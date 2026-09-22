@@ -3,6 +3,23 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.110] — 2026-09-22
+
+### Fixed
+
+- **Performance**: `hooks/stop/cost-tracker.sh` re-scanned the main session transcript with
+  3-5 separate full-file `jq` passes per `Stop` call (fires every turn) — measured 9.5s
+  against a real 158MB/42,838-line transcript. Consolidated into one `scan_transcript()` pass
+  computing verify-window tokens, the subagent-type map, usage records, and Codex tool_use
+  tallies together — down to 5.2s (~45% faster), verified via a jq-invocation-counting test.
+  Caught along the way: a latent crash on an Agent tool_use block with no `.id` (fixed with a
+  null guard), and a correctness regression from an early draft that left three of the four
+  sub-computations un-isolated from jq runtime errors — a malformed usage line arriving inside
+  an open verify-window silently dropped the orchestrator row instead of emitting the existing
+  `jq_failed` sentinel. All four sub-computations are now independently `try`/`catch`-wrapped,
+  matching each original function's own fallback. See
+  `docs/research/cost-tracker-single-scan-perf-2026-09-22.md`.
+
 ## [1.1.109] — 2026-09-21
 
 ### Fixed

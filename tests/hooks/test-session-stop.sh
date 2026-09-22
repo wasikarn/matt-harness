@@ -534,6 +534,38 @@ row=$(tail -1 "$metrics_file" 2>/dev/null)
 assert "H8: a transcript with no task-notification writes returns:0, verify_tokens:null via a real cost-tracker.sh run" "$ok"
 trash "$fake_home" "$transcript" 2>/dev/null || true
 
+# Regression risk specific to the 2026-09-22 single-scan refactor: H7's
+# usage:"not-an-object" line now sits INSIDE an open verify-window (after a
+# real agent dispatch + its <task-notification>, before the closing Agent
+# tool_use) instead of alone in an otherwise-empty transcript. Before
+# scan_transcript's verify_map/parent_map/codex sub-expressions were
+# individually try/caught, this exact shape threw inside the *combined*
+# single-pass jq call and was silently swallowed: no jq_failed sentinel row,
+# no orchestrator row at all -- exactly the "no row" H7 exists to distinguish
+# from "no spend that turn." Fixed against this file at HEAD; would fail red
+# against the version between the single-scan consolidation and this fix.
+fake_home=$(mktemp -d)
+sess_dir=$(mktemp -d)
+transcript="$sess_dir/winfail.jsonl"
+mkdir -p "$sess_dir/winfail/subagents"
+agent_dispatch='{"type":"assistant","message":{"model":"claude-sonnet-5","content":[{"type":"tool_use","name":"Agent","id":"t1","input":{"subagent_type":"general-purpose"}}],"usage":{"input_tokens":1,"output_tokens":1,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}'
+{ printf '%s\n' "$agent_dispatch"
+  python3 -c 'import json; print(json.dumps({"type":"user","message":{"role":"user","content":"<task-notification>\n<task-id>aaa</task-id>\n<status>completed</status>\n</task-notification>"}}))'
+  printf '%s\n' '{"type":"assistant","message":{"model":"claude-sonnet-5","usage":"not-an-object","id":"m1"}}'; } > "$transcript"
+make_transcript_line claude-sonnet-5 10 5 > "$sess_dir/winfail/subagents/agent-aaa.jsonl"
+printf '{"agentType":"general-purpose","toolUseId":"t1","spawnDepth":1}' > "$sess_dir/winfail/subagents/agent-aaa.meta.json"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "winfail"}))' "$transcript")
+err=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>&1 >/dev/null)
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+orch_row=$(/usr/bin/grep '"stream":"orchestrator"' "$metrics_file" 2>/dev/null)
+sub_row=$(/usr/bin/grep '"stream":"subagent"' "$metrics_file" 2>/dev/null)
+[[ -f "$metrics_file" ]] \
+  && printf '%s' "$err" | /usr/bin/grep -q "jq failed" \
+  && printf '%s' "$orch_row" | /usr/bin/grep -q '"error":"jq_failed"' \
+  && printf '%s' "$sub_row" | /usr/bin/grep -q '"agent_type":"general-purpose"' && ok=1 || ok=0
+assert "a usage-type-error line inside an OPEN verify window still emits the orchestrator jq_failed sentinel (not silence), and the subagent row still writes correctly" "$ok"
+trash "$fake_home" "$sess_dir" 2>/dev/null || true
+
 # Regression (M8): unset/relative HOME must never resolve metrics writes into
 # the current working directory (this exact bug once wrote a metrics file
 # into this repo's own tree, 2026-08-28). Skip metrics entirely, still echo
@@ -680,6 +712,87 @@ rc=$?
   && [[ "$(wc -l < "$metrics_dir/costs.jsonl" | tr -d ' ')" == "1" ]] && ok=1 || ok=0
 assert "a symlinked .markers/<session_id> is not followed: decoy untouched, row still appended" "$ok"
 trash "$fake_home" "$transcript" "$decoy" 2>/dev/null || true
+
+# --- 2026-09-22 single-scan perf fix (TDD refactor loop) ---
+# Before the fix, cost-tracker.sh re-scanned the main transcript with a
+# separate full-file jq invocation 3-5 times per Stop call (build_verify_map
+# for the orchestrator typemap, emit_rows' own orchestrator extraction,
+# emit_codex_invocations, and -- when subagents exist -- build_type_map's own
+# parent_map extraction PLUS its own internal build_verify_map re-scan of the
+# identical input). Measured 9.5s/Stop-call against a real 158MB/42,838-line
+# transcript on disk. This wraps jq with a shim that logs every invocation's
+# arguments, distinguishing a real file-read (transcript path as a positional
+# operand) from the path merely being embedded as a --arg/--argjson STRING
+# VALUE (used only to label output rows, never causes a file read).
+real_jq=$(command -v jq)
+jq_shim_dir=$(mktemp -d)
+jq_log=$(mktemp)
+cat > "$jq_shim_dir/jq" <<EOF
+#!/usr/bin/env bash
+real_jq="$real_jq"
+jq_log="$jq_log"
+EOF
+cat >> "$jq_shim_dir/jq" <<'INNER'
+args=("$@")
+i=0
+while (( i < ${#args[@]} )); do
+  a="${args[$i]}"
+  if [[ "$a" == "--arg" || "$a" == "--argjson" ]]; then
+    i=$((i+3))
+    continue
+  fi
+  if [[ "$a" == "$TRANSCRIPT_UNDER_TEST" ]]; then
+    echo "hit" >> "$jq_log"
+  fi
+  i=$((i+1))
+done
+exec "$real_jq" "$@"
+INNER
+chmod +x "$jq_shim_dir/jq"
+
+fake_home=$(mktemp -d)
+sess_dir=$(mktemp -d)
+transcript="$sess_dir/passcount.jsonl"
+mkdir -p "$sess_dir/passcount/subagents"
+{ make_transcript_line claude-sonnet-5 100 50
+  printf '{"type":"assistant","message":{"model":"claude-sonnet-5","content":[{"type":"tool_use","name":"Agent","id":"t1","input":{"subagent_type":"general-purpose"}}],"usage":{"input_tokens":1,"output_tokens":1,"cache_creation_input_tokens":0,"cache_read_input_tokens":0}}}'
+  make_transcript_line claude-sonnet-5 50 20; } > "$transcript"
+make_transcript_line claude-sonnet-5 10 5 > "$sess_dir/passcount/subagents/agent-aaa.jsonl"
+printf '{"agentType":"general-purpose","toolUseId":"t1","spawnDepth":1}' > "$sess_dir/passcount/subagents/agent-aaa.meta.json"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "passcount"}))' "$transcript")
+printf '%s' "$payload" | TRANSCRIPT_UNDER_TEST="$transcript" PATH="$jq_shim_dir:$PATH" HOME="$fake_home" bash "$COST_TRACKER" >/dev/null 2>&1
+rc=$?
+hits=$(wc -l < "$jq_log" | tr -d ' ')
+[[ "$rc" == "0" && "$hits" == "1" ]] && ok=1 || ok=0
+assert "cost-tracker.sh scans the main transcript with jq exactly once per Stop call (was 3-5x before the single-pass consolidation)" "$ok"
+trash "$fake_home" "$sess_dir" "$jq_shim_dir" "$jq_log" 2>/dev/null || true
+
+# Regression risk specific to the single-scan refactor: codex tool_use tallies
+# from the main transcript and from a subagent file must be SUMMED per key,
+# not have one overwrite the other. The original code tallied every file's
+# lines together in one combined jq call; the refactor computes the main
+# transcript's contribution separately (via scan_transcript) and merges it
+# additively with the subagent files' contribution (via emit_codex_invocations)
+# -- an overwrite-instead-of-add merge bug would silently undercount.
+fake_home=$(mktemp -d)
+sess_dir=$(mktemp -d)
+transcript="$sess_dir/codexmerge.jsonl"
+mkdir -p "$sess_dir/codexmerge/subagents"
+printf '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Skill","input":{"skill":"codex:review","args":null}}]}}\n' > "$transcript"
+printf '{"type":"assistant","message":{"content":[{"type":"tool_use","name":"Skill","input":{"skill":"codex:review","args":null}}]}}\n' > "$sess_dir/codexmerge/subagents/agent-zzz.jsonl"
+payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "codexmerge"}))' "$transcript")
+out=$(printf '%s' "$payload" | HOME="$fake_home" bash "$COST_TRACKER" 2>/dev/null)
+rc=$?
+metrics_file="$fake_home/.local/share/kbg/metrics/costs.jsonl"
+row=$(tail -1 "$metrics_file" 2>/dev/null)
+[[ "$rc" == "0" && -f "$metrics_file" ]] \
+  && printf '%s' "$row" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+sys.exit(0 if d.get("codex_invocations", {}).get("codex:review") == 2 else 1)
+' 2>/dev/null && ok=1 || ok=0
+assert "codex:review called once in the main transcript and once in a subagent file sums to 2, not 1 (additive merge, not overwrite)" "$ok"
+trash "$fake_home" "$sess_dir" 2>/dev/null || true
 
 echo ""
 echo "=== memory-audit-commit hook (Stop) ==="
