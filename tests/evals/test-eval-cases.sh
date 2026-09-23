@@ -219,7 +219,13 @@ PY
   then bad "$c: a grader is malformed"; continue; fi
   ok "$c"
 done
-[ "$n" -eq 70 ] || bad "expected 70 cases, found $n"
+# Not an exact literal (harness gap-audit 2026-09-20 already fixed this same
+# anti-pattern in README.md/operating-model.md below) -- the count legitimately
+# drifts up as cases are added. A floor instead catches the real failure mode:
+# the $EVALS glob resolving to the wrong/empty path, or a mass deletion, both
+# of which would otherwise make every per-case check above vacuously pass on
+# zero iterations.
+[ "$n" -ge 40 ] || bad "expected at least 40 eval cases (sanity floor -- \$EVALS glob may be wrong), found $n"
 
 # README.md and operating-model.md used to hardcode "29" (harness gap-audit,
 # 2026-09-20: the count had drifted to 70 with no test catching it). Both now
