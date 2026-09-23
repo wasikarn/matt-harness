@@ -60,11 +60,21 @@ and access to Luna, Terra, Sol, and Astra through `model/list`. This is a dated 
 not a required plan or a live balance. Recheck `account/rateLimits/read` through the app-server
 (or `/status` in the CLI) when planning substantial work; never commit account IDs or tokens.
 
+**Slugs updated 2026-09-23** (verified against `learn.chatgpt.com/docs/models?surface=cli`'s
+public docs, not this account's own `model/list` — the installed CLI was `0.156.0`, `exec`-based
+verification was blocked by an exhausted usage quota at check time): OpenAI is mid-rollout of a
+GPT-6 generation for Sol and Luna specifically — `gpt-6-sol` and `gpt-6-luna` are now the
+docs-recommended slugs, at roughly half the prior credit rate each. `gpt-5.6-sol`/`gpt-5.6-luna`
+"remain available during the rollout" per the same page, so neither is a hard break. Terra has no
+GPT-6 variant yet (`gpt-5.6-terra` stays current). Astra was already `gpt-6-astra` and is
+unchanged. Re-verify this note itself the next time this table is touched — it documents a
+rollout in progress, not a settled state.
+
 | Work | Starting model | Effort |
 |---|---|---|
-| Clear, small edits or extraction | `gpt-5.6-luna` | `low` |
+| Clear, small edits or extraction | `gpt-6-luna` | `low` |
 | Bounded implementation or verification of explicit requirements | `gpt-5.6-terra` | `medium` |
-| Ambiguous bugs, adversarial review, cross-file judgment | `gpt-5.6-sol` | `medium` |
+| Ambiguous bugs, adversarial review, cross-file judgment | `gpt-6-sol` | `medium` |
 | Hard end-to-end investigation with sustained judgment | `gpt-6-astra` | `medium` |
 
 These are starting choices, not measured quality guarantees. Deep-audit and idea-audit normally
@@ -88,11 +98,14 @@ review commands honor `--effort`; use their supported controls and report the ac
 The plugin accepts up to `xhigh`, not `max`/`ultra`.
 
 Plus consumes included usage before purchased credits; API dollar rates are not the account's
-invoice. Published credit rates per 1M input/cached-input/output tokens are Luna 5/0.5/30,
-Terra 50/5/300, Sol 100/10/500, Astra 250/25/1250 (2026-09-14). These compare credit usage;
-they do not price included quota or prove actual spend. Recheck current pricing when the
-account, plan, or catalog changes. Avoid optional fast/priority service and speculative fan-out
-as cost defaults; neither is required by this policy.
+invoice. Published credit rates per 1M input/cached-input/output tokens, fetched live from
+`learn.chatgpt.com/docs/pricing` 2026-09-23: `gpt-6-luna` 2.5/0.25/12.5, `gpt-5.6-terra`
+50/5/300, `gpt-6-sol` 50/5/250, `gpt-6-astra` 250/25/1250. The superseded `gpt-5.6-sol` and
+`gpt-5.6-luna` rates (100/10/500 and 5/0.5/30, unchanged since 2026-09-14) still apply if a
+dispatch falls back to either during the rollout. These compare credit usage; they do not price
+included quota or prove actual spend. Recheck current pricing when the account, plan, or catalog
+changes. Avoid optional fast/priority service and speculative fan-out as cost defaults; neither
+is required by this policy.
 
 Sources: [OpenAI models](https://learn.chatgpt.com/docs/models?surface=cli),
 [pricing](https://learn.chatgpt.com/docs/pricing),
