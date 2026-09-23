@@ -3,6 +3,21 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.113] — 2026-09-23
+
+### Added
+
+- **`/mh:deep-audit`**: new step 6, "whole-picture adversarial challenge" — when step 4 landed 2+
+  fixes, dispatches the existing `mh:blind-spot-hunter` agent against the combined delta (every
+  scoped file unioned with every fix commit), asking specifically for interaction/emergent bugs
+  between the fixes and whether each fix's design is sound, not just correctly implemented. Step
+  3's checker only ever sees one fix at a time and structurally cannot catch this class. Prompted
+  by a live incident the same day (2026-09-23): a fix that individually passed point-by-point
+  verification silently disabled an unrelated feature once combined with a second, independently-
+  correct fix and the live catalog state — found only by a dedicated whole-picture pass dispatched
+  by hand after the fact. Skipped on 0-1 fixes (nothing to interact with yet); reuses the existing
+  agent, no new agent added. Findings route through the same confirm-then-fix gate as step 4.
+
 ## [1.1.112] — 2026-09-23
 
 ### Fixed

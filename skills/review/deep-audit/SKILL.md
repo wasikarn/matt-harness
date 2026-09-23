@@ -230,7 +230,39 @@ quality rationale; a change that only moves the score is left out.
   running copy (plugin cache version, restarted session) is a separate claim; say which one the
   evidence covers.
 
-## 6. Re-score on the same rubric
+## 6. Whole-picture adversarial challenge (when step 4 landed 2+ fixes)
+
+Skip this step entirely when step 4 applied 0 or 1 fixes — a single fix has nothing to interact
+with yet, and step 3's checker already covers it point-by-point. Two or more landed fixes is
+exactly when an interaction defect becomes possible: each fix can be individually correct, and
+step 3's checker can clear each one individually, while the two together still break something
+neither one alone would. Found live 2026-09-23: a fix mapping an unrecognized model id to a
+deliberately safe `'unknown'` value passed its own point-by-point verification, but combined with
+the live catalog state it silently disabled an unrelated feature (an escalation nudge) that
+shared the same early-exit path — no single-file or single-fix check could see it, because the
+break exists only in the combination.
+
+Dispatch `mh:blind-spot-hunter` (`Agent` tool, reuse — do not write a new agent for this) against
+the **combined delta**: every file step 1 put in scope, unioned with every fix commit from step
+4. Frame the brief explicitly as a system-level challenge, not a repeat of step 3: name each
+individual fix and what it was supposed to close, then ask directly for what a fix-by-fix
+re-check structurally cannot see — interaction/emergent bugs between the fixes, whether each
+fix's underlying design decision is sound and not just correctly implemented, and whether step
+5's re-verification evidence actually exercises the fixes *together* or only individually. Tell
+it explicitly not to re-litigate a finding step 3's checker already confirmed or refuted unless
+new evidence surfaces.
+
+Findings from this pass go through the same **Confirm, then fix** gate as step 4 (a fresh
+`AskUserQuestion`, same three options) — never applied silently. Any fix made here re-enters step
+5 (re-verify) before the final re-score in step 7; this step's own fixes do not get a second
+whole-picture pass on top (Rule 13's 3-round stop applies here too — if the fixes from this step
+seem to need another combined-fix check, stop and report the loop instead of continuing
+indefinitely).
+
+A clean result from this pass (`CLEAN`, per the agent's own output contract) is reported the same
+way step 3's zero-findings pass is: a legitimate outcome, not a skipped check.
+
+## 7. Re-score on the same rubric
 
 Report before, after, absolute delta, and percentage, per dimension and overall. When a baseline
 is zero or near it, give the absolute delta and say the percentage is not meaningful.
@@ -249,7 +281,7 @@ fragile — range [6.9, 7.6] under ±20% weight perturbation)" — never before 
 grader contract (`Final Verdict… (pass|fail)`) keeps matching. Then:
 
 1. Baseline score (per dimension, weighted total)
-2. Findings, with the checker's and your own marked
+2. Findings, each marked by source (step 3's checker, step 6's whole-picture pass when it ran, or your own)
 3. Changes made, each with its failure class
 4. Verification evidence (commands and exit codes)
 5. Final score and before → after
