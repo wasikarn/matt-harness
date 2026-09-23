@@ -3,6 +3,15 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.112] — 2026-09-23
+
+### Fixed
+
+- **Docs**: `dc6ab26c` (fixing "roughly half" imprecision in `docs/reference/codex-integration-map.md`
+  for the GPT-6 Sol/Luna credit rates) and `c7a436f5` (Sol/Luna slug rollout) landed on the same
+  1.1.111 version as `fe8f2575`'s bump, so `claude plugin update` treated them as a no-op — the
+  installed plugin cache kept serving the pre-fix table. Version bump only; no further doc changes.
+
 ## [1.1.111] — 2026-09-22
 
 ### Fixed
