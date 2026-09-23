@@ -3,6 +3,19 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.114] — 2026-09-23
+
+### Fixed
+
+- **`/mh:deep-audit`**: step 6's own first live firing (same day it shipped) found that `ecd892d1`
+  (a same-day fix to step 4's stale "go to step 6" cross-reference) landed on the same 1.1.113
+  version as the step-6 feature itself — the exact same-version-no-op class `4099e184` fixed one
+  cycle earlier. Version bump only. Also widened step 6's trigger condition (a 1-fix round can
+  interact with pre-existing code the same way two fixes interact with each other — see the
+  step's own updated text) and defined what to report when the step-6 dispatch itself fails,
+  rather than letting a failed dispatch read as "skipped" or "clean" — both found by step 6's
+  first live run auditing its own introduction.
+
 ## [1.1.113] — 2026-09-23
 
 ### Added

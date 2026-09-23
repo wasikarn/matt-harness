@@ -233,15 +233,20 @@ quality rationale; a change that only moves the score is left out.
 
 ## 6. Whole-picture adversarial challenge (when step 4 landed 2+ fixes)
 
-Skip this step entirely when step 4 applied 0 or 1 fixes — a single fix has nothing to interact
-with yet, and step 3's checker already covers it point-by-point. Two or more landed fixes is
-exactly when an interaction defect becomes possible: each fix can be individually correct, and
-step 3's checker can clear each one individually, while the two together still break something
-neither one alone would. Found live 2026-09-23: a fix mapping an unrecognized model id to a
-deliberately safe `'unknown'` value passed its own point-by-point verification, but combined with
-the live catalog state it silently disabled an unrelated feature (an escalation nudge) that
-shared the same early-exit path — no single-file or single-fix check could see it, because the
-break exists only in the combination.
+Trigger: step 4 applied 2+ fixes, OR applied exactly 1 fix that touched a function, early-exit
+path, return value, or emitted string that other code, a test, or an out-of-scope consumer reads
+— a single fix can interact with code already sitting in the file exactly the way two fixes
+interact with each other, and a bare fix-count alone doesn't distinguish these. Skip only when
+step 4 applied 0 fixes, or its 1 fix was fully local (nothing else reads what it changed) — step
+3's checker already covers a fully-local single fix point-by-point. Found live 2026-09-23, twice:
+first, this step's own motivating incident (`da4ec863`) was a single fix mapping an unrecognized
+model id to a deliberately safe `'unknown'` value — it passed its own point-by-point verification,
+but combined with pre-existing code sharing the same early-exit path, it silently disabled an
+unrelated feature (an escalation nudge); a strict "2+ fixes" gate would have skipped the exact
+case this step was built for. Second, this step's own first live firing (also 2026-09-23, on a
+genuine 2-fix round) found a real finding that came from a peer session's *unrelated* commit
+consuming the fixed function as a black box — the 2-fix trigger held that round by coincidence,
+not because the two fixes shared any surface with each other.
 
 Dispatch `mh:blind-spot-hunter` (`Agent` tool, reuse — do not write a new agent for this) against
 the **combined delta**: every file step 1 put in scope, unioned with every fix commit from step
@@ -262,6 +267,13 @@ indefinitely).
 
 A clean result from this pass (`CLEAN`, per the agent's own output contract) is reported the same
 way step 3's zero-findings pass is: a legitimate outcome, not a skipped check.
+
+If the dispatch itself fails to return a usable result (the agent errors, returns empty, is
+denied by `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` when this skill is itself running inside an
+already-dispatched subagent, or otherwise doesn't produce the finding/CLEAN format it defines),
+this step did not run — say so plainly under Remaining risks in the Final output (item 6), the
+same way step 3's hard-fail path is distinguished from a real pass. Never let a failed dispatch
+read the same as "skipped by trigger" or "clean" in the final report.
 
 ## 7. Re-score on the same rubric
 
