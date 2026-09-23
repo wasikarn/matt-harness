@@ -208,7 +208,8 @@ Present the ranked findings and confirm with one **AskUserQuestion**:
 
 - `Apply all fixes now` (findings low-risk and inside the session's scope)
 - `Apply only some` (a finding is out of scope or needs its own decision); ask which
-- `Skip fixes, report findings only` (review-only pass); go to step 6 with the baseline as both scores
+- `Skip fixes, report findings only` (review-only pass); 0 fixes also skips step 6 (its own
+  trigger, 2+ landed fixes, can't hold) — go straight to step 7 with the baseline as both scores
 
 Skip the ask only when the same turn already said "audit and fix"; an earlier or implied
 authorization is not that.
