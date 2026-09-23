@@ -140,6 +140,16 @@
             "timeout": 8
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sensors/codex-quota-advisory.sh\"",
+            "timeout": 8
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -171,6 +181,16 @@
           {
             "type": "command",
             "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sensors/failure-diagnose-nudge.sh\"",
+            "timeout": 8
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sensors/codex-quota-sensor.sh\"",
             "timeout": 8
           }
         ]

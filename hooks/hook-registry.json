@@ -76,6 +76,11 @@
         "id": "gate:agent:subagent-verdict-check-handback",
         "description": "Deny (re-prompt) a SubagentHandback call whose report (tool_input.message) carries a vacuous or self-contradictory Rule 13 verdict object -- the auto-mode delivery path SubagentStop cannot see (GH #160).",
         "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/subagent-verdict-gate.sh\""
+      },
+      {
+        "id": "sensor:bash:codex-quota-advisory",
+        "description": "Advisory only, never blocks: before a Codex CLI Bash command runs, warn via additionalContext if codex-quota-sensor recently recorded a usage-limit/rate-limit failure. Stale records past the TTL self-clear.",
+        "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sensors/codex-quota-advisory.sh\""
       }
     ],
     "PostToolUse": [
@@ -95,6 +100,11 @@
         "id": "sensor:bash:failure-diagnose-nudge",
         "description": "Advisory only, never blocks: on a non-zero exit, nudge diagnose-before-retry via additionalContext. Capped at 1 per distinct failing command per session. Registered on PostToolUseFailure (not PostToolUse): that is where a nonzero Bash exit dispatches, and its output schema declares additionalContext; provenance in the sensor's docstring.",
         "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sensors/failure-diagnose-nudge.sh\""
+      },
+      {
+        "id": "sensor:bash:codex-quota-sensor",
+        "description": "Advisory only, never blocks: on a Codex CLI Bash command failing with a usage-limit/rate-limit-shaped error, record the failure (persisted, not session-scoped) so codex-quota-advisory can warn before the next Codex dispatch.",
+        "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sensors/codex-quota-sensor.sh\""
       }
     ],
     "Stop": [
