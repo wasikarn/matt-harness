@@ -64,7 +64,9 @@ not a required plan or a live balance. Recheck `account/rateLimits/read` through
 public docs, not this account's own `model/list` — the installed CLI was `0.156.0`, `exec`-based
 verification was blocked by an exhausted usage quota at check time): OpenAI is mid-rollout of a
 GPT-6 generation for Sol and Luna specifically — `gpt-6-sol` and `gpt-6-luna` are now the
-docs-recommended slugs, at roughly half the prior credit rate each. `gpt-5.6-sol`/`gpt-5.6-luna`
+docs-recommended slugs, at roughly half the prior credit rate on input and cached-input tokens
+(exactly half for Sol on every column; Luna's output-token rate is cut further, to ~0.42x, not
+0.5x — see the exact numbers below). `gpt-5.6-sol`/`gpt-5.6-luna`
 "remain available during the rollout" per the same page, so neither is a hard break. Terra has no
 GPT-6 variant yet (`gpt-5.6-terra` stays current). Astra was already `gpt-6-astra` and is
 unchanged. Re-verify this note itself the next time this table is touched — it documents a
