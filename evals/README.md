@@ -228,8 +228,9 @@ All 70 cases still pass under the tightened checks (this number, like the one at
 file, drifts as cases are added or removed — verify with the `find` command above rather than
 propagating this literal further).
 
-Run (needs `plugin eval` early access on the account; 2.1.263 prints "currently in early access"
-otherwise):
+Run (needs Claude Code 2.1.269+; older builds print "currently in early access" — the command is
+version-gated, not an account-level early-access flag, per `docs/en/plugin-evals.md`'s Requirements
+section, confirmed via `claude plugin eval --help` on 2.1.280):
 
 ```bash
 claude plugin eval . --scaffold --runs 1 --no-publish
