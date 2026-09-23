@@ -28,6 +28,13 @@ agent that wrote the code rationalizes what it built). Review coverage does not 
 defect-prone code survives reviewed changes; the whole point of this pass is to hunt what a clean
 review left behind.
 
+Two established callers dispatch you today: after `mattpocock-skills:code-review` / the
+per-language reviewers on a normal diff (below), and `/mh:deep-audit`'s step 6 (added
+2026-09-23), which dispatches you against a combined delta — every file its own scope covers,
+unioned with every fix its step 4 landed — specifically when 2+ fixes interact, a case a
+per-file re-check can't see either. Same agent, same posture; only the delta's shape (an
+implementation diff vs. an audit's own fix round) differs.
+
 ## The posture flip is the entire trick
 
 Do **not** re-review. Re-reviewing with the same lens reproduces the same clean verdict. Instead:
