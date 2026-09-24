@@ -25,7 +25,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh" --only 22  # one check by number
 | Agent tool grants | 09 explicit `tools:`, 10 no duplicates, 24 real tool tokens, 41 never `Agent`, 32 reviewers stay read-only |
 | Hooks | 11 no orphaned hook files, 22 hooks.json event / type / matcher validity, 33 `${CLAUDE_PLUGIN_ROOT}` not `CLAUDE_PLUGIN_DIR`, 73 hooks.json / hook-registry.json id-registry drift |
 | Bundled files | 17 python compiles, 18 shell parses, 19 JSON parses |
-| Descriptions | 20 <= 1536 chars each, 29 no imperative injection words, 43 cumulative listing budget |
+| Descriptions | 20 <= 1536 chars each, 29 no imperative injection words, 43 cumulative listing budget, 77 <= 25 words + third-person voice |
 | Doc rot | 35 script pointers in prose resolve, 42 reference files carry no leaking frontmatter |
 | Working tree | 70 stray top-level entries (gitignored clutter), 71 paired Codex plugin's review-gate state, 72 spawn-brief's Codex `--effort` set vs the installed plugin |
 

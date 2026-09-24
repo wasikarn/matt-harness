@@ -4,7 +4,7 @@
 # audit.sh's fragment integrity guard catches LOST checks, not SILENT ones. Each
 # known-bad fixture below is paired with a clean one; the matching check must
 # FIRE on bad and stay SILENT on good. Per-check fixtures cover 04, 05, 20, 22, 28, 29, 54,
-# 70, 71, 72, 73, 74 (five fixtures, two added 2026-09-21), 75, 76; the fleet-bad / fleet-good pair covers the other sixteen with at
+# 70, 71, 72, 73, 74 (five fixtures, two added 2026-09-21), 75, 76, 77; the fleet-bad / fleet-good pair covers the other sixteen with at
 # least one defect per check (43 is driven by the env ceiling, not a planted defect).
 # check-73-bad-missing-command-field and check-73-bad-args-fingerprint-mismatch (below) are
 # deep-audit fixes, 2026-09-10: a Codex-primary fresh-context checker found the original check
@@ -218,6 +218,14 @@ expect_silent 75 check-75-good-clean
 expect_silent 76 check-76-good-populated
 expect_warn   76 check-76-bad-missing-row
 expect_warn   76 check-76-bad-file-missing
+
+# Check 77: description word count (>25 WARN) and third-person voice (first/second-person
+# pronoun WARN) -- skill-authoring-conventions.md's own cap, distinct from check 20's
+# 1536-char runtime-truncation limit. Two independent trigger conditions, each fixture
+# isolates one (mh:deep-audit gap, 2026-09-24: the check shipped with no fixture at all).
+expect_warn   77 check-77-bad-long-desc
+expect_warn   77 check-77-bad-pronoun
+expect_silent 77 check-77-good-clean
 
 # Fleet pair: every check without a per-check fixture. fleet-bad plants one defect per
 # check; fleet-good is a complete clean fleet and doubles as the fake plugin cache for

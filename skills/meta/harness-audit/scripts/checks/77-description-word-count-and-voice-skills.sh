@@ -4,7 +4,9 @@
 # token-budget rule (descriptions load on every Task spawn) — distinct from check 20
 # (1536-char runtime truncation limit) and check 43 (cumulative listing budget); neither
 # of those checks word count or voice. WARN only: a style convention, not a runtime cap.
-PRON_PATTERN='\b(I|I'\''m|I'\''ve|my|mine|we|we'\''re|we'\''ve|our|ours|us|you|you'\''re|your|yours)\b'
+# "Third person" here means no I/we/you-class pronoun (see PRON_PATTERN below) — a bare
+# imperative clause ("Use when …") is NOT a violation; check 05 requires exactly that clause.
+PRON_PATTERN='\b(I|I'\''m|I'\''ve|me|myself|my|mine|we|we'\''re|we'\''ve|our|ours|ourselves|us|you|you'\''re|your|yours|yourself|yourselves)\b'
 for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md "$CLAUDE_DIR/agents"/*.md; do
   [ -f "$f" ] || continue
   case "$f" in */skills/_*) continue ;; esac

@@ -17,7 +17,9 @@ skill. Exception: `tech-humanize`, whose Thai content is the subject matter.
 **Description cap: 25 words, third person.** This is mh's own token-budget rule (skill and agent
 descriptions load on every Task spawn), not matt's. Check 20 WARNs past 1536 chars; check 43
 tracks the cumulative listing budget; check 05 WARNs when a routing-length description has no
-"Use when" clause.
+"Use when" clause; check 77 WARNs past 25 words or on a first/second-person pronoun. "Third
+person" here means no `I`/`we`/`you`-class pronoun (check 77's actual test) — a bare imperative
+clause like "Use when …" is not a violation and is what check 05 requires.
 
 **No-op test, the backstop for every size-driven trim:** delete the line; does agent behaviour
 change on a real branch of the skill's own worked examples? If not, prunable regardless of char

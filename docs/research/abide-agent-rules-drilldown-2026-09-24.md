@@ -32,6 +32,16 @@ diff-visible, judgment-only, currently-unenforced candidate set is thin:
   returned no match) — technically diff-visible and gap-covered, but trivially regex-lintable
   in-repo; doesn't need an LLM judge.
 
+**Correction (2026-09-24, verified via `bash skills/meta/harness-audit/scripts/audit.sh --only 77`
+on planted fixtures):** this gap was closed the same day, in commit `5ace2d65`, by
+`skills/meta/harness-audit/scripts/checks/77-description-word-count-and-voice-skills.sh`
+(`/mh:deep-audit` ran afterward and only fixed this doc's stale wording, not the check itself).
+The sentence above was accurate when the drill-down was written (before that check existed); it is
+included here as the record of what prompted the fix, not as current state. Current state: check
+77 WARNs past the 25-word cap and on first/second-person pronouns. This does not change the
+coverage verdict below — the closed item was already excluded from the "one strong, one weak, one
+unverified" count.
+
 Verdict on coverage: one strong candidate, one weak, one unverified. Below the bar for a
 dedicated rubric investment.
 
@@ -107,7 +117,7 @@ it doesn't reach the bar.
 - `https://github.com/coldteadotai/abide/blob/master/benchmarks/replay/README.md` (fetched and
   indexed 2026-09-24, primary-source benchmark table cross-checked against the article's numbers)
 - `matt-harness/skills/meta/harness-audit/scripts/audit.sh` (grep, confirms no description
-  word-count check exists)
+  word-count check exists) — see correction above: closed same day, commit `5ace2d65`
 - `matt-harness/hooks/hooks.json` (grep, confirms existing hook event registrations)
 - Memory: `jev-typesafe-usecase-survey-2026-09-19.md`, `jev-adoption-revisit-scored-2026-09-20.md`,
-  `vendor-trust-surface-eval-criterion.md`, `matt-harness-gap-audit-2026-09-20.md`
+  `vendor-trust-surface-eval-criterion-2026-09-19.md`, `matt-harness-gap-audit-2026-09-20.md`
