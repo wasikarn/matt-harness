@@ -16,8 +16,15 @@ ChatGPT login active; `reviewGateEnabled: false`). The steps are for a fresh clo
 
 1. Add the marketplace and install: `/plugin marketplace add openai/codex-plugin-cc`, then
    `/plugin install codex@openai-codex`.
-2. `/reload-plugins`, then add `"codex@openai-codex": true` to Claude Code `settings.json`
-   (plugins default `defaultEnabled: false`, same as mh — `docs/reference/repo-gotchas.md`).
+2. `/reload-plugins`, then add `"codex@openai-codex": true` to Claude Code `settings.json`.
+   **Correction (2026-09-24, verified against `code.claude.com/docs/en/plugins-reference`):** the
+   parenthetical originally here — "plugins default `defaultEnabled: false`, same as mh" — was
+   wrong. The manifest field defaults to `true` (enabled) when omitted; `false` is a named opt-out
+   a plugin author sets deliberately for a plugin that "adds cost or scope a user should opt
+   into." `codex@openai-codex`'s own `plugin.json` doesn't set the field at all, so it starts
+   enabled by default — it is not "same as mh" (mh is the one plugin in this machine's cache that
+   explicitly sets `defaultEnabled: false`). Adding the `settings.json` entry above is still fine
+   to do explicitly, just not for the reason originally stated.
 3. `/codex:setup` — installs the Codex CLI via `npm install -g @openai/codex` if missing,
    reports auth state.
 4. `!codex login` (interactive; `--device-auth` or `--with-api-key` if browser login is
