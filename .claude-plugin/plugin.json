@@ -10,6 +10,7 @@
   "license": "MIT",
   "homepage": "https://github.com/wasikarn/matt-harness",
   "repository": "https://github.com/wasikarn/matt-harness",
+  "defaultEnabled": false,
   "skills": [
     "./skills/meta/",
     "./skills/review/",
