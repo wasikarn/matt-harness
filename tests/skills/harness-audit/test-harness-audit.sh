@@ -32,6 +32,16 @@ run_check() {
   shift 2
   out=$(bash "$AUDIT" "$root" --only "$id" "$@" 2>/dev/null || true)
   OUT="$out"
+  # A missing fixture dir, a crash, or a bad invocation produces no "=== Summary" block and
+  # empty Critical:/Warnings:/Info: lines -- which used to parse as a silent 0/0/0, letting
+  # expect_silent pass on a fixture that never actually ran (mh:deep-audit F2, 2026-09-24).
+  # -1 fails every expect_* function's own condition (silent needs ==0, warn/crit need >=1),
+  # so one guard here covers every caller instead of touching each expect_* individually.
+  if ! printf '%s\n' "$out" | /usr/bin/grep -q '^=== Summary'; then
+    bad "run_check $id $root: audit produced no '=== Summary' block (missing fixture, crash, or bad args) -- forcing failure"
+    CRIT_FOUND=-1; WARN_FOUND=-1; INFO_FOUND=-1
+    return
+  fi
   c=$(printf '%s\n' "$out" | sed -n 's/^Critical: //p')
   w=$(printf '%s\n' "$out" | sed -n 's/^Warnings: //p')
   i=$(printf '%s\n' "$out" | sed -n 's/^Info: *//p')
@@ -226,6 +236,19 @@ expect_warn   76 check-76-bad-file-missing
 expect_warn   77 check-77-bad-long-desc
 expect_warn   77 check-77-bad-pronoun
 expect_silent 77 check-77-good-clean
+
+# run_check's completion guard (mh:deep-audit F2, 2026-09-24): a missing fixture dir used to
+# parse as a silent CRIT=0/WARN=0, letting expect_silent pass on a fixture that never ran.
+# Isolate run_check's own internal bad() line so this meta-test contributes exactly one
+# pass/fail verdict, not two.
+_fail_before=$fail
+run_check 77 "$FIX/check-77-DOES-NOT-EXIST"
+fail=$_fail_before
+if [ "$CRIT_FOUND" = "-1" ] && [ "$WARN_FOUND" = "-1" ] && [ "$INFO_FOUND" = "-1" ]; then
+  ok "run_check forces failure on a missing fixture dir instead of a silent 0/0/0"
+else
+  bad "run_check completion guard did not fire on a missing fixture dir (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"
+fi
 
 # Fleet pair: every check without a per-check fixture. fleet-bad plants one defect per
 # check; fleet-good is a complete clean fleet and doubles as the fake plugin cache for

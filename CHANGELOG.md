@@ -3,6 +3,31 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.115] — 2026-09-24
+
+### Added
+
+- **`harness-audit`**: check 77 enforces skill/agent description word count (<=25) and
+  third-person voice (`skill-authoring-conventions.md`'s own cap, previously unenforced).
+  Fixture pair + test assertions per the skill's own "Extending checks" procedure.
+
+### Fixed
+
+- **`tests/skills/harness-audit/test-harness-audit.sh`**: `run_check` used to parse a missing
+  fixture directory (or any audit.sh crash) as a silent CRIT=0/WARN=0, letting `expect_silent`
+  pass on a fixture that never actually ran. Found by `mh:deep-audit` step 6
+  (`mh:blind-spot-hunter`, 2026-09-24). Now requires the `=== Summary` completion marker before
+  trusting parsed counts; a missing marker forces every `expect_*` caller to fail, one guard
+  covering all ~34 fixture-backed checks instead of touching each `expect_*` function.
+- Check 77's pronoun regex was missing `me`/`myself`/`yourself`/`yourselves`/`ourselves`; the
+  fixture meant to prove the fix also matched the pre-fix pattern via "you", so it never actually
+  proved anything (`mh:deep-audit`, both the checker and the blind-spot-hunter pass caught
+  variants of this). Regex extended, fixture rewritten to isolate only a newly-added word,
+  verified against old and new patterns before trusting it.
+- Documented (not fixed — WARN only, no live hit) that check 77's case-insensitive pronoun match
+  false-positives on `i.e.`/`I/O`/`us-east-1`-class tokens and quoted first-person trigger
+  phrases like "help me plan".
+
 ## [1.1.114] — 2026-09-23
 
 ### Fixed

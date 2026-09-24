@@ -6,6 +6,10 @@
 # of those checks word count or voice. WARN only: a style convention, not a runtime cap.
 # "Third person" here means no I/we/you-class pronoun (see PRON_PATTERN below) — a bare
 # imperative clause ("Use when …") is NOT a violation; check 05 requires exactly that clause.
+# Known false-positive class (mh:deep-audit F4, 2026-09-24, left unfixed — WARN only, no
+# live hit today): grep -i makes bare "I" match "i.e."/"I/O"/"us-east-1"/"en-US", and "me"/
+# "my" match a quoted first-person trigger phrase like "help me plan". A description that
+# needs one of these will false-positive; rewrite around it or accept the WARN.
 PRON_PATTERN='\b(I|I'\''m|I'\''ve|me|myself|my|mine|we|we'\''re|we'\''ve|our|ours|ourselves|us|you|you'\''re|your|yours|yourself|yourselves)\b'
 for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md "$CLAUDE_DIR/agents"/*.md; do
   [ -f "$f" ] || continue
