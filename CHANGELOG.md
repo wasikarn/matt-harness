@@ -3,6 +3,25 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.129] — 2026-09-25
+
+### Corrected
+
+- **`skills/meta/model-bench/SKILL.md`**: 1.1.123's effort-probe conclusion ("the eval's own child
+  run resolving a fixed `effort: 'high'`") was wrong at its method, not just its number — that
+  probe read the OUTER `claude plugin eval` process's own `--debug-file`, which is that process's
+  own startup log, and never actually observed the eval child's per-turn trace at all. A re-probe
+  (`code-architect-trivial-no-dispatch`, `--keep-temp`, reading the child's own
+  `config/projects/**/*.jsonl` session transcript) found: the parent's `--effort` flag still never
+  reaches the child (confirmed again, `--model opus` + parent `--effort xhigh` resolved to
+  `effort: "medium"`, Opus 5.5's own default — not "high", not "xhigh"); the "fixed high" reading
+  was really just sonnet's own default effort, mistaken for a harness-wide constant from a
+  single-model probe. But `CLAUDE_CODE_EFFORT_LEVEL=<level>` set on the invoking shell's
+  environment DOES reach the child (`--model sonnet` + that env var set to `low` resolved every
+  turn to `effort: "low"`) — a real, working propagation route the CLI flag doesn't have. A
+  `model@effort` arm syntax is implementable after all, via that env var, not `--effort`. Not yet
+  built pending a go-ahead. 3 live paid probe runs, ~$0.35 total.
+
 ## [1.1.128] — 2026-09-25
 
 ### Fixed
