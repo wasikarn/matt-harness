@@ -381,8 +381,13 @@ def class_a_stale_superseded(state):
         target_stem = target_file[:-3]
         if target_file not in state["files"]:
             continue
-        # Must have 0 surviving inbound
-        if target_stem in state["inbound"]:
+        # Must have 0 surviving inbound -- checked by both filename stem and name: slug,
+        # since an inbound [[wikilink]] can legally resolve either way (collect_state
+        # records whichever form the linking file used); checking stem alone missed a
+        # slug-only inbound link and could archive a file still referenced (attacker-agent
+        # catch, 2026-09-25 -- not reachable today, 0 SUPERSEDED entries exist yet, but a
+        # real gap in this function on its own terms).
+        if target_stem in state["inbound"] or state["slugs"].get(target_file) in state["inbound"]:
             continue
         # Successor for downstream use
         successor = m.group(1).split("|", 1)[0].strip()

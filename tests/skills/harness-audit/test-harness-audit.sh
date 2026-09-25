@@ -176,7 +176,14 @@ unset MH_CODEX_DATA_DIR
 
 # Check 21: agent model value. fable is a documented alias but a discouraged pin
 # (agent-authoring-conventions.md) -- must WARN by name, not silently pass as valid.
-expect_warn_match 21 check-21-bad-fable-pin 'fable'
+# Regex is 'pins fable' (the check's own fixed wording), not bare 'fable' -- the fixture's
+# `model: fable` field always makes the WARN's interpolated `model='$model'` contain "fable"
+# regardless of whether the explanatory prose survives, so a bare 'fable' pattern can't tell a
+# gutted or removed WARN branch apart from a working one (attacker-agent catch, 2026-09-25).
+expect_warn_match 21 check-21-bad-fable-pin 'pins fable'
+# claude-fable-* is a second, distinct case arm in check 21 (a full model ID, not the bare
+# alias) -- its own fixture, so reordering or dropping either arm is independently caught.
+expect_warn_match 21 check-21-bad-fable-full-id-pin 'pins fable'
 
 # Check 72: Codex effort-set drift. A fake plugin cache carries the plugin's
 # VALID_REASONING_EFFORTS line; the fixture doc either matches it or not.

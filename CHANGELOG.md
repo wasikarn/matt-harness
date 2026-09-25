@@ -3,6 +3,27 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.126] — 2026-09-25
+
+### Fixed
+
+- **`tests/skills/harness-audit/test-harness-audit.sh`**: a dedicated attacker-agent pass (5
+  research agents fact-checking this session's work + 1 adversarial pass over their findings)
+  found check 21's `expect_warn_match` assertion was still under-discriminating after 1.1.124's
+  fix — the `check-21-bad-fable-pin` fixture's own `model: fable` value makes check 21's
+  `model='$model'` interpolation contain "fable" regardless of whether the check's explanatory
+  prose survives a regression, confirmed by two live mutations (prose stripped; whole fable
+  branch deleted) that both still passed. Tightened the regex to `'pins fable'` (the check's own
+  fixed wording) and re-verified red→green. Also added a fixture for check 21's second, previously
+  uncovered case arm (`claude-fable-*`, a full model ID) — a live mutation showed reordering the
+  two arms could silently stop catching a full-ID pin.
+- **`skills/meta/memory-lint/scripts/memory-lint.py`**: `class_a_stale_superseded` (the
+  `--auto-archive` Class A rule) checked only filename-stem inbound links when deciding a
+  superseded file has "0 surviving inbound", missing a slug-only inbound `[[wikilink]]` — a file
+  referenced only by its `name:` slug could be archived while still in use. Not reachable today
+  (0 `**SUPERSEDED**` entries currently exist in `MEMORY.md`), found and fixed on its own terms.
+  Verified with a synthetic slug-linked fixture: empty plan before and after confirms the fix.
+
 ## [1.1.125] — 2026-09-25
 
 ### Fixed
