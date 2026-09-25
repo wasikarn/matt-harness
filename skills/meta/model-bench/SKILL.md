@@ -26,6 +26,16 @@ inside the eval sandbox is **unverified** — no live eval has been run to check
 spends judge cost. The report prints how many compared cases are agent-dispatch cases so this
 caveat reaches the output itself, not just this doc.
 
+**Effort can't be swept this way.** `claude` has a global `--effort <level>` flag, but a live probe
+(2026-09-25, `code-architect-trivial-no-dispatch`, `--model sonnet`, kept-temp trace inspected)
+showed the eval's own child run resolving a fixed `effort: "high"` on every turn regardless of
+whether the parent `claude plugin eval` process was invoked with `--effort low` or `--effort
+xhigh` — the eval harness sets its child's effort independently of the outer session's flag. Don't
+add a `model@effort` arm syntax on the strength of the CLI flag existing; it would silently do
+nothing. Reopen only if a future Claude Code version's eval child visibly inherits `--effort` (spot
+check with the same kept-temp-trace method before trusting a changelog line alone), or `claude
+plugin eval` grows its own effort/tier-sweep flag.
+
 ## Run
 
 ```bash

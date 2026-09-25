@@ -3,6 +3,17 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.123] — 2026-09-25
+
+### Documented
+
+- **`skills/meta/model-bench/SKILL.md`**: a live probe (`code-architect-trivial-no-dispatch`,
+  `--model sonnet`, `--effort low` vs `--effort xhigh`, kept-temp trace inspected) found the eval
+  harness's child run resolves a fixed `effort: "high"` on every turn regardless of the parent
+  `claude plugin eval` process's own `--effort` flag. No `model@effort` arm syntax was built —
+  the flag exists on the CLI but doesn't reach the case the way the feature would need. Documented
+  the finding and its reopen trigger instead of guessing either way.
+
 ## [1.1.122] — 2026-09-25
 
 ### Added
