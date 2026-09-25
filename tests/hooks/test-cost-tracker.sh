@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Unit test for hooks/stop/cost-tracker.sh's rate() model-pricing table.
-# Extracts the live `def rate: ... end;` block from the script (never a pasted
-# copy, so this can't drift out of sync with the real function) and asserts
-# each model-family test matches only its own family, not a broader sibling
-# whose name it contains (e.g. "opus-5-5" must not fall through to "opus").
+# Extracts the live `def rate: ... end;` block from the script (so the model
+# branches this test checks can't drift out of sync with the real function)
+# and asserts each model-family test matches only its own family, not a
+# broader sibling whose name it contains (e.g. "opus-5-5" must not fall
+# through to "opus"). $sonnet_rate below is a fixed stand-in value the rate
+# def expects as an argument, not a pasted copy of a checked branch.
 # Run standalone: bash tests/hooks/test-cost-tracker.sh
 set -uo pipefail
 
@@ -30,10 +32,12 @@ price() {
 result="$(price claude-opus-5-5)"
 i="$(jq -r .i <<<"$result")"
 o="$(jq -r .o <<<"$result")"
-if [[ "$i" == "4.0" && "$o" == "20.0" ]]; then
-  ok "claude-opus-5-5 prices at 4.0/20.0 (Opus 5.5 rate), not Opus 5's 5.0/25.0"
+cr="$(jq -r .cr <<<"$result")"
+v="$(jq -r .v <<<"$result")"
+if [[ "$i" == "4.0" && "$o" == "20.0" && "$cr" == "0.20" && "$v" == "true" ]]; then
+  ok "claude-opus-5-5 prices at 4.0/20.0, cr=0.20, v=true (Opus 5.5 rate), not Opus 5's 5.0/25.0"
 else
-  bad "claude-opus-5-5 priced at i=$i o=$o, expected i=4.0 o=20.0 — Opus 5.5 branch missing or wrong"
+  bad "claude-opus-5-5 priced at i=$i o=$o cr=$cr v=$v, expected i=4.0 o=20.0 cr=0.20 v=true — Opus 5.5 branch missing, wrong, or still unverified"
 fi
 
 result="$(price claude-opus-5)"

@@ -3,6 +3,27 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.117] — 2026-09-25
+
+### Fixed
+
+- **`hooks/stop/cost-tracker.sh`**: the `opus-5-5` branch added in 1.1.116 shipped as `v:false`
+  (unconfirmed) pending an independent pricing check. `mh:deep-audit` confirmed all three rates
+  ($4/$20/MTok, cache read $0.20) live against `platform.claude.com/docs/en/about-claude/pricing`,
+  so the branch now ships `v:true` — meaning the model matched this row, not that every field is
+  audited. Same pass also found, measured, and deliberately left unfixed, a broader pre-existing
+  limitation affecting every model row below the new branch, not just this one: `cw` is always
+  the 5-minute cache-write rate, never the 1-hour rate ($8/MTok for Opus 5.5), because the script
+  only reads the flat `cache_creation_input_tokens` field, which has no 5m/1h split. Measured
+  live cache-write share is ~97-100% 1-hour-TTL across every model family, so this is a
+  confirmed, ongoing undercount, not a theoretical one — tracked in
+  [#162](https://github.com/wasikarn/matt-harness/issues/162), not patched here.
+- `tests/hooks/test-cost-tracker.sh` only asserted `i`/`o` for the `opus-5-5` branch; a change to
+  `cr` or `v` could have shipped silently. Now also asserts `cr` and `v`, proven red against the
+  pre-upgrade `v:false` state before the fix above landed.
+- CHANGELOG.md's own 1.1.116 entry wrapped an inline-code file path across a line break inside
+  backticks, which Markdown renders as a broken path with an inserted space. Reflowed.
+
 ## [1.1.116] — 2026-09-25
 
 ### Fixed
@@ -24,8 +45,9 @@ All notable changes to `mh` are documented here. Format loosely follows
 - Several skill/agent files rewritten to state rules and reasons directly instead of encoding
   them as dated incident narratives (`agents/performance-optimizer.md`,
   `skills/review/deep-audit/SKILL.md`, `skills/review/compliance-audit/SKILL.md`,
-  `skills/meta/memory-lint/references/action-mode.md`, `skills/design/tech-humanize/
-  patterns-thai.md`, `skills/design/tech-humanize/references.md`) — same prompt-audit pass.
+  `skills/meta/memory-lint/references/action-mode.md`,
+  `skills/design/tech-humanize/patterns-thai.md`,
+  `skills/design/tech-humanize/references.md`) — same prompt-audit pass.
   `action-mode.md` also drops a wikilink into the operator's machine-local memory store, which
   was unresolvable on any other install of this plugin.
 

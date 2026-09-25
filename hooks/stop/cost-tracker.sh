@@ -199,14 +199,20 @@ group_and_price() {
       # cache read is $0.25/MTok (not 0.1x input); Fable 5 is $1.00/MTok.
       # The 5-1 test must precede the bare fable test; same reason, the opus-5-5
       # test must precede the bare opus test ("opus-5-5" contains "opus").
-      # Opus 5.5 (claude-opus-5-5): $4/$20/MTok, cr $0.20 — from the claude-api
-      # skill model table, read 2026-09-25, not independently re-confirmed
-      # against a live pricing page (v:false until confirmed). cw is derived
-      # at this file 1.25x convention, not separately quoted.
+      # Opus 5.5 (claude-opus-5-5): $4/$20/MTok, cr $0.20 — confirmed live
+      # against platform.claude.com/docs/en/about-claude/pricing, 2026-09-25.
+      # v:true here means the model matched this row, not that every field
+      # was independently audited; cw specifically is still the 5-minute
+      # cache-write rate ($5), matching the existing convention in this file
+      # for every other model below. 1-hour cache writes price higher ($8
+      # for Opus 5.5, measured across every model family) and this table has
+      # no way to tell the two apart from cache_creation_input_tokens alone.
+      # Tracked in https://github.com/wasikarn/matt-harness/issues/162,
+      # not fixed here.
       if (.model | ascii_downcase | test("fable-5-1|mythos-5-1")) then {i:10.0,o:50.0,cw:12.50,cr:0.25,v:true}
       elif (.model | ascii_downcase | test("fable|mythos")) then {i:10.0,o:50.0,cw:12.50,cr:1.00,v:true}
       elif (.model | ascii_downcase | test("haiku")) then {i:1.00,o:5.0,cw:1.25,cr:0.10,v:true}
-      elif (.model | ascii_downcase | test("opus-5-5")) then {i:4.0,o:20.0,cw:5.00,cr:0.20,v:false}
+      elif (.model | ascii_downcase | test("opus-5-5")) then {i:4.0,o:20.0,cw:5.00,cr:0.20,v:true}
       elif (.model | ascii_downcase | test("opus")) then {i:5.0,o:25.0,cw:6.25,cr:0.50,v:true}
       elif (.model | ascii_downcase | test("sonnet")) then ($sonnet_rate + {v:true})
       else ($sonnet_rate + {v:false}) end;
