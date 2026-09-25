@@ -3,6 +3,21 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.125] — 2026-09-25
+
+### Fixed
+
+- **`tests/skills/harness-audit/test-harness-audit.sh`**: two more helpers had the same or an
+  adjacent gap as 1.1.124's `expect_warn_match` fix. `expect_silent_match` grepped the whole audit
+  output instead of just INFO lines — not currently exploitable by its 4 check-72 callers, but the
+  identical structural weakness, hardened preemptively. `expect_info_only`'s third argument was
+  purely decorative (only used in the pass/fail label), never actually grepped, so any INFO firing
+  at all made a call pass regardless of which branch produced it; two of its three callers' labels
+  turned out to be paraphrases that didn't even substring-match the real INFO text once the
+  assertion was made real — corrected both to the actual wording. Verified via live mutation
+  (temporarily reworded check 72's INFO messages): all three affected assertions now correctly
+  fail, then correctly pass again on the real, unmutated check.
+
 ## [1.1.124] — 2026-09-25
 
 ### Fixed

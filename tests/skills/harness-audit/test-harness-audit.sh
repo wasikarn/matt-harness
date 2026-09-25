@@ -55,15 +55,19 @@ expect_silent() {
   if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ]; then ok "check-$1 $2 silent"
   else bad "check-$1 $2 not silent (crit=$CRIT_FOUND warn=$WARN_FOUND)"; fi
 }
+# Grep is scoped to INFO lines only (audit.sh:150 prints "  INFO I<n>: <msg>") -- same fixture-
+# path/name confound as expect_warn_match if matched against the whole $OUT (see that comment).
 expect_silent_match() {
   run_check "$1" "$FIX/$2"
-  if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ] && printf '%s\n' "$OUT" | /usr/bin/grep -qE "$3"; then ok "check-$1 $2 silent and reports '$3'"
+  if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ] && printf '%s\n' "$OUT" | /usr/bin/grep -E '^ *INFO ' | /usr/bin/grep -qE "$3"; then ok "check-$1 $2 silent and reports '$3'"
   else bad "check-$1 $2 not silent or missing '$3' (crit=$CRIT_FOUND warn=$WARN_FOUND)"; fi
 }
-# expect_info_only <id> <fixture>: the fail-open branches emit exactly INFO, never WARN/CRIT.
+# expect_info_only <id> <fixture> <regex>: fails open as INFO AND names the specific branch, not
+# just any INFO (the same "not just any WARN" distinction as expect_warn_match; $3 used to be a
+# decorative label only, never actually grepped -- any INFO firing at all made this pass).
 expect_info_only() {
   run_check "$1" "$FIX/$2"
-  if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ] && [ "$INFO_FOUND" -ge 1 ]; then ok "check-$1 $2 fails open as INFO ($3)"
+  if [ "$CRIT_FOUND" -eq 0 ] && [ "$WARN_FOUND" -eq 0 ] && [ "$INFO_FOUND" -ge 1 ] && printf '%s\n' "$OUT" | /usr/bin/grep -E '^ *INFO ' | /usr/bin/grep -qE "$3"; then ok "check-$1 $2 fails open as INFO ($3)"
   else bad "check-$1 $2 did not fail open as INFO ($3) (crit=$CRIT_FOUND warn=$WARN_FOUND info=$INFO_FOUND)"; fi
 }
 expect_warn() {
@@ -189,10 +193,10 @@ printf "const VALID_REASONING_EFFORTS = new Set(['none', 'minimal', 'low', 'medi
 expect_silent_match 72 check-72-good-effort-set 'matches the installed plugin'
 # Fail-open branches: plugin layout changed, doc missing, plugin not installed -> INFO only.
 printf 'export const nothing = 1;\n' > "$CODEX_TMP/cache/scripts/codex-companion.mjs"
-expect_info_only 72 check-72-good-effort-set 'VALID_REASONING_EFFORTS missing'
+expect_info_only 72 check-72-good-effort-set 'VALID_REASONING_EFFORTS not found'
 printf 'const VALID_REASONING_EFFORTS = new Set(["none", "minimal", "low", "medium", "high", "xhigh"]);\n' > "$CODEX_TMP/cache/scripts/codex-companion.mjs"
 expect_info_only 72 check-72-info-no-doc 'spawn-brief.md missing'
-MH_CODEX_CACHE_DIR="$CODEX_TMP/nonexistent" expect_info_only 72 check-72-good-effort-set 'plugin not installed'
+MH_CODEX_CACHE_DIR="$CODEX_TMP/nonexistent" expect_info_only 72 check-72-good-effort-set 'codex@openai-codex not installed'
 unset MH_CODEX_CACHE_DIR
 # Without the override the check must find the newest versioned cache dir itself (sort -V:
 # 1.0.10 beats 1.0.9); the older dir carries a smaller set so a wrong pick fires a false WARN.
