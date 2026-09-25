@@ -63,6 +63,21 @@ if(outLow)console.log("note: "+outLow+" of "+latest.length+" rows predate usage_
 // genuinely zero 1h writes still carries the field, set to 0.
 const preTTLSplit=latest.filter(r=>r.cache_write_tokens_1h===undefined&&(Number(r.cache_write_tokens)||0)>0).length;
 if(preTTLSplit)console.log("note: "+preTTLSplit+" of "+latest.length+" rows predate the 1h/5m cache-write split (#162, 1.1.118) — cache_write_tokens was priced entirely at the 5-minute rate; cost on these rows likely runs low");
+// Fourth era (issue #163, mh:blind-spot-hunter follow-up on #162): before the
+// 1.1.116 fix (which added the missing opus-5-5 branch to rate()), claude-opus-5-5
+// matched the old bare "opus" branch and got rate_verified:true at the wrong
+// (Opus 5) rate -- rate_verified reads as confirmed-correct with no way to tell
+// these rows are stale. mh_version is compared numerically (not string-lexically,
+// so "1.1.9" < "1.1.10" sorts right); a missing mh_version can't be placed on
+// either side of the boundary and is not flagged.
+const verLt=(a,b)=>{
+  if(!a)return false;
+  const pa=String(a).split(".").map(Number),pb=String(b).split(".").map(Number);
+  for(let i=0;i<3;i++){const x=pa[i]||0,y=pb[i]||0;if(x!==y)return x<y;}
+  return false;
+};
+const staleOpus55=latest.filter(r=>/opus-5-5/i.test(r.model||"")&&verLt(r.mh_version,"1.1.116")).length;
+if(staleOpus55)console.log("note: "+staleOpus55+" of "+latest.length+" rows are claude-opus-5-5 from before the missing rate-table branch was added (1.1.116) — rate_verified:true is misleading here; these were priced at the old Opus 5 rate ($5/$25) instead of the correct Opus 5.5 rate ($4/$20)");
 console.log("today:     "+f4(sum(latest.filter(r=>day(r)===today))));
 console.log("yesterday: "+f4(sum(latest.filter(r=>day(r)===d))));
 const sessionIds=new Set(latest.map(r=>r.session_id||r.transcript_path||r.timestamp));

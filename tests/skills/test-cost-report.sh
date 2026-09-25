@@ -202,6 +202,27 @@ rc=$?
 assert "third era note fires once for the pre-#162 row with real cache writes, not for the post-#162 zero-1h row" "$ok"
 trash "$fake_home" 2>/dev/null || true
 
+# Fourth era note (issue #163, mh:blind-spot-hunter follow-up on #162): a
+# claude-opus-5-5 row from before 1.1.116 carries the wrong (Opus 5) rate
+# despite rate_verified:true, and must be flagged. A post-1.1.116 opus-5-5
+# row, a pre-1.1.116 row on a DIFFERENT model, and a row with no mh_version at
+# all must not trigger it -- version compared numerically ("1.1.9" < "1.1.10").
+fake_home=$(mktemp -d)
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir"
+cat > "$metrics_dir/costs.jsonl" <<'EOF'
+{"timestamp":"2026-09-23T00:00:00Z","session_id":"stale-opus","transcript_path":"/t","model":"claude-opus-5-5","model_scoped":true,"stream":"orchestrator","turns":1,"input_tokens":0,"output_tokens":0,"cache_write_tokens":0,"cache_read_tokens":0,"rate_verified":true,"mh_version":"1.1.9","estimated_cost_usd":5.0}
+{"timestamp":"2026-09-25T00:00:00Z","session_id":"fixed-opus","transcript_path":"/t","model":"claude-opus-5-5","model_scoped":true,"stream":"orchestrator","turns":1,"input_tokens":0,"output_tokens":0,"cache_write_tokens":0,"cache_read_tokens":0,"rate_verified":true,"mh_version":"1.1.116","estimated_cost_usd":4.0}
+{"timestamp":"2026-09-23T00:00:01Z","session_id":"pre116-sonnet","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"orchestrator","turns":1,"input_tokens":0,"output_tokens":0,"cache_write_tokens":0,"cache_read_tokens":0,"rate_verified":true,"mh_version":"1.1.9","estimated_cost_usd":2.0}
+{"timestamp":"2026-08-01T00:00:00Z","session_id":"no-version","transcript_path":"/t","model":"claude-opus-5-5","model_scoped":true,"stream":"orchestrator","turns":1,"input_tokens":0,"output_tokens":0,"cache_write_tokens":0,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":3.0}
+EOF
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
+rc=$?
+[[ "$rc" == "0" ]] \
+  && printf '%s' "$out" | /usr/bin/grep -q '^note: 1 of 4 rows are claude-opus-5-5 from before the missing rate-table branch' && ok=1 || ok=0
+assert "fourth era note fires once for the pre-1.1.116 opus-5-5 row only, not the fixed opus-5-5 row, the pre-1.1.116 sonnet row, or the version-less row (1.1.9 < 1.1.116 compared numerically, not lexically)" "$ok"
+trash "$fake_home" 2>/dev/null || true
+
 # MH_COSTS_FILE override (2026-09-07): evals run in a fresh HOME and can only plant a
 # fixture in the workspace, so the env path must win over the HOME default. HOME points
 # at a dir with NO log; only the override path can produce the $1.0000 total.

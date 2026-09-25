@@ -235,6 +235,50 @@ else
   bad2 "advisor-contamination case gave cw=$cw cw1h=$cw1h, expected cw=0 cw1h=100 (total capped at flat=100, not the raw iteration sum of 1000)"
 fi
 
+# Remainder-drop bug (issue #163, mh:blind-spot-hunter on #162): a single-iteration
+# turn whose cache_creation breakdown doesn't sum to the flat field must not
+# silently drop the gap (the #162 comment cited this as 0.55% of 23,484 measured
+# messages, ~603K tokens; a direct scan of 118,591 real local lines found zero --
+# see hooks/stop/cost-tracker.sh's own comment. Closed defensively regardless).
+# flat=1,000,000, e5m=400,000, e1h=590,000 -- 10,000 tokens unaccounted for. The
+# fix floors cw1h at flat and derives cw as the remainder, so cw+cw1h always
+# equals flat: cw=410,000, cw1h=590,000, cost=(410000*5.00+590000*8.00)/1e6=6.77.
+# Pre-fix, cw=e5m=400,000 (the remainder silently dropped), cost=6.72.
+row="$(make_usage_line 1000000 400000 590000 | run_row)"
+cw="$(jq -r .cache_write_tokens <<<"$row" 2>/dev/null)"
+cw1h="$(jq -r .cache_write_tokens_1h <<<"$row" 2>/dev/null)"
+cost="$(jq -r .estimated_cost_usd <<<"$row" 2>/dev/null)"
+if [[ "$cw" == "410000" && "$cw1h" == "590000" && "$cost" == "6.77" ]]; then
+  ok2 "flat != e5m+e1h: the 10,000-token remainder is priced at the 5m rate, not dropped (cw=410000 cw1h=590000 cost=\$6.77)"
+else
+  bad2 "flat != e5m+e1h gave cw=$cw cw1h=$cw1h cost=\$$cost, expected cw=410000 cw1h=590000 cost=\$6.77 -- remainder silently dropped"
+fi
+
+# Same bug, no remainder: flat == e5m+e1h exactly (the shape every real line
+# on this machine has). The fix must not perturb this case at all.
+row="$(make_usage_line 1000000 400000 600000 | run_row)"
+cw="$(jq -r .cache_write_tokens <<<"$row" 2>/dev/null)"
+cw1h="$(jq -r .cache_write_tokens_1h <<<"$row" 2>/dev/null)"
+if [[ "$cw" == "400000" && "$cw1h" == "600000" ]]; then
+  ok2 "flat == e5m+e1h (no remainder): cw=400000 cw1h=600000, unchanged"
+else
+  bad2 "flat == e5m+e1h gave cw=$cw cw1h=$cw1h, expected cw=400000 cw1h=600000 -- fix perturbed the majority case"
+fi
+
+# Floor case (advisor review, 2026-09-25): e1h exceeding flat (not observed on
+# this machine, but the API contract for it isn't guaranteed) must not drive
+# cw negative -- the fix mirrors the multi-iteration branch's own
+# min(e1h, flat) floor, so cw1h caps at flat and cw floors at 0, never a
+# negative token count or cost.
+row="$(make_usage_line 100 0 900 | run_row)"
+cw="$(jq -r .cache_write_tokens <<<"$row" 2>/dev/null)"
+cw1h="$(jq -r .cache_write_tokens_1h <<<"$row" 2>/dev/null)"
+if [[ "$cw" == "0" && "$cw1h" == "100" ]]; then
+  ok2 "e1h > flat (900 > 100): cw1h floors at flat (100), cw floors at 0, never negative"
+else
+  bad2 "e1h > flat gave cw=$cw cw1h=$cw1h, expected cw=0 cw1h=100 -- no floor, could go negative"
+fi
+
 echo "$pass2 passed, $fail2 failed (phase 2)"
 
 pass=$((pass + pass2))

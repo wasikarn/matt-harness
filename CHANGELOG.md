@@ -3,6 +3,33 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.120] — 2026-09-25
+
+### Fixed
+
+- **`hooks/stop/cost-tracker.sh`**: two follow-ups `mh:blind-spot-hunter` found on #162's fix
+  round, both out of scope for #162 itself and filed as #163.
+  - On a single-iteration turn, `cache_write_tokens`/`cache_write_tokens_1h` were read straight
+    off the `cache_creation` breakdown's two fields with no check against the flat field
+    (`weak_verification`: the fix was verified against real transcripts, but not against the
+    subset where the breakdown and the flat field disagree). The #162 comment cited 0.55% of
+    23,484 measured messages (~603K tokens) with a mismatched breakdown; a direct scan of
+    118,591 real single-iteration breakdown lines on this machine found zero, so that estimate
+    didn't reproduce here. Closed the gap defensively regardless, mirroring the sibling
+    multi-iteration branch's own floor: `cache_write_tokens_1h = min(e1h, flat)`,
+    `cache_write_tokens = flat - that` — always sums to flat, never negative, and a no-op on
+    every real line measured.
+  - `claude-opus-5-5` rows written before 1.1.116 added the missing `opus-5-5` rate-table branch
+    matched the old bare `opus` test and priced at the Opus 5 rate instead of the correct Opus
+    5.5 rate, while still carrying `rate_verified: true` (`missing_guardrail`: nothing marked
+    the version boundary, so a stale row reads as confirmed-correct). Confirmed against real
+    local data (2026-09-25): 129 raw rows across 8 sessions in
+    `~/.local/share/kbg/metrics/costs.jsonl`; after dedup, 7 of 1512 latest rows.
+    `cost-report-dedup.js` now prints a fourth era `note:` for any `claude-opus-5-5` row with
+    `mh_version` numerically below `1.1.116` (compared per dotted component, not
+    string-lexically, so `1.1.9` sorts before `1.1.10`); a row with no `mh_version` at all can't
+    be placed on either side and isn't flagged.
+
 ## [1.1.119] — 2026-09-25
 
 ### Fixed

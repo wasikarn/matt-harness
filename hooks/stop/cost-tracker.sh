@@ -196,6 +196,23 @@ build_type_map() {
 # tokens that were not really billed to this row, and a fully-missing
 # per-iteration breakdown now falls through to a nonzero cw (flat minus a
 # 0 cw1h) instead of dropping the row.
+#
+# Single-iteration remainder (issue #163, mh:blind-spot-hunter follow-up on
+# #162): the breakdown's `ephemeral_5m_input_tokens` and
+# `ephemeral_1h_input_tokens` aren't guaranteed to sum to the flat field --
+# reading cw straight off ephemeral_5m_input_tokens with no reconciliation
+# would silently drop any gap, priced at neither rate. A direct scan of every
+# local transcript on this machine (118,591 single-iteration lines carrying a
+# `cache_creation` breakdown, across ~/.claude/projects/*/*.jsonl and their
+# subagents/ files, 2026-09-25) found zero mismatches -- the #162 comment's
+# cited 0.55%/~603K-token estimate doesn't reproduce here, so the gap may be
+# rare or specific to a corpus not sampled. Closed defensively regardless,
+# the same way the sibling multi-iteration branch above already floors
+# cw1h at the flat total: cw1h = min(e1h, flat), cw = flat - cw1h. This
+# keeps cw+cw1h == flat always (never negative even if e1h somehow exceeded
+# flat) and is a no-op on every real line measured (e1h already <= flat,
+# so cw lands on flat - e1h either way -- the 5m field itself turned out to
+# be unnecessary once the split is anchored to flat like this).
 raw_records() {
   local typemap="$1"; shift
   jq -nRc --argjson typemap "$typemap" '
@@ -209,10 +226,10 @@ raw_records() {
         out: (.message.usage.output_tokens // 0),
         cw: (if ($its | length) > 0
              then ($flat - ([($its | map(.cache_creation.ephemeral_1h_input_tokens // 0) | add), $flat] | min))
-             else (.message.usage.cache_creation.ephemeral_5m_input_tokens // $flat) end),
+             else ($flat - ([(.message.usage.cache_creation.ephemeral_1h_input_tokens // 0), $flat] | min)) end),
         cw1h: (if ($its | length) > 0
                then ([($its | map(.cache_creation.ephemeral_1h_input_tokens // 0) | add), $flat] | min)
-               else (.message.usage.cache_creation.ephemeral_1h_input_tokens // 0) end),
+               else ([(.message.usage.cache_creation.ephemeral_1h_input_tokens // 0), $flat] | min) end),
         cr: (.message.usage.cache_read_input_tokens // 0),
         m: (.message.model // "unknown"),
         t: ($typemap[input_filename].t // null),
@@ -421,10 +438,10 @@ scan_transcript() {
               out: (.message.usage.output_tokens // 0),
               cw: (if ($its | length) > 0
                    then ($flat - ([($its | map(.cache_creation.ephemeral_1h_input_tokens // 0) | add), $flat] | min))
-                   else (.message.usage.cache_creation.ephemeral_5m_input_tokens // $flat) end),
+                   else ($flat - ([(.message.usage.cache_creation.ephemeral_1h_input_tokens // 0), $flat] | min)) end),
               cw1h: (if ($its | length) > 0
                      then ([($its | map(.cache_creation.ephemeral_1h_input_tokens // 0) | add), $flat] | min)
-                     else (.message.usage.cache_creation.ephemeral_1h_input_tokens // 0) end),
+                     else ([(.message.usage.cache_creation.ephemeral_1h_input_tokens // 0), $flat] | min) end),
               cr: (.message.usage.cache_read_input_tokens // 0),
               m: (.message.model // "unknown"),
               t: null,
