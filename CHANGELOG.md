@@ -3,6 +3,44 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.128] — 2026-09-25
+
+### Fixed
+
+- **`skills/meta/memory-lint/scripts/memory-lint.py`**: `/mh:deep-audit` step 6 (a whole-picture
+  `mh:blind-spot-hunter` pass over the combined 1.1.121-1.1.127 delta) found two further gaps in
+  1.1.127's self-link fix, both independently reproduced before fixing. (1) `inbound` stored the
+  raw link token instead of its resolved canonical stem, so a file's own outbound link to a
+  *different* file could still credit the linking file itself whenever that different file's
+  stem happened to equal the linker's own slug — the exact class of bug 1.1.127 meant to close,
+  reappearing through the read side instead of the self-link-detection side. Fixed by storing the
+  resolved stem in `inbound` and simplifying every consumer (the ORPHAN check, `linked_count`,
+  and Class A) to check by stem alone. (2) two files sharing one duplicate `name:` slug made
+  Class A archival non-deterministic — which of the two got archived depended on filesystem
+  `listdir`/creation order, not actual reference state; reproduced by forcing both orderings.
+  Fixed with a new `DUPLICATE SLUG` finding (loud, unconditional) plus a conservative guard in
+  `class_a_stale_superseded` that never archives a file whose slug is duplicated. A follow-up
+  Rule-13 validator round on this same fix then caught a third: simplifying the ORPHAN check and
+  `linked_count` to check `inbound` by stem alone dropped an incidental side effect of the old
+  raw-token check that had kept a duplicate-slug file out of a false ORPHAN whenever a third file
+  linked to the shared slug — reproduced, then closed by making both defer to the same
+  `dup_slugs` signal Class A uses. Three new committed regression tests total, each proven red on
+  the pre-fix code and green after.
+- **`skills/meta/harness-audit/scripts/checks/21-agent-model-value-must-be-a-documented-a.sh`**:
+  the same blind-spot-hunter pass found the fallback `*)` WARN's message still listed `fable` in
+  its "valid alias" list, contradicting the dedicated WARN this check now fires on any `fable`
+  pin — a value that fails to match the `fable|claude-fable-*` case arm exactly (e.g. a quote or
+  whitespace variant `fm_get` doesn't strip) would fall through and be told `fable` is an
+  acceptable fix. Removed `fable` from that list.
+
+### Corrected
+
+- **1.1.127's own entry, above**: said "Two new committed regression tests" — a third
+  (`test_self_link_exclusion_does_not_swallow_a_different_files_matching_stem`) was also added in
+  that same commit; undercounted by one. Its "fails conservative" characterization of the
+  duplicate-slug limitation was also incomplete: this entry's Finding (2) above shows it could
+  actively misarchive the wrong file, not just wrongly keep one — see 1.1.128's fix.
+
 ## [1.1.127] — 2026-09-25
 
 ### Fixed

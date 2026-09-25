@@ -181,8 +181,9 @@ unset MH_CODEX_DATA_DIR
 # regardless of whether the explanatory prose survives, so a bare 'fable' pattern can't tell a
 # gutted or removed WARN branch apart from a working one (attacker-agent catch, 2026-09-25).
 expect_warn_match 21 check-21-bad-fable-pin 'pins fable'
-# claude-fable-* is a second, distinct case arm in check 21 (a full model ID, not the bare
-# alias) -- its own fixture, so reordering or dropping either arm is independently caught.
+# claude-fable-* is a second pattern in the same fable|claude-fable-* case arm (a full model ID,
+# not the bare alias) -- its own fixture, so dropping or misordering that pattern below the
+# earlier claude-* catch-all is independently caught.
 expect_warn_match 21 check-21-bad-fable-full-id-pin 'pins fable'
 
 # Check 72: Codex effort-set drift. A fake plugin cache carries the plugin's

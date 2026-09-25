@@ -518,7 +518,7 @@ def _class_a_fixture(d, stems=("stale-topic",)):
 
 
 def test_class_a_kept_when_only_inbound_link_uses_the_name_slug_not_the_stem():
-    # L390: a superseded file whose sole inbound [[wikilink]] resolves via `name:` slug (not
+    # A superseded file whose sole inbound [[wikilink]] resolves via `name:` slug (not
     # filename stem) must NOT be archived -- pre-fix, class_a_stale_superseded checked only
     # `target_stem in state["inbound"]`, so a slug-only inbound link was invisible and the file
     # would have been archived out from under the still-live referencer.
@@ -561,11 +561,59 @@ def test_self_link_exclusion_does_not_swallow_a_different_files_matching_stem():
         with open(os.path.join(d, "shared-key.md"), "w") as f:
             f.write("---\nname: unrelated-name\n---\nno outbound links\n")
         with open(os.path.join(d, "MEMORY.md"), "w") as f:
-            f.write("- [other-target](other-target.md) — x\n- [shared-key](shared-key.md) — y\n")
+            f.write("- [other-target](other-target.md) — **SUPERSEDED** by [[new-topic]]\n"
+                     "- [shared-key](shared-key.md) — y\n")
         state = memory_lint.collect_state(d)
         assert "shared-key" in state["inbound"], state["inbound"]   # resolves to shared-key.md, not a self-link
         findings, _, _ = memory_lint.detector_findings(state)
         assert not any("shared-key.md" in f for f in findings), findings   # must not be a false ORPHAN
+        # blind-spot-hunter catch: inbound must hold the RESOLVED stem, not the raw token --
+        # otherwise other-target's own outbound link to shared-key.md would credit other-target
+        # itself (via its own matching slug), wrongly keeping it out of Class A archival.
+        plan = memory_lint.class_a_stale_superseded(state)
+        assert len(plan) == 1 and plan[0]["from"] == "other-target.md", plan
+
+
+def test_class_a_skips_archival_when_the_target_slug_is_duplicated():
+    # Blind-spot-hunter catch: two files sharing one name: slug make any [[slug]] link to either
+    # one ambiguous. Pre-fix, class_a_stale_superseded resolved that ambiguity silently and
+    # non-deterministically (whichever file os.listdir happened to return first won the slug),
+    # so a genuine back-link could still lose the race and the wrong file got archived. The
+    # dup_slugs guard must refuse to archive regardless of which file wins that resolution.
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "succ.md"), "w") as f:
+            f.write("---\nname: topic-x\n---\nSupersedes [[topic-x]] (duplicate-slug back-link).\n")
+        with open(os.path.join(d, "pred.md"), "w") as f:
+            f.write("---\nname: topic-x\n---\npredecessor body, no outbound links\n")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [pred](pred.md) — **SUPERSEDED** by [[succ]]\n- [succ](succ.md) — current\n")
+        state = memory_lint.collect_state(d)
+        assert sorted(state["dup_slugs"].get("topic-x", [])) == ["pred.md", "succ.md"], state["dup_slugs"]
+        assert memory_lint.class_a_stale_superseded(state) == [], "duplicate slug must block archival"
+        findings, _, _ = memory_lint.detector_findings(state)
+        assert any("DUPLICATE SLUG" in f and "topic-x" in f for f in findings), findings
+
+
+def test_duplicate_slug_does_not_false_positive_as_orphan():
+    # Rule-13 validator catch: dropping inbound's raw-token OR-check (the resolved-stem fix
+    # above) accidentally removed the only thing that had kept a duplicate-slug file out of a
+    # false ORPHAN finding -- a genuine third-file link to the shared slug resolves to only ONE
+    # of the two holders, so the OTHER holder must not be reported as "no links in or out" when
+    # its slug is simply ambiguous, not actually unreferenced. DUPLICATE SLUG already carries
+    # that signal; ORPHAN and linked_count must defer to it instead of double-reporting rot.
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "apple.md"), "w") as f:
+            f.write("---\nname: shared\n---\nno outbound links\n")
+        with open(os.path.join(d, "banana.md"), "w") as f:
+            f.write("---\nname: shared\n---\nno outbound links\n")
+        with open(os.path.join(d, "linker.md"), "w") as f:
+            f.write("---\nname: linker\n---\ngenuine link: [[shared]]\n")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [apple](apple.md) — x\n- [banana](banana.md) — y\n- [linker](linker.md) — z\n")
+        state = memory_lint.collect_state(d)
+        findings, _, linked_count = memory_lint.detector_findings(state)
+        assert not any(f.startswith("ORPHAN:") for f in findings), findings
+        assert linked_count == 3, linked_count
 
 
 def test_memory_dir_falls_back_to_cwd_when_not_a_git_repo():

@@ -230,9 +230,21 @@ def collect_state(d):
         links_out[f] = wiki_targets + md_targets
 
     slug_set = {v for v in slugs.values() if v}
+    slug_holders = {}
+    for f in files:
+        s = slugs[f]
+        if s:
+            slug_holders.setdefault(s, []).append(f)
+    dup_slugs = {s: fs for s, fs in slug_holders.items() if len(fs) > 1}
+
     # Resolve a link token to its canonical stem the same way compute_reachable does: a stem
     # match wins over a same-string slug match, so a file's own slug never falsely swallows a
     # different file whose raw filename stem happens to equal that slug (Rule-13 validator catch).
+    # `inbound` stores the RESOLVED stem, never the raw token -- storing the raw token let a
+    # file's own outbound link (to a different file sharing that string) credit the file itself
+    # as "referenced" (blind-spot-hunter catch, 2026-09-25): checking a slug's bare presence in
+    # inbound can't distinguish "someone linked to me" from "someone linked to a different file
+    # whose stem happens to equal my slug".
     resolved_stem = {f[:-3]: f[:-3] for f in files}
     for f in files:
         s = slugs[f]
@@ -242,10 +254,10 @@ def collect_state(d):
     for f, targets in links_out.items():
         own_stem = f[:-3]
         for t in targets:
-            if resolved_stem.get(t) == own_stem:
-                continue  # resolves to this file itself -- not evidence another file references it
-            if t in stems or t in slug_set:
-                inbound.add(t)
+            resolved = resolved_stem.get(t)
+            if resolved is None or resolved == own_stem:
+                continue  # unresolvable, or resolves to this file itself
+            inbound.add(resolved)
 
     index_path = os.path.join(d, "MEMORY.md")
     idx = ""
@@ -255,8 +267,8 @@ def collect_state(d):
         referenced = set(POINTER_RE.findall(idx))
     return {
         "d": d, "files": files, "stems": stems, "slugs": slugs, "slug_set": slug_set,
-        "inbound": inbound, "links_out": links_out, "index_path": index_path,
-        "idx": idx, "referenced": referenced,
+        "dup_slugs": dup_slugs, "inbound": inbound, "links_out": links_out,
+        "index_path": index_path, "idx": idx, "referenced": referenced,
     }
 
 
@@ -279,13 +291,23 @@ def detector_findings(state):
                 hint = f" — did you mean [[{match[0]}]]?" if match else ""
                 findings.append(f"DANGLING: {f} → {t} (no such memory){hint}")
 
+    # 1b. duplicate slugs -- a name: value shared by 2+ files makes every [[slug]] link to it
+    # ambiguous (which file it really means), so any inbound/reachability check involving that
+    # slug can't be trusted; surfaced loudly instead of silently guessing. Independent of whether
+    # MEMORY.md exists, so checked ahead of the index-gated findings below.
+    for s, fs in sorted(state["dup_slugs"].items()):
+        findings.append(f"DUPLICATE SLUG: {', '.join(sorted(fs))} all declare name: '{s}' — a slug must be unique; any [[{s}]] link resolving to one of them is ambiguous")
+
     if not os.path.isfile(idx_path):
         findings.append("MISSING: MEMORY.md index not found")
     else:
-        # 2. orphans
+        # 2. orphans. A file whose own slug is duplicated can't be called ORPHAN off has_in
+        # alone -- inbound now resolves ambiguous slug tokens to only ONE of the holders (Rule-13
+        # validator catch, 2026-09-25), so the other holder could have a real inbound link that
+        # resolution just didn't credit to it. DUPLICATE SLUG above already carries that signal.
         for f in files:
             has_out = bool(links_out[f])
-            has_in = (f[:-3] in inbound) or (slugs[f] in inbound)
+            has_in = f[:-3] in inbound or slugs[f] in state["dup_slugs"]
             if f in referenced and not has_out and not has_in:
                 findings.append(f"ORPHAN: {f} (no links in or out)")
 
@@ -311,7 +333,8 @@ def detector_findings(state):
             findings.append(f"NEAR-BUDGET: MEMORY.md at {pct}% of the 200-line/25KB load cap ({idx_lines}L, {idx_bytes}B) — trim verbose pointers, or fold closed entries into a topic-file/ledger + archive (only MEMORY.md loads — don't split into multiple indexes)")
 
     total_links = sum(len(v) for v in links_out.values())
-    linked_count = len([f for f in files if links_out[f] or f[:-3] in inbound or slugs[f] in inbound])
+    linked_count = len([f for f in files
+                        if links_out[f] or f[:-3] in inbound or slugs[f] in state["dup_slugs"]])
     return findings, total_links, linked_count
 
 
@@ -392,13 +415,15 @@ def class_a_stale_superseded(state):
         target_stem = target_file[:-3]
         if target_file not in state["files"]:
             continue
-        # Must have 0 surviving inbound -- checked by both filename stem and name: slug,
-        # since an inbound [[wikilink]] can legally resolve either way (collect_state
-        # records whichever form the linking file used); checking stem alone missed a
-        # slug-only inbound link and could archive a file still referenced (attacker-agent
-        # catch, 2026-09-25 -- not reachable today, 0 SUPERSEDED entries exist yet, but a
-        # real gap in this function on its own terms).
-        if target_stem in state["inbound"] or state["slugs"].get(target_file) in state["inbound"]:
+        # A duplicate name: slug makes any [[slug]] link to this file ambiguous (it could just
+        # as well resolve to the other file holding the same slug) -- can't safely confirm 0
+        # inbound, so never archive under that ambiguity (blind-spot-hunter catch, 2026-09-25).
+        if state["slugs"].get(target_file) in state["dup_slugs"]:
+            continue
+        # Must have 0 surviving inbound. inbound holds resolved stems only (never a raw slug
+        # string), so checking target_stem alone is sufficient -- a slug-form inbound link was
+        # already resolved to its canonical stem when collect_state built the set.
+        if target_stem in state["inbound"]:
             continue
         # Successor for downstream use
         successor = m.group(1).split("|", 1)[0].strip()

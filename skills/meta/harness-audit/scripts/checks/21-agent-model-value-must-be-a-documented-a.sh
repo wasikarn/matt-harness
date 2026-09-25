@@ -15,7 +15,7 @@ for f in "$CLAUDE_DIR/agents"/*.md; do
     fable|claude-fable-*) warn "agent '$name' model='$model' pins fable — never pin fable in an agent (agent-authoring-conventions.md: usage credits on subscriptions, loses model independence from a fable main session)" ;;
     sonnet|opus|haiku|inherit) ;;
     claude-*) ;;
-    *) warn "agent '$name' model='$model' is not an alias (sonnet|opus|haiku|fable|inherit) or a claude-* ID" ;;
+    *) warn "agent '$name' model='$model' is not an alias (sonnet|opus|haiku|inherit) or a claude-* ID" ;;
   esac
 done
 
