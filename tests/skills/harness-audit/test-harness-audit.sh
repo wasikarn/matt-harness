@@ -72,9 +72,12 @@ expect_warn() {
   else bad "check-$1 $2 did NOT fire WARN (crit=$CRIT_FOUND warn=$WARN_FOUND)"; fi
 }
 # expect_warn_match <id> <fixture> <regex>: WARN fires AND names the specific defect, not just any WARN.
+# Grep is scoped to WARN lines only (audit.sh:149 prints "  WARN W<n>: <msg>") -- matching the
+# whole $OUT would also match audit.sh:160's "Root: <fixture-path>" line, which leaks the fixture
+# dir's own name (e.g. check-21-bad-fable-pin) into the output regardless of the WARN text itself.
 expect_warn_match() {
   run_check "$1" "$FIX/$2"
-  if [ "$WARN_FOUND" -ge 1 ] && [ "$CRIT_FOUND" -eq 0 ] && printf '%s\n' "$OUT" | /usr/bin/grep -qE "$3"; then ok "check-$1 $2 fires WARN and reports '$3'"
+  if [ "$WARN_FOUND" -ge 1 ] && [ "$CRIT_FOUND" -eq 0 ] && printf '%s\n' "$OUT" | /usr/bin/grep -E '^ *WARN ' | /usr/bin/grep -qE "$3"; then ok "check-$1 $2 fires WARN and reports '$3'"
   else bad "check-$1 $2 did not fire WARN or missing '$3' (crit=$CRIT_FOUND warn=$WARN_FOUND)"; fi
 }
 expect_crit() {

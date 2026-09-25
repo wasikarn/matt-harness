@@ -3,6 +3,24 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.124] — 2026-09-25
+
+### Fixed
+
+- **`tests/skills/harness-audit/test-harness-audit.sh`**: `expect_warn_match` grepped the entire
+  audit output, not just WARN lines — `audit.sh`'s own `Root: <fixture-path>` line leaked the
+  fixture directory's name (`check-21-bad-fable-pin`) into the match, so the check-21 fable
+  assertion passed even with the WARN text's "fable" wording removed entirely (confirmed via a
+  live mutation test: `/mh:compliance-audit` on 1.1.121-123, then reproduced here). Scoped the
+  grep to `^ *WARN ` lines first. That still wasn't enough — the fixture agent file was itself
+  named `fabler.md`, so the fixture's own name also leaked `fable` into the WARN line via `$name`.
+  Renamed the fixture to `pinner.md` to remove that second confound. Re-verified red→green: the
+  narrowed assertion now correctly fails on a WARN message with no `fable` anywhere, and passes on
+  the real, unmutated check 21.
+- Commit 447d1589 (1.1.123) shipped without the Rule-13 fresh-context validator its own plan
+  required for a 2+-file change — closed retroactively with a dispatched validator against that
+  commit's actual diff.
+
 ## [1.1.123] — 2026-09-25
 
 ### Documented

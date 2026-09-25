@@ -1,5 +1,5 @@
 ---
-name: fabler
+name: pinner
 description: "Fixture agent for check 21. Use when proving a fable model pin fires a WARN."
 bucket: utility
 tools: Read
