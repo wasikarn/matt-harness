@@ -1,7 +1,7 @@
 ---
 name: model-bench
 description: "Compares two models' scored eval performance on the same case set via claude plugin eval --model, reusing existing graders. Use when choosing between models."
-argument-hint: "<model-a> <model-b> [-- <claude plugin eval args>]"
+argument-hint: "<model-a>[@effort] <model-b>[@effort] [-- <claude plugin eval args>]"
 disable-model-invocation: true
 disable-model-invocation-reason: launches paid claude plugin eval runs — the user decides when to spend judge-token cost, not the model
 model: inherit
@@ -43,15 +43,29 @@ assistant turn) found:
   `--model sonnet` with that env var set resolved every turn to `effort: "low"` (sonnet's default
   is otherwise "high") — a real, working propagation route the CLI flag doesn't have.
 
-So a `model@effort` arm syntax IS implementable — just not via `--effort`; it needs
-`CLAUDE_CODE_EFFORT_LEVEL=<level>` set on the child's environment per arm. Not yet built pending
-an explicit go-ahead (a design decision, not a doc fix). Re-verify with the same `--keep-temp` +
-child-transcript method (not the outer `--debug-file`) before trusting any future claim here.
+**Implemented**: `<model>[@effort]` per arm. A bare model (no `@`) invokes exactly as before —
+no env var touched, child inherits whatever the invoking shell's own `CLAUDE_CODE_EFFORT_LEVEL`
+already is (usually unset). `model@effort` sets `CLAUDE_CODE_EFFORT_LEVEL=<effort>` for that one
+arm's `claude plugin eval` call only (never the CLI's own `--effort`, which does nothing here).
+`effort` must be one of `low|medium|high|xhigh|max`; a bare `@`, `model@`, `@effort`, or a second
+`@` is rejected with a usage error before any `claude` invocation. The full `model@effort` string
+is kept as the report's label (`aggregate-result.json` itself never records model or effort).
+Each arm's output dir also gets an `arm-meta.txt` (arm spec, effective command, `claude --version`,
+timestamp) as a paper trail independent of the report.
+
+For a case whose `prompt.md` *does* dispatch a subagent (see the scope caveat above): that case's
+own `agents/*.md` frontmatter `effort:` overrides the arm's `CLAUDE_CODE_EFFORT_LEVEL` the same
+way its frontmatter `model:` overrides `--model` — a skill-only case (no agent dispatch) is where
+an effort sweep is actually clean, same caveat as the model-override case.
+
+Re-verify propagation with the same `--keep-temp` + child-transcript method (never the outer
+`--debug-file`, which only shows the parent's own startup log) before trusting a future claim
+about what an eval child resolved.
 
 ## Run
 
 ```bash
-bash "${CLAUDE_SKILL_DIR}/scripts/model-bench.sh" <model-a> <model-b> [-- <claude plugin eval args>]
+bash "${CLAUDE_SKILL_DIR}/scripts/model-bench.sh" <model-a>[@effort] <model-b>[@effort] [-- <claude plugin eval args>]
 ```
 
 Runs `claude plugin eval` twice — once per model — then prints a labeled comparison. Any

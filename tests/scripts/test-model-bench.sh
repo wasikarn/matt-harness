@@ -131,4 +131,81 @@ printf '%s\n' "$out" | /usr/bin/grep -qF 'casesTotal is 0' \
   || ok "missing-casesTotal arm: no misleading casesTotal==0 note"
 
 echo "model-bench-diff.py self-test: $pass passed, $fail failed"
+
+# --- model-bench.sh argv/env self-test: stub `claude` on PATH, never runs anything real ---
+# 2026-09-25: model@effort arm syntax sets CLAUDE_CODE_EFFORT_LEVEL per arm (the CLI's own
+# --effort flag was verified live to never reach an eval child; that env var does). Assert the
+# actual invocation shape, not just that the script runs.
+echo "=== model-bench.sh argv/env self-test ==="
+
+MODEL_BENCH="$ROOT/skills/meta/model-bench/scripts/model-bench.sh"
+STUB_DIR="$(mktemp -d)"
+CLAUDE_STUB_LOG="$(mktemp)"
+export CLAUDE_STUB_LOG
+BENCH_DIRS_BEFORE="$(python3 -c "import os; print(' '.join(sorted(d for d in os.listdir('$ROOT/evals/results') if d.startswith('model-bench-'))) if os.path.isdir('$ROOT/evals/results') else '')" 2>/dev/null)"
+
+cat > "$STUB_DIR/claude" <<'STUB'
+#!/usr/bin/env bash
+if [ "${1:-}" = "--version" ]; then echo "2.1.999 (Claude Code, stub)"; exit 0; fi
+model=""; out_dir=""; prev=""
+for a in "$@"; do
+  case "$prev" in --model) model="$a" ;; --output-dir) out_dir="$a" ;; esac
+  prev="$a"
+done
+echo "MODEL=$model EFFORT=${CLAUDE_CODE_EFFORT_LEVEL:-<unset>} ARGV=$*" >> "$CLAUDE_STUB_LOG"
+if [ -n "$out_dir" ]; then
+  mkdir -p "$out_dir"
+  printf '%s' '{"schemaVersion":1,"costUsd":0,"claudeVersion":"2.1.999","partial":false,"suite":{"judgeModel":"haiku","caseFilter":null,"ablation":"none","plugins":[]},"aggregates":{"overallScore":1,"overallPassRate":1,"casesTotal":0},"cases":[]}' \
+    > "$out_dir/aggregate-result.json"
+fi
+exit 0
+STUB
+chmod +x "$STUB_DIR/claude"
+
+unset CLAUDE_CODE_EFFORT_LEVEL
+: > "$CLAUDE_STUB_LOG"
+out=$(PATH="$STUB_DIR:$PATH" bash "$MODEL_BENCH" sonnet@high opus --no-publish 2>&1)
+status=$?
+
+if [ "$status" -eq 0 ]; then ok "sonnet@high vs opus: exit 0"; else bad "sonnet@high vs opus: exit $status (expected 0) -- $out"; fi
+/usr/bin/grep -qF 'MODEL=sonnet EFFORT=high ' "$CLAUDE_STUB_LOG" \
+  && ok "sonnet@high: CLAUDE_CODE_EFFORT_LEVEL=high set for that arm's claude call" \
+  || bad "sonnet@high: effort not set to high in the claude invocation"
+/usr/bin/grep -qF 'MODEL=opus EFFORT=<unset> ' "$CLAUDE_STUB_LOG" \
+  && ok "bare opus: no CLAUDE_CODE_EFFORT_LEVEL set (unchanged from today)" \
+  || bad "bare opus: effort env var was set when it should be absent"
+printf '%s\n' "$out" | /usr/bin/grep -qF 'sonnet@high' \
+  && ok "report label is the full 'sonnet@high' spec, not the bare model name" \
+  || bad "report label missing the @effort suffix"
+
+for bad_spec in '@high' 'sonnet@' 'sonnet@high@extra' 'sonnet@bogus'; do
+  : > "$CLAUDE_STUB_LOG"
+  PATH="$STUB_DIR:$PATH" bash "$MODEL_BENCH" "$bad_spec" opus >/dev/null 2>&1
+  status=$?
+  if [ "$status" -eq 1 ] && [ ! -s "$CLAUDE_STUB_LOG" ]; then
+    ok "malformed spec '$bad_spec': rejected (exit 1) before any claude invocation"
+  else
+    bad "malformed spec '$bad_spec': exit $status, stub log size $(wc -c < "$CLAUDE_STUB_LOG") (expected exit 1, empty log)"
+  fi
+done
+
+: > "$CLAUDE_STUB_LOG"
+PATH="$STUB_DIR:$PATH" bash "$MODEL_BENCH" sonnet opus -- --tag smoke >/dev/null 2>&1
+/usr/bin/grep -qF -- '--tag smoke' "$CLAUDE_STUB_LOG" \
+  && ok "passthrough args after -- reach the claude invocation, not parsed as arm syntax" \
+  || bad "passthrough args after -- did not reach the claude invocation"
+
+python3 -c "
+import os
+root = '$ROOT/evals/results'
+before = set('$BENCH_DIRS_BEFORE'.split())
+if os.path.isdir(root):
+    for d in os.listdir(root):
+        if d.startswith('model-bench-') and d not in before:
+            print(os.path.join(root, d))
+" | while IFS= read -r stray; do trash "$stray" 2>/dev/null; done
+
+trash "$STUB_DIR" "$CLAUDE_STUB_LOG" 2>/dev/null
+
+echo "model-bench.sh self-test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

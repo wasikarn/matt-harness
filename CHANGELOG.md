@@ -3,6 +3,25 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.130] — 2026-09-25
+
+### Added
+
+- **`skills/meta/model-bench/scripts/model-bench.sh`**: `<model>[@effort]` per arm, following the
+  1.1.129 probe's finding — `CLAUDE_CODE_EFFORT_LEVEL=<effort>` set on the invoking shell's
+  environment reaches the eval child, so an `@effort` arm sets it for that one `claude plugin
+  eval` invocation only; a bare model is byte-for-byte unchanged from before. `effort` validates
+  against `low|medium|high|xhigh|max`; a malformed spec (`@high`, `sonnet@`, a second `@`, an
+  unknown effort) is rejected with a usage error before any `claude` invocation. Each arm's output
+  dir also gets an `arm-meta.txt` (spec, model, effort, effective command, `claude --version`,
+  timestamp) as a paper trail independent of the report; the report label is the full
+  `model@effort` string, since `aggregate-result.json` itself records neither. `SKILL.md` updated
+  (usage, the implemented policy, the agent-dispatch frontmatter-`effort:`-override caveat). 9 new
+  argv/env-capture tests in `tests/scripts/test-model-bench.sh` (stubbed `claude`, no real spend),
+  each proven red on the pre-feature code and green after. Rule-13 validator confirmed clean; one
+  pre-existing, out-of-scope note (an empty or leading-space model name still isn't rejected —
+  model-name validation was never in scope of this change either before or after it).
+
 ## [1.1.129] — 2026-09-25
 
 ### Corrected
