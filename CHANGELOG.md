@@ -3,6 +3,29 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.127] — 2026-09-25
+
+### Fixed
+
+- **`skills/meta/memory-lint/scripts/memory-lint.py`**: `/mh:deep-audit` on this session's own
+  work (5 research agents + 1 attacker pass, then a Codex Sol/medium adversarial checker) found
+  the `inbound`-set builder in `collect_state` counted a file's link to ITSELF as if some other
+  file referenced it — a superseded memory file whose only apparent inbound link was a
+  self-reference (`[[its-own-slug]]` in its own body) was wrongly kept out of Class A archival,
+  and the same flaw applied identically to the ORPHAN check's `has_in` test. Fixed by excluding a
+  token that resolves to the current file's own stem before adding it to `inbound`. A follow-up
+  Rule-13 validator round then caught a bug in that first fix: a naive `t == own_slug` comparison
+  is blind to precedence, so a file A whose `name:` slug happens to equal a *different* file B's
+  raw filename stem would have its genuine link to B misread as A linking to itself. Closed by
+  resolving each link token through the same stem-wins-over-slug precedence
+  `compute_reachable` already uses, confirmed with an independently constructed collision fixture.
+  A second Rule-13 round confirmed the fix and flagged one pre-existing, non-blocking limitation
+  (a duplicate-slug/collision scenario can still give phantom inbound credit to the wrong file of
+  two sharing a token — order-dependent, inherited from `compute_reachable`'s own resolver design,
+  fails conservative, not introduced by this change). Two new committed regression tests
+  (`tests/skills/memory-lint/test_memory_lint.py`), each proven red on the pre-fix code and green
+  after.
+
 ## [1.1.126] — 2026-09-25
 
 ### Fixed

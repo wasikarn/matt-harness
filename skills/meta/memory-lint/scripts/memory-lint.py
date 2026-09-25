@@ -230,9 +230,20 @@ def collect_state(d):
         links_out[f] = wiki_targets + md_targets
 
     slug_set = {v for v in slugs.values() if v}
+    # Resolve a link token to its canonical stem the same way compute_reachable does: a stem
+    # match wins over a same-string slug match, so a file's own slug never falsely swallows a
+    # different file whose raw filename stem happens to equal that slug (Rule-13 validator catch).
+    resolved_stem = {f[:-3]: f[:-3] for f in files}
+    for f in files:
+        s = slugs[f]
+        if s and s not in resolved_stem:
+            resolved_stem[s] = f[:-3]
     inbound = set()
     for f, targets in links_out.items():
+        own_stem = f[:-3]
         for t in targets:
+            if resolved_stem.get(t) == own_stem:
+                continue  # resolves to this file itself -- not evidence another file references it
             if t in stems or t in slug_set:
                 inbound.add(t)
 

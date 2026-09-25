@@ -517,6 +517,57 @@ def _class_a_fixture(d, stems=("stale-topic",)):
         f.write("\n".join(lines) + "\n")
 
 
+def test_class_a_kept_when_only_inbound_link_uses_the_name_slug_not_the_stem():
+    # L390: a superseded file whose sole inbound [[wikilink]] resolves via `name:` slug (not
+    # filename stem) must NOT be archived -- pre-fix, class_a_stale_superseded checked only
+    # `target_stem in state["inbound"]`, so a slug-only inbound link was invisible and the file
+    # would have been archived out from under the still-live referencer.
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "old-thing-2026-01-01.md"), "w") as f:
+            f.write("---\nname: old-thing-slug\n---\nno self-link here\n")
+        with open(os.path.join(d, "referencer.md"), "w") as f:
+            f.write("---\nname: referencer\n---\nstill needs [[old-thing-slug]] for context.\n")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [old thing](old-thing-2026-01-01.md) — **SUPERSEDED** by [[new-topic]]\n"
+                     "- [referencer](referencer.md) — x\n")
+        state = memory_lint.collect_state(d)
+        assert memory_lint.class_a_stale_superseded(state) == [], "slug-only inbound link must block archival"
+
+
+def test_class_a_archives_file_whose_only_link_is_to_itself():
+    # L233 (inbound-set construction): a file linking to its OWN slug/stem is not evidence any
+    # OTHER file references it. Pre-fix, that self-link landed in state["inbound"] the same as a
+    # real external reference, so this fixture's file would have been wrongly kept (empty plan).
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "old-thing-2026-01-01.md"), "w") as f:
+            f.write("---\nname: old-thing-slug\n---\nsee also [[old-thing-slug]] (self-reference only).\n")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [old thing](old-thing-2026-01-01.md) — **SUPERSEDED** by [[new-topic]]\n")
+        state = memory_lint.collect_state(d)
+        assert "old-thing-slug" not in state["inbound"], state["inbound"]
+        plan = memory_lint.class_a_stale_superseded(state)
+        assert len(plan) == 1 and plan[0]["from"] == "old-thing-2026-01-01.md", plan
+
+
+def test_self_link_exclusion_does_not_swallow_a_different_files_matching_stem():
+    # Rule-13 validator catch on the self-link fix above: a naive `t == own_slug` self-link check
+    # is blind to precedence -- if file A's `name:` slug collides with a DIFFERENT file B's raw
+    # filename stem, A linking to B (by that shared string) must still resolve to B, not be
+    # misread as A linking to itself. compute_reachable's own resolver already applies stem-wins-
+    # over-slug precedence for this exact ambiguity; the inbound-set builder must match it.
+    with tempfile.TemporaryDirectory() as d:
+        with open(os.path.join(d, "other-target.md"), "w") as f:
+            f.write("---\nname: shared-key\n---\nlinks elsewhere: [[shared-key]]\n")
+        with open(os.path.join(d, "shared-key.md"), "w") as f:
+            f.write("---\nname: unrelated-name\n---\nno outbound links\n")
+        with open(os.path.join(d, "MEMORY.md"), "w") as f:
+            f.write("- [other-target](other-target.md) — x\n- [shared-key](shared-key.md) — y\n")
+        state = memory_lint.collect_state(d)
+        assert "shared-key" in state["inbound"], state["inbound"]   # resolves to shared-key.md, not a self-link
+        findings, _, _ = memory_lint.detector_findings(state)
+        assert not any("shared-key.md" in f for f in findings), findings   # must not be a false ORPHAN
+
+
 def test_memory_dir_falls_back_to_cwd_when_not_a_git_repo():
     # L185: memory_dir shells `git rev-parse --show-toplevel` with check=True; in a non-repo
     # cwd git exits 128 -> except -> root=cwd. Mutated check=False swallows the failure and
