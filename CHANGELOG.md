@@ -3,6 +3,18 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.121] — 2026-09-25
+
+### Fixed
+
+- **Check 21 (`skills/meta/harness-audit/scripts/checks/21-*.sh`)**: `model: fable` on an agent
+  is a documented alias, so it passed silently — contradicting
+  `docs/reference/agent-authoring-conventions.md`'s "never pin `fable` in an agent" (usage
+  credits on subscriptions, loses model independence from a fable main session). Now its own
+  WARN branch, ahead of the valid-alias case. Fixture `check-21-bad-fable-pin`, test asserts the
+  WARN text names `fable` specifically (`expect_warn_match`, mirrors the existing
+  `expect_silent_match`), not just that some WARN fired.
+
 ## [1.1.120] — 2026-09-25
 
 ### Fixed

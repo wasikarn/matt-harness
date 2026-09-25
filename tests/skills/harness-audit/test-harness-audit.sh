@@ -71,6 +71,12 @@ expect_warn() {
   if [ "$WARN_FOUND" -ge 1 ] && [ "$CRIT_FOUND" -eq 0 ]; then ok "check-$1 $2 fires WARN (warn=$WARN_FOUND)"
   else bad "check-$1 $2 did NOT fire WARN (crit=$CRIT_FOUND warn=$WARN_FOUND)"; fi
 }
+# expect_warn_match <id> <fixture> <regex>: WARN fires AND names the specific defect, not just any WARN.
+expect_warn_match() {
+  run_check "$1" "$FIX/$2"
+  if [ "$WARN_FOUND" -ge 1 ] && [ "$CRIT_FOUND" -eq 0 ] && printf '%s\n' "$OUT" | /usr/bin/grep -qE "$3"; then ok "check-$1 $2 fires WARN and reports '$3'"
+  else bad "check-$1 $2 did not fire WARN or missing '$3' (crit=$CRIT_FOUND warn=$WARN_FOUND)"; fi
+}
 expect_crit() {
   run_check "$1" "$FIX/$2" "${@:3}"
   if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-$1 $2 fires CRIT (crit=$CRIT_FOUND)"
@@ -160,6 +166,10 @@ expect_warn   71 check-71-bad-review-gate-on
 setup_codex_state check-71-good-review-gate-off false
 expect_silent 71 check-71-good-review-gate-off
 unset MH_CODEX_DATA_DIR
+
+# Check 21: agent model value. fable is a documented alias but a discouraged pin
+# (agent-authoring-conventions.md) -- must WARN by name, not silently pass as valid.
+expect_warn_match 21 check-21-bad-fable-pin 'fable'
 
 # Check 72: Codex effort-set drift. A fake plugin cache carries the plugin's
 # VALID_REASONING_EFFORTS line; the fixture doc either matches it or not.
