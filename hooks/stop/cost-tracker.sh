@@ -51,7 +51,11 @@ mkdir -p "$metrics_dir"
 # platform.claude.com/docs/en/about-claude/pricing, 2026-08-20: "The $2/$10
 # ... pricing for Claude Sonnet 5 ... is now the standard price. The
 # previously scheduled increase ... will not occur."
-sonnet_rate='{"i":2.0,"o":10.0,"cw":2.50,"cr":0.20}'
+# cw1h $4.00 (issue #162, closed 2026-09-25): the 1-hour cache-write rate,
+# confirmed live on the same pricing page as exactly 2x base input for every
+# model in this file's table -- distinct from cw ($2.50), the 5-minute rate
+# (1.25x input). See rate()'s cw1h fields below for the other models.
+sonnet_rate='{"i":2.0,"o":10.0,"cw":2.50,"cw1h":4.00,"cr":0.20}'
 
 # build_type_map <parent-map-json> <vmap-json> <subagent-transcript-file>...
 # Maps each subagent transcript to the `agentType` from its sibling
@@ -160,7 +164,8 @@ raw_records() {
       select((.message.model // "") | ascii_downcase | test("^claude")) |
       { in: (.message.usage.input_tokens // 0),
         out: (.message.usage.output_tokens // 0),
-        cw: (.message.usage.cache_creation_input_tokens // 0),
+        cw: (.message.usage.cache_creation.ephemeral_5m_input_tokens // .message.usage.cache_creation_input_tokens // 0),
+        cw1h: (.message.usage.cache_creation.ephemeral_1h_input_tokens // 0),
         cr: (.message.usage.cache_read_input_tokens // 0),
         m: (.message.model // "unknown"),
         t: ($typemap[input_filename].t // null),
@@ -202,18 +207,23 @@ group_and_price() {
       # Opus 5.5 (claude-opus-5-5): $4/$20/MTok, cr $0.20 — confirmed live
       # against platform.claude.com/docs/en/about-claude/pricing, 2026-09-25.
       # v:true here means the model matched this row, not that every field
-      # was independently audited; cw specifically is still the 5-minute
-      # cache-write rate ($5), matching the existing convention in this file
-      # for every other model below. 1-hour cache writes price higher ($8
-      # for Opus 5.5, measured across every model family) and this table has
-      # no way to tell the two apart from cache_creation_input_tokens alone.
-      # Tracked in https://github.com/wasikarn/matt-harness/issues/162,
-      # not fixed here.
-      if (.model | ascii_downcase | test("fable-5-1|mythos-5-1")) then {i:10.0,o:50.0,cw:12.50,cr:0.25,v:true}
-      elif (.model | ascii_downcase | test("fable|mythos")) then {i:10.0,o:50.0,cw:12.50,cr:1.00,v:true}
-      elif (.model | ascii_downcase | test("haiku")) then {i:1.00,o:5.0,cw:1.25,cr:0.10,v:true}
-      elif (.model | ascii_downcase | test("opus-5-5")) then {i:4.0,o:20.0,cw:5.00,cr:0.20,v:true}
-      elif (.model | ascii_downcase | test("opus")) then {i:5.0,o:25.0,cw:6.25,cr:0.50,v:true}
+      # was independently audited. cw is the 5-minute cache-write rate; cw1h
+      # is the 1-hour rate -- each read directly off the live pricing table
+      # own per-model column (platform.claude.com/docs/en/about-claude/pricing,
+      # 2026-09-25), not derived from a formula, closing
+      # https://github.com/wasikarn/matt-harness/issues/162. Every cw1h below
+      # happens to equal 2x that branch own i (the page states this as the
+      # general 1h-write multiplier), a cross-check, not the source of the
+      # numbers -- cr on the fable/mythos branches is the proof a flat
+      # multiplier cannot always be assumed instead of read. (raw_records/
+      # scan_transcript above now read the Messages API usage objects own
+      # cache_creation breakdown to tell 5m from 1h; cache_creation_input_tokens
+      # alone never could.)
+      if (.model | ascii_downcase | test("fable-5-1|mythos-5-1")) then {i:10.0,o:50.0,cw:12.50,cw1h:20.00,cr:0.25,v:true}
+      elif (.model | ascii_downcase | test("fable|mythos")) then {i:10.0,o:50.0,cw:12.50,cw1h:20.00,cr:1.00,v:true}
+      elif (.model | ascii_downcase | test("haiku")) then {i:1.00,o:5.0,cw:1.25,cw1h:2.00,cr:0.10,v:true}
+      elif (.model | ascii_downcase | test("opus-5-5")) then {i:4.0,o:20.0,cw:5.00,cw1h:8.00,cr:0.20,v:true}
+      elif (.model | ascii_downcase | test("opus")) then {i:5.0,o:25.0,cw:6.25,cw1h:10.00,cr:0.50,v:true}
       elif (.model | ascii_downcase | test("sonnet")) then ($sonnet_rate + {v:true})
       else ($sonnet_rate + {v:false}) end;
     ( group_by([.m, .t])
@@ -225,19 +235,21 @@ group_and_price() {
           input_tokens: ((map(.in) | add) // 0),
           output_tokens: ((map(.out) | add) // 0),
           cache_write_tokens: ((map(.cw) | add) // 0),
+          cache_write_tokens_1h: ((map(.cw1h) | add) // 0),
           cache_read_tokens: ((map(.cr) | add) // 0),
           returns: ($w | length),
           verify_tokens: (if ($w | length) > 0 then ($w | map(.v) | add) else null end),
           verify_cache_read: (if ($w | length) > 0 then ($w | map(.c) | add) else null end),
           verify_per_return: ($w | map(.v))
         })
-      | map(select(.input_tokens + .output_tokens + .cache_write_tokens + .cache_read_tokens > 0))
+      | map(select(.input_tokens + .output_tokens + .cache_write_tokens + .cache_write_tokens_1h + .cache_read_tokens > 0))
     )
     | .[] | . as $u | ($u | rate) as $r |
     { timestamp: $ts, session_id: $sid, transcript_path: $tp, model: $u.model,
       model_scoped: true, dedup_usage: true, usage_pick: "last", stream: $stream, agent_type: $u.agent_type, turns: $u.turns,
       input_tokens: $u.input_tokens, output_tokens: $u.output_tokens,
-      cache_write_tokens: $u.cache_write_tokens, cache_read_tokens: $u.cache_read_tokens,
+      cache_write_tokens: $u.cache_write_tokens, cache_write_tokens_1h: $u.cache_write_tokens_1h,
+      cache_read_tokens: $u.cache_read_tokens,
       cache_read_per_turn: (if $u.turns > 0 then ($u.cache_read_tokens / $u.turns | round) else 0 end),
       returns: $u.returns, verify_tokens: $u.verify_tokens, verify_cache_read: $u.verify_cache_read,
       verify_per_return: $u.verify_per_return,
@@ -246,7 +258,8 @@ group_and_price() {
       head_commit: (if $head == "" then null else $head end),
       estimated_cost_usd: (
         ($u.input_tokens / 1e6 * $r.i) + ($u.output_tokens / 1e6 * $r.o) +
-        ($u.cache_write_tokens / 1e6 * $r.cw) + ($u.cache_read_tokens / 1e6 * $r.cr) |
+        ($u.cache_write_tokens / 1e6 * $r.cw) + ($u.cache_write_tokens_1h / 1e6 * $r.cw1h) +
+        ($u.cache_read_tokens / 1e6 * $r.cr) |
         (. * 1e6 | round) / 1e6
       ) }
   ' 2>/dev/null
@@ -354,7 +367,8 @@ scan_transcript() {
             select((.message.model // "") | ascii_downcase | test("^claude")) |
             { in: (.message.usage.input_tokens // 0),
               out: (.message.usage.output_tokens // 0),
-              cw: (.message.usage.cache_creation_input_tokens // 0),
+              cw: (.message.usage.cache_creation.ephemeral_5m_input_tokens // .message.usage.cache_creation_input_tokens // 0),
+              cw1h: (.message.usage.cache_creation.ephemeral_1h_input_tokens // 0),
               cr: (.message.usage.cache_read_input_tokens // 0),
               m: (.message.model // "unknown"),
               t: null,

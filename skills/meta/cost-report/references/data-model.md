@@ -12,8 +12,9 @@ so the latest row per key is the session's current total, not an increment.
 ```
 { timestamp, session_id, transcript_path, model, model_scoped, dedup_usage, usage_pick,
   stream, agent_type, turns, input_tokens, output_tokens, cache_write_tokens,
-  cache_read_tokens, cache_read_per_turn, returns, verify_tokens, verify_cache_read,
-  verify_per_return, rate_verified, mh_version, head_commit, estimated_cost_usd }
+  cache_write_tokens_1h, cache_read_tokens, cache_read_per_turn, returns, verify_tokens,
+  verify_cache_read, verify_per_return, rate_verified, mh_version, head_commit,
+  estimated_cost_usd }
 ```
 
 - `stream`: `orchestrator` (the main transcript) or `subagent` (each `subagents/agent-*.jsonl`).
@@ -52,6 +53,9 @@ these fields and the Handoff cost section skips them.
 | no `dedup_usage` | before 2026-09-04 | usage summed once per JSONL content-block line: turns, tokens, and cost about 2.4x high |
 | `dedup_usage` without `usage_pick: "last"` | v0.68.639 to v0.68.640 | first line per `message.id` kept, a streaming placeholder: `output_tokens` and cost about 39% low |
 | `dedup_usage: true, usage_pick: "last"` | v0.68.641+ | one count per API response, final output count |
+| no `cache_write_tokens_1h` | before the #162 fix (1.1.118, 2026-09-25) | `cache_write_tokens` is every cache-write token, mispriced entirely at the 5-minute rate. Measured live on this machine, 2026-09-25: of 3,000 sampled `cache_creation` usage records across every model family, 100% of cache-write tokens were 1-hour-TTL, 0% 5-minute — so `estimated_cost_usd` on these rows undercounts cache-write cost, not just theoretically. 369/404 local transcripts on disk carry the API's `cache_creation` breakdown at all (35 predate it and fall back to the flat field, priced as 5m — see below) |
+| `cache_write_tokens_1h` present, `> 0` | after the #162 fix, real 1h writes seen | `cache_write_tokens` is 5-minute-TTL writes only; `cache_write_tokens_1h` is the 1-hour-TTL subset, priced separately and correctly. Historical rows are not backfilled |
+| `cache_write_tokens_1h` present, `== 0` | after the #162 fix, no 1h writes OR a pre-breakdown transcript | Not distinguishable from this field alone — a transcript with only the flat `cache_creation_input_tokens` field (no `cache_creation` breakdown object) still emits `cache_write_tokens_1h: 0` and prices its whole total at the 5m rate, same as a transcript that genuinely had zero 1h writes. Coincidentally correct for the former only because no 1h tokens existed to mis-price if the transcript truly predates the breakdown |
 
 No legacy era is rewritten. The report prints a `note:` line for each of the two token-count
 eras present; the no-`stream` era shows as a missing section instead.

@@ -3,6 +3,30 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.118] — 2026-09-25
+
+### Fixed
+
+- **`hooks/stop/cost-tracker.sh`**: cache-write tokens were always priced at the 5-minute-TTL
+  rate, never the 1-hour rate, for every model — `bad_tool_contract`: the flat
+  `cache_creation_input_tokens` field the script read has no 5m/1h split, so it could not
+  express which rate applied. The Messages API usage object exposes the split at
+  `cache_creation.ephemeral_5m_input_tokens` / `.ephemeral_1h_input_tokens`; `raw_records()` and
+  `scan_transcript()`'s duplicated extraction now both read it (falling back to the flat field,
+  priced at 5m, for the 35/404 local transcripts that predate the breakdown). `rate()` gained a
+  `cw1h` rate per model, each read directly off `platform.claude.com/docs/en/about-claude/pricing`'s
+  own per-model column, 2026-09-25 — not derived from the 2x-input pattern the page also states,
+  since `cr` on the fable/mythos branches already shows that pattern does not hold for every
+  field. `group_and_price()` now bills the two buckets separately. Measured live: of 3,000
+  sampled `cache_creation` records across every model family, 100% of cache-write tokens were
+  1-hour-TTL — a confirmed, ongoing undercount, not the theoretical one flagged in 1.1.117.
+  Historical rows in `costs.jsonl` are not backfilled; a row now carries `cache_write_tokens_1h`
+  only going forward. Closes [#162](https://github.com/wasikarn/matt-harness/issues/162).
+- `tests/hooks/test-cost-tracker.sh` gained an end-to-end phase 2 (invokes the real script
+  against a synthetic transcript) asserting an all-1h-write transcript bills at the 1h rate and
+  a legacy flat-field-only transcript still bills at the 5m rate, unchanged — both proven red
+  against the pre-fix script.
+
 ## [1.1.117] — 2026-09-25
 
 ### Fixed
