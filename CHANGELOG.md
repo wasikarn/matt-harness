@@ -3,6 +3,15 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.122] — 2026-09-25
+
+### Added
+
+- **`docs/reference/spawn-brief.md`**: a Claude-dispatch model paragraph next to the existing
+  Codex-effort one. The Agent tool has a `model` override but no effort field, so it names when
+  to override `model:` at dispatch time (independence, stakes escalation), never `fable`, and
+  points effort changes at the agent's own frontmatter tier instead.
+
 ## [1.1.121] — 2026-09-25
 
 ### Fixed

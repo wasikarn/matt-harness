@@ -54,6 +54,14 @@ Sol/medium. Escalate effort for a concrete reasoning need, not merely the word "
 The live Codex catalog also lists `max` and `ultra`, but this plugin rejects both.
 Empty-diff handling: `docs/reference/codex-integration-map.md`, "Silent-refusal gotcha".
 
+Dispatching a Claude subagent (`Agent`): default is no `model:` override, running the agent's own
+frontmatter pin. Override only for **independence** (a verifier/reviewer pinned to the same model
+as the live main session gets a different one — `agent-authoring-conventions.md` item 4) or
+**stakes** (a Rule 1 one-way-door review escalates a sonnet-pinned reviewer to `opus`). Never
+override to `fable` (same reason check 21 WARNs on a `fable` agent pin) and never downgrade a pin
+to save cost. Unlike Codex, the Agent tool has no effort override — effort only comes from the
+agent's own frontmatter tier; change it there, not at dispatch time.
+
 A fixer brief carries the validator's `findings[]` verbatim and narrows FILES YOU OWN to the files
 the findings name; a returned unit that may touch anything grows into a diff nobody reviewed.
 
