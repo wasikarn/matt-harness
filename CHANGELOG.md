@@ -3,6 +3,32 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.116] — 2026-09-25
+
+### Fixed
+
+- **`hooks/stop/cost-tracker.sh`**: the `rate` function priced any model name matching `opus`
+  at the Opus 5 rate ($5/$25/MTok), silently swallowing `claude-opus-5-5` (Opus 5.5, shipped
+  2026-09-23, actual rate $4/$20/MTok, cache read $0.20) into the wrong bucket — same bug class
+  as the 2026-09-08 Fable-underpricing fix in the same function. Found by `/claude-api
+  prompt-audit`; confirmed live against `~/.local/share/kbg/metrics/costs.jsonl` (121 rows
+  already mispriced). Added an `opus-5-5` branch ahead of the bare `opus` test, marked `v:false`
+  pending an independent pricing-page confirmation. New test:
+  `tests/hooks/test-cost-tracker.sh`, proven red against the pre-fix function via `git stash`.
+- Prompt-audit also caught a second, self-inflicted bug in its own first attempt at this fix: an
+  apostrophe in an added jq-block comment terminated the shell single-quoted jq program early
+  (shellcheck SC1073/SC1065/SC1064), caught by the gauntlet's lint layer before it shipped.
+
+### Changed
+
+- Several skill/agent files rewritten to state rules and reasons directly instead of encoding
+  them as dated incident narratives (`agents/performance-optimizer.md`,
+  `skills/review/deep-audit/SKILL.md`, `skills/review/compliance-audit/SKILL.md`,
+  `skills/meta/memory-lint/references/action-mode.md`, `skills/design/tech-humanize/
+  patterns-thai.md`, `skills/design/tech-humanize/references.md`) — same prompt-audit pass.
+  `action-mode.md` also drops a wikilink into the operator's machine-local memory store, which
+  was unresolvable on any other install of this plugin.
+
 ## [1.1.115] — 2026-09-24
 
 ### Added

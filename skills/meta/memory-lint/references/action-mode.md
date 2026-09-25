@@ -1,6 +1,8 @@
 ## Action mode (`--auto-archive`)
 
-Mechanical fold of verbose/closed entries per the **A3 rubric** (codified 2026-06-04, [[project_memory_trim_session_2026_06_04]]), plus a **Class D fallback valve** (added 2026-08-07). This engine is the canonical home of the trim workflow: the three `--auto-archive` invocations below.
+Mechanical fold of verbose/closed entries per the **A3 rubric** (the classes below), plus a
+**Class D fallback valve** for a store shape A/B/C structurally can't catch. This engine is the
+canonical home of the trim workflow: the three `--auto-archive` invocations below.
 
 - **<2KB delta per session for A/B/C** — never collapse the whole store; trim only the worst. Class D is the deliberate exception: it's a last-resort valve for a store shape A/B/C structurally can't catch (many small terse entries, no verbose outlier), so its delta can be larger.
 - **<30 min elapsed** — if it takes longer, the store is unhealthy in ways trim won't fix

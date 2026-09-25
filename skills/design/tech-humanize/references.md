@@ -44,7 +44,7 @@ This skill extends [Wikipedia:Signs of AI writing](https://en.wikipedia.org/wiki
 
 ## Default Thai+Tech Glossary
 
-Canonical table lives in `patterns-thai.md` §31 — load it for the current, complete glossary (includes the `ticket`/`issue` row added 2026-07-14 after a live `ตั๋ว` miss). Sample rows only below, to show the shape; do not treat this file as authoritative for glossary lookups. Project-specific terms (ANPR, dwell, front-facing, PDPA, traffic-campaign) go in a project glossary, not here.
+Canonical table lives in `patterns-thai.md` §31 — load it for the current, complete glossary. Sample rows only below, to show the shape; do not treat this file as authoritative for glossary lookups. Project-specific terms (ANPR, dwell, front-facing, PDPA, traffic-campaign) go in a project glossary, not here.
 
 | Term | Internal | User-facing |
 |----|----------|-------------|

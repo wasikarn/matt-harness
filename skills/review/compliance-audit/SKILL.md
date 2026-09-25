@@ -184,10 +184,9 @@ fix.
 
 **Actions**:
 1. **If more than one verifier dispatch happened for the same requirement** (a retry, or a
-   second run for any reason) **and they returned different verdicts on it** — no protocol
-   existed for this before `mh:deep-audit` found the gap 2026-09-19, and it happened live: two
-   runs on the identical pinned SHA/requirement disagreed (CONFORMS vs. DEVIATED). Don't silently
-   pick one. Read the cited requirement's actual hunk in the diff yourself, record **both raw
+   second run for any reason) **and they returned different verdicts on it** (e.g. CONFORMS vs.
+   DEVIATED on the identical pinned SHA/requirement): don't silently pick one. Read the cited
+   requirement's actual hunk in the diff yourself, record **both raw
    verdicts** in the requirement's `note`, and default to `DEVIATED`/`accepted: false` unless
    reading the diff yourself clearly settles which run was right — a disagreement is itself
    evidence the requirement is closer to the line than a single clean CONFORMS would suggest.

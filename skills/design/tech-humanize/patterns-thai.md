@@ -99,7 +99,7 @@ Same (a) drift-in-meaning failure as the `front-facing`/`API` cases above, in th
 > ✅ `integration test [N] เคส drafted รอ run จริง`
 > ✅ `Threshold/window size TBD จะใส่หลัง calibrate กับ traffic จริง`
 
-`[N]` above is a placeholder for the real count from the source — never copy a number out of this example verbatim. A worked example of this exact template with the placeholder filled by an invented "4" leaked into `SKILL.md`'s calque table once already (fixed 2026-07-27); this note exists so the same fabricated number doesn't get reintroduced by a future edit that reads this line as literal data instead of shape.
+`[N]` above is a placeholder for the real count from the source — never copy a number out of this example verbatim, and never let a future edit read this line as literal data instead of shape.
 
 **PR description structure (TBD-disciplined):**
 - `## สรุป` (1 paragraph)

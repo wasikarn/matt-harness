@@ -112,10 +112,10 @@ Detect via Chrome DevTools Memory tab: take a heap snapshot, perform the action,
 ## Performance Testing
 
 **Budgets:** add a `size-limit` entry to `package.json` (or a `bundlewatch` config) capping
-`./build/static/js/*.js` at `200 kB` (gzipped) so CI fails on bundle growth; `bundlesize` is
-unmaintained.
+`./build/static/js/*.js` at `200 kB` (gzipped) so CI fails on bundle growth; `bundlesize` has had
+no npm activity since 2024-03-15 — treat it as unmaintained.
 
-**Web Vitals monitoring:** `web-vitals` v4 API — `import { onCLS, onINP, onLCP, onFCP,
+**Web Vitals monitoring:** current `web-vitals` API — `import { onCLS, onINP, onLCP, onFCP,
 onTTFB } from 'web-vitals'` and register a reporter for each (CLS, INP — which replaced FID,
 LCP, FCP, TTFB).
 
