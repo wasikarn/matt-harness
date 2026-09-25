@@ -3,6 +3,55 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.119] — 2026-09-25
+
+### Fixed
+
+- **`hooks/stop/cost-tracker.sh`**: 1.1.118's own fix for #162 (below) reopened a narrower bug
+  the same day — `weak_verification`: the fix shipped after a Codex checker and empirical
+  verification against real transcripts, but not against multi-iteration (agentic tool-loop)
+  turns specifically. On those turns, `.message.usage.cache_creation` (the field 1.1.118 started
+  reading) turned out to be a copy of `.message.usage.iterations[0]`'s own `cache_creation`, not
+  a sum across `.message.usage.iterations[]` — unlike the flat `cache_creation_input_tokens`
+  field 1.1.118 replaced, which does sum across iterations. Confirmed on 2,604 real local lines:
+  the old flat field matched the true iteration-summed total 98.7% of the time; 1.1.118's
+  top-level breakdown read matched it only 0.9%. Found by `mh:deep-audit` the same day, before
+  the installed plugin cache ever pulled 1.1.118 (confirmed: 0 `cw1h` matches in the installed
+  hook at the time). Fixed by summing the breakdown across `.message.usage.iterations[]` when
+  present, anchoring `cache_write_tokens_1h` to `min(iteration-summed 1h, top-level flat)` and
+  deriving `cache_write_tokens` as the remainder — one mechanism that also closes three
+  narrower gaps `mh:blind-spot-hunter`'s adversarial pass found in that first sum-everything
+  draft: an iteration with no `cache_creation` object at all no longer silently zeroes the whole
+  row; a Claude Code background-session transcript that copies one `message.id` across sibling
+  files with every top-level counter zeroed except `iterations` no longer manufactures real
+  dollars on the zeroed copies; and an `advisor_message` iteration billing a *different* model
+  can no longer push a row's total above its own top-level flat.
+- `skills/meta/cost-report/scripts/cost-report-dedup.js`'s `csv` mode never exported the
+  `cache_write_tokens_1h` field 1.1.118 added to the row shape (`missing_context`: the CSV
+  header/column list was never updated alongside the row shape it mirrors) — every 1h-write
+  token was invisible in the CSV while `estimated_cost_usd`, priced independently, stayed
+  correct, masking the gap. Added the column to both the header and the row mapping.
+- The report itself had no `note:` for the pre-1.1.118 era, where every row's
+  `cache_write_tokens` was priced entirely at the 5-minute rate (`missing_guardrail`: the
+  existing two-era `note:` mechanism covered turns/tokens drift but not this one). Added a third
+  era note, keyed on `cache_write_tokens_1h === undefined` (field absence, not a zero value, so
+  a genuinely-zero post-fix row is not mistaken for a pre-fix one).
+- Two claim-accuracy corrections to 1.1.118's own CHANGELOG entry (see the in-place
+  `**Correction (2026-09-25, ...)**` notes there) and to `data-model.md`'s Eras table: a
+  "35/404 legacy transcripts fall back to the flat field" claim that real measurement showed
+  false (0/175,524+ real cache-write lines ever hit that fallback), and a "100% 1-hour / 0%
+  5-minute" split that was a 3,000-line sample artifact (full-corpus: 99.30% / 0.70%).
+- `docs/research/orchestrate-cost-optimization-2026-09-03.md` (frozen; per this repo's own
+  correction convention, appended rather than rewritten): its round-2 acceptance criterion 6
+  used `cache_write_tokens / turns`, whose meaning silently shifted after 1.1.118 (now
+  5-minute-only, not a total). Added an in-place Correction note.
+- `tests/hooks/test-cost-tracker.sh` gained three new phase-2 cases (an iteration missing its
+  breakdown, a zeroed background-copy line, an advisor iteration on a different model) plus a
+  corrected multi-iteration fixture (restored the real `type`/`model` fields an earlier draft
+  had stripped, which is how the advisor case went unnoticed the first time); all proven red
+  against 1.1.118's own sum-everything code before this fix.
+  `tests/skills/test-cost-report.sh` gained cases for the CSV column and the third era note.
+
 ## [1.1.118] — 2026-09-25
 
 ### Fixed
@@ -13,15 +62,21 @@ All notable changes to `mh` are documented here. Format loosely follows
   express which rate applied. The Messages API usage object exposes the split at
   `cache_creation.ephemeral_5m_input_tokens` / `.ephemeral_1h_input_tokens`; `raw_records()` and
   `scan_transcript()`'s duplicated extraction now both read it (falling back to the flat field,
-  priced at 5m, for the 35/404 local transcripts that predate the breakdown). `rate()` gained a
-  `cw1h` rate per model, each read directly off `platform.claude.com/docs/en/about-claude/pricing`'s
-  own per-model column, 2026-09-25 — not derived from the 2x-input pattern the page also states,
-  since `cr` on the fable/mythos branches already shows that pattern does not hold for every
-  field. `group_and_price()` now bills the two buckets separately. Measured live: of 3,000
-  sampled `cache_creation` records across every model family, 100% of cache-write tokens were
-  1-hour-TTL — a confirmed, ongoing undercount, not the theoretical one flagged in 1.1.117.
-  Historical rows in `costs.jsonl` are not backfilled; a row now carries `cache_write_tokens_1h`
-  only going forward. Closes [#162](https://github.com/wasikarn/matt-harness/issues/162).
+  priced at 5m, for the 35/404 local transcripts that predate the breakdown). **Correction
+  (2026-09-25, `mh:deep-audit` round 2, verified against every local `~/.claude/projects/*/*.jsonl`
+  transcript on this machine):** that 35/404 figure was wrong — 0 real cache-write lines out of
+  175,524+ ever hit that fallback; the "missing" files simply had zero cache-write activity, not
+  a pre-breakdown shape. `rate()` gained a `cw1h` rate per model, each read directly off
+  `platform.claude.com/docs/en/about-claude/pricing`'s own per-model column, 2026-09-25 — not
+  derived from the 2x-input pattern the page also states, since `cr` on the fable/mythos branches
+  already shows that pattern does not hold for every field. `group_and_price()` now bills the two
+  buckets separately. Measured live: of 3,000 sampled `cache_creation` records across every model
+  family, 100% of cache-write tokens were 1-hour-TTL — a confirmed, ongoing undercount, not the
+  theoretical one flagged in 1.1.117. **Correction (2026-09-25, same round, full-corpus
+  measurement — 183,970 lines, not a 3,000-line sample):** the real split is 99.30% 1-hour /
+  0.70% 5-minute, not 100%/0%. Historical rows in `costs.jsonl` are not backfilled; a row now
+  carries `cache_write_tokens_1h` only going forward. Closes
+  [#162](https://github.com/wasikarn/matt-harness/issues/162).
 - `tests/hooks/test-cost-tracker.sh` gained an end-to-end phase 2 (invokes the real script
   against a synthetic transcript) asserting an all-1h-write transcript bills at the 1h rate and
   a legacy flat-field-only transcript still bills at the 5m rate, unchanged — both proven red

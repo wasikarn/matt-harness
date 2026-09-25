@@ -14,8 +14,8 @@ const f=process.env.MH_COSTS_FILE||path.join(os.homedir(),".local","share","kbg"
 if(process.argv[2]==="csv"){
   if(!fs.existsSync(f)){console.error("no data");process.exit(0);}
   const rows=fs.readFileSync(f,"utf8").split(/\r?\n/).filter(Boolean).map(l=>{try{return JSON.parse(l)}catch{return null}}).filter(Boolean).slice(-100);
-  console.log("timestamp,session_id,model,model_scoped,stream,agent_type,turns,input_tokens,output_tokens,cache_write_tokens,cache_read_tokens,cache_read_per_turn,estimated_cost_usd");
-  for(const r of rows)console.log([r.timestamp,r.session_id,r.model,r.model_scoped===true,r.stream||"",r.agent_type||"",r.turns||"",r.input_tokens,r.output_tokens,r.cache_write_tokens,r.cache_read_tokens,r.cache_read_per_turn||"",r.estimated_cost_usd].join(","));
+  console.log("timestamp,session_id,model,model_scoped,stream,agent_type,turns,input_tokens,output_tokens,cache_write_tokens,cache_write_tokens_1h,cache_read_tokens,cache_read_per_turn,estimated_cost_usd");
+  for(const r of rows)console.log([r.timestamp,r.session_id,r.model,r.model_scoped===true,r.stream||"",r.agent_type||"",r.turns||"",r.input_tokens,r.output_tokens,r.cache_write_tokens,r.cache_write_tokens_1h,r.cache_read_tokens,r.cache_read_per_turn||"",r.estimated_cost_usd].join(","));
   process.exit(0);
 }
 
@@ -56,6 +56,13 @@ const inflated=latest.filter(r=>r.dedup_usage!==true).length;
 const outLow=latest.filter(r=>r.dedup_usage===true&&r.usage_pick!=="last").length;
 if(inflated)console.log("note: "+inflated+" of "+latest.length+" rows predate dedup_usage (2026-09-04) — their turns, tokens, and cost run ~2.4x high (summed per line, not per response)");
 if(outLow)console.log("note: "+outLow+" of "+latest.length+" rows predate usage_pick:\"last\" (v0.68.641) — their output_tokens (and cost) run ~39% low (first line per response, not last)");
+// Third era (#162, 1.1.118, 2026-09-25 deep-audit F7): a row this old always priced
+// cache_write_tokens entirely at the 5-minute rate. ~99% of real cache writes are
+// 1-hour-TTL (full-corpus measurement, same date), so these rows' cost likely runs low.
+// cache_write_tokens_1h===undefined (not 0) is the discriminator: a post-fix row with
+// genuinely zero 1h writes still carries the field, set to 0.
+const preTTLSplit=latest.filter(r=>r.cache_write_tokens_1h===undefined&&(Number(r.cache_write_tokens)||0)>0).length;
+if(preTTLSplit)console.log("note: "+preTTLSplit+" of "+latest.length+" rows predate the 1h/5m cache-write split (#162, 1.1.118) — cache_write_tokens was priced entirely at the 5-minute rate; cost on these rows likely runs low");
 console.log("today:     "+f4(sum(latest.filter(r=>day(r)===today))));
 console.log("yesterday: "+f4(sum(latest.filter(r=>day(r)===d))));
 const sessionIds=new Set(latest.map(r=>r.session_id||r.transcript_path||r.timestamp));

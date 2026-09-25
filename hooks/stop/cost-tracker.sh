@@ -155,6 +155,47 @@ build_type_map() {
 # one or more transcript files. Stops BEFORE grouping/pricing so the orchestrator
 # path (scan_transcript below) can produce the same record shape from an
 # already-parsed in-memory line set instead of re-reading the file here.
+#
+# `iterations` (deep-audit finding, 2026-09-25, closing a gap the #162 fix
+# itself introduced): a multi-tool-round-trip turn's top-level
+# `.message.usage.cache_creation` is a copy of iterations[0]'s own
+# cache_creation, NOT a sum across `.message.usage.iterations[]` -- unlike
+# the flat `cache_creation_input_tokens` field, which DOES sum across
+# iterations. Confirmed against every local transcript with a multi-item
+# iterations array (2,688 lines): top-level flat matched the iteration sum
+# in 98.7% (2571/2604 of the ones that also disagreed with the top-level
+# breakdown), while the top-level breakdown matched the iteration-summed
+# breakdown in only 0.9% (23/2604) -- and the iteration-level breakdown was
+# internally self-consistent with the iteration-level flat in 100% of cases.
+# Reading the top-level breakdown directly (as #162's first fix did)
+# silently drops every iteration after the first, undercounting cache-write
+# tokens on any multi-iteration turn.
+#
+# Flat-anchored split (deep-audit round 2, 2026-09-25, mh:blind-spot-hunter
+# F3/F4/F5 on the fix above): summing the breakdown across every iteration
+# unconditionally reopened three gaps a naive sum can't see. F3: an
+# iteration with no `cache_creation` object at all (0 real occurrences, but
+# the map's own `// 0` silently drops it) could zero out cw *and* cw1h,
+# a zero-cw/zero-cw1h/zero-everything-else row is deleted by the nonzero
+# filter below -- losing the whole turn's cost, not just mispricing it.
+# F4: Claude Code's background-session transcripts (CC
+# 2.1.263+) copy one message.id across several sibling files with every
+# top-level counter zeroed on the copies except `iterations`/`cache_creation`
+# -- summing iterations directly on those copies manufactures real dollars
+# on an all-zero row, and this file's own dedup key is per (file,
+# message.id), so each copy's file bills it again (measured: 17 real local
+# records, +55,743 tokens net). F5: an `advisor_message` iteration bills a
+# *different* model (the advisor's own) than the turn's primary model, and
+# summing it in attributes that spend to the wrong row's rate. Anchoring
+# cw1h to `min(sum-of-iteration-1h, top-level-flat)` and deriving cw as the
+# remainder closes all three at once: the top-level flat field already
+# reliably sums to the executor's own total (matching iteration flats
+# 98.7% of the time, per above, and by construction excluding the
+# advisor's own contribution -- flat is 0 on the zeroed background-copy
+# shape, and the min() caps at it), so capping there can never manufacture
+# tokens that were not really billed to this row, and a fully-missing
+# per-iteration breakdown now falls through to a nonzero cw (flat minus a
+# 0 cw1h) instead of dropping the row.
 raw_records() {
   local typemap="$1"; shift
   jq -nRc --argjson typemap "$typemap" '
@@ -162,10 +203,16 @@ raw_records() {
       select(.type == "assistant") |
       select((.message // {}).usage != null) |
       select((.message.model // "") | ascii_downcase | test("^claude")) |
+      (.message.usage.iterations // []) as $its |
+      (.message.usage.cache_creation_input_tokens // 0) as $flat |
       { in: (.message.usage.input_tokens // 0),
         out: (.message.usage.output_tokens // 0),
-        cw: (.message.usage.cache_creation.ephemeral_5m_input_tokens // .message.usage.cache_creation_input_tokens // 0),
-        cw1h: (.message.usage.cache_creation.ephemeral_1h_input_tokens // 0),
+        cw: (if ($its | length) > 0
+             then ($flat - ([($its | map(.cache_creation.ephemeral_1h_input_tokens // 0) | add), $flat] | min))
+             else (.message.usage.cache_creation.ephemeral_5m_input_tokens // $flat) end),
+        cw1h: (if ($its | length) > 0
+               then ([($its | map(.cache_creation.ephemeral_1h_input_tokens // 0) | add), $flat] | min)
+               else (.message.usage.cache_creation.ephemeral_1h_input_tokens // 0) end),
         cr: (.message.usage.cache_read_input_tokens // 0),
         m: (.message.model // "unknown"),
         t: ($typemap[input_filename].t // null),
@@ -361,14 +408,23 @@ scan_transcript() {
             | {(.id): (.input.subagent_type // empty)}] | add // {}
         ) catch {} ),
         usages: ( try (
+          # cw/cw1h: same iterations-aware extraction as raw_records above
+          # (see its own comment for why) -- a second, independent copy of
+          # the same logic for this in-memory fast path.
           [ $lines[] |
             select(.type == "assistant") |
             select((.message // {}).usage != null) |
             select((.message.model // "") | ascii_downcase | test("^claude")) |
+            (.message.usage.iterations // []) as $its |
+            (.message.usage.cache_creation_input_tokens // 0) as $flat |
             { in: (.message.usage.input_tokens // 0),
               out: (.message.usage.output_tokens // 0),
-              cw: (.message.usage.cache_creation.ephemeral_5m_input_tokens // .message.usage.cache_creation_input_tokens // 0),
-              cw1h: (.message.usage.cache_creation.ephemeral_1h_input_tokens // 0),
+              cw: (if ($its | length) > 0
+                   then ($flat - ([($its | map(.cache_creation.ephemeral_1h_input_tokens // 0) | add), $flat] | min))
+                   else (.message.usage.cache_creation.ephemeral_5m_input_tokens // $flat) end),
+              cw1h: (if ($its | length) > 0
+                     then ([($its | map(.cache_creation.ephemeral_1h_input_tokens // 0) | add), $flat] | min)
+                     else (.message.usage.cache_creation.ephemeral_1h_input_tokens // 0) end),
               cr: (.message.usage.cache_read_input_tokens // 0),
               m: (.message.model // "unknown"),
               t: null,

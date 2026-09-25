@@ -184,6 +184,24 @@ rc=$?
 assert "era notes: the pre-dedup row's note names cost as inflated, the first-line row gets the output-low note, and the modern row triggers neither (1 of 3 each)" "$ok"
 trash "$fake_home" 2>/dev/null || true
 
+# Third era note (deep-audit F7, 2026-09-25): a pre-#162 row with real cache-write
+# tokens but no cache_write_tokens_1h field at all must be flagged as likely
+# undercounting cost; a post-#162 row with genuinely zero 1h writes (field present,
+# set to 0) must NOT trigger it -- the discriminator is field presence, not value.
+fake_home=$(mktemp -d)
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir"
+cat > "$metrics_dir/costs.jsonl" <<'EOF'
+{"timestamp":"2026-09-01T00:00:00Z","session_id":"pre-ttl-split","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"orchestrator","turns":1,"input_tokens":0,"output_tokens":0,"cache_write_tokens":1000,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":2.5}
+{"timestamp":"2026-09-25T00:00:01Z","session_id":"post-ttl-split","transcript_path":"/t","model":"claude-sonnet-5","model_scoped":true,"stream":"orchestrator","turns":1,"input_tokens":0,"output_tokens":0,"cache_write_tokens":0,"cache_write_tokens_1h":0,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":0.0}
+EOF
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
+rc=$?
+[[ "$rc" == "0" ]] \
+  && printf '%s' "$out" | /usr/bin/grep -q '^note: 1 of 2 rows predate the 1h/5m cache-write split' && ok=1 || ok=0
+assert "third era note fires once for the pre-#162 row with real cache writes, not for the post-#162 zero-1h row" "$ok"
+trash "$fake_home" 2>/dev/null || true
+
 # MH_COSTS_FILE override (2026-09-07): evals run in a fresh HOME and can only plant a
 # fixture in the workspace, so the env path must win over the HOME default. HOME points
 # at a dir with NO log; only the override path can produce the $1.0000 total.
@@ -292,6 +310,26 @@ out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
 rc=$?
 [[ "$rc" == "0" ]] && printf '%s' "$out" | /usr/bin/grep -q '^Cost tracker not set up:' && ok=1 || ok=0
 assert "missing costs.jsonl prints the 'Cost tracker not set up' line and exits 0" "$ok"
+trash "$fake_home" 2>/dev/null || true
+
+# CSV export column (deep-audit finding, 2026-09-25, issue #162): the 1h/5m cache-write
+# split cost-tracker.sh now writes must reach the CSV, not just the raw JSONL, or the
+# per-row token breakdown silently drops the 1h portion while estimated_cost_usd (not
+# derived from these columns) stays correct -- masking the gap instead of showing it.
+fake_home=$(mktemp -d)
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir"
+cat > "$metrics_dir/costs.jsonl" <<'EOF'
+{"timestamp":"2026-09-25T00:00:00Z","session_id":"cw1h-csv","transcript_path":"/t","model":"claude-opus-5-5","model_scoped":true,"stream":"orchestrator","turns":1,"input_tokens":0,"output_tokens":0,"cache_write_tokens":100,"cache_write_tokens_1h":900,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":7.7}
+EOF
+out=$(HOME="$fake_home" node "$REPORT_JS" csv 2>&1)
+rc=$?
+header="$(printf '%s\n' "$out" | head -1)"
+row="$(printf '%s\n' "$out" | tail -1)"
+[[ "$rc" == "0" ]] \
+  && printf '%s' "$header" | /usr/bin/grep -q 'cache_write_tokens_1h' \
+  && printf '%s' "$row" | /usr/bin/grep -q ',100,900,' && ok=1 || ok=0
+assert "csv mode's header and row both carry cache_write_tokens_1h (100 5m, 900 1h)" "$ok"
 trash "$fake_home" 2>/dev/null || true
 
 echo ""
