@@ -17,6 +17,13 @@ Native Claude Code variables this plugin relies on but does not own: `CLAUDE_PLU
 (every hook command), `CLAUDE_SKILL_DIR` (set while a skill body runs; `harness-audit`,
 `memory-lint`, and `cost-report` invoke their bundled scripts through it, so it works in an eval
 sandbox where no SessionStart hook ran), `CLAUDE_ENV_FILE` (command-root-anchor writes the export there),
+`CLAUDE_CODE_EFFORT_LEVEL` (`model-bench.sh` sets it per `@effort` arm and it reaches the eval
+child; per model-config it outranks every frontmatter `effort:` pin, not yet probed inside an
+eval child; a bare arm inherits the invoking shell's value), `CLAUDE_CODE_ENABLE_TODO_TOOLS`
+(Claude Code gives `TaskUpdate` by default only to Claude 3.x, Opus 4 to 4.7, Sonnet 4 to 4.6
+and Haiku 4.5, plus every model in background and cloud sessions; on Opus 4.8+, Sonnet 5 or
+Fable elsewhere, `gate:task:complete-separation` has nothing to match unless this is `1` or the
+tools are named in `--allowedTools`/`--tools`; tools-reference, "Task tool availability"),
 `CLAUDE_PLUGIN_DATA` — observed as `~/.claude/plugins/data/<plugin>-<marketplace>/`, consistent
 across every installed plugin on this machine; not documented by Claude Code, and mh doesn't
 read it directly (check 71 hardcodes the resolved default instead, since `audit.sh` runs as a

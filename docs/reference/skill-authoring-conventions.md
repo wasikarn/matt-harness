@@ -52,7 +52,9 @@ independent re-check step, or an adversarial second-pass agent. A skill an agent
 carries the same effort as its host. `skills/*/*/references/*.md` fragments stay unstamped.
 Official Claude Code also accepts `effort: max` in frontmatter (sub-agents reference); the
 fleet assigns it no tier because it means unbounded token spend on a shipped agent, so check 54
-WARNs on it. Bump per session with `/effort max` instead.
+WARNs on it. A session `/effort max` or `--effort max` doesn't reach a surface that pins
+`effort:` (frontmatter overrides the session level); only `CLAUDE_CODE_EFFORT_LEVEL=max` does,
+and it lifts every surface in that session, `low` ones included.
 
 **Reference files** (Anthropic Agent Skills best practices): one level deep from SKILL.md, and MCP tools named `ServerName:tool_name`
 (`qmd:query`, not `query`). A reference file must not carry `description:` frontmatter, or

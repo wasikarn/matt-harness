@@ -21,10 +21,22 @@ the user decides when to run it, not the model.
 
 Cases whose `prompt.md` dispatches a subagent (`subagent_type:` in the prompt, or a
 `graders/agent-fired.md` in the case dir) run that subagent at its `agents/*.md`
-frontmatter-pinned model regardless of `--model`. Whether `--model` reaches subagent dispatch
+frontmatter-pinned model regardless of `--model`, except that per the sub-agents docs a
+same-family arm moves a family-alias pin (`model: opus` runs the arm's exact Opus, e.g.
+`claude-opus-5`; `model: sonnet` likewise for a Sonnet arm). Whether `--model` reaches subagent dispatch
 inside the eval sandbox is **unverified** — no live eval has been run to check it, since doing so
 spends judge cost. The report prints how many compared cases are agent-dispatch cases so this
 caveat reaches the output itself, not just this doc.
+
+Arms on a model with safety classifiers (Fable, Opus 5.5, Opus 5, and the `opus`/`fable`/`best`/
+`default` aliases) can also be scored on the wrong model. A flagged request re-runs on Opus 4.8 or
+Opus 5; on an Opus 5 arm a biology flag ends in a refusal instead, which skews the score too
+(`code.claude.com/docs/en/model-config#automatic-model-fallback`). Eval runs load no user
+settings (`.../plugin-evals#how-runs-are-isolated`), so the user's `switchModelsOnFlag` can't stop
+it (a managed one still applies inside a run, and `false` ends the flagged request as an error),
+and `aggregate-result.json` records no model. The report prints a caveat for such an arm. To check a
+suspicious case, re-run it with `--keep-temp` and read the child transcript's assistant-turn
+model, the same place the effort probe below reads `effort`.
 
 **The CLI `--effort` flag never reaches the eval child — a re-probe corrected an earlier, wrong
 conclusion here.** The 2026-09-25 probe above only inspected the OUTER `claude plugin eval`
@@ -53,10 +65,12 @@ is kept as the report's label (`aggregate-result.json` itself never records mode
 Each arm's output dir also gets an `arm-meta.txt` (arm spec, effective command, `claude --version`,
 timestamp) as a paper trail independent of the report.
 
-For a case whose `prompt.md` *does* dispatch a subagent (see the scope caveat above): that case's
-own `agents/*.md` frontmatter `effort:` overrides the arm's `CLAUDE_CODE_EFFORT_LEVEL` the same
-way its frontmatter `model:` overrides `--model` — a skill-only case (no agent dispatch) is where
-an effort sweep is actually clean, same caveat as the model-override case.
+For a case whose `prompt.md` *does* dispatch a subagent (see the scope caveat above):
+`CLAUDE_CODE_EFFORT_LEVEL` outranks frontmatter `effort:` (`code.claude.com/docs/en/model-config`:
+"overriding the session level but not the environment variable"), so an `@effort` arm should set
+every dispatched agent's and skill's effort too, unlike `--model`, which a pinned agent overrides.
+This is not yet probed inside an eval child; check it with the `--keep-temp` method above before
+trusting an effort sweep on an agent-dispatch case.
 
 Re-verify propagation with the same `--keep-temp` + child-transcript method (never the outer
 `--debug-file`, which only shows the parent's own startup log) before trusting a future claim

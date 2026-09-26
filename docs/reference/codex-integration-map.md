@@ -60,17 +60,21 @@ and access to Luna, Terra, Sol, and Astra through `model/list`. This is a dated 
 not a required plan or a live balance. Recheck `account/rateLimits/read` through the app-server
 (or `/status` in the CLI) when planning substantial work; never commit account IDs or tokens.
 
-**Slugs updated 2026-09-23** (verified against `learn.chatgpt.com/docs/models?surface=cli`'s
-public docs, not this account's own `model/list` — the installed CLI was `0.156.0`, `exec`-based
-verification was blocked by an exhausted usage quota at check time): OpenAI is mid-rollout of a
-GPT-6 generation for Sol and Luna specifically — `gpt-6-sol` and `gpt-6-luna` are now the
-docs-recommended slugs, at roughly half the prior credit rate on input and cached-input tokens
-(exactly half for Sol on every column; Luna's output-token rate is cut further, to ~0.42x, not
-0.5x — see the exact numbers below). `gpt-5.6-sol`/`gpt-5.6-luna`
-"remain available during the rollout" per the same page, so neither is a hard break. Terra has no
-GPT-6 variant yet (`gpt-5.6-terra` stays current). Astra was already `gpt-6-astra` and is
-unchanged. Re-verify this note itself the next time this table is touched — it documents a
-rollout in progress, not a settled state.
+Codex has no automatic model router: the model is whatever `--model`, `-c model=`, a profile or
+`config.toml` names, else the bundled default. Its only automatic behaviour is `ultra` effort
+delegating to subagents (this plugin rejects `ultra`), Plan mode's built-in effort preset when
+`plan_mode_reasoning_effort` is unset, spawned agents defaulting to
+`agents.default_subagent_model`/`agents.default_subagent_reasoning_effort`, and migration or
+rate-limit prompts that ask before switching.
+
+**Slugs re-verified 2026-09-26** against this account's own catalog (`codex debug models`, CLI
+0.156.1): `gpt-6-sol`, `gpt-6-luna`, `gpt-6-astra` and `gpt-5.6-terra` are listed, and
+`gpt-5.6-sol`/`gpt-5.6-luna` are still listed, so the GPT-6 rollout for Sol and Luna is not a
+hard break. `gpt-5.5` carries an upgrade to `gpt-5.6-sol` and retires 2026-10-14. Terra has no
+GPT-6 variant yet. Credit rates (public docs, 2026-09-23): `gpt-6-sol` and `gpt-6-luna` cost
+roughly half the prior rate on input and cached-input tokens (exactly half for Sol on every
+column; Luna's output-token rate is cut further, to ~0.42x — see the exact numbers below).
+Re-verify this note the next time this table is touched.
 
 | Work | Starting model | Effort |
 |---|---|---|
@@ -78,6 +82,10 @@ rollout in progress, not a settled state.
 | Bounded implementation or verification of explicit requirements | `gpt-5.6-terra` | `medium` |
 | Ambiguous bugs, adversarial review, cross-file judgment | `gpt-6-sol` | `medium` |
 | Hard end-to-end investigation with sustained judgment | `gpt-6-astra` | `medium` |
+
+OpenAI's own starting points are Sol `medium`, Luna `high` and Astra `low`
+(`learn.chatgpt.com/docs/models`). By operator policy, this table starts Luna lower (small, clear
+tasks) and Astra higher (the hardest tasks).
 
 These are starting choices, not measured quality guarantees. Deep-audit and idea-audit normally
 start with Sol/medium; compliance-audit starts with Terra/medium for explicit requirements,

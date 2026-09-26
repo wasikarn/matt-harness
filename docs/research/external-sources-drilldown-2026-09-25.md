@@ -130,6 +130,15 @@ Only actionable item is PR #1120, and it's blocked on upstream shipping 1.3.0. E
 either already covered by an installed skill/gate, reconfirms a settled Jev verdict, or is out of
 scope for a Claude Code harness plugin. Nothing in this repo was changed by this drill-down.
 
+## Correction 2026-09-26
+
+Section 2 says the operator's `CLAUDE_CODE_SUBAGENT_MODEL` ban exists to stop an `opus`-pinned
+reviewer from being silently downgraded. That reason went stale in CC 2.1.251: the plain variable
+now only sets the model for unpinned agents, and the pin-overriding behavior moved to
+`CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` (2.1.257; sub-agents doc, changelog 2.1.251/2.1.257). The
+comparison to `jev-model-router`'s `agent.spawn` still holds, against the `_FORCE` variant. The
+don't-adopt verdict and its 5.0 score are unchanged.
+
 ## Sources
 
 - PR: `github.com/mattpocock/skills/pull/1120` (diff, changesets, local clone git log)

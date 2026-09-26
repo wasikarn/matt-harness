@@ -46,6 +46,30 @@ printf '%s\n' "$out" | /usr/bin/grep -q 'WARN' \
   && bad "clean pair: printed a WARN with nothing that should mismatch" \
   || ok "clean pair: no spurious WARN"
 
+printf '%s\n' "$out" | /usr/bin/grep -qF 'safety classifiers' \
+  && bad "clean pair: content-fallback caveat printed for non-model labels" \
+  || ok "clean pair: no content-fallback caveat for non-model labels"
+
+# --- content-fallback caveat: fires only for an arm on a classifier-backed model ---
+out=$(python3 "$DIFF_PY" --label-a sonnet@high --label-b claude-opus-5-5 \
+  "$FIXTURES/clean-a.json" "$FIXTURES/clean-b.json" 2>&1)
+printf '%s\n' "$out" | /usr/bin/grep -qF 'CAVEAT: claude-opus-5-5 runs a model with safety classifiers' \
+  && ok "opus-5-5 arm: content-fallback caveat names the arm" \
+  || bad "opus-5-5 arm: content-fallback caveat missing"
+
+# `default` resolves to Opus 5.5 on every plan (model-config#default-model-setting)
+out=$(python3 "$DIFF_PY" --label-a default --label-b sonnet \
+  "$FIXTURES/clean-a.json" "$FIXTURES/clean-b.json" 2>&1)
+printf '%s\n' "$out" | /usr/bin/grep -qF 'CAVEAT: default runs a model with safety classifiers' \
+  && ok "default arm: content-fallback caveat names the arm" \
+  || bad "default arm: content-fallback caveat missing"
+
+out=$(python3 "$DIFF_PY" --label-a claude-opus-4-8 --label-b sonnet \
+  "$FIXTURES/clean-a.json" "$FIXTURES/clean-b.json" 2>&1)
+printf '%s\n' "$out" | /usr/bin/grep -qF 'safety classifiers' \
+  && bad "opus-4-8 vs sonnet: content-fallback caveat printed for models without it" \
+  || ok "opus-4-8 vs sonnet: no content-fallback caveat"
+
 # --- mismatched pair: judgeModel + caseFilter differ, must WARN not hard-fail ---
 out=$(python3 "$DIFF_PY" --label-a fixture-a --label-b fixture-b \
   "$FIXTURES/clean-a.json" "$FIXTURES/mismatch-b.json" 2>&1)

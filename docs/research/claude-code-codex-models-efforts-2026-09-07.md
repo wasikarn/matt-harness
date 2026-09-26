@@ -142,6 +142,35 @@ commit time, score **100/100**. Failure class: weak_verification — the live-se
 never extended to re-reading CLAUDE.md's own git history before publishing a claim about its
 freshness.
 
+## Addendum 2026-09-26: re-verified on 2.1.283 — config moved to official defaults; two corrections
+
+Installed: `claude` 2.1.283. Full write-up: wasikarn/dotfiles
+`docs/research/auto-model-auto-effort-2026-09-26.md`.
+
+- **The 2026-09-18 table no longer describes the live config.** Dotfiles commit `93994d33`
+  (2026-09-26) kept `model: opusplan` and set every `modelSettings` entry to that model's official
+  default: `claude-opus-5-5` `medium` (CC 2.1.280 made Opus 5.5 the `opus` alias, with a `medium`
+  default), `claude-sonnet-5` `high`, `claude-fable-5-1` `high`. It also dropped the top-level
+  `effortLevel`. `switchModelsOnFlag: false` was added the same day. The opus `xhigh`,
+  catch-all `high` and fable `low` rows above are now historical.
+- **Fable 5.1 needs CC >= 2.1.257, not 2.1.255** (model table, Fable rows). Changelog 2.1.257:
+  "Added Claude Fable 5.1 (`claude-fable-5-1`), now the default Fable model"; model-config:
+  "Fable 5.1 requires Claude Code v2.1.257 or later". So `fable` meant Fable 5 before 2.1.257.
+- **Alias `modelSettings` keys: the 2026-09-08 addendum stands.** Probed live on 2.1.283 with
+  `claude -p --model sonnet --settings '<json>'`, reading `$CLAUDE_EFFORT` from a Bash call:
+  `{"sonnet":{"effortLevel":"low"}}` → `low`; `{"claude-sonnet-5":{"effortLevel":"low"}}` → `low`;
+  no override → `high` (the user-settings entry); both keys (`sonnet: low` and
+  `claude-sonnet-5: medium`, either order) → `medium`. The alias key works, and within one
+  settings source the canonical key wins. Across sources, normal precedence decides: the
+  alias-only `--settings` case beat the canonical `claude-sonnet-5: high` in the user file.
+  Dotfiles `claude/CLAUDE.md` had said alias keys were rejected; it was corrected the same day.
+  The probe went through `--settings`, not the user settings file.
+- **`CLAUDE_CODE_SUBAGENT_MODEL` changed meaning in 2.1.251.** It now only sets the model for
+  unpinned agents; overriding frontmatter pins takes `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1`
+  (2.1.257). Sources: the sub-agents doc ("Before v2.1.251, `CLAUDE_CODE_SUBAGENT_MODEL` came
+  first in this order and overrode both the per-invocation parameter and the frontmatter") and
+  changelog 2.1.251, 2.1.257.
+
 ## Sources
 
 1. https://code.claude.com/docs/en/model-config — Claude Code model configuration (aliases, precedence, effort, 1M, plans).

@@ -35,7 +35,7 @@ for _f in "${_me_files[@]}"; do
   else
     case "$_effort" in
       low|medium|high|xhigh) ;;
-      max) warn "surface $_rel pins effort: max — valid in Claude Code but the fleet assigns it no tier (unbounded spend on a shipped agent); use xhigh, or bump per session with /effort max" ;;
+      max) warn "surface $_rel pins effort: max — valid in Claude Code but the fleet assigns it no tier (unbounded spend on a shipped agent); use xhigh; for a one-off max run set CLAUDE_CODE_EFFORT_LEVEL=max (a session /effort max doesn't reach a pinned surface)" ;;
       *) warn "surface $_rel effort='$_effort' is not a documented tier (low|medium|high|xhigh)" ;;
     esac
   fi

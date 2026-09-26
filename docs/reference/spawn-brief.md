@@ -43,8 +43,9 @@ claim — illegible evidence is unverified, not absent.
 ```
 
 When the brief goes to Codex (`/codex:rescue`), name the reasoning effort as an invocation flag,
-`--effort <none|minimal|low|medium|high|xhigh>` (the set `codex@openai-codex` 1.0.6 validates), never
-as a line inside the task text: the rescue agent strips runtime flags from the prompt and a
+`--effort <none|minimal|low|medium|high|xhigh>` (the set `codex@openai-codex` 1.0.6 validates;
+`none` and `minimal` pass the plugin, but no model in the live catalog lists them, so pick from
+`low` to `xhigh`), never as a line inside the task text: the rescue agent strips runtime flags from the prompt and a
 prose `REASONING:` line reaches nothing. Omitting the flag runs the operator's configured default;
 say so when you relay the result. Model and effort are the dispatcher's call, never the lane's.
 Select both using `docs/reference/codex-integration-map.md`'s task/account-cost table. This
@@ -57,10 +58,17 @@ Empty-diff handling: `docs/reference/codex-integration-map.md`, "Silent-refusal 
 Dispatching a Claude subagent (`Agent`): default is no `model:` override, running the agent's own
 frontmatter pin. Override only for **independence** (a verifier/reviewer pinned to the same model
 as the live main session gets a different one — `agent-authoring-conventions.md` item 4) or
-**stakes** (a Rule 1 one-way-door review escalates a sonnet-pinned reviewer to `opus`). Never
-override to `fable` (same reason check 21 WARNs on a `fable` agent pin) and never downgrade a pin
-to save cost. Unlike Codex, the Agent tool has no effort override — effort only comes from the
-agent's own frontmatter tier; change it there, not at dispatch time.
+**stakes** (a Rule 1 one-way-door review escalates a sonnet-pinned reviewer to `opus`). The
+`model` parameter takes only `sonnet`, `opus`, `haiku` or `fable`, and a same-family alias
+resolves to the main session's exact model, so an opus-pinned verifier under an Opus main session
+has no independent override here; use the Codex lane. Never override to `fable` (same reason
+check 21 WARNs on a `fable` agent pin) and never downgrade a pin to save cost. Unlike Codex, the
+Agent tool has no per-dispatch effort. A subagent runs its frontmatter `effort:` when it has one
+(every mh agent does, check 54), unless `CLAUDE_CODE_EFFORT_LEVEL` is set, which outranks it;
+`maxEffortLevel` or an org cap still clamps it. An agent without `effort:` (a built-in
+`general-purpose` or `Explore`) takes an explicit session `--effort` or `/effort`, else its own
+model's configured or default effort. To change an mh agent's effort, edit its frontmatter, not
+the dispatch.
 
 A fixer brief carries the validator's `findings[]` verbatim and narrows FILES YOU OWN to the files
 the findings name; a returned unit that may touch anything grows into a diff nobody reviewed.

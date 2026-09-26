@@ -10,10 +10,17 @@ rather than assumed present.
 """
 import argparse
 import json
+import re
 import sys
 
 DEFAULT_JUDGE_MODEL_DISPLAY = "haiku (default)"
 DEFAULT_CASE_FILTER_DISPLAY = "all cases"
+# Models Claude Code runs with safety classifiers (model-config#automatic-model-fallback): Fable,
+# Opus 5.5, Opus 5, plus the `opus`/`fable`/`best`/`default` aliases (`default` is Opus 5.5 on
+# every plan). Opus 4.x has none.
+# ponytail: label-text heuristic, since aggregate-result.json records no model; read the model
+# from arm-meta.txt if a label ever stops being the model spec.
+CLASSIFIER_MODEL_RE = re.compile(r"fable|\bbest\b|\bdefault\b|opus(?![-_]?4)", re.IGNORECASE)
 
 
 def load(path):
@@ -162,10 +169,19 @@ def compare(path_a, path_b, label_a, label_b):
             "which runs at its"
         )
         lines.append(
-            "agents/*.md frontmatter-pinned model regardless of --model. Whether --model reaches "
-            "subagent"
+            "agents/*.md frontmatter-pinned model regardless of --model (a same-family arm moves an "
+            "opus/sonnet alias pin). Whether --model reaches subagent"
         )
         lines.append("dispatch inside the eval sandbox is unverified. Treat these deltas with caution.")
+
+    for label in (label_a, label_b):
+        if CLASSIFIER_MODEL_RE.search(label):
+            lines.append("")
+            lines.append(f"CAVEAT: {label} runs a model with safety classifiers. A flagged request can")
+            lines.append("automatically re-run on Opus 4.8 or Opus 5 inside the eval (runs load no user settings, so")
+            lines.append("your switchModelsOnFlag can't stop it; only a managed one applies there), and")
+            lines.append("aggregate-result.json doesn't record which")
+            lines.append("model answered. A security- or biology-heavy case may be scored on the wrong model.")
 
     print("\n".join(lines))
     return 0

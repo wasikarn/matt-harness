@@ -29,19 +29,26 @@ Why: OWASP LLM01. Ticket bodies and specs are exactly where an attacker embeds i
 ## 3. Model assignment by cognitive load, not by default
 
 Every agent carries an explicit `model:` and `effort:` (check 54). Frontmatter `effort:`
-overrides the session's resolved effort level (official sub-agents reference); a live probe
-showed it beating `modelSettings.<model>.effortLevel`, while its rank against
-`CLAUDE_CODE_EFFORT_LEVEL` and `--effort` is undocumented.
+overrides the session level, including `--effort` and `/effort` (official model-config
+reference), and a live probe showed it beating `modelSettings.<model>.effortLevel`.
+`CLAUDE_CODE_EFFORT_LEVEL` outranks it ("overriding the session level but not the environment
+variable"), and `maxEffortLevel` or an org cap still clamps it.
 Tier rule: `model: opus` for judgment or adversarial work, `sonnet` for bounded review or
 mutation; `effort: xhigh` for adversarial second-pass surfaces (`plan-reviewer`,
 `blind-spot-hunter`), `high` for normal judgment, `medium`/`low` for mechanical work. The opus
 pins: `requirement-analyst` (readiness verdict), `plan-reviewer` and `blind-spot-hunter`
 (adversarial), `code-architect` and `backend-architect` (design trade-offs). Never pin `fable`
-in an agent (usage credits on subscriptions, and it loses model independence from a fable main
-session); never pin `max` (valid frontmatter per the sub-agents reference, but unbounded spend on a
-shipped agent; check 54 WARNs). Pinning a fresh-context verifier to a
-different model than the main session makes it independent by model as well as by context, a
-stronger form of item 4. Evidence: `docs/research/claude-code-codex-models-efforts-2026-09-07.md`.
+in an agent (Fable can bill usage credits depending on plan and seat tier, and `-p`/eval runs
+bill them without asking; it also loses model independence from a fable main session); never pin
+`max` (valid frontmatter per the sub-agents reference, but unbounded spend on a shipped agent;
+check 54 WARNs). Pinning a fresh-context verifier to a different model than the main session
+makes it independent by model as well as by context, a stronger form of item 4. A family alias
+gives no such independence when the main session is in that family: `model: opus` runs the main
+session's exact Opus (sub-agents reference, "Choose a model"), so `plan-reviewer` and
+`blind-spot-hunter` dispatched from an Opus main session run the same model. Use the Codex lane
+there when model independence matters. Evidence:
+`docs/research/claude-code-codex-models-efforts-2026-09-07.md`,
+`docs/research/auto-model-auto-effort-2026-09-26.md`.
 
 ## 4. Verifier/maker separation for anything that grades
 

@@ -3,6 +3,64 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.131] — 2026-09-26
+
+### Added
+
+- **`skills/meta/model-bench/scripts/model-bench-diff.py`**: a content-fallback caveat for any arm
+  whose label names a model Claude Code runs with safety classifiers (Fable, Opus 5.5, Opus 5, or
+  the `opus`/`fable`/`best`/`default` aliases; Opus 4.x excluded). A flagged request inside an
+  eval can re-run on Opus 4.8 or Opus 5 (on an Opus 5 arm a biology flag ends in a refusal).
+  Eval runs load no user settings, so the user's `switchModelsOnFlag` can't stop it (only a
+  managed one applies there, and `false` ends the flagged request as an error), and
+  `aggregate-result.json` records no model, so the caveat is the only signal in the report.
+  `SKILL.md` documents it and how to check a case (`--keep-temp`, the child transcript's
+  assistant-turn model). 4 new tests in `tests/scripts/test-model-bench.sh`; both positive cases
+  (an Opus 5.5 arm, a `default` arm) were red before the change and green after, and both
+  negatives (non-model labels, Opus 4.8 vs Sonnet) stay silent. The `default` case came from a
+  Rule-13 validator finding.
+
+### Corrected
+
+- **`docs/research/claude-code-codex-models-efforts-2026-09-07.md`**: addendum 2026-09-26. The
+  2026-09-18 config table is superseded (opusplan with official-default efforts, no top-level
+  `effortLevel`, `switchModelsOnFlag: false`); Fable 5.1 needs CC 2.1.257, not 2.1.255; alias
+  `modelSettings` keys re-confirmed by a live `--settings` probe on 2.1.283 (alias works;
+  within one settings source the canonical key wins); `CLAUDE_CODE_SUBAGENT_MODEL` is
+  default-only since 2.1.251.
+- **`docs/research/external-sources-drilldown-2026-09-25.md`**: correction 2026-09-26. The
+  `CLAUDE_CODE_SUBAGENT_MODEL` ban rationale now applies to `_FORCE=1`; verdicts unchanged.
+- **Model/effort drift in `docs/reference/` and `model-bench`**, found by a drill-down of 7 docs
+  against the official docs and live probes P1-P3
+  (`docs/research/auto-model-auto-effort-2026-09-26.md`, new):
+  - `agent-authoring-conventions.md` said frontmatter `effort:`'s rank against
+    `CLAUDE_CODE_EFFORT_LEVEL`/`--effort` is undocumented. `model-config` documents it: it
+    overrides the session level (including `--effort`), not the env var.
+  - The same file gains the family-alias caveat: an `opus`-pinned verifier under an Opus main
+    session runs the same model, so use the Codex lane for model independence.
+  - The fable reason is now "can bill usage credits depending on plan and seat tier".
+  - `skill-authoring-conventions.md` and the check 54 WARN no longer suggest `/effort max`; it
+    doesn't reach a pinned surface, and only `CLAUDE_CODE_EFFORT_LEVEL=max` does.
+  - `spawn-brief.md`:
+    - The Agent `model` parameter takes aliases only, and same-family aliases resolve to the main
+      model.
+    - Subagent effort resolution is corrected: env var > frontmatter > session choice >
+      `modelSettings`/default.
+    - `none`/`minimal` pass the Codex plugin but no catalog model lists them.
+  - `codex-integration-map.md`:
+    - Codex has no automatic model router.
+    - Slugs re-verified against `codex debug models` (CLI 0.156.1); `gpt-5.5` retires
+      2026-10-14.
+    - OpenAI's own starting efforts are noted beside this table's.
+  - `env-vars.md` adds `CLAUDE_CODE_EFFORT_LEVEL` and `CLAUDE_CODE_ENABLE_TODO_TOOLS`. Without
+    the latter (or an `--allowedTools`/`--tools` opt-in), `TaskUpdate` isn't provided on Opus
+    4.8+, Sonnet 5 or Fable outside background and cloud sessions, so
+    `gate:task:complete-separation` is idle there.
+  - `model-bench/SKILL.md` had it backwards: `CLAUDE_CODE_EFFORT_LEVEL` outranks an agent's
+    `effort:`, not the reverse (unprobed inside an eval child). It also notes that a same-family
+    arm moves an alias pin, and the `model-bench-diff.py` caveat line says the same.
+  - The check 21 comment: an omitted `model:` follows the subagent model order, not `inherit`.
+
 ## [1.1.130] — 2026-09-25
 
 ### Added
