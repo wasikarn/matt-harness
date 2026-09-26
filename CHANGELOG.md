@@ -3,6 +3,37 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.140] — 2026-09-26
+
+Decisions 7+8, re-decided on real evidence. `[1.1.139]`'s fixed sweep script (`--scaffold`
+added, `eval-default-enabled.sh` handling the plugin flip) re-ran against all 5 agents reverted
+in `[1.1.138]`/`[1.1.139]`. Unlike `mb78`, this run's fixtures actually existed, so every case's
+quality grader produced a real signal instead of a floor artifact.
+
+### Changed
+
+- **`backend-architect`, `requirement-analyst`: `high` → `medium`.** Clean, tied evidence:
+  `backend-architect` scored 1.0 on all 6 cases in both arms with no cost-ceiling truncation or
+  tool-grant gaps; `requirement-analyst` tied 1.0/1.0 on its 2 cases (thin sample, both at
+  ceiling — lower confidence than `backend-architect`, but no regression signal either).
+- **`blind-spot-hunter`: `xhigh` → `high`.** Tied 0.5/0.75 on both cases in both arms — not
+  ceiling-capped, so the grader had room to show a difference and didn't.
+
+### Not changed (real regressions found this time, not floor artifacts)
+
+- **`code-architect` stays `high`.** `code-architect-ambiguous-requirement` dropped 1.0→0.667 at
+  `medium`: the `names-ambiguity` LLM judge failed outright — the exact thing that case exists to
+  test (does the agent call out a genuine two-reading fork, or silently resolve it). Two other
+  cases (`layer-direction`, `premature-abstraction`) hit the sweep's $3 cost ceiling in the
+  baseline arm only, so their full picture is incomplete, but this regression alone is clean.
+- **`plan-reviewer` stays `xhigh`.** `plan-reviewer-clean` dropped 0.75→0.5 at `high`: it
+  manufactured a finding on a trivial one-file rename that should have scored `production-ready`
+  with an empty findings list — precisely the failure mode that case is designed to catch.
+
+Every case ran once (n=1, same as the original sweep) — a single-run regression isn't statistical
+proof, but both regressions land exactly on the specific quality dimension their case was built
+to test, which is why they're trusted here over a bare "no difference" reading.
+
 ## [1.1.139] — 2026-09-26
 
 ### Reverted
