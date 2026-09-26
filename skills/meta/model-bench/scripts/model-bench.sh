@@ -7,6 +7,8 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DIFF_PY="$SCRIPT_DIR/model-bench-diff.py"
 ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+# shellcheck source=../../../scripts/_lib/eval-default-enabled.sh
+source "$ROOT/scripts/_lib/eval-default-enabled.sh"
 
 usage() {
   cat <<'EOF'
@@ -90,40 +92,6 @@ has_flag --max-cost-usd "${EXTRA_ARGS[@]:-}" || DEFAULT_ARGS+=(--max-cost-usd 5)
 
 cd "$ROOT" || exit 1
 
-# Eval sandboxes load no user settings (docs/en/plugin-evals.md "how runs are isolated"), so this
-# repo's own defaultEnabled: false (a deliberate opt-in choice for real installs) means the
-# sandbox never loads mh at all -- every case silently scores a no-plugin fallback instead of the
-# real agents/skills, with no error (confirmed empirically 2026-09-26: identical with/without
-# scores, plus the CLI's own runtime warning). Flip it for this run's two arms, always restore.
-MANIFEST="$ROOT/.claude-plugin/plugin.json"
-DEFAULT_ENABLED_FLIPPED=0
-if [ -f "$MANIFEST" ] && /usr/bin/grep -q '"defaultEnabled": false' "$MANIFEST"; then
-  python3 -c "
-import re
-p = '$MANIFEST'
-s = open(p).read()
-s2, n = re.subn(r'\"defaultEnabled\": false', '\"defaultEnabled\": true', s)
-assert n == 1, f'expected exactly one defaultEnabled: false in {p}, found {n}'
-open(p, 'w').write(s2)
-"
-  DEFAULT_ENABLED_FLIPPED=1
-  echo "model-bench: temporarily set defaultEnabled: true in $MANIFEST for this run (restored on exit)" >&2
-fi
-restore_default_enabled() {
-  [ "$DEFAULT_ENABLED_FLIPPED" -eq 1 ] || return 0
-  python3 -c "
-import re, sys
-p = '$MANIFEST'
-s = open(p).read()
-s2, n = re.subn(r'\"defaultEnabled\": true', '\"defaultEnabled\": false', s)
-if n == 1:
-    open(p, 'w').write(s2)
-else:
-    print(f'model-bench: WARNING could not restore defaultEnabled: false in {p} (found {n} matches) -- fix manually', file=sys.stderr)
-"
-}
-trap restore_default_enabled EXIT
-
 mkdir -p evals/results
 BENCH_DIR="$(mktemp -d "evals/results/model-bench-XXXXXX")"
 
@@ -165,8 +133,8 @@ run_arm() {
   return 0
 }
 
-run_arm "$MODEL_A" "$EFFORT_A" "$DIR_A" || exit $?
-run_arm "$MODEL_B" "$EFFORT_B" "$DIR_B" || exit $?
+with_default_enabled_true run_arm "$MODEL_A" "$EFFORT_A" "$DIR_A" || exit $?
+with_default_enabled_true run_arm "$MODEL_B" "$EFFORT_B" "$DIR_B" || exit $?
 
 RESULT_A="$(find "$DIR_A" -name aggregate-result.json | head -n1)"
 RESULT_B="$(find "$DIR_B" -name aggregate-result.json | head -n1)"

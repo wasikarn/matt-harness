@@ -3,6 +3,20 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.136] — 2026-09-26
+
+### Fixed
+
+- **`evals/README.md`'s manual `defaultEnabled` step, automated.** The four raw `claude plugin
+  eval` commands for agent-dispatch tags (code-architect, performance-optimizer,
+  backend-architect, ideate-critic) used to carry only a comment telling the operator to hand-edit
+  `defaultEnabled` first — the same silent no-plugin-fallback trap `model-bench.sh` had. Extracted
+  the flip/restore logic into `scripts/_lib/eval-default-enabled.sh`'s `with_default_enabled_true`
+  function (sourced by both `model-bench.sh`, refactored to use it instead of its own duplicate
+  copy, and the README's four commands directly) — flips `defaultEnabled` true for the wrapped
+  command's duration, restores it after even on failure, one shared implementation instead of two
+  drifting copies.
+
 ## [1.1.135] — 2026-09-26
 
 ### Fixed

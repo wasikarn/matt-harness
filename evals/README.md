@@ -240,11 +240,16 @@ claude plugin eval . --scaffold --tag memory-lint --allow-tools Bash --runs 1 --
 claude plugin eval . --scaffold --tag ideate --runs 1 --no-publish     # the run case spawns 6-8 agents
 claude plugin eval . --scaffold --tag deep-audit --allow-tools Bash,Edit,Write --runs 1 --no-publish
 claude plugin eval . --scaffold --tag cost-report --allow-tools Bash --runs 1 --no-publish
-# defaultEnabled must be temporarily true in .claude-plugin/plugin.json for these four
-claude plugin eval . --scaffold --tag code-architect --allow-tools Bash,Read,Grep,Glob,Agent,Edit --ablation with-without --no-publish
-claude plugin eval . --scaffold --tag performance-optimizer --allow-tools Bash,Read,Write,Edit,Grep,Glob,Agent --ablation with-without --no-publish
-claude plugin eval . --scaffold --tag backend-architect --allow-tools Bash,Read,Grep,Glob,Agent --ablation with-without --no-publish
-claude plugin eval . --scaffold --tag ideate-critic --allow-tools Bash,Read,Grep,Glob,Agent --ablation with-without --no-publish
+# These four dispatch a subagent (subagent_type:), which needs mh's agents actually loaded in
+# the eval sandbox -- sandboxes load no user settings, so defaultEnabled: false never loads
+# them (silent no-plugin fallback, no error). source the helper once, then run each command
+# through it; it flips defaultEnabled true for the duration and restores it after, even on
+# failure -- no manual edit, nothing to remember.
+source scripts/_lib/eval-default-enabled.sh
+with_default_enabled_true claude plugin eval . --scaffold --tag code-architect --allow-tools Bash,Read,Grep,Glob,Agent,Edit --ablation with-without --no-publish
+with_default_enabled_true claude plugin eval . --scaffold --tag performance-optimizer --allow-tools Bash,Read,Write,Edit,Grep,Glob,Agent --ablation with-without --no-publish
+with_default_enabled_true claude plugin eval . --scaffold --tag backend-architect --allow-tools Bash,Read,Grep,Glob,Agent --ablation with-without --no-publish
+with_default_enabled_true claude plugin eval . --scaffold --tag ideate-critic --allow-tools Bash,Read,Grep,Glob,Agent --ablation with-without --no-publish
 ```
 
 `--scaffold` is required: the fixtures live in each case's `scaffold_script`, which must be a
