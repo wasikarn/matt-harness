@@ -6,8 +6,11 @@
 # in the tree three months after the rebuild rule said "delete everything else").
 # WARN only; the operator trashes or extends the allowlist. Plugin-mode (flat repo)
 # only — the dotfiles layout nests the fleet under claude/ and has its own top level.
+# .in_use is Claude Code's own LSP-connector lock marker (`.in_use/<pid>`, written only
+# while an LSP plugin actually holds the project) -- transient, not clutter, confirmed
+# firing and clearing on its own during a live session 2026-09-26.
 if [ "$CLAUDE_DIR" = "$REPO_ROOT" ]; then
-  _allow=" .git .github .claude .claude-plugin .code-review-graph .gitattributes .gitignore .DS_Store AGENTS.md CHANGELOG.md CLAUDE.md CONTEXT.md LICENSE NOTICE PONYTAIL-DEBT.md README.md agents docs evals git-hooks hooks pyrightconfig.json scripts skills tests "
+  _allow=" .git .github .claude .claude-plugin .code-review-graph .gitattributes .gitignore .DS_Store .in_use AGENTS.md CHANGELOG.md CLAUDE.md CONTEXT.md LICENSE NOTICE PONYTAIL-DEBT.md README.md agents docs evals git-hooks hooks pyrightconfig.json scripts skills tests "
   for _e in "$REPO_ROOT"/* "$REPO_ROOT"/.*; do
     [ -e "$_e" ] || continue
     _b=$(basename "$_e")

@@ -3,6 +3,16 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.135] — 2026-09-26
+
+### Fixed
+
+- **Harness-audit check 70's `.in_use` false positive.** `.in_use/<pid>` is Claude Code's own
+  LSP-connector lock marker, written only while an LSP plugin (pyright-lsp, typescript-lsp,
+  lua-lsp) actually holds the project, and cleared on its own after — not stray clutter. Added
+  to check 70's allowlist alongside `.git`/`.claude`/`.code-review-graph`. Confirmed the marker
+  actually firing and clearing during a live session (2026-09-26) before adding it.
+
 ## [1.1.134] — 2026-09-26
 
 ### Fixed
