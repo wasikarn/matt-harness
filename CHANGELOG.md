@@ -3,6 +3,19 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.134] — 2026-09-26
+
+### Fixed
+
+- **`mh:model-bench`'s `defaultEnabled` sandbox bug, automated away.** Eval sandboxes load no
+  user settings, so this repo's own `defaultEnabled: false` (a deliberate opt-in choice for real
+  installs) meant `claude plugin eval` never actually loaded mh's agents/skills in the sandbox —
+  every case silently scored a no-plugin fallback instead, with no error. `model-bench.sh` now
+  flips `defaultEnabled` to `true` in `.claude-plugin/plugin.json` before both arms and restores
+  it on exit (via a trap, so it survives a failed or interrupted run) — no flag to pass, no
+  manual edit to remember. `evals/README.md`'s raw `claude plugin eval` commands (not run through
+  the wrapper) still need the manual flip noted there; only `model-bench.sh` is fixed here.
+
 ## [1.1.133] — 2026-09-26
 
 Decisions 7+8 from the cross-repo prompt audit, resolved by a 12-run `claude plugin eval`

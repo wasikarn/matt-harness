@@ -86,6 +86,13 @@ wrapper adds three defaults:
 - `--max-cost-usd 5` — a conservative ceiling per arm. Override with your own `--max-cost-usd` in
   the passthrough args.
 
+Separately, the wrapper also auto-flips `defaultEnabled` in `.claude-plugin/plugin.json` for the
+run's duration (always restored on exit, even on failure): eval sandboxes load no user settings,
+so this repo's own `defaultEnabled: false` means the sandbox never loads mh's agents/skills at
+all, silently scoring a no-plugin fallback with no error (confirmed 2026-09-26 — identical
+with/without scores, plus the CLI's own runtime warning). No flag needed; nothing left to
+remember by hand.
+
 To diff two already-completed runs without spending anything new:
 
 ```bash
