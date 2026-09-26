@@ -4,7 +4,7 @@ description: "Designs feature implementation blueprints from existing codebase p
 bucket: design
 model: opus
 tools: Read, Grep, Glob, Bash
-effort: medium
+effort: high
 ---
 
 ## Prompt Defense Baseline

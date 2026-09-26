@@ -3,6 +3,26 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.139] — 2026-09-26
+
+### Reverted
+
+- **`backend-architect`, `code-architect` effort tiers also reverted to `high`** (the other two of
+  the original `[1.1.133]` five). Root cause found while fixing the `[1.1.138]` suites: the sweep
+  script (`mb78_run.sh`, in the session scratchpad, not this repo) never passed `--scaffold` to
+  `claude plugin eval`, so **no eval case's fixture file was ever created for any of the five
+  effort-downgraded agents** — every dispatched agent reviewed an empty sandbox. This was visible
+  for the three `[1.1.138]` agents (floor score, honest "no file found" refusals) but was masked
+  for `backend-architect`/`code-architect` by mechanical graders (`agent-fired`,
+  `dispatch-confirmed`) that pass regardless of whether real content exists — their actual quality
+  grader (an LLM judge) failed too, just diluted by a higher structural floor. Confirmed live:
+  `claude plugin eval . --case backend-architect-guard-column-bug --ablation none` (no
+  `--scaffold`) reproduces the exact masked-floor pattern (0.67, quality grader `judge votes: FAIL
+  FAIL FAIL`). `ideate-critic`'s model change is unaffected — its eval cases embed the full
+  scenario inline in the prompt, no scaffold dependency, so that decision stands.
+  All five agents are now at their pre-`[1.1.133]` effort tiers pending a real sweep with
+  `--scaffold` included.
+
 ## [1.1.138] — 2026-09-26
 
 ### Reverted
