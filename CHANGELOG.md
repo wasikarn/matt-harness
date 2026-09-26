@@ -3,6 +3,21 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.138] — 2026-09-26
+
+### Reverted
+
+- **`requirement-analyst`, `blind-spot-hunter`, `plan-reviewer` effort tiers reverted to their
+  pre-`[1.1.133]` levels** (`medium`→`high`, `high`→`xhigh`, `high`→`xhigh`). `mh:deep-audit`
+  found the eval evidence backing their `[1.1.133]` downgrade was a floor artifact — every quality
+  grader for these three suites failed identically ("pattern not found in last_message") in both
+  the baseline and alt arms, on every case, regardless of effort tier. "Zero measured score
+  change" was true but meaningless: the suites never produced a discriminating signal either way.
+  `backend-architect`, `code-architect` (real, discriminating eval data) and `ideate-critic`
+  (model change, separately evaluated) are unaffected and keep their `[1.1.133]` settings. Revisit
+  the downgrade only after the eval suites are fixed to actually see the dispatched agent's output
+  and a real A/B sweep is re-run.
+
 ## [1.1.137] — 2026-09-26
 
 `mh:deep-audit` of everything in `[1.1.133]`-`[1.1.136]` found real bugs in the just-shipped

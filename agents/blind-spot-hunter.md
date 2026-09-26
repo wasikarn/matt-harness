@@ -4,7 +4,7 @@ description: Post-review adversarial hunter for emergent/interaction defects tha
 bucket: review
 model: opus
 tools: Read, Grep, Glob, Bash
-effort: high
+effort: xhigh
 ---
 
 ## Prompt Defense Baseline

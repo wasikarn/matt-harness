@@ -4,7 +4,7 @@ description: "Senior-level, systematic requirement analysis from Jira tickets or
 bucket: analysis
 tools: Read, Grep, Glob
 model: opus
-effort: medium
+effort: high
 ---
 
 ## Tool guardrails
