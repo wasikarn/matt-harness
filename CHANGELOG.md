@@ -3,6 +3,46 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.141] — 2026-09-27
+
+`mh:deep-audit` of the un-audited dotfiles doctrine/prompt-audit delta (this session's earlier
+scope) plus the `[1.1.137]`-`[1.1.140]` follow-up commits found 6 real findings (Codex-primary
+checker) and, after fixing those, a `blind-spot-hunter` whole-picture pass on the combined delta
+found 2 more HIGH-severity regressions the fixes themselves introduced. All fixed here.
+
+### Fixed
+
+- **`scripts/_lib/eval-default-enabled.sh`: `set -e` callers could be killed even on a
+  successful run.** `[1.1.140]`'s trap-preservation fix ended `_restore_signal_traps` with a bare
+  `[ -n "$prev_hup" ] && eval …`, whose own exit status (1 when the caller had no pre-existing
+  HUP trap — the common case) became the RETURN trap's exit status, which a caller's `set -e`
+  treats as a failure and aborts on, silently, even though the wrapped command and the whole
+  flip/restore cycle succeeded. Same root cause broke the signal-re-raise path (a SIGTERM'd
+  `set -e` caller exited 1 instead of 143). Fixed with an explicit `return 0`.
+- **Same file: the restore handlers could be shadowed by the wrapped command's own locals.**
+  `_restore_default_enabled`/`_restore_signal_traps` read `$manifest`/`$flipped`/`$prev_*` by
+  bash's normal dynamic scoping. If the wrapped command is a shell function that happens to
+  declare `local manifest=…` (or any of the other names) for its own purpose, a signal delivered
+  while executing inside that function would resolve to the wrapped function's local instead of
+  the real value, and could leave `defaultEnabled: true` stuck in the committed manifest with no
+  warning. Renamed every such local to a `__ede_`-prefixed name distinctive enough that an
+  accidental collision isn't realistic.
+- **Same file: an unrelated pre-existing `"defaultEnabled": true` elsewhere in the manifest could
+  strand the flip.** The flip only required exactly one `false` match; if a `true` also existed
+  elsewhere, the restore step then found 2 `true` matches, refused to touch the file, and only
+  warned — leaving the real key stuck at `true`. The flip now also requires zero pre-existing
+  `true` matches.
+- **Same file: restore no longer byte-exact.** Both the flip and the restore always wrote a fixed
+  `"defaultEnabled": true`/`false` spacing, so a compact-formatted manifest came back reformatted
+  — a spurious diff on a real, git-tracked file. Both directions now capture and reuse the
+  original surrounding whitespace.
+- **`docs/reference/check_judgment_rubric.py` (dotfiles): a stale comment and README/CHANGELOG
+  gaps** from the same audit pass are fixed in the dotfiles sibling commit; not duplicated here.
+
+Found and independently re-verified by the `blind-spot-hunter` whole-picture pass (Rule 13's
+2+-fixes trigger); the `set -e` regression was reproduced live before fixing (exit 1, no output,
+on an objectively successful call). 5 new tests (25/25 green); full gauntlet passes.
+
 ## [1.1.140] — 2026-09-26
 
 Decisions 7+8, re-decided on real evidence. `[1.1.139]`'s fixed sweep script (`--scaffold`

@@ -117,6 +117,28 @@ after=$(cat "$sandbox/.claude-plugin/plugin.json")
   || bad "ambiguous manifest: file was modified despite the abort (got: $after)"
 rm -rf "$sandbox"
 
+# --- a pre-existing, unrelated "defaultEnabled": true elsewhere in the file aborts the flip too
+# (regression guard: found by the blind-spot-hunter whole-picture pass 2026-09-27 -- the flip
+# used to only require exactly one "false" match, so it would happily flip the real key even
+# with an unrelated "true" already present; the restore step then found 2 "true" matches,
+# refused to touch the file, and left defaultEnabled: true stuck in the committed manifest with
+# only a WARNING, not a hard failure) ---
+sandbox="$(new_sandbox '{"defaultEnabled": false, "other": {"defaultEnabled": true}}')"
+before=$(cat "$sandbox/.claude-plugin/plugin.json")
+out=$(bash -c "
+source '$sandbox/scripts/_lib/eval-default-enabled.sh'
+with_default_enabled_true echo ran
+" 2>&1)
+status=$?
+after=$(cat "$sandbox/.claude-plugin/plugin.json")
+[ "$status" -ne 0 ] && ok "pre-existing true elsewhere: with_default_enabled_true returns non-zero" \
+  || bad "pre-existing true elsewhere: exited 0 (expected a hard failure)"
+[[ "$out" != *"ran"* ]] && ok "pre-existing true elsewhere: wrapped command never runs" \
+  || bad "pre-existing true elsewhere: wrapped command ran anyway with the plugin still disabled"
+[ "$after" = "$before" ] && ok "pre-existing true elsewhere: file left untouched" \
+  || bad "pre-existing true elsewhere: file was modified despite the abort (got: $after)"
+rm -rf "$sandbox"
+
 # --- missing manifest: hard error, not a silent no-op ---
 sandbox="$(mktemp -d)"
 mkdir -p "$sandbox/scripts/_lib"
@@ -169,38 +191,89 @@ fi
 # --- the manifest check is JSON-formatting-tolerant, not an exact-string grep (regression
 # guard: a compact/reformatted "defaultEnabled":false with no space after the colon used to
 # silently miss the grep and skip the flip entirely, re-hitting the no-plugin-fallback bug this
-# helper exists to prevent) ---
-sandbox="$(new_sandbox '{"defaultEnabled":false}')"
+# helper exists to prevent). Also checks the restore is byte-exact for the REST of the file, not
+# just correct on the boolean: normalizing to a fixed "defaultEnabled": true/false spacing would
+# leave the file's formatting different from before the call even after a successful round trip,
+# which shows up as a spurious dirty-tree diff on the real, git-tracked plugin.json (found by the
+# blind-spot-hunter whole-picture pass 2026-09-27 -- the prior version of this test only checked
+# for the spaced form, which baked that normalization in as if it were correct) ---
+before='{"defaultEnabled":false}'
+sandbox="$(new_sandbox "$before")"
 during=$(bash -c "
 source '$sandbox/scripts/_lib/eval-default-enabled.sh'
 with_default_enabled_true cat '$sandbox/.claude-plugin/plugin.json'
 ")
 after=$(cat "$sandbox/.claude-plugin/plugin.json")
-[[ "$during" == *'"defaultEnabled": true'* ]] && ok "flips true on a compact-JSON (no-space) manifest" \
-  || bad "did not flip a compact-JSON manifest (got: $during)"
-[[ "$after" == *'"defaultEnabled": false'* ]] && ok "restores false on a compact-JSON manifest" \
-  || bad "did not restore a compact-JSON manifest (got: $after)"
+[[ "$during" == *'"defaultEnabled":true'* ]] && ok "flips true on a compact-JSON (no-space) manifest, preserving its spacing" \
+  || bad "did not flip a compact-JSON manifest, or normalized its spacing (got: $during)"
+[ "$after" = "$before" ] && ok "restores a compact-JSON manifest byte-for-byte" \
+  || bad "did not restore the compact-JSON manifest exactly (got: $after, want: $before)"
 rm -rf "$sandbox"
 
-# --- a caller's pre-existing INT trap disposition survives a normal return, instead of being
+# --- a caller's pre-existing TERM trap disposition survives a normal return, instead of being
 # permanently cleared to default disposition (regression guard: found by mh:deep-audit
 # 2026-09-26 -- the function used to unconditionally `trap - INT TERM HUP` on the way out,
 # discarding whatever the caller had installed before calling it). Compares before/after `trap
-# -p` output rather than asserting a literal trap string: a non-interactive shell that inherits
-# SIGINT as ignored (the gauntlet's own execution context does) silently refuses to install a
-# NEW trap on it (documented bash behavior), so asserting the literal command would false-fail
-# there even though the disposition -- whatever it was -- is correctly preserved either way ---
+# -p` output rather than asserting a literal trap string. Uses TERM, not INT: a non-interactive
+# shell that inherits SIGINT as ignored (the gauntlet's own execution context does) silently
+# refuses to install ANY new trap on it (documented bash behavior), so an INT-based version of
+# this test can't fail in that context even when the restore logic is broken (found by the
+# blind-spot-hunter whole-picture pass 2026-09-27, proven with a live mutation:
+# deleting the eval-restore line kept this test green when run through the gauntlet, but red
+# when run directly). TERM has no such restriction, so it actually discriminates in both contexts ---
 sandbox="$(new_sandbox '{"defaultEnabled": false}')"
 out=$(bash -c "
-trap 'echo caller-int-trap-fired' INT
-before=\$(trap -p INT)
+trap 'echo caller-term-trap-fired' TERM
+before=\$(trap -p TERM)
 source '$sandbox/scripts/_lib/eval-default-enabled.sh'
 with_default_enabled_true true >/dev/null 2>&1
-after=\$(trap -p INT)
+after=\$(trap -p TERM)
 [ \"\$before\" = \"\$after\" ] && echo MATCH || echo \"MISMATCH before=[\$before] after=[\$after]\"
 ")
-[[ "$out" == "MATCH" ]] && ok "caller's pre-existing INT trap disposition is restored after normal return" \
-  || bad "caller's INT trap disposition changed after normal return ($out)"
+[[ "$out" == "MATCH" ]] && ok "caller's pre-existing TERM trap disposition is restored after normal return" \
+  || bad "caller's TERM trap disposition changed after normal return ($out)"
+rm -rf "$sandbox"
+
+# --- a caller's own set -e does not abort after with_default_enabled_true SUCCEEDS (regression
+# guard: found by the blind-spot-hunter whole-picture pass 2026-09-27 -- _restore_signal_traps'
+# last statement was a bare `[ -n "$prev_hup" ] && eval ...`, which returns 1 when the caller had
+# no pre-existing HUP trap (the common case); that 1 became the RETURN trap's own exit status,
+# which set -e treats as a command failure and aborts the caller even though the wrapped command
+# and the whole flip/restore cycle succeeded) ---
+sandbox="$(new_sandbox '{"defaultEnabled": false}')"
+out=$(bash -c "
+set -e
+source '$sandbox/scripts/_lib/eval-default-enabled.sh'
+with_default_enabled_true true
+echo REACHED
+" 2>&1)
+status=$?
+[[ "$out" == *REACHED* ]] && [ "$status" -eq 0 ] && ok "a caller's set -e does not abort after with_default_enabled_true succeeds" \
+  || bad "set -e caller aborted after a successful call (status $status, out: $out)"
+rm -rf "$sandbox"
+
+# --- the wrapped command being a shell function that declares its own `local manifest`/`local
+# prev_term` etc. must not hide the real values from the restore handlers (regression guard:
+# found by the blind-spot-hunter whole-picture pass 2026-09-27 -- the handlers read $manifest/
+# $flipped/$prev_* by bash's normal dynamic scoping, so a SIGTERM delivered while executing
+# inside a wrapped function that happens to declare a same-named local shadows the real value
+# and can leave defaultEnabled: true stuck in the committed manifest with no warning) ---
+sandbox="$(new_sandbox '{"defaultEnabled": false}')"
+bash -c "
+wrapped() {
+  local manifest=/nonexistent flipped=0 prev_term=''
+  sleep 3
+}
+source '$sandbox/scripts/_lib/eval-default-enabled.sh'
+with_default_enabled_true wrapped
+" &
+runner_pid=$!
+sleep 0.3
+kill -TERM "$runner_pid"
+wait "$runner_pid" 2>/dev/null
+after=$(cat "$sandbox/.claude-plugin/plugin.json")
+[[ "$after" == *'"defaultEnabled": false'* ]] && ok "restore is immune to a wrapped function's own same-named locals" \
+  || bad "a wrapped function's own locals shadowed the real values (got: $after)"
 rm -rf "$sandbox"
 
 # --- traps don't leak into the caller's shell after a normal return (a later kill -TERM/-INT/
