@@ -3,6 +3,34 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.133] — 2026-09-26
+
+Decisions 7+8 from the cross-repo prompt audit, resolved by a 12-run `claude plugin eval`
+A/B sweep (model/effort frontmatter swapped between two eval passes per agent; results and
+methodology in the session transcript).
+
+### Changed
+
+- **`mh:ideate-critic` moves from `sonnet` to `opus`.** Adversarial critique is opus-tier work;
+  the sweep also showed it strictly better or tied on every case (6/6), with one case improved
+  (json-only-contract 0.5 → 0.75) and no regressions, at negligible extra cost.
+- **Effort tiers dropped one level on 5 opus agents**, with zero measured score change across
+  16 case-instances (cost and turn count did differ between arms, confirming the change took
+  effect) and consistently lower cost per run:
+  - `backend-architect`, `code-architect`, `requirement-analyst`: `high` → `medium`.
+  - `blind-spot-hunter`, `plan-reviewer`: `xhigh` → `high`.
+  - Sample size is thin (2-6 cases per agent); re-open if a real task later exposes a quality
+    gap these small eval suites didn't catch.
+
+### Discovered
+
+- **`claude plugin eval` sandboxes never load a plugin whose manifest sets
+  `defaultEnabled: false`** (user settings aren't loaded in the sandbox, and that's the only
+  place `mh@wasikarn` is enabled). Every eval run of this plugin's own agent suite was silently
+  scoring the no-plugin fallback, not the real agents, until this sweep flipped
+  `defaultEnabled` to `true` for its own duration. `defaultEnabled` stays `false` in this
+  release; fixing the eval harness itself is separate follow-up work.
+
 ## [1.1.132] — 2026-09-26
 
 The operator-approved fixes from the cross-repo prompt audit (dotfiles

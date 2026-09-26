@@ -3,7 +3,7 @@ name: ideate-critic
 description: "Fresh-context critic for mh:ideate Phase 2, or when the user says 'critic'. Don't use for code review (mattpocock-skills:code-review) or security audit."
 bucket: analysis
 tools: Read, Bash
-model: sonnet
+model: opus
 effort: high
 color: purple
 ---
