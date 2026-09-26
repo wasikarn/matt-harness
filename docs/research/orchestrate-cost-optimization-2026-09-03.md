@@ -166,8 +166,9 @@ Not a candidate: the AskUserQuestion gate and the fan-out cap. Both bound author
   exists anywhere in this repo (`grep -rn "[Ii]nvalidation hierarchy" .` returns only this one
   inline mention), so it traced back to a cached bundled-skill snapshot, not a live probe. The
   real rule, confirmed directly against Anthropic's own docs: on Opus 5.5 and Fable 5.1 with an
-  API key or a Claude subscription (this operator's setup — no gateway, per
-  `docs/research/auto-model-auto-effort-2026-09-26.md:90`), changing effort mid-session **keeps**
+  API key or a Claude subscription (this operator's setup — no gateway, per dotfiles
+  `docs/research/auto-model-auto-effort-2026-09-26.md:90` — this repo has its own, differently-scoped
+  file at that same relative path), changing effort mid-session **keeps**
   the cache; it only invalidates on Amazon Bedrock, Google Cloud's Agent Platform, or a Claude
   apps gateway. Every other model still invalidates its cache on an effort change, as originally
   stated. Full audit: dotfiles

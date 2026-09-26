@@ -103,12 +103,13 @@ without-plugin arm, `mh:code-architect` doesn't exist — the model's first disp
 built-in `Plan` agent. This makes `tool_used: Agent` with `input_match` on the requested
 subagent_type a false-positive trap (it matches the failed attempt too, not just a successful
 one): `agent-fired.md` is a `regex`/`trace` `not_contains` check on that exact tool-error string
-instead. Needs `--allow-tools Bash,Read,Grep,Glob,Agent,Edit` and needs `defaultEnabled: true`
-temporarily for the with-arm to load the plugin's agents at all.
+instead. Needs `--allow-tools Bash,Read,Grep,Glob,Agent,Edit`; the with-arm needs `defaultEnabled`
+flipped true to load the plugin's agents at all, handled automatically via
+`with_default_enabled_true` (see the runnable commands below).
 
 Six for `performance-optimizer` (tag `performance-optimizer`, agent, same dispatch/ablation
 mechanics as `code-architect` — explicit dispatch instruction in every fire-case prompt,
-`agent-fired.md` is the tool-error-string regex, `defaultEnabled: true` needed temporarily). Five
+`agent-fired.md` is the tool-error-string regex, same automatic `defaultEnabled` flip as above). Five
 fire cases against small runnable JS fixtures with a `bench.js`: a nested-loop O(n²) lookup the
 fix must convert to Map/Set and actually benchmark before/after via real `node bench.js` runs, not
 invented numbers (`nested-loop-fix`); a function with no measurable bottleneck and no
@@ -131,7 +132,7 @@ approach instead of jumping to speculative optimizations (`regression-routing`).
 
 Six for `backend-architect` (tag `backend-architect`, agent, same dispatch/ablation mechanics as
 `code-architect`/`performance-optimizer` — explicit dispatch instruction in every fire-case prompt,
-`agent-fired.md` is the tool-error-string regex, `defaultEnabled: true` needed temporarily). Five
+`agent-fired.md` is the tool-error-string regex, same automatic `defaultEnabled` flip as above). Five
 fire cases against small scaffolded fixtures: a payment-claim worker whose `UPDATE` guards on a
 different column (`charge_id IS NULL`) than the one it sets (`status`), letting two concurrent
 workers both pass the claim guard and double-charge (`guard-column-bug`); a checkout endpoint that
@@ -242,14 +243,14 @@ claude plugin eval . --scaffold --tag deep-audit --allow-tools Bash,Edit,Write -
 claude plugin eval . --scaffold --tag cost-report --allow-tools Bash --runs 1 --no-publish
 # These four dispatch a subagent (subagent_type:), which needs mh's agents actually loaded in
 # the eval sandbox -- sandboxes load no user settings, so defaultEnabled: false never loads
-# them (silent no-plugin fallback, no error). source the helper once, then run each command
-# through it; it flips defaultEnabled true for the duration and restores it after, even on
-# failure -- no manual edit, nothing to remember.
-source scripts/_lib/eval-default-enabled.sh
-with_default_enabled_true claude plugin eval . --scaffold --tag code-architect --allow-tools Bash,Read,Grep,Glob,Agent,Edit --ablation with-without --no-publish
-with_default_enabled_true claude plugin eval . --scaffold --tag performance-optimizer --allow-tools Bash,Read,Write,Edit,Grep,Glob,Agent --ablation with-without --no-publish
-with_default_enabled_true claude plugin eval . --scaffold --tag backend-architect --allow-tools Bash,Read,Grep,Glob,Agent --ablation with-without --no-publish
-with_default_enabled_true claude plugin eval . --scaffold --tag ideate-critic --allow-tools Bash,Read,Grep,Glob,Agent --ablation with-without --no-publish
+# them (silent no-plugin fallback, no error). The helper needs bash specifically (it relies on
+# BASH_SOURCE) -- it silently does nothing under zsh/sh, so run each line through `bash -c`
+# regardless of your login shell; it flips defaultEnabled true for the duration and restores it
+# after, even on failure -- no manual edit, nothing to remember.
+bash -c 'source scripts/_lib/eval-default-enabled.sh && with_default_enabled_true claude plugin eval . --scaffold --tag code-architect --allow-tools Bash,Read,Grep,Glob,Agent,Edit --ablation with-without --no-publish'
+bash -c 'source scripts/_lib/eval-default-enabled.sh && with_default_enabled_true claude plugin eval . --scaffold --tag performance-optimizer --allow-tools Bash,Read,Write,Edit,Grep,Glob,Agent --ablation with-without --no-publish'
+bash -c 'source scripts/_lib/eval-default-enabled.sh && with_default_enabled_true claude plugin eval . --scaffold --tag backend-architect --allow-tools Bash,Read,Grep,Glob,Agent --ablation with-without --no-publish'
+bash -c 'source scripts/_lib/eval-default-enabled.sh && with_default_enabled_true claude plugin eval . --scaffold --tag ideate-critic --allow-tools Bash,Read,Grep,Glob,Agent --ablation with-without --no-publish'
 ```
 
 `--scaffold` is required: the fixtures live in each case's `scaffold_script`, which must be a

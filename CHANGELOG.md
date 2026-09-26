@@ -3,6 +3,48 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.137] — 2026-09-26
+
+`mh:deep-audit` of everything in `[1.1.133]`-`[1.1.136]` found real bugs in the just-shipped
+`eval-default-enabled.sh` helper. All fixed here, backed by a new
+`tests/scripts/test-eval-default-enabled.sh` (17 assertions, wired into the gauntlet).
+
+### Fixed
+
+- **The helper silently did nothing under zsh.** `with_default_enabled_true` relies on
+  `BASH_SOURCE`/`BASH_VERSION`, both unset under zsh — the operator's actual login shell. Sourcing
+  it directly (as `evals/README.md`'s raw commands told the reader to) resolved the repo root to
+  the wrong directory, found no manifest, and ran `claude plugin eval` anyway with
+  `defaultEnabled: false` still in effect — the exact silent no-plugin fallback this whole helper
+  exists to prevent, with `rc=0` and no visible error. Now refuses with a clear message if
+  `$BASH_VERSION` is unset; `evals/README.md`'s four commands wrap the call in `bash -c '...'` so
+  they're correct regardless of the reader's login shell.
+- **A signal killing the wrapped command left `defaultEnabled: true` stuck in the committed
+  manifest.** The `RETURN`-only trap (from `[1.1.136]`'s shared-helper extraction) never fires on
+  SIGINT/SIGTERM/SIGHUP, and a caller's own `set -e` skips it too (errexit terminates the process
+  before the function returns normally). Now: INT/TERM/HUP are trapped separately and restore
+  before re-raising the same signal so the process still actually terminates; the wrapped
+  command's own exit status is captured via `"$@" || rc=$?` so its failure never triggers a
+  caller's errexit before the restore's normal-return path runs; every trap clears all four of
+  its own kind on the way out so nothing leaks into the caller's shell afterward.
+- **A missing manifest was a silent no-op** (ran the wrapped command with no guarantee
+  `defaultEnabled` was ever true) — now a hard error.
+- **The flip step's own write failure used to be swallowed**: if the `assert exactly one match`
+  check failed, `flipped=1` still got set unconditionally, so a future ambiguous manifest would
+  silently re-hit the original no-plugin-fallback bug while logging a false "temporarily set"
+  line. Now the flip's exit status gates whether the wrapped command runs at all.
+- **`evals/README.md`'s prose for 3 of 4 agent-dispatch suites** (`code-architect`,
+  `performance-optimizer`, `backend-architect`) still told the reader `defaultEnabled: true`
+  needed a manual, temporary edit, contradicting the automated commands a few lines below in the
+  same file since `[1.1.136]`.
+- **`CHANGELOG.md`'s `[1.1.133]` entry miscounted case-instances** (said 16, actual count from the
+  underlying eval data is 18: 6+6+2+2+2).
+- **A cross-repo citation in the `[[1.1.133]]`-era doctrine correction was ambiguous.** The
+  correction cited `docs/research/auto-model-auto-effort-2026-09-26.md:90` with no repo prefix;
+  matt-harness has its own, differently-authored file at that identical relative path (unrelated
+  content at line 90) — the citation silently resolved to the wrong file when read from inside
+  this repo. Now explicitly prefixed `dotfiles`.
+
 ## [1.1.136] — 2026-09-26
 
 ### Fixed
@@ -52,8 +94,9 @@ methodology in the session transcript).
   the sweep also showed it strictly better or tied on every case (6/6), with one case improved
   (json-only-contract 0.5 → 0.75) and no regressions, at negligible extra cost.
 - **Effort tiers dropped one level on 5 opus agents**, with zero measured score change across
-  16 case-instances (cost and turn count did differ between arms, confirming the change took
-  effect) and consistently lower cost per run:
+  18 case-instances (6 backend-architect + 6 code-architect + 2 each for requirement-analyst,
+  blind-spot-hunter, plan-reviewer; cost and turn count did differ between arms, confirming the
+  change took effect) and consistently lower cost per run:
   - `backend-architect`, `code-architect`, `requirement-analyst`: `high` → `medium`.
   - `blind-spot-hunter`, `plan-reviewer`: `xhigh` → `high`.
   - Sample size is thin (2-6 cases per agent); re-open if a real task later exposes a quality
