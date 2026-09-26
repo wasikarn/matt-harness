@@ -1,0 +1,2680 @@
+{
+  "backend-architect": {
+    "baseline": {
+      "suite": null,
+      "costUsd": 2.8433909999999996,
+      "aggregates": {
+        "casesTotal": 6,
+        "casesPassed": 6,
+        "overallScore": 1,
+        "overallPassRate": 1,
+        "meanDelta": 0.5555555555555557
+      },
+      "cases": [
+        {
+          "case": "backend-architect-client-trusted-price",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.4553806,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "source-of-truth-quality",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.0706342,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "source-of-truth-quality",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.3333333333333333,
+            "passRateWithout": 0,
+            "delta": 0.6666666666666667
+          }
+        },
+        {
+          "case": "backend-architect-file-blueprint-misroute",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.1225532,
+                "graders": [
+                  {
+                    "name": "appropriate-routing-quality",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  },
+                  {
+                    "name": "no-agent-dispatch",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 0..0)"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.10178999999999999,
+                "graders": [
+                  {
+                    "name": "appropriate-routing-quality",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  },
+                  {
+                    "name": "no-agent-dispatch",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 0..0)"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 1,
+            "passRateWithout": 1,
+            "delta": 0
+          }
+        },
+        {
+          "case": "backend-architect-guard-column-bug",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.4289458,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "catches-race-quality",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.0673706,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "catches-race-quality",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.3333333333333333,
+            "passRateWithout": 0,
+            "delta": 0.6666666666666667
+          }
+        },
+        {
+          "case": "backend-architect-multi-writer-table",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.49747959999999997,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "data-ownership-quality",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.06426760000000001,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "data-ownership-quality",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.3333333333333333,
+            "passRateWithout": 0,
+            "delta": 0.6666666666666667
+          }
+        },
+        {
+          "case": "backend-architect-no-idempotency-webhook",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.43528500000000003,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "idempotency-quality",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.0678186,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "idempotency-quality",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.3333333333333333,
+            "passRateWithout": 0,
+            "delta": 0.6666666666666667
+          }
+        },
+        {
+          "case": "backend-architect-security-handoff",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.4678362,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "hands-off-quality",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS FAIL PASS"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.06402960000000003,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "hands-off-quality",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.3333333333333333,
+            "passRateWithout": 0,
+            "delta": 0.6666666666666667
+          }
+        }
+      ]
+    },
+    "alt": {
+      "suite": null,
+      "costUsd": 2.531509,
+      "aggregates": {
+        "casesTotal": 6,
+        "casesPassed": 6,
+        "overallScore": 1,
+        "overallPassRate": 1,
+        "meanDelta": 0.5555555555555557
+      },
+      "cases": [
+        {
+          "case": "backend-architect-client-trusted-price",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.3548942,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "source-of-truth-quality",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.07382179999999999,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "source-of-truth-quality",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.3333333333333333,
+            "passRateWithout": 0,
+            "delta": 0.6666666666666667
+          }
+        },
+        {
+          "case": "backend-architect-file-blueprint-misroute",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.12430500000000001,
+                "graders": [
+                  {
+                    "name": "appropriate-routing-quality",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  },
+                  {
+                    "name": "no-agent-dispatch",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 0..0)"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.08306340000000001,
+                "graders": [
+                  {
+                    "name": "appropriate-routing-quality",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  },
+                  {
+                    "name": "no-agent-dispatch",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 0..0)"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 1,
+            "passRateWithout": 1,
+            "delta": 0
+          }
+        },
+        {
+          "case": "backend-architect-guard-column-bug",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.4095658,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "catches-race-quality",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.0688196,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "catches-race-quality",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.3333333333333333,
+            "passRateWithout": 0,
+            "delta": 0.6666666666666667
+          }
+        },
+        {
+          "case": "backend-architect-multi-writer-table",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.4418436,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "data-ownership-quality",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.0642686,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "data-ownership-quality",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.3333333333333333,
+            "passRateWithout": 0,
+            "delta": 0.6666666666666667
+          }
+        },
+        {
+          "case": "backend-architect-no-idempotency-webhook",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.36626559999999997,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "idempotency-quality",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.06657960000000002,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "idempotency-quality",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.3333333333333333,
+            "passRateWithout": 0,
+            "delta": 0.6666666666666667
+          }
+        },
+        {
+          "case": "backend-architect-security-handoff",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.4059968,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "hands-off-quality",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.07208500000000002,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "hands-off-quality",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.3333333333333333,
+            "passRateWithout": 0,
+            "delta": 0.6666666666666667
+          }
+        }
+      ]
+    }
+  },
+  "requirement-analyst": {
+    "baseline": {
+      "suite": null,
+      "costUsd": 0.5768177999999999,
+      "aggregates": {
+        "casesTotal": 2,
+        "casesPassed": 2,
+        "overallScore": 1,
+        "overallPassRate": 1,
+        "meanDelta": 0.75
+      },
+      "cases": [
+        {
+          "case": "requirement-analyst-clean",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.227394,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "clean",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched verdict:\\s*ready\\b(?!-with)"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched verdict:\\s*(ready|ready-with-assumptions|needs-clarification|blocked)"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.25,
+                "passed": false,
+                "costUsd": 0.05717560000000001,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "clean",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.25,
+            "passRateWithout": 0,
+            "delta": 0.75
+          }
+        },
+        {
+          "case": "requirement-analyst-planted",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.23701559999999997,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched verdict:\\s*(ready|ready-with-assumptions|needs-clarification|blocked)"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  },
+                  {
+                    "name": "finding",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched ambiguities:\\s*\\n\\s*-\\s*text:[\\s\\S]{0,3000}verdict:\\s*(needs-clarification|blocked)|verdict:\\s*(needs-clarification|blocked)[\\s\\S]{0,3000}ambiguities:\\s*\\n\\s*-\\s*text:"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.25,
+                "passed": false,
+                "costUsd": 0.0552326,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  },
+                  {
+                    "name": "finding",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.25,
+            "passRateWithout": 0,
+            "delta": 0.75
+          }
+        }
+      ]
+    },
+    "alt": {
+      "suite": null,
+      "costUsd": 0.5051975999999999,
+      "aggregates": {
+        "casesTotal": 2,
+        "casesPassed": 2,
+        "overallScore": 1,
+        "overallPassRate": 1,
+        "meanDelta": 0.75
+      },
+      "cases": [
+        {
+          "case": "requirement-analyst-clean",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.1651348,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "clean",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched verdict:\\s*ready\\b(?!-with)"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched verdict:\\s*(ready|ready-with-assumptions|needs-clarification|blocked)"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.25,
+                "passed": false,
+                "costUsd": 0.05604019999999999,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "clean",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.25,
+            "passRateWithout": 0,
+            "delta": 0.75
+          }
+        },
+        {
+          "case": "requirement-analyst-planted",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.2282846,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched verdict:\\s*(ready|ready-with-assumptions|needs-clarification|blocked)"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  },
+                  {
+                    "name": "finding",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched ambiguities:\\s*\\n\\s*-\\s*text:[\\s\\S]{0,3000}verdict:\\s*(needs-clarification|blocked)|verdict:\\s*(needs-clarification|blocked)[\\s\\S]{0,3000}ambiguities:\\s*\\n\\s*-\\s*text:"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.25,
+                "passed": false,
+                "costUsd": 0.055738,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  },
+                  {
+                    "name": "finding",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.25,
+            "passRateWithout": 0,
+            "delta": 0.75
+          }
+        }
+      ]
+    }
+  },
+  "blind-spot-hunter": {
+    "baseline": {
+      "suite": null,
+      "costUsd": 1.2537596,
+      "aggregates": {
+        "casesTotal": 2,
+        "casesPassed": 0,
+        "overallScore": 0.625,
+        "overallPassRate": 0,
+        "meanDelta": 0.375
+      },
+      "cases": [
+        {
+          "case": "blind-spot-hunter-clean",
+          "arms": {
+            "with": [
+              {
+                "score": 0.5,
+                "passed": false,
+                "costUsd": 0.648748,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "clean",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched (^|\\n)[\\s*_`#-]*(?:[Vv]erdict[\\s*_:`]*)?(CLEAN|\\d+\\s+(CRITICAL|HIGH|MEDIUM|LOW))"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.25,
+                "passed": false,
+                "costUsd": 0.0631166,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "clean",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 0.5,
+            "passRate": 0,
+            "scoreWithout": 0.25,
+            "passRateWithout": 0,
+            "delta": 0.25
+          }
+        },
+        {
+          "case": "blind-spot-hunter-planted",
+          "arms": {
+            "with": [
+              {
+                "score": 0.75,
+                "passed": false,
+                "costUsd": 0.47853619999999997,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched (^|\\n)[\\s*_`#-]*(?:[Vv]erdict[\\s*_:`]*)?(CLEAN|\\d+\\s+(CRITICAL|HIGH|MEDIUM|LOW))"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  },
+                  {
+                    "name": "finding",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.25,
+                "passed": false,
+                "costUsd": 0.06335879999999999,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  },
+                  {
+                    "name": "finding",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 0.75,
+            "passRate": 0,
+            "scoreWithout": 0.25,
+            "passRateWithout": 0,
+            "delta": 0.5
+          }
+        }
+      ]
+    },
+    "alt": {
+      "suite": null,
+      "costUsd": 0.6375907999999999,
+      "aggregates": {
+        "casesTotal": 2,
+        "casesPassed": 0,
+        "overallScore": 0.625,
+        "overallPassRate": 0,
+        "meanDelta": 0.375
+      },
+      "cases": [
+        {
+          "case": "blind-spot-hunter-clean",
+          "arms": {
+            "with": [
+              {
+                "score": 0.5,
+                "passed": false,
+                "costUsd": 0.2661028,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "clean",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched (^|\\n)[\\s*_`#-]*(?:[Vv]erdict[\\s*_:`]*)?(CLEAN|\\d+\\s+(CRITICAL|HIGH|MEDIUM|LOW))"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.25,
+                "passed": false,
+                "costUsd": 0.06126319999999999,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "clean",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 0.5,
+            "passRate": 0,
+            "scoreWithout": 0.25,
+            "passRateWithout": 0,
+            "delta": 0.25
+          }
+        },
+        {
+          "case": "blind-spot-hunter-planted",
+          "arms": {
+            "with": [
+              {
+                "score": 0.75,
+                "passed": false,
+                "costUsd": 0.2504822,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched (^|\\n)[\\s*_`#-]*(?:[Vv]erdict[\\s*_:`]*)?(CLEAN|\\d+\\s+(CRITICAL|HIGH|MEDIUM|LOW))"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  },
+                  {
+                    "name": "finding",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.25,
+                "passed": false,
+                "costUsd": 0.0597426,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  },
+                  {
+                    "name": "finding",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 0.75,
+            "passRate": 0,
+            "scoreWithout": 0.25,
+            "passRateWithout": 0,
+            "delta": 0.5
+          }
+        }
+      ]
+    }
+  },
+  "code-architect": {
+    "baseline": {
+      "suite": null,
+      "costUsd": 3.4377601999999996,
+      "aggregates": {
+        "casesTotal": 6,
+        "casesPassed": 3,
+        "overallScore": 0.8055555555555555,
+        "overallPassRate": 0.5,
+        "meanDelta": 0.45833333333333337
+      },
+      "cases": [
+        {
+          "case": "code-architect-ambiguous-requirement",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.7062666,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "names-ambiguity",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL PASS PASS"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.0669266,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "names-ambiguity",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.3333333333333333,
+            "passRateWithout": 0,
+            "delta": 0.6666666666666667
+          }
+        },
+        {
+          "case": "code-architect-di-style-respect",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.5126234,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "di-style-match",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS FAIL PASS"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "no-service-locator",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.5,
+                "passed": false,
+                "costUsd": 0.0673156,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "di-style-match",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "no-service-locator",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.5,
+            "passRateWithout": 0,
+            "delta": 0.5
+          }
+        },
+        {
+          "case": "code-architect-disqualified-analog",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.6540372000000001,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "names-rejection-quality",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.06250059999999999,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "names-rejection-quality",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.3333333333333333,
+            "passRateWithout": 0,
+            "delta": 0.6666666666666667
+          }
+        },
+        {
+          "case": "code-architect-layer-direction",
+          "arms": {
+            "with": [
+              {
+                "score": 0.6666666666666666,
+                "passed": false,
+                "costUsd": 0.4965484000000001,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "cites-analog-quality",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "skipped: cost ceiling"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.13124359999999993,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "cites-analog-quality",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 0.6666666666666666,
+            "passRate": 0,
+            "passRateWithout": 0
+          }
+        },
+        {
+          "case": "code-architect-premature-abstraction",
+          "arms": {
+            "with": [
+              {
+                "score": 0.6666666666666666,
+                "passed": false,
+                "costUsd": 0.4200142,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "no-speculative-interface",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "skipped: cost ceiling"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.06902859999999994,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "no-speculative-interface",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 0.6666666666666666,
+            "passRate": 0,
+            "passRateWithout": 0
+          }
+        },
+        {
+          "case": "code-architect-trivial-no-dispatch",
+          "arms": {
+            "with": [
+              {
+                "score": 0.5,
+                "passed": false,
+                "costUsd": 0.1556448,
+                "graders": [
+                  {
+                    "name": "edit-done-directly",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Edit called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "no-agent-dispatch",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 0..0)"
+                  },
+                  {
+                    "name": "no-blueprint-inline",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "rename-correct",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern found (expected absent)"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.5,
+                "passed": false,
+                "costUsd": 0.0956106,
+                "graders": [
+                  {
+                    "name": "edit-done-directly",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Edit called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "no-agent-dispatch",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 0..0)"
+                  },
+                  {
+                    "name": "no-blueprint-inline",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "rename-correct",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern found (expected absent)"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 0.5,
+            "passRate": 0,
+            "scoreWithout": 0.5,
+            "passRateWithout": 0,
+            "delta": 0
+          }
+        }
+      ]
+    },
+    "alt": {
+      "suite": null,
+      "costUsd": 3.0068086000000003,
+      "aggregates": {
+        "casesTotal": 6,
+        "casesPassed": 2,
+        "overallScore": 0.75,
+        "overallPassRate": 0.3333333333333333,
+        "meanDelta": 0.36666666666666664
+      },
+      "cases": [
+        {
+          "case": "code-architect-ambiguous-requirement",
+          "arms": {
+            "with": [
+              {
+                "score": 0.6666666666666666,
+                "passed": false,
+                "costUsd": 0.6045298,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "names-ambiguity",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.0656186,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "names-ambiguity",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 0.6666666666666666,
+            "passRate": 0,
+            "scoreWithout": 0.3333333333333333,
+            "passRateWithout": 0,
+            "delta": 0.3333333333333333
+          }
+        },
+        {
+          "case": "code-architect-di-style-respect",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.5344254,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "di-style-match",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL PASS PASS"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "no-service-locator",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.5,
+                "passed": false,
+                "costUsd": 0.0626246,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "di-style-match",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "no-service-locator",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.5,
+            "passRateWithout": 0,
+            "delta": 0.5
+          }
+        },
+        {
+          "case": "code-architect-disqualified-analog",
+          "arms": {
+            "with": [
+              {
+                "score": 1,
+                "passed": true,
+                "costUsd": 0.40514700000000003,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "names-rejection-quality",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.09471460000000001,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "names-rejection-quality",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 1,
+            "passRate": 1,
+            "scoreWithout": 0.3333333333333333,
+            "passRateWithout": 0,
+            "delta": 0.6666666666666667
+          }
+        },
+        {
+          "case": "code-architect-layer-direction",
+          "arms": {
+            "with": [
+              {
+                "score": 0.6666666666666666,
+                "passed": false,
+                "costUsd": 0.4444922,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "cites-analog-quality",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "skipped: cost ceiling"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.06613360000000007,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "cites-analog-quality",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 0.6666666666666666,
+            "passRate": 0,
+            "passRateWithout": 0
+          }
+        },
+        {
+          "case": "code-architect-premature-abstraction",
+          "arms": {
+            "with": [
+              {
+                "score": 0.6666666666666666,
+                "passed": false,
+                "costUsd": 0.44300500000000004,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "no-speculative-interface",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL PASS FAIL"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.3333333333333333,
+                "passed": false,
+                "costUsd": 0.0647606,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "dispatch-confirmed",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "no-speculative-interface",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 0.6666666666666666,
+            "passRate": 0,
+            "scoreWithout": 0.3333333333333333,
+            "passRateWithout": 0,
+            "delta": 0.3333333333333333
+          }
+        },
+        {
+          "case": "code-architect-trivial-no-dispatch",
+          "arms": {
+            "with": [
+              {
+                "score": 0.5,
+                "passed": false,
+                "costUsd": 0.13405899999999998,
+                "graders": [
+                  {
+                    "name": "edit-done-directly",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Edit called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "no-agent-dispatch",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 0..0)"
+                  },
+                  {
+                    "name": "no-blueprint-inline",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "rename-correct",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern found (expected absent)"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.5,
+                "passed": false,
+                "costUsd": 0.08729819999999999,
+                "graders": [
+                  {
+                    "name": "edit-done-directly",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "Edit called 0x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "no-agent-dispatch",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 0x (expected 0..0)"
+                  },
+                  {
+                    "name": "no-blueprint-inline",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "pattern absent as expected"
+                  },
+                  {
+                    "name": "rename-correct",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern found (expected absent)"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 0.5,
+            "passRate": 0,
+            "scoreWithout": 0.5,
+            "passRateWithout": 0,
+            "delta": 0
+          }
+        }
+      ]
+    }
+  },
+  "plan-reviewer": {
+    "baseline": {
+      "suite": null,
+      "costUsd": 1.120486,
+      "aggregates": {
+        "casesTotal": 2,
+        "casesPassed": 0,
+        "overallScore": 0.75,
+        "overallPassRate": 0,
+        "meanDelta": 0.5
+      },
+      "cases": [
+        {
+          "case": "plan-reviewer-clean",
+          "arms": {
+            "with": [
+              {
+                "score": 0.75,
+                "passed": false,
+                "costUsd": 0.378832,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "clean",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched findings:\\s*\\[\\][\\s\\S]{0,2000}verdict:\\s*production-ready"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched verdict:\\s*(production-ready|ready-with-caveats|needs-revision|not-ready)"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.25,
+                "passed": false,
+                "costUsd": 0.0561276,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "clean",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 0.75,
+            "passRate": 0,
+            "scoreWithout": 0.25,
+            "passRateWithout": 0,
+            "delta": 0.5
+          }
+        },
+        {
+          "case": "plan-reviewer-planted",
+          "arms": {
+            "with": [
+              {
+                "score": 0.75,
+                "passed": false,
+                "costUsd": 0.6281938,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched verdict:\\s*(production-ready|ready-with-caveats|needs-revision|not-ready)"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  },
+                  {
+                    "name": "finding",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.25,
+                "passed": false,
+                "costUsd": 0.0573326,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  },
+                  {
+                    "name": "finding",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 0.75,
+            "passRate": 0,
+            "scoreWithout": 0.25,
+            "passRateWithout": 0,
+            "delta": 0.5
+          }
+        }
+      ]
+    },
+    "alt": {
+      "suite": null,
+      "costUsd": 0.6662704,
+      "aggregates": {
+        "casesTotal": 2,
+        "casesPassed": 0,
+        "overallScore": 0.625,
+        "overallPassRate": 0,
+        "meanDelta": 0.375
+      },
+      "cases": [
+        {
+          "case": "plan-reviewer-clean",
+          "arms": {
+            "with": [
+              {
+                "score": 0.5,
+                "passed": false,
+                "costUsd": 0.2502546,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "clean",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched verdict:\\s*(production-ready|ready-with-caveats|needs-revision|not-ready)"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.25,
+                "passed": false,
+                "costUsd": 0.056035600000000005,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "clean",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 0.5,
+            "passRate": 0,
+            "scoreWithout": 0.25,
+            "passRateWithout": 0,
+            "delta": 0.25
+          }
+        },
+        {
+          "case": "plan-reviewer-planted",
+          "arms": {
+            "with": [
+              {
+                "score": 0.75,
+                "passed": false,
+                "costUsd": 0.30539520000000003,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "matched verdict:\\s*(production-ready|ready-with-caveats|needs-revision|not-ready)"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "judge votes: PASS PASS PASS"
+                  },
+                  {
+                    "name": "finding",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  }
+                ]
+              }
+            ],
+            "without": [
+              {
+                "score": 0.25,
+                "passed": false,
+                "costUsd": 0.054584999999999995,
+                "graders": [
+                  {
+                    "name": "agent-fired",
+                    "passed": true,
+                    "scored": true,
+                    "explanation": "Agent called 1x (expected 1..\u221e)"
+                  },
+                  {
+                    "name": "contract",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  },
+                  {
+                    "name": "criteria",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "judge votes: FAIL FAIL FAIL"
+                  },
+                  {
+                    "name": "finding",
+                    "passed": false,
+                    "scored": true,
+                    "explanation": "pattern not found in last_message"
+                  }
+                ]
+              }
+            ]
+          },
+          "aggregates": {
+            "score": 0.75,
+            "passRate": 0,
+            "scoreWithout": 0.25,
+            "passRateWithout": 0,
+            "delta": 0.5
+          }
+        }
+      ]
+    }
+  }
+}
