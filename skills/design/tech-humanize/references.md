@@ -65,4 +65,4 @@ Canonical table lives in `patterns-thai.md` §31 — load it for the current, co
 - Tone and silent marks: RTGS transliterations carry no tone mark (`เซสชัน`, not `เซสชั่น`); the silent mark `์` (การันต์) appears only where a silent source letter is kept, as in `ซอฟต์แวร์`, `ฟิล์ม`.
 - Hyphen: use `-` (ASCII U+002D), not en-dash `–`, in compounds (low priority, font-dependent)
 - Em dash `—`: never in Thai prose (see §14)
-- En dash `–`: number ranges only (40-60%, §31-32, `2-5 นาที`)
+- En dash `–`: number ranges only (40–60%, §31–32, `2–5 นาที`)

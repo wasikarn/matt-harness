@@ -38,27 +38,19 @@ and `aggregate-result.json` records no model. The report prints a caveat for suc
 suspicious case, re-run it with `--keep-temp` and read the child transcript's assistant-turn
 model, the same place the effort probe below reads `effort`.
 
-**The CLI `--effort` flag never reaches the eval child — a re-probe corrected an earlier, wrong
-conclusion here.** The 2026-09-25 probe above only inspected the OUTER `claude plugin eval`
-process's own `--debug-file`, which is that process's own startup log, not the eval child's
-per-turn trace — it never actually observed the child's resolved effort at all. A same-day
-re-probe (`code-architect-trivial-no-dispatch`, `--keep-temp`, reading the child's own
-`config/projects/**/*.jsonl` session transcript, which carries `effort`/`perTurnEffort` on every
-assistant turn) found:
-- `--model opus`, parent `--effort xhigh` → child resolves `effort: "medium"` — Opus 5.5's own
-  documented default, not "high" and not "xhigh". The earlier "fixed effort: high" conclusion was
-  really just sonnet's own default effort observed on a single model, mistaken for a harness-wide
-  constant.
-- The parent's `--effort` flag genuinely never reaches the child under either model — confirmed
-  again here.
-- **`CLAUDE_CODE_EFFORT_LEVEL=low` in the invoking shell's environment DOES reach the child**:
-  `--model sonnet` with that env var set resolved every turn to `effort: "low"` (sonnet's default
-  is otherwise "high") — a real, working propagation route the CLI flag doesn't have.
+**The CLI `--effort` flag never reaches the eval child; `CLAUDE_CODE_EFFORT_LEVEL` does.** Checked
+2026-09-25 on `code-architect-trivial-no-dispatch` with `--keep-temp`, reading the child's own
+`config/projects/**/*.jsonl` session transcript, which records `effort`/`perTurnEffort` on every
+assistant turn:
+- `--model opus` with parent `--effort xhigh`: the child resolves `effort: "medium"`, Opus 5.5's
+  own default. The parent's `--effort` reaches the child under neither model.
+- `--model sonnet` with `CLAUDE_CODE_EFFORT_LEVEL=low` in the invoking shell: every turn resolves
+  to `effort: "low"` (sonnet's default is otherwise "high").
 
-**Implemented**: `<model>[@effort]` per arm. A bare model (no `@`) invokes exactly as before —
-no env var touched, child inherits whatever the invoking shell's own `CLAUDE_CODE_EFFORT_LEVEL`
-already is (usually unset). `model@effort` sets `CLAUDE_CODE_EFFORT_LEVEL=<effort>` for that one
-arm's `claude plugin eval` call only (never the CLI's own `--effort`, which does nothing here).
+**Arm syntax: `<model>[@effort]`.** A bare model touches no env var, so the child inherits the
+invoking shell's own `CLAUDE_CODE_EFFORT_LEVEL` (usually unset). `model@effort` sets
+`CLAUDE_CODE_EFFORT_LEVEL=<effort>` for that one arm's `claude plugin eval` call only (never the
+CLI's own `--effort`, which does nothing here).
 `effort` must be one of `low|medium|high|xhigh|max`; a bare `@`, `model@`, `@effort`, or a second
 `@` is rejected with a usage error before any `claude` invocation. The full `model@effort` string
 is kept as the report's label (`aggregate-result.json` itself never records model or effort).

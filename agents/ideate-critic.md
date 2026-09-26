@@ -119,7 +119,7 @@ Your final message is a single JSON object. No prose before or after. The host p
 **Shortlist rules:**
 - `shortlist` is rank.py's output (traps excluded, top `options.topK`, default 3)
 - `shortlistReasons`: one line per shortlisted id naming the actual reason it earned its spot — not a restatement of its score numbers. The host renders this verbatim instead of inventing its own justification (the host is the same model class as the generator; a fresh-context reason is the point of this agent existing).
-- `runnerUp`: rank.py's `runnerUp` id as `{ideaId, reason}` — one line on what kept it out. `null` when rank.py returns null. A shortlist with no stated runner-up is unfalsifiable (METHODOLOGY Rule 14).
+- `runnerUp`: rank.py's `runnerUp` id as `{ideaId, reason}` — one line on what kept it out. `null` when rank.py returns null. A shortlist with no stated runner-up is unfalsifiable.
 - `confidence`: `{level, reason}` where `level` is `high`/`medium`/`low` and `reason` is one line. A judgment on the ranking as a whole (idea-pool size, frame diversity, problem ambiguity) — not a re-statement of individual scores.
 
 **Non-obvious pick:**
@@ -164,6 +164,6 @@ You are still the same model class as the generator. Fresh context mitigates but
 
 ## METHODOLOGY Alignment
 
-- **Minimum surface:** the output envelope is the minimum shape the host needs.
-- **Verifiable criteria:** every score maps to a decision-relevant property (novelty, viability, fit).
-- **Tests verify intent, not just shape:** the host's Phase 2 parse in `skills/workflow/ideate/SKILL.md` is the contract check at run time; `evals/ideate-run/` proves a full run renders the fields this agent returns.
+- **Rule 3 (Interrogate the incoming claim):** `trap` treats each attractive idea as a claim to test; name its hidden cost before scoring it high.
+- **Rule 14 (Score, not feel):** stated criteria (novelty, viability, fit) scored per idea, totals and ordering computed in code (`rank.py`), and a `confidence` level with its reason.
+- **Run-time contract:** the host's Phase 2 parse in `skills/workflow/ideate/SKILL.md` checks this output; `evals/ideate-run/` proves a full run renders the fields this agent returns.

@@ -1,7 +1,5 @@
 # ideate — exact prompts, rubric mechanics, output-shape detail
 
-Moved verbatim out of the skill's main file (2026-08-23, 200-LOC cap refactor; that file was
-COMMAND.md until the commands-to-skills conversion folded it into SKILL.md, 2026-08-25).
 SKILL.md keeps the control flow and every invariant; this file carries the literal templates
 read at execution time. Provenance for all of it: `provenance.md`.
 
@@ -89,7 +87,7 @@ the point.
    per idea, score chips like `[N7 V8 F9]`. If the critic ran, render its
    `frameCount` next to any cluster ≥3 ("3 frames converged here") — same
    note the host-inline path gives; don't drop it.
-3. **Converge.** A 2-4 idea shortlist with a stated reason each — the
+3. **Converge.** rank.py's shortlist (top 3, traps excluded) with a stated reason each — the
    critic's `shortlistReasons` verbatim when it ran, else stated directly.
    Mark the non-obvious-but-viable pick with ★ (`nonObviousPickReason` when
    present). Show `confidence` beside the shortlist if supplied. Name

@@ -46,7 +46,7 @@ Source: upstream `/tmp/adhd-repo/skills/adhd/SKILL.md:84-112` and
 - `ideate-critic` reuses the same scoring rubric but starts fresh, cutting
   the chance the host's own generation anchors the judgment. Its output is
   still advisory evidence, not ground truth — the user is the gate
-  (CLAUDE.md's Architecture section, "the implementer agreeing with its own work").
+  (`docs/reference/operating-model.md` §2, "The maker never grades its own work").
 - Routing to the critic adds no third fan-out wave: Phase 2 goes from 0
   agent calls (host-inline) to 1 sequential call on the auto-fire path, not
   a parallel spawn, and that call returns the deepened branches, so Phase 3
@@ -99,9 +99,8 @@ before any of these is cited again.
   deepen are engineered to be re-pointable at this fresh-context
   critic.
 - **Methodology on maker ≠ checker** —
-  CLAUDE.md's Operating model, under the Architecture section — the implementer
-  agreeing with its own work is not proof; the verifying agent
-  must be given fresh context.
+  `docs/reference/operating-model.md` §2, "The maker never grades its own
+  work"; the verifying agent must be given fresh context.
 - **Bounded-agent-spawning precedent** —
   operator memory store, `bounded-agent-spawning`
   — the failure mode this skill's 2-wave cap is designed to

@@ -98,9 +98,7 @@ must discover independently, then get an independent answer from a different mod
    model/effort through `docs/reference/codex-integration-map.md`: Terra/medium for explicit
    requirements, Sol/medium when interpretation is material; check availability and quota first.
    On rate-limit or Codex's absence, fall back to a Claude `general-purpose` subagent (no new
-   bespoke agent type) — note "independence reduced for this pass" in the final report, matching
-   `docs/reference/codex-integration-map.md`'s established fallback language for
-   `/codex:review`/`/codex:adversarial-review`.
+   bespoke agent type) — note "independence reduced for this pass" in the final report.
    - **Validate before trusting, on both paths.** Pipe the verifier's raw output (the
      `--output-last-message` file's contents on the Codex path; the agent's final message text on
      the Claude-fallback path) through `scripts/check-verdict.py <pinned-sha>` — the pinned SHA
@@ -123,24 +121,17 @@ must discover independently, then get an independent answer from a different mod
      any tracked-file change beyond expected build artifacts is itself a finding ("verifier
      modified source"), never a silent pass. The worktree is discarded after, so leftover
      untracked artifacts don't matter.
-   - **A gauntlet failure can be caused by the sandbox itself, not the diff — this direction was
-     unguarded until `mh:deep-audit` found it 2026-09-19.** The bullet above only covers a
-     too-permissive sandbox; a too-restrictive one can produce a false failure just as easily
-     (confirmed live: two pre-existing, diff-unrelated tests failed under `--sandbox
-     workspace-write` — both write scratch state via `mktemp "${TMPDIR:-/tmp}/..."`, outside the
-     worktree — and passed cleanly on an unsandboxed run of the identical pinned SHA). On any
+   - **A gauntlet failure can be caused by the sandbox itself, not the diff.** The bullet above
+     only covers a too-permissive sandbox; a too-restrictive one produces false failures too
+     (tests that write scratch state via `mktemp "${TMPDIR:-/tmp}/..."`, outside the worktree,
+     fail under `--sandbox workspace-write` and pass unsandboxed at the same SHA). On any
      non-zero gauntlet exit, before reporting it as a finding: **the verifier itself** (never
      main, per the re-run rule below) re-runs the identical gauntlet command at the plan's base
      SHA, in the same sandbox, **in a second, separate detached worktree pinned at the base SHA
      (`git worktree add --detach <second-path> <base-sha>`), removed after the re-run — never by
-     checking out the base SHA inside the worktree already pinned at head.** Found by
-     `mh:deep-audit` 2026-09-19: the first version of this bullet didn't say this, and the
-     obvious alternative — checking the existing worktree out to the base SHA and back — either
-     trips the before/after tracked-diff check above (the switch itself is a tracked-file change
-     unless perfectly reverted, which nothing here instructs) or, if reverted cleanly, still adds
-     a checkout the generic dispatched-subagent constraints don't carve out for a purpose-built
-     disposable worktree. A second worktree sidesteps both: the head-pinned worktree the rest of
-     Phase 2 uses is never touched. Identical failure at base → pre-existing/environmental, not
+     checking out the base SHA inside the worktree already pinned at head**: that switch is a
+     tracked-file change the before/after check above flags, and the head-pinned worktree the
+     rest of Phase 2 uses stays untouched. Identical failure at base → pre-existing/environmental, not
      this diff's regression → return `NEEDS-DECISION` naming the specific failing test(s) and
      both exit codes, per `references/verifier-brief.md`'s existing escape hatch, rather than
      either a silent pass or an unexplained `DEVIATED`. Base SHA passes cleanly in the same
@@ -207,7 +198,7 @@ fix.
 2. Report, in this order:
    - One-line verdict headline: N/N conform, open-item count.
    - Per-requirement table: **CONFORMS** / **DEVIATED (accepted)** / **DEVIATED (unaccepted)** /
-     **MISSING**. No blended percentage.
+     **MISSING** / **UNVERIFIABLE**. No blended percentage.
    - The gauntlet run's exact command, SHA, exit code, and verbatim/tail output.
    - `scope_ok` and any `unexpected_files[]` (diff touched something the plan never named).
 3. **No automated fixer, no re-verify-only-the-touched-item in this version.** A fixer that

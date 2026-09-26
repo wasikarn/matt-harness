@@ -1,6 +1,6 @@
 ---
 name: tech-humanize
-description: "Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing chat, standup/PR/commit, UI copy, or prose/ticket/spec/ADR. Don't use for translation/STE — see ste-lint."
+description: "Humanize dev/tech writing (English/Thai) to sound natural, not AI-generated. Use when editing chat, standup/PR/commit, UI copy, or prose/ticket/spec/ADR. Don't use for translation or STE."
 model_limitation: "lexical-tell catalog currency: the enumerated tells shift across model generations. Re-validated 2026-09-07 against Wikipedia's Signs of AI writing. Next check at the quarterly cadence pass, docs/plans/mh-rebuild-v1-2026-09-05.md"
 metadata:
   origin: kbg-native
@@ -27,10 +27,10 @@ Two constraints hold through every step:
    Done when: every tell present is named, not the first loud few. Failure mode: stopping after the em dash and "delve" and missing the cluster a full pass shows.
 4. **Draft rewrite.** Replace each named tell with the natural alternative; keep paragraph count and core meaning; natural aloud, varied length, simple constructions (is/are/has, คือ/เป็น), correct register, grit applied. Match the user's voice when they gave a sample (Voice below).
    Done when: every tell from step 3 is addressed and everything step 3 cleared is left as written. A cleared term that now looks wrong is new information: name it, then change it. Failure modes: deleting AI-isms without adding grit lands in the clean-but-neutral middle, which a skeptical reader still scores about 30/100 AI; an unnamed mid-rewrite change escapes steps 5 and 6.
-5. **Ask "what still makes this read AI?"** and answer in a few bullets. "Nothing, looks good" grades your own work instead of scrutinizing it.
-   Done when: at least one honest gap is named, even a minor one.
+5. **Ask "what still makes this read AI?"** and answer in a few bullets, checking the draft against the cue sheet again.
+   Done when: each remaining tell is named, or the draft is declared clean.
 6. **Final rewrite.** Resolve each step-5 bullet: name the fix, or write "kept as tradeoff: <reason>" (formal vocabulary the genre requires, for instance). Scan the delivered text for the literal `—` character (cue #14): claiming the dashes are cut is not the same as counting zero. Re-read aloud; vary sentence length; confirm the step-2 grit actually landed in the text.
-   Done when: every bullet has a named resolution, the `—` count is zero, the step-2 specifics are present, and the final differs from the draft. If step 5 found nothing, re-run step 5 before this step.
+   Done when: every bullet has a named resolution, the `—` count is zero (unless the user's own English writing sample uses em dashes on purpose, §14; never in Thai), and the step-2 specifics are present.
 
 Deliver: the named tells, the draft, the still-AI bullets, the final rewrite, and optionally a short change summary. When the input is a file and the user asked to edit or humanize it, write the final back into that file as well.
 
@@ -78,7 +78,7 @@ Thirty universal tells, all languages; Thai-only tells (§31–§42) are in `pat
 
 - **Content (§1-6)**: significance puffery, notability name-drops, -ing pseudo-depth tails, promo language, weasel attribution and vague association ("linked to", "associated with"), "challenges and future" formula.
 - **Language and grammar (§7-13)**: AI-vocab words, copula avoidance, negative parallelism, rule of three, elegant variation (historical: older models, weak on current ones), false ranges, passive and subjectless fragments.
-- **Style (§14-19)**: em dashes (#14, zero tolerance), bold overuse, inline-header lists, title-case headings, emojis, curly quotes.
+- **Style (§14-19)**: em dashes (#14, zero unless the user's English sample uses them on purpose; never in Thai), bold overuse, inline-header lists, title-case headings, emojis, curly quotes.
 - **Communication (§20-22)**: chat artifacts, cutoff disclaimers and gap-fill, sycophancy.
 - **Filler and hedging (§23-30)**: filler phrases, excessive hedging, generic positive conclusion, hyphenated-pair overuse, authority tropes, signposting, fragmented headers and thematic breaks, diff-anchored writing.
 

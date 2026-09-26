@@ -38,9 +38,9 @@ which items are the actual open ones.
 `references/verifier-output-schema.json`: `{"requirements": [{"id", "verdict", "note",
 "accepted"}...], "gauntlet": {"command", "sha", "exit_code", "output_tail"}, "scope_ok",
 "unexpected_files": [...]}`. `accepted` is `null` for CONFORMS/MISSING (acceptance isn't a
-question for those) and a real boolean for DEVIATED — leave it `false` unless the main session's
-pre-declared list already sanctioned this exact deviation with a citable reason; you are not the
-one deciding acceptance, only reporting whether it was already sanctioned. Do not compute or
+question for those) and a real boolean for DEVIATED — leave it `false` unless the plan or
+requirement text itself sanctions this exact deviation, cited as a backticked command or
+`path:line`; you report whether it is sanctioned, you don't decide acceptance. Do not compute or
 include a `pass` field yourself — `scripts/check-verdict.py` computes it from this object. If you
 cannot safely determine something (the pinned SHA won't check out, the gauntlet command is
 ambiguous, or the gauntlet fails and fails identically at the base SHA in the same sandbox —

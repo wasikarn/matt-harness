@@ -65,6 +65,7 @@ For each gap, highest criticality first:
 - criticality N/10, with the guideline band it falls in
 - the regression it would catch: input, wrong outcome, who notices
 - how you confirmed nothing covers it (test file read, grep run)
+- confidence (high/medium/low) and the one fact it rests on
 - the test to add, in one or two sentences (name, arrange, assert); not full code unless asked
 
 Then, if any: **Test quality issues**, each with `file:line`, why it is brittle, and the

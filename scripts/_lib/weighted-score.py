@@ -46,9 +46,8 @@ signal -- for an ordinary axis that's a fair renormalization, but for the
 axis a caller declared `primaryId` (the one that "can't be diluted to
 parity" per mh:idea-audit's own Rule 14 rationale) it would silently produce
 a complete-looking total with the single most load-bearing axis missing.
-Found by mh:deep-audit 2026-09-19: idea-audit's own SKILL.md deliberately
-omits `passThreshold` for this phase ("a scored verdict... not a single
-pass/fail gate"), so nothing downstream was catching this case either.
+Found by mh:deep-audit 2026-09-19, when idea-audit still omitted
+`passThreshold`, so nothing downstream was catching this case either.
 The caller must treat that as a hard fail, never as license to score by hand.
 """
 import json

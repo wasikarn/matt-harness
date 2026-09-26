@@ -15,7 +15,7 @@ phrases, or markers in any `skills/**/*.md` or `agents/*.md`; Rule 14's Thai mar
 skill. Exception: `tech-humanize`, whose Thai content is the subject matter.
 
 **Description cap: 25 words, third person.** This is mh's own token-budget rule (skill and agent
-descriptions load on every Task spawn), not matt's. Check 20 WARNs past 1536 chars; check 43
+descriptions ride in every session's context), not matt's. Check 20 WARNs past 1536 chars; check 43
 tracks the cumulative listing budget; check 05 WARNs when a routing-length description has no
 "Use when" clause; check 77 WARNs past 25 words or on a first/second-person pronoun. "Third
 person" here means no `I`/`we`/`you`-class pronoun (check 77's actual test) — a bare imperative

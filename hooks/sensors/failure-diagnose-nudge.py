@@ -30,9 +30,10 @@ CAP = 1
 
 NUDGE = (
     "<mh-failure-diagnose-nudge>\n"
-    "A Bash command just exited non-zero. Before retrying: check MEMORY.md and its "
-    "sub-indexes for a matching prior gotcha. Require exit 0 before moving on. If the fix is "
-    "a durable, non-obvious lesson, record it with mh:learn or a memory file directly -- "
+    "A Bash command just exited non-zero. If you expected that (a red test you just wrote, a "
+    "grep with no match), carry on. Otherwise, before retrying: check MEMORY.md and its "
+    "sub-indexes for a matching prior gotcha, and find the cause before moving on. If the fix "
+    "is a durable, non-obvious lesson, record it with mh:learn or a memory file directly -- "
     "never a separate log/store.\n"
     "</mh-failure-diagnose-nudge>"
 )

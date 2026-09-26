@@ -105,7 +105,7 @@ How the register selection gate (SKILL.md §0) + per-register patterns apply.
 - `"เพื่อนร่วมทีมอีก 2 ท่าน"` (vague; no PR, no name)
 - `"อัปเดต documentation ให้ทันสมัย"` (vague; which file, which PR)
 
-**After (standup register — Standup Reporting Style from [[feedback_standup_reporting]]):**
+**After (standup register, in the team's own standup format):**
 ```
 ✅ ทำเสร็จ
 - TP-549: PR #64 measurement redesign merged เข้า develop
@@ -115,10 +115,10 @@ How the register selection gate (SKILL.md §0) + per-register patterns apply.
 - TP-549: เขียน strategy brief ส่ง P'Big ก่อน deploy prod
 
 🚧 รอ
-- camera firmware dependency — P'X ยังไม่ส่ง release note
+- camera firmware dependency: P'X ยังไม่ส่ง release note
 
 🙋 ถาม
-- TP-549 deploy timing — จะ roll forward ตอน traffic ต่ำ หรือ soak 7 วันก่อน?
+- TP-549 deploy timing: จะ roll forward ตอน traffic ต่ำ หรือ soak 7 วันก่อน?
 ```
 
 **Changes applied:**
@@ -175,7 +175,7 @@ Given the draft `ผมได้ merge PR #64 เข้า develop แล้ว 
 | **A** (chat) | `"merge แล้วค่ะ PR #64 🎉"` | terse, emoji, 1st-line topic |
 | **B** (standup) | `"✅ TP-549 PR #64 merged เข้า develop"` | emoji + ticket + scope |
 | **C** (UI) | `"บันทึกการเปลี่ยนแปลงเรียบร้อย"` | status-word-first, action-complete |
-| **D** (blog) | `"PR #64 merge เข้า develop เมื่อเช้า เป็นก้าวแรกของ measurement redesign — ก้าวต่อไปคือ..."` | narrative, personal, longer |
+| **D** (blog) | `"PR #64 merge เข้า develop เมื่อเช้า เป็นก้าวแรกของ measurement redesign ก้าวต่อไปคือ..."` | narrative, personal, longer |
 
 **Rule:** same fact, different register → different sentence shape, different particle, different length. Use the register the reader is in, not the one that "sounds good".
 
@@ -229,10 +229,10 @@ Same catalog (30 universal + 12 Thai-specific top-level in `patterns-thai.md`), 
 - `"collaborated with cross-functional stakeholders"` — vague weasel attribution
 - `"align on best practices"` — vague-upbeat contentless verb
 - `"leverage expertise to drive innovation"` — AI-vocab pileup
-- Em dash + 1st-person throughout (standup author speaks from their own experience, not a narrated CV)
+- 1st-person throughout (standup author speaks from their own experience, not a narrated CV)
 
 **After (EN standup — register B):**
-> PR #847 merged to develop. Auth refactor landed in the same PR — break it into chunks for review next time.
+> PR #847 merged to develop. Auth refactor landed in the same PR. Break it into chunks for review next time.
 >
 > Reviewed: PR #842 (Sam), PR #851 (Priya). Both have my notes inline.
 >
@@ -283,6 +283,6 @@ Same catalog (30 universal + 12 Thai-specific top-level in `patterns-thai.md`), 
 | Register | Rewrite | Why |
 |----------|---------|-----|
 | **A** (chat, EN) | `"PR #847's in 🎉"` | terse, emoji, no detail |
-| **B** (standup, EN) | `"PR #847 merged. auth refactor in same PR — chunk next time"` | ticket + scope + improvement |
+| **B** (standup, EN) | `"PR #847 merged. auth refactor in same PR, chunk next time"` | ticket + scope + improvement |
 | **C** (UI, EN) | `"PR #847 merged to develop."` | status-only, no narrator |
-| **D** (blog, EN) | `"We merged PR #847 to develop this morning. The auth refactor rode along in the same commit — splitting review by feature would have been cleaner, in retrospect."` | narrative, first-person, hindsight |
+| **D** (blog, EN) | `"We merged PR #847 to develop this morning. The auth refactor rode along in the same commit. Splitting review by feature would have been cleaner, in retrospect."` | narrative, first-person, hindsight |

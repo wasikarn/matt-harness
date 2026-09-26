@@ -14,19 +14,12 @@ a different model family, independently re-checks their claims against primary e
 reconciles and ships a scored adopt/defer/reject decision. Converges on an already-formed external
 idea, the reverse of `mh:ideate` (which diverges new ideas from an open problem).
 
-**Baseline check (authoring record, not a runtime step):** an unassisted agent given a realistic
-adoption question already does reasonable single-pass primary-source checking, but produces no
-isolated fan-out, no independent adversarial re-check, and no Rule-14-shaped scored output — the
-three gaps this skill closes. Recorded in the shipping commit.
-
 ## Pre-flight gate
 
 Explicit invocation (`mh:idea-audit <source>`, "audit this for adoption") skips checks 1-2 below
 (the should-we-even-bother questions) — it does **not** skip check 3. Check 3 is a hard
 precondition, not a desirability judgment: Phase 1 physically cannot save a source that doesn't
-exist yet, explicit invocation or not. (This is a fix, not the original design: the original text
-let explicit invocation skip check 3 too, and Phase 1's save-logic below has no bare-title branch
-— an explicit `mh:idea-audit react-query` with no URL attached dead-ended with nothing to save.)
+exist yet, explicit invocation or not.
 Otherwise ask and abort on any NO:
 
 1. **An actual external source, and a live decision on the table?** "What do you think of X" with
@@ -61,7 +54,7 @@ adversarial check, run `mh:idea-audit <source>`."*
 Triggers only when the invocation names a topic/tool/practice with no URL, local file, or pasted
 text already attached — never for the two cases above, which already resolve without searching.
 
-1. **`qmd` MCP `query`, `collection: "llm-wiki"`, first** — the operator's own second-brain rule
+1. **`qmd` MCP `query` with `collections: ["llm-wiki"]`, first** — the operator's own second-brain rule
    (`CLAUDE.md`'s "Second Brain (llm-wiki)" section) requires this ahead of any web search for a
    research/citation question, and this is exactly that.
 2. **If nothing usable there:** `firecrawl_developer_search` for a repo/library/tool name (or
@@ -184,9 +177,8 @@ gives the attacker the scratchpad source's **absolute path so it can actually op
 `codex exec --help`'s own flag semantics say `-s`/`--sandbox` governs what a shell command can
 *write*, and `--add-dir <DIR>` is documented only as "additional directories that should be
 **writable**," with no analogous flag for extending read access; nothing in Codex's documented CLI
-surface says `read-only` confines reads to `--cd`'s directory (this is an inference from documented
-flag semantics, not a live-reproduced test — Codex was rate-limited while writing this; re-confirm
-live the first time this skill actually runs, and tighten this note if that run says otherwise).
+surface says `read-only` confines reads to `--cd`'s directory (inferred from the documented flag
+semantics, not live-tested).
 The Claude fallback's `Read` tool is unaffected by cwd either way, so this only matters for the
 Codex primary. That absolute path is for **reading only** — every citation in the attacker's
 *output*, and
@@ -202,7 +194,7 @@ text validates through `scripts/check-verdict.py` (stdin: that file's contents; 
 checked[]}` contract — no `scope_ok`/`unexpected_files`, this attacker never touches the repo):
 
 ```
-python3 skills/workflow/idea-audit/scripts/check-verdict.py < <output-last-message file>
+python3 "${CLAUDE_SKILL_DIR}/scripts/check-verdict.py" < <output-last-message file>
 ```
 
 Exit 0 = exactly one schema-valid verdict (printed to stdout as JSON, pipe that into the
@@ -235,8 +227,8 @@ schema mismatch, timeout, auth failure, a missing/empty `checked[]` (mechanicall
 caught by the schema. On any of these: fall back to `general-purpose`, carrying
 `references/attacker-brief.md` as its full prompt — **not** `mh:plan-reviewer`, which hard-stops
 when handed a summary rather than a plan artifact (`agents/plan-reviewer.md`). Note "independence
-is lost for that pass," matching `docs/reference/codex-integration-map.md`'s established fallback
-wording exactly (the map's own idea-audit row should carry the same phrase — cross-check it).
+reduced for this pass," matching `docs/reference/codex-integration-map.md`'s established fallback
+wording exactly.
 On this fallback path there is no `--output-last-message` file and no `--output-schema` — pipe
 the fallback agent's raw final message to the same `scripts/check-verdict.py` (stdin: the raw
 text, not a pre-parsed object; it scans for the JSON itself, same as the Codex path's file
@@ -295,14 +287,14 @@ covering the common partial case — one or two criteria weak, not the whole sou
 scale differ from that file's); state the chosen threshold in the artifact rather than importing
 85 by assumption.
 
-The model scores each axis and writes reasons; `scripts/_lib/weighted-score.py` (repo root) does
+The model scores each axis and writes reasons; the repo's `scripts/_lib/weighted-score.py` does
 the arithmetic and both floor checks — the same script `mh:deep-audit` uses, so the "no hand sum
 ever reaches the output" guarantee is one mechanism, not two:
 ```
-python3 scripts/_lib/weighted-score.py <<< '{"scores": [
+python3 "${CLAUDE_SKILL_DIR}/../../../scripts/_lib/weighted-score.py" <<< '{"scores": [
   {"id": "<axis-id>", "score": <0-max>, "max": <axis-own-max>, "weight": <w>, "insufficient": <bool>},
   ...
-], "floorPct": 0.40, "primaryId": "<primary-source-fidelity axis id>"}'
+], "floorPct": 0.40, "passThreshold": <stated threshold>, "primaryId": "<primary-source-fidelity axis id>"}'
 ```
 `total` renormalizes over axes that actually scored, dropping an `insufficient` axis from both
 the numerator and the denominator — never dividing by the full weight sum, which would score it
@@ -310,8 +302,9 @@ the numerator and the denominator — never dividing by the full weight sum, whi
 — an axis at exactly 40% does not trip it) — trigger (2) above.
 `primaryWeightOk` is trigger-adjacent, not a floor: pass `primaryId` and the script confirms that
 axis's weight is *strictly* the largest, catching a tie (two axes both at 40, say) a bare
-sum-to-100 check would miss. Omit `passThreshold` — this phase writes a scored verdict for the
-artifact, not a single pass/fail gate. **The script fails closed:** malformed input or an
+sum-to-100 check would miss. Pass the threshold this phase states as `passThreshold`: the
+script's `pass` is the artifact's PASS/FAIL (Rule 14's pass/fail reason), so no hand comparison
+reaches it, and a tripped floor forces FAIL. **The script fails closed:** malformed input or an
 entirely-insufficient source exits non-zero with a reason on stderr, which is trigger (1) above
 by construction — treat it as the floor tripping, never as license to compute the total by hand.
 
@@ -388,33 +381,9 @@ No new agent `.md` files. `general-purpose` ×2 (Phase 1), `codex exec`/`general
 
 ## Deliberately not building
 
-- **A numeric-scoring library.** Adoption-decision axes vary by what's evaluated; a plain Rule-14
-  table in prose is the right size.
 - **A `docs/reference/mattpocock-integration-map.md` row.** That table tracks 1:1 routing to a
   named matt skill; this composes on `mattpocock-skills:research`'s principle but isn't a routing
   of it.
-
-## Composer-not-creator (all 4 CLAUDE.md tiers, checked before writing this skill)
-
-(1) `mattpocock-skills` — `research` (single-agent, no attack step, no adoption scoring),
-`grilling` (one interactive live debate, not a scored pipeline that verifies external claims
-against primary evidence), `grill-with-docs` (grilling+domain-modeling wrapper, no external-claim
-verification). (2) `codex@openai-codex` — the Phase 2 primary. (3) `~/Codes/Personals/ECC`/
-`superpowers` — surveyed, no adoption-decision analog with an attack step. (4) sibling harnesses
-under `~/Codes/Personals/` — `oh-my-claudecode:external-context` (closest neighbor: parallel
-doc-lookup fan-out, no attack step or scored decision), `ai-delegate-plugin`/`ponytail`/`caveman`
-(unrelated). In-repo: `mh:ideate` (opposite direction — diverges new ideas, doesn't converge on an
-already-formed external one), `agents/ideate-critic.md` (scores ideate's OWN brainstormed ideas,
-no primary-source verification duty), `agents/blind-spot-hunter.md` (post-code-review defect
-hunter on already-written diffs, not a pre-code adoption decision), `mh:deep-audit`
-(`skills/review/deep-audit/SKILL.md` — closest functional analog: verify every claim, score on a
-fixed rubric, dispatch a fresh-context checker; Phase 2 above explicitly borrows its dispatch shape
-and its output-schema is adapted from deep-audit's. Distinct scope, not distinct mechanism: deep-audit
-verifies claims about **this session's own output** against this repo's live state; idea-audit
-verifies claims about an **external source** the session didn't produce. Named here explicitly
-rather than left as an unstated omission next to the explicit reuse above). None fit; this skill
-reuses `ideate`'s proven shapes (pre-flight gate, isolation invariant, `references/` convention)
-rather than its purpose.
 
 ## Failure modes
 

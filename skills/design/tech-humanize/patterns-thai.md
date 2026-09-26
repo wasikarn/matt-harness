@@ -71,7 +71,7 @@ When replacing a calque, pick a verb matching the real action — not a vague pl
 **After (`เก็บอังกฤษ`, keep English):**
 > แผนผังความสัมพันธ์ Ticket (Dependency Map)
 
-Same (a) drift-in-meaning failure as the `front-facing`/`API` cases above, in the issue-tracking vocabulary domain instead of deploy. Missed in a live scan 2026-07-14 despite this section already existing — the scan never reached §31 at all (see `SKILL.md`'s "The loop" step 3), so the meaning-overlap test above was never run against it. The glossary row exists now; the meaning-overlap test above is what catches the next term that isn't in it yet.
+Same (a) drift-in-meaning failure as the `front-facing`/`API` cases above, in the issue-tracking vocabulary domain instead of deploy. The glossary row covers `ตั๋ว`; the meaning-overlap test above catches the next term the glossary doesn't list.
 
 
 ### 32. Anti-Fabrication Discipline (TBD > invented specifics)
@@ -421,7 +421,7 @@ Tell them apart:
 ❌ `"ในยุคปัจจุบัน AI กำลังเปลี่ยนแปลงโลกอย่างมาก ซึ่งส่งผลกระทบต่ออุตสาหกรรมต่างๆ"`
    — formal connector spam, generic claim
 
-✅ `"AI เขียนโค้ดเก่งขึ้นทุกปี ผมยังนึกถึง agent ที่เขียนผ่านมาทั้งคืน — แต่ครึ่ง dev community ก็ยังบอกว่ามันนับไม่ได้"`
+✅ `"AI เขียนโค้ดเก่งขึ้นทุกปี ผมยังนึกถึง agent ที่เขียนผ่านมาทั้งคืน แต่ครึ่ง dev community ก็ยังบอกว่ามันนับไม่ได้"`
    — opinion, image, mixed rhythm
 
 ### 40. AI-Leaked Thai Closers (v2.2 — Comprehensive)

@@ -82,5 +82,7 @@ For each type:
 ### Recommended improvements
 ```
 
+Each Concern states a confidence (high/medium/low) and the one fact it rests on.
+
 End with a one-line verdict: `SOUND` (every rating 7 or above, no Concerns) or
 `N CONCERNS across M types, lowest <axis> X/10`.

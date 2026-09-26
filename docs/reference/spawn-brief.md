@@ -30,10 +30,12 @@ nothing else; `checked[]` holds ≥1 `{claim, evidence}` even on a clean pass �
 Rule 13's "one checkable fact" lands, and an empty `checked[]` is not verified, same as a missing
 field. `scope_ok` fails on either an unexpected file or an owned file the diff never touches.
 Dispatching `mh:plan-reviewer` specifically: it has no calling skill of its own to embed this in
-as a mandatory step, so the dispatcher must remember it here — pipe its
-`{findings, top_blockers_count, verdict}` fields through `scripts/_lib/plan-verdict-check.py`
-(repo root) before trusting the verdict; `agents/plan-reviewer.md`'s own Caller note has the
-exact contract and its `top_blockers`-display-cap gotcha.
+as a mandatory step, so the dispatcher must remember it here — pipe
+`{"findings": [{"severity": ...}, ...], "top_blockers_count": <int>, "verdict": "..."}` through
+`scripts/_lib/plan-verdict-check.py` (repo root) before trusting the verdict. It catches
+`production-ready` alongside a real blocker. `findings` is the agent's full `findings:` list;
+`top_blockers_count` is the full Critical+High tally, never `len(top_blockers)`, whose display
+list is capped at 10. The script does not check `not-ready`, which needs judgment.
 
 Constraints: stage by explicit path only, never stash/reset/checkout/add -A; delete with `trash`;
 return `NEEDS-DECISION <question>` instead of guessing; a ruling made within your own authority

@@ -210,18 +210,18 @@ code-switching, AI-leaked closers) live in `patterns-thai.md`.
 **En-dash exemption:** number ranges (`40–60%`, `§31–32`, `2–5 minutes`) are fine. That's an en dash (`–`) doing its actual job, not an AI tell. The rule is about *em dashes used for asides* and *en dashes used as em dashes*. The em dash (`—`) is what AI overuses.
 
 **Before (AI overuse):**
-> The term is primarily promoted by Dutch institutions, not by the people themselves. You don't say "Netherlands, Europe" as an address, yet this mislabeling continues, even in official documents.
+> The term is primarily promoted by Dutch institutions — not by the people themselves. You don't say "Netherlands, Europe" as an address — yet this mislabeling continues — even in official documents.
 
 **After:**
 > The term is primarily promoted by Dutch institutions, not by the people themselves. You don't say "Netherlands, Europe" as an address, yet this mislabeling continues in official documents.
 
 **Before (AI overuse in Thai):**
-> นโยบายใหม่ ประกาศโดยไม่แจ้งล่วงหน้า กระทบคนงานหลายพัน การเปลี่ยนแปลง (long overdue ตาม critics) จะมีผลทันที
+> นโยบายใหม่ — ประกาศโดยไม่แจ้งล่วงหน้า — กระทบคนงานหลายพัน การเปลี่ยนแปลง — long overdue ตาม critics — จะมีผลทันที
 
 **After:**
 > นโยบายใหม่ซึ่งประกาศโดยไม่แจ้งล่วงหน้า กระทบคนงานหลายพัน การเปลี่ยนแปลงที่ critics บอกว่า long overdue จะมีผลทันที
 
-Before returning the final rewrite, scan it for em dashes (`—`). Any hit means the draft isn't done. En-dash number ranges are exempt.
+Before returning the final rewrite, scan it for em dashes (`—`). Any hit means the draft isn't done, except dashes kept from the user's own English writing sample. En-dash number ranges are exempt.
 
 
 ### 15. Overuse of Boldface
@@ -269,7 +269,7 @@ Before returning the final rewrite, scan it for em dashes (`—`). Any hit means
 > ✅ **Next Steps:** Schedule follow-up meeting
 
 **After:**
-> The product launches in Q3 User research showed a preference for simplicity Next step: schedule a follow-up meeting
+> The product launches in Q3. User research showed a preference for simplicity. Next step: schedule a follow-up meeting.
 
 
 ### 19. Curly Quotation Marks
@@ -387,7 +387,7 @@ Before returning the final rewrite, scan it for em dashes (`—`). Any hit means
 > The cross-functional team delivered a high-quality, data-driven report The team is cross-functional, the report is high-quality, and the methodology is data-driven
 
 **After:**
-> The cross-functional team delivered a high-quality, data-driven report The team is cross functional, the report is high quality, and the methodology is data driven
+> The cross-functional team delivered a high-quality, data-driven report. The team is cross functional, the report is high quality, and the methodology is data driven.
 
 
 ### 27. Persuasive Authority Tropes
@@ -400,7 +400,7 @@ Before returning the final rewrite, scan it for em dashes (`—`). Any hit means
 > The real question is whether teams can adapt At its core, what really matters is organizational readiness
 
 **After:**
-> The question is whether teams can adapt That mostly depends on whether the organization is ready to change its habits
+> The question is whether teams can adapt. That mostly depends on whether the organization is ready to change its habits.
 
 
 ### 28. Signposting and Announcements

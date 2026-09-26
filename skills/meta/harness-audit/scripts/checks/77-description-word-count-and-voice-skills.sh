@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 77. Description word count + third-person voice — skills, agents.
 # skill-authoring-conventions.md: "Description cap: 25 words, third person." mh's own
-# token-budget rule (descriptions load on every Task spawn) — distinct from check 20
+# token-budget rule (descriptions ride in every session's context) — distinct from check 20
 # (1536-char runtime truncation limit) and check 43 (cumulative listing budget); neither
 # of those checks word count or voice. WARN only: a style convention, not a runtime cap.
 # "Third person" here means no I/we/you-class pronoun (see PRON_PATTERN below) — a bare

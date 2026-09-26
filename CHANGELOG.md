@@ -3,6 +3,60 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.132] — 2026-09-26
+
+The operator-approved fixes from the cross-repo prompt audit (dotfiles
+`docs/research/prompt-audit-cross-repo-2026-09-26.md`).
+
+### Changed
+
+- **`mh:idea-audit` ships again.**
+  - `plugin.json` lists `./skills/workflow/idea-audit/`, check 75 no longer expects it excluded,
+    and the codex-map row drops its "not currently shipped" caveat.
+  - Evals and tests already called it `mh:idea-audit`.
+  - After this version installs, remove the dev-mode `~/.claude/skills/idea-audit` symlink, or
+    the skill lists twice.
+- **idea-audit Phase 3 passes `passThreshold`**, so the script's `pass` is the artifact's
+  PASS/FAIL. The phase already required a stated threshold, and the template already showed
+  PASS/FAIL. Only the "omit `passThreshold`" line disagreed.
+- **Fallback wording is now "independence reduced (model independence lost, context
+  independence kept)"** in the codex map and idea-audit. The Codex quota advisory tells the model
+  to say so when it falls back to Claude.
+- **tech-humanize:** the zero-em-dash rule now states the §14 exception for a user's own sample
+  that uses em dashes on purpose.
+
+### Fixed
+
+- **Agents:**
+  - Dead references are gone: "two optimists agreeing", the per-language reviewers, and
+    METHODOLOGY rules that no longer exist.
+  - code-architect and backend-architect are no longer told to invoke skills that their `tools:`
+    can't reach.
+  - The "a subagent has no Skill tool" premise is corrected.
+  - plan-reviewer's caller note moved into `spawn-brief.md`, which the dispatcher actually reads.
+  - Both architect descriptions now carry their routing boundary.
+  - Agents that hold Bash say why.
+  - test-gap-analyzer and type-design-analyzer give per-finding confidence.
+  - silent-failure-hunter's intensity framing is now a coverage-first instruction.
+- **Skills:**
+  - deep-audit and idea-audit run their bundled scripts through `${CLAUDE_SKILL_DIR}`. Before,
+    they failed outside this repo.
+  - idea-audit's qmd call uses `collections`.
+  - The ideate shortlist size matches `rank.py`.
+  - post-mortem no longer cites an "abort-loud" Rule 1.
+  - harness-audit lists checks 74-76.
+  - tech-humanize's examples follow its own dash rules.
+  - compliance-audit's verifier brief matches SKILL.md.
+  - Authoring history is trimmed from the runtime prompts. idea-audit's composer-not-creator
+    record left the prompt; it stays in git history.
+- **Docs and hooks:**
+  - The codex map's bare-exec effort cross-reference is fixed.
+  - The failure-diagnose nudge no longer demands exit 0 after an expected red test or empty grep.
+  - The "every Task spawn" wording now reads "every session's context".
+- **Not applied, gated:** removing requirement-analyst's self-consistency pass and
+  plan-reviewer's output self-check. The basis for both is Opus 5-specific, so re-run their evals
+  first.
+
 ## [1.1.131] — 2026-09-26
 
 ### Added

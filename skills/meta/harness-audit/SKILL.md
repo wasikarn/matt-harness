@@ -28,6 +28,7 @@ bash "${CLAUDE_SKILL_DIR}/scripts/audit.sh" --only 22  # one check by number
 | Descriptions | 20 <= 1536 chars each, 29 no imperative injection words, 43 cumulative listing budget, 77 <= 25 words + third-person voice |
 | Doc rot | 35 script pointers in prose resolve, 42 reference files carry no leaking frontmatter |
 | Working tree | 70 stray top-level entries (gitignored clutter), 71 paired Codex plugin's review-gate state, 72 spawn-brief's Codex `--effort` set vs the installed plugin |
+| Gates and manifests | 74 subagent-scoped gates keep their `agent_id` presence check, 75 `mh:<skill>` references match `plugin.json`'s shipped skills, 76 measurement-coverage status freshness |
 
 Vendor-validated limits (1536-char descriptions, hook event set, model aliases, name format) are
 WARN, not CRIT: vendor docs lag features, so an unrecognized value is flagged for a human.

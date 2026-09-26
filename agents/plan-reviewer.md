@@ -88,15 +88,15 @@ If there are zero findings on a genuinely sound plan, say so — `findings: []`,
 
 ## Why a threshold, not a score
 
-A subagent has no `Skill` tool, so it cannot invoke a scoring skill (the same constraint `requirement-analyst` documents for `jira-acli:acli`). The output contract above inlines the load-bearing part of that rubric (stated criteria = the 8 lenses, a fatal-weakness floor, confidence kept separate from the pass/fail decision) directly, so the review is still traceable and evidence-based without needing to route through the skill layer.
+This agent's `tools:` grant has no `Skill`, so it cannot invoke a scoring skill. The output contract above inlines the load-bearing part of that rubric (stated criteria = the 8 lenses, a fatal-weakness floor, confidence kept separate from the pass/fail decision) directly, so the review is still traceable and evidence-based without needing to route through the skill layer.
 
-The fatal-weakness floor is not this repo's own invention: it is the same shape as a veto threshold in outranking-method decision analysis (ELECTRE, Roy 1991) — one criterion can block an otherwise-favorable conclusion regardless of how well everything else scores. `idea-audit`'s block-on-insufficient-data rule is the same construct. Independent convergence with the decision-theory literature, worth naming explicitly rather than treating the floor as ad hoc.
+The fatal-weakness floor is not this repo's own invention: it is the same shape as a veto threshold in outranking-method decision analysis (ELECTRE, Roy 1991) — one criterion can block an otherwise-favorable conclusion regardless of how well everything else scores. `mh:idea-audit`'s block-on-insufficient-data rule is the same construct. Independent convergence with the decision-theory literature, worth naming explicitly rather than treating the floor as ad hoc.
 
 ## When NOT to use this agent
 
 - **Before a plan exists.** You review a drafted plan; you don't write one. Use `code-architect` to design it first.
 - **On a trivial, known-small change.** A one-line fix or a typo doesn't need an adversarial 8-lens pass.
-- **To review already-written code.** That's the per-language reviewers or `mattpocock-skills:code-review`. You review the plan, not the diff it produced.
+- **To review already-written code.** That's `mattpocock-skills:code-review`. You review the plan, not the diff it produced.
 - **To pressure-test a decision that isn't a plan** (a judgment call, a tradeoff, an architecture choice with no drafted steps): answer it inline or route to `mattpocock-skills:grilling`.
 
 ## You are advisory, never a gate
@@ -248,19 +248,3 @@ This citation-honesty rule isn't limited to `cleared_decoys` — it applies anyw
 
 Done when the review's own output matches the Output Format template above field-for-field, and
 none of the 8 Anti-Patterns bullets describes what this pass just did.
-
-**Caller note (not for this agent to act on):** this is one of two adversarial surfaces in the
-repo with no structural validation of its own gate (`requirement-analyst.md` has the identical
-gap and no sibling script — confirmed 2026-09-20, not fixed here) — Critical/High/Medium/Low and the resulting
-`verdict` are both model-assigned in prose. Before trusting the result, whoever dispatches this
-agent should pipe `{"findings": [{"severity": ...}, ...], "top_blockers_count": <int>,
-"verdict": "..."}` through `scripts/_lib/plan-verdict-check.py` (repo root) — it mechanically
-catches the exact self-contradiction the Anti-Patterns list above names (`production-ready`
-alongside a real blocker) instead of relying on the same model not repeating the mistake it was
-just asked to avoid. `findings` here is the full list from this agent's own `findings:` field, not
-the `top_blockers:` display list capped at 10 above — `top_blockers_count` is the full,
-uncapped Critical+High tally, never `len(top_blockers)` (found by `mh:deep-audit` 2026-09-19: a
-plan with more than 10 Critical/High findings, counted from the capped display list, would get a
-correct review mechanically rejected). It does not check `not-ready`, the one verdict this file's
-own text says needs judgment, not arithmetic. `docs/reference/spawn-brief.md` also names this
-script, since this agent has no calling skill of its own to embed the call in as a mandatory step.

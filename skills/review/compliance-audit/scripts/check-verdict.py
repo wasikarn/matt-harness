@@ -53,9 +53,8 @@ VERDICTS = {"CONFORMS", "DEVIATED", "MISSING", "UNVERIFIABLE"}
 SHA_RE = re.compile(r"^[0-9a-f]{7,40}$")
 # Mirrors skills/workflow/idea-audit/scripts/check-citations.py's CITATION_RE
 # exactly (M3, harness gap-audit 2026-09-20) -- one regex, not worth a
-# cross-skill-directory import for (idea-audit isn't even a shipped skill
-# per M12's manifest exclusion, so importing from its directory could break
-# the installed plugin). KEEP THIS IN SYNC with that file's CITATION_RE by
+# cross-skill-directory import for (it would couple the two skills' install
+# layouts). KEEP THIS IN SYNC with that file's CITATION_RE by
 # hand -- a compliance-audit follow-up (2026-09-20) found this copy had
 # drifted stale after idea-audit's own numeric-ratio fix (LOW batch) added
 # the letter-requiring lookahead here but not there; nothing catches a future

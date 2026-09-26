@@ -35,7 +35,7 @@ under `~/Codes/Personals/`. Create a native surface only when none fit. Detail:
 ## Authoring
 
 Skills follow `mattpocock-skills:writing-for-agents`; descriptions are at most 25 words, third person
-(they load on every Task spawn). Detail: `docs/reference/skill-authoring-conventions.md`,
+(they ride in every session's context). Detail: `docs/reference/skill-authoring-conventions.md`,
 `docs/reference/agent-authoring-conventions.md`. Routing questions: `/mattpocock-skills:ask-matt`.
 Issue tracker: GitHub Issues on `wasikarn/matt-harness` via `gh`. Domain docs: root `CONTEXT.md`
 plus `docs/adr/`, created lazily by `mattpocock-skills:domain-modeling`; each file under

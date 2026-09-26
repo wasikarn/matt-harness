@@ -98,7 +98,8 @@ def main(argv):
         "<mh-codex-quota-advisory>\n"
         f"A Codex CLI call recorded a usage-limit/rate-limit failure {format_age(age)}: "
         f"\"{state.get('message', '')}\". This dispatch may fail again for the same reason -- "
-        "check whether the limit has reset before retrying, or fall back to Claude directly.\n"
+        "check whether the limit has reset before retrying, or fall back to Claude directly and note \"independence reduced for this pass\" "
+        "(model independence lost, context independence kept).\n"
         "</mh-codex-quota-advisory>"
     )
     print(json.dumps({

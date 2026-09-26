@@ -3,11 +3,10 @@
 # `.claude-plugin/plugin.json`'s `skills` array is the canonical list of what
 # actually ships -- a directory-prefix glob per entry, sometimes a whole
 # bucket (`./skills/meta/`), sometimes one specific skill inside a bucket
-# (`./skills/workflow/ideate/`, which deliberately does NOT also cover its
-# sibling `skills/workflow/idea-audit/`). README.md and
-# docs/reference/codex-integration-map.md both once presented `mh:idea-audit`
-# as a plainly-shipped skill id with no caveat -- wrong, since it isn't in
-# this list. This makes that cross-check mechanical instead of relying on
+# (`./skills/workflow/ideate/`, which covers only that one skill). README.md
+# and docs/reference/codex-integration-map.md both once presented
+# `mh:idea-audit` as shipped while this list excluded it (re-shipped in
+# 1.1.132). This makes that cross-check mechanical instead of relying on
 # remembering the manifest's exact prefixes by hand.
 #
 # Scope, deliberately narrow: only flags an `mh:<name>` reference where a
@@ -88,7 +87,7 @@ PYEOF
     if [ "${#_targets[@]}" -gt 0 ]; then
       _refs=$(/usr/bin/grep -rhoE 'mh:[a-z][a-z0-9-]*' "${_targets[@]}" 2>/dev/null | sed 's/^mh://' | sort -u || true)
     fi
-    _EXPECTED_EXCLUDED="idea-audit ste-lint"
+    _EXPECTED_EXCLUDED="ste-lint"
     for _ref in $_refs; do
       _status=$(printf '%s\n' "$_skill_status" | awk -F'\t' -v n="$_ref" '$1==n{print $2}')
       # No real skills/**/<name>/SKILL.md at all -- an agent name, a

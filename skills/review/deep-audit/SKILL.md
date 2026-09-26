@@ -44,11 +44,11 @@ trajectory, then rollback history, then model confidence last. A dimension with 
 marked **insufficient evidence** and passed through as such; a guessed score is worse than none
 (Rule 14).
 
-The model scores each dimension and writes reasons; `scripts/_lib/weighted-score.py` (repo root)
+The model scores each dimension and writes reasons; the plugin's `scripts/_lib/weighted-score.py`
 does the arithmetic — the weighted total, the pass/fail call, and the "insufficient evidence"
 renormalization — so a wrong hand sum can never reach a Final Verdict:
 ```
-python3 scripts/_lib/weighted-score.py <<< '{"scores": [
+python3 "${CLAUDE_SKILL_DIR}/../../../scripts/_lib/weighted-score.py" <<< '{"scores": [
   {"id": "correctness", "score": <0-10>, "max": 10, "weight": 3, "insufficient": <bool>},
   {"id": "completeness", "score": <0-10>, "max": 10, "weight": 2, "insufficient": <bool>},
   {"id": "claim_accuracy", "score": <0-10>, "max": 10, "weight": 2, "insufficient": <bool>},
@@ -146,7 +146,7 @@ the generic 4-field shape gets a valid response rejected — verify with
 scripts/check-verdict.py`, which exits 1 on "missing=['checked']". `docs/reference/spawn-brief.md`'s
 generic shape is intentionally left unchanged — it backs many unrelated Rule-13 validator
 dispatches that don't need this guard) and note "independence reduced for this pass" in the final
-report, matching `docs/reference/codex-integration-map.md`'s established fallback language.
+report.
 
 On this fallback path there is no `--output-last-message` file and no `--output-schema`, so
 "the output-last-message file parses against the schema" above doesn't apply literally. A live
@@ -155,7 +155,7 @@ prose after the closing code fence — a plain "strip a leading/trailing fence" 
 survive that, since the trailing prose sits after the fence, not inside it. Pipe the agent's raw
 final message to `scripts/check-verdict.py`:
 ```
-python3 skills/review/deep-audit/scripts/check-verdict.py <<< "$AGENT_FINAL_MESSAGE"
+python3 "${CLAUDE_SKILL_DIR}/scripts/check-verdict.py" <<< "$AGENT_FINAL_MESSAGE"
 ```
 A literal `NEEDS-DECISION` anywhere in the text is checked first and always wins over any JSON
 found nearby — the contract is either a verdict object or an escalation, never both, so a
@@ -229,7 +229,7 @@ quality rationale; a change that only moves the score is left out.
   running copy (plugin cache version, restarted session) is a separate claim; say which one the
   evidence covers.
 
-## 6. Whole-picture adversarial challenge (when step 4 landed 2+ fixes)
+## 6. Whole-picture adversarial challenge (when step 4's fixes can interact)
 
 Trigger: step 4 applied 2+ fixes, OR applied exactly 1 fix that touched a function, early-exit
 path, return value, or emitted string that other code, a test, or an out-of-scope consumer reads

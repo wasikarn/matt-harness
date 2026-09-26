@@ -84,7 +84,7 @@ against neighboring agents lives in the description's "Don't use for" clause or 
 
 Before adding an agent, name the concrete task no existing agent covers. If an existing agent's
 domain is close, extend it. A fleet of near-duplicate specialists costs routing ambiguity and
-description tokens on every Task spawn.
+description tokens in every session's context.
 
 ## 8. Closed-vocabulary status codes for branchable output
 
