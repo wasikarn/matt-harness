@@ -160,6 +160,18 @@ Not a candidate: the AskUserQuestion gate and the fan-out cap. Both bound author
 - **One lever per diff (Step 3).** Round 2 bundles three edits. *Fix:* three bumps — flow-nudge quiet → crisp/METHODOLOGY dedupe → MEMORY archive — with a `costs.jsonl` read between.
 - **Re-verify caching after every prompt-assembly change (§ 2.1).** Absent. *Fix:* criterion 6; `costs.jsonl` already carries `cache_write_tokens`/`cache_read_tokens` per row, so the healthy-loop signature (`prompt-caching.md` § Verifying cache hits) is observable with no new tooling.
 - **Cache-invalidation ordering.** Render order is system → tools → messages. Per-turn hook stdout (flow-nudge) and CC's own turn-scoped notes land *inside the current user turn*, after every breakpoint: they grow history, never invalidate. SessionStart stdout and CLAUDE.md/MEMORY.md land once in `messages[0]`. All three round-2 targets are session-start content: editing them changes the prefix *between* sessions only. **No round-2 edit can break prefix stability.** Real in-session breakers are elsewhere: `/model` or an effort change mid-session (caches are model-scoped; effort invalidates the messages cache — § Invalidation hierarchy), a late-connecting MCP server changing the tool list, compaction. Keep `doctrine-bootstrap.sh` free of per-session values (dates, counters) above the METHODOLOGY block; its conditional preflights (`:32-43,53-62`) are per-machine stable and harmless.
+  **Correction (2026-09-26, `mh:idea-audit` of an external post, verified live against
+  `code.claude.com/docs/en/prompt-caching`):** the effort claim above is wrong for this operator's
+  actual setup, and its own "§ Invalidation hierarchy" citation was never real — no such section
+  exists anywhere in this repo (`grep -rn "[Ii]nvalidation hierarchy" .` returns only this one
+  inline mention), so it traced back to a cached bundled-skill snapshot, not a live probe. The
+  real rule, confirmed directly against Anthropic's own docs: on Opus 5.5 and Fable 5.1 with an
+  API key or a Claude subscription (this operator's setup — no gateway, per
+  `docs/research/auto-model-auto-effort-2026-09-26.md:90`), changing effort mid-session **keeps**
+  the cache; it only invalidates on Amazon Bedrock, Google Cloud's Agent Platform, or a Claude
+  apps gateway. Every other model still invalidates its cache on an effort change, as originally
+  stated. Full audit: dotfiles
+  `docs/research/claude-effort-opus55-cost-post-audit-2026-09-26.md`.
 - **Effort before model (§ 2.6 → 2.7).** #5/#6 are unordered in the plan. *Fix:* #6 first, per level in separate sessions; #5 only if `low`/`medium` holds.
 
 ### 4. Prompting guides → harness prompt surfaces (baseline / Fable 5.1 / Opus 5 / Sonnet 5)
