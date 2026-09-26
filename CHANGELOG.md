@@ -24,8 +24,9 @@ quality grader produced a real signal instead of a floor artifact.
 - **`code-architect` stays `high`.** `code-architect-ambiguous-requirement` dropped 1.0→0.667 at
   `medium`: the `names-ambiguity` LLM judge failed outright — the exact thing that case exists to
   test (does the agent call out a genuine two-reading fork, or silently resolve it). Two other
-  cases (`layer-direction`, `premature-abstraction`) hit the sweep's $3 cost ceiling in the
-  baseline arm only, so their full picture is incomplete, but this regression alone is clean.
+  cases hit the sweep's $3 cost ceiling on at least one grader each — `layer-direction` in both
+  arms, `premature-abstraction` in the baseline arm only — so their full picture is incomplete,
+  but this regression alone is clean.
 - **`plan-reviewer` stays `xhigh`.** `plan-reviewer-clean` dropped 0.75→0.5 at `high`: it
   manufactured a finding on a trivial one-file rename that should have scored `production-ready`
   with an empty findings list — precisely the failure mode that case is designed to catch.

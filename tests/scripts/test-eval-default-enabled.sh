@@ -166,6 +166,43 @@ else
   echo "  SKIP: zsh not installed, skipping non-bash-caller case"
 fi
 
+# --- the manifest check is JSON-formatting-tolerant, not an exact-string grep (regression
+# guard: a compact/reformatted "defaultEnabled":false with no space after the colon used to
+# silently miss the grep and skip the flip entirely, re-hitting the no-plugin-fallback bug this
+# helper exists to prevent) ---
+sandbox="$(new_sandbox '{"defaultEnabled":false}')"
+during=$(bash -c "
+source '$sandbox/scripts/_lib/eval-default-enabled.sh'
+with_default_enabled_true cat '$sandbox/.claude-plugin/plugin.json'
+")
+after=$(cat "$sandbox/.claude-plugin/plugin.json")
+[[ "$during" == *'"defaultEnabled": true'* ]] && ok "flips true on a compact-JSON (no-space) manifest" \
+  || bad "did not flip a compact-JSON manifest (got: $during)"
+[[ "$after" == *'"defaultEnabled": false'* ]] && ok "restores false on a compact-JSON manifest" \
+  || bad "did not restore a compact-JSON manifest (got: $after)"
+rm -rf "$sandbox"
+
+# --- a caller's pre-existing INT trap disposition survives a normal return, instead of being
+# permanently cleared to default disposition (regression guard: found by mh:deep-audit
+# 2026-09-26 -- the function used to unconditionally `trap - INT TERM HUP` on the way out,
+# discarding whatever the caller had installed before calling it). Compares before/after `trap
+# -p` output rather than asserting a literal trap string: a non-interactive shell that inherits
+# SIGINT as ignored (the gauntlet's own execution context does) silently refuses to install a
+# NEW trap on it (documented bash behavior), so asserting the literal command would false-fail
+# there even though the disposition -- whatever it was -- is correctly preserved either way ---
+sandbox="$(new_sandbox '{"defaultEnabled": false}')"
+out=$(bash -c "
+trap 'echo caller-int-trap-fired' INT
+before=\$(trap -p INT)
+source '$sandbox/scripts/_lib/eval-default-enabled.sh'
+with_default_enabled_true true >/dev/null 2>&1
+after=\$(trap -p INT)
+[ \"\$before\" = \"\$after\" ] && echo MATCH || echo \"MISMATCH before=[\$before] after=[\$after]\"
+")
+[[ "$out" == "MATCH" ]] && ok "caller's pre-existing INT trap disposition is restored after normal return" \
+  || bad "caller's INT trap disposition changed after normal return ($out)"
+rm -rf "$sandbox"
+
 # --- traps don't leak into the caller's shell after a normal return (a later kill -TERM/-INT/
 # -HUP in the SAME shell must not hit a stale trap referencing an out-of-scope $flipped) ---
 sandbox="$(new_sandbox '{"defaultEnabled": false}')"

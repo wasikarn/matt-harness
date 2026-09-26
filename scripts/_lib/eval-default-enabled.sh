@@ -26,7 +26,7 @@ with_default_enabled_true() {
     return 1
   fi
 
-  local lib_dir root manifest flipped=0 rc
+  local lib_dir root manifest flipped=0 rc current_enabled prev_int prev_term prev_hup
   lib_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
   root="$(cd "$lib_dir/../.." && pwd)"
   manifest="$root/.claude-plugin/plugin.json"
@@ -36,12 +36,24 @@ with_default_enabled_true() {
     return 1
   fi
 
-  if /usr/bin/grep -q '"defaultEnabled": false' "$manifest"; then
+  # JSON-parsed, not a literal-string grep: a reformatted manifest (no space after the colon,
+  # different indentation) still parses to the same boolean and must not silently skip the flip.
+  current_enabled="$(python3 -c "
+import json
+p = '$manifest'
+d = json.load(open(p))
+print('true' if d.get('defaultEnabled') is True else 'false')
+")" || {
+    echo "eval-default-enabled: ERROR $manifest is not valid JSON -- not running the wrapped command" >&2
+    return 1
+  }
+
+  if [ "$current_enabled" = "false" ]; then
     if ! python3 -c "
 import re
 p = '$manifest'
 s = open(p).read()
-s2, n = re.subn(r'\"defaultEnabled\": false', '\"defaultEnabled\": true', s)
+s2, n = re.subn(r'\"defaultEnabled\"\s*:\s*false', '\"defaultEnabled\": true', s)
 assert n == 1, f'expected exactly one defaultEnabled: false in {p}, found {n}'
 open(p, 'w').write(s2)
 "; then
@@ -59,12 +71,25 @@ open(p, 'w').write(s2)
 import re, sys
 p = '$manifest'
 s = open(p).read()
-s2, n = re.subn(r'\"defaultEnabled\": true', '\"defaultEnabled\": false', s)
+s2, n = re.subn(r'\"defaultEnabled\"\s*:\s*true', '\"defaultEnabled\": false', s)
 if n == 1:
     open(p, 'w').write(s2)
 else:
     print(f'eval-default-enabled: WARNING could not restore defaultEnabled: false in {p} (found {n} matches) -- fix manually', file=sys.stderr)
 "
+  }
+  # Capture whatever signal traps the CALLER already had before we install our own, so we can
+  # put them back instead of permanently clearing them to default disposition -- a caller that
+  # wraps this call inside its own trap-based cleanup (e.g. a sweep script's EXIT trap) must get
+  # its INT/TERM/HUP handling back afterward, not lose it silently.
+  prev_int="$(trap -p INT)"
+  prev_term="$(trap -p TERM)"
+  prev_hup="$(trap -p HUP)"
+  _restore_signal_traps() {
+    trap - INT TERM HUP
+    [ -n "$prev_int" ] && eval "$prev_int"
+    [ -n "$prev_term" ] && eval "$prev_term"
+    [ -n "$prev_hup" ] && eval "$prev_hup"
   }
   # RETURN alone only fires on normal function return -- it doesn't fire if a signal kills the
   # wrapped command mid-run, and it doesn't fire under a CALLER's `set -e` (errexit skips the
@@ -72,12 +97,12 @@ else:
   # rc=$?` keeps the wrapped command's own failure from ever triggering errexit, so control
   # always reaches `return "$rc"` and fires RETURN normally; (2) INT/TERM/HUP are trapped
   # separately, restore, then re-raise the same signal so the process still actually terminates
-  # instead of silently surviving the interrupt. Every trap also clears all four of its own kind
-  # on the way out, so nothing leaks into the caller's shell after this function returns.
-  trap '_restore_default_enabled; trap - RETURN INT TERM HUP' RETURN
-  trap '_restore_default_enabled; trap - RETURN INT TERM HUP; kill -INT $$' INT
-  trap '_restore_default_enabled; trap - RETURN INT TERM HUP; kill -TERM $$' TERM
-  trap '_restore_default_enabled; trap - RETURN INT TERM HUP; kill -HUP $$' HUP
+  # instead of silently surviving the interrupt. Every trap also clears itself and reinstates
+  # whatever the caller had before, so nothing leaks into or vanishes from the caller's shell.
+  trap '_restore_default_enabled; trap - RETURN; _restore_signal_traps' RETURN
+  trap '_restore_default_enabled; _restore_signal_traps; kill -INT $$' INT
+  trap '_restore_default_enabled; _restore_signal_traps; kill -TERM $$' TERM
+  trap '_restore_default_enabled; _restore_signal_traps; kill -HUP $$' HUP
 
   "$@" || rc=$?
   return "${rc:-0}"
