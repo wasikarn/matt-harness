@@ -85,3 +85,36 @@ never launched and either retry them or say so plainly in the report.
 When two leaves' FILES YOU OWN sets aren't disjoint — one owns a path that is an ancestor or
 descendant of the other's, or they name the same file — dispatch them sequentially instead of
 trusting a glance across the wave.
+
+## Isolated checkout dispatch (opt-in pilot, 2026-09-28)
+
+A subagent normally shares its parent session's live worktree (`docs/reference/branching-model.md`,
+"Concurrent sessions") — file-collision risk is handled by FILES YOU OWN discipline and sequential
+dispatch, not filesystem isolation. For a **builder** dispatch that already trips Rule 13's
+validator requirement (2+ files, or adds a test), the dispatcher may instead give it its own
+worktree, reusing `skills/review/compliance-audit`'s existing disposable-worktree pattern
+(`docs/reference/codex-integration-map.md`'s compliance-audit row) rather than inventing a new
+mechanism — the difference is this pilot merges its result back; compliance-audit's verifier
+worktree is always discarded.
+
+1. **Create** (dispatcher, before launching the Agent call): `git worktree add <path> -b
+   subagent/<slug> HEAD` — a real branch, not `--detach` like compliance-audit's read-only
+   verifier pin, because this one needs somewhere to commit onto. `<path>` under
+   `.claude/worktrees/` (gitignored, matches the session-level convention).
+2. **Brief**: FILES YOU OWN names paths under `<path>`, given as absolute paths (Read/Write/Edit
+   have no cwd concept) or with an explicit `cd <path> &&` prefix on every Bash git command. The
+   subagent commits its own work there — `gate:bash:subagent-git-guard` only denies
+   `stash`/`reset`/`clean`, `git add`/`git commit` inside the worktree are unaffected.
+3. **Validate**: the fresh-context validator reads `git -C <path> diff <base-sha>..HEAD`, not the
+   shared tree — `scope_ok`/`unexpected_files` are computed against that diff.
+4. **Clean completion** (validator `pass: true`): dispatcher runs `git merge --no-ff subagent/<slug>`
+   from its own worktree, then `git worktree remove <path>` and `git branch -d subagent/<slug>`.
+5. **Anything else** (validator reject, cancelled, interrupted): do not merge. Leave the worktree in
+   place and say so in the report — mirrors a retained clone on non-clean completion; the operator
+   decides whether to salvage, retry, or discard it. Never `git worktree remove --force` or `trash`
+   it without being asked; an unmerged worktree is someone's unlanded work, same as any other
+   uncommitted state this repo already treats carefully.
+
+Revisit whether this earns a dedicated helper (script or skill) only if it sees repeated real use —
+`docs/research/oh-my-openagent-adoption-audit-2026-09-28.md`'s own adoption audit scored this the
+one mechanism worth a pilot, not a default.

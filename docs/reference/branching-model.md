@@ -52,7 +52,11 @@ discipline:
   concurrent sessions via an atomic lock — see the script's own header for the lock protocol.
 - **A subagent shares its parent session's worktree**, not a worktree of its own — the same
   stage-by-path discipline still applies to it (`gate:bash:subagent-git-guard` denies a bare
-  `stash`/`reset`/`clean`; verify `git diff --cached --name-only` before committing).
+  `stash`/`reset`/`clean`; verify `git diff --cached --name-only` before committing). **Opt-in
+  exception (2026-09-28):** a builder dispatch that already trips Rule 13's validator requirement
+  may instead get its own worktree, merged back only on a clean validator pass —
+  `docs/reference/spawn-brief.md`'s "Isolated checkout dispatch" section. Not the default; the
+  shared-worktree-plus-discipline model above still applies to every other dispatch.
 - **`ListAgents`/`SendMessage` file-claim discipline** (`~/.claude/CLAUDE.md`, injected globally)
   still applies to anyone touching a file another live session might also touch — worktree
   isolation removes the *working-tree* collision, not a collision in a file both sessions read
