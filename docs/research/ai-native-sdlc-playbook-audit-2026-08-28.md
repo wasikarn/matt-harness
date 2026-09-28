@@ -389,3 +389,134 @@ plugin-cache version bump needed):
   to run `/mh:recursive-improve`, and the possessive reference to that skill's name, from the
   live GH-issue-comment body — that skill doesn't exist anywhere in the repo (confirmed via grep
   across `skills/`, `scripts/`, `hooks/`).
+
+## Round 4 — full independent re-scan via `mh:idea-audit` (2026-09-28)
+
+**Date:** 2026-09-28
+**Source:** `claude.com/blog/the-ai-native-sdlc-playbook`, fetched raw (`curl`, 642 KB, no
+WebFetch banner) to a scratchpad copy and read directly — Rounds 1-3 above were explicitly not
+read as evidence for this pass (user asked for a full re-derivation from current repo state, not
+an increment on the prior verdict).
+**Verdict:** mh's coverage of the article's six-stage framework is stronger than a rough copy in
+most stages (Build, Test, and the institutional-knowledge half of Design are full or
+better-than-described matches), correctly N/A on stages assuming a multi-role org or a deployed
+service mh doesn't have, and has exactly one hard, deliberate architectural conflict (Stage 6's
+autonomous σ-band loop) that three prior ADRs have already rejected. The genuine open gaps are
+narrow: credential-content scanning (the best-fitting candidate, but with a wider blast radius
+than first scoped — it runs at plugin level, in every host project), evals-in-CI wiring (newly
+cheap now that `claude plugin eval` runs for real), a gate-journal reader (can only produce an
+ask-count metric, not the wait-time metric first claimed), and a legacy-system-linkage hook
+(theoretical for mh itself, real only for host projects that adopt it).
+**Score:** 81/100 — **PASS** (threshold 65; confidence high). Full criteria table below.
+
+### Method
+
+Ran the `mh:idea-audit` skill in full: 2 isolated `general-purpose` analysts (Agent A — claims,
+checked against the live repo; Agent B — fit, checked against the live repo), one adversarial
+Codex attacker (`gpt-6-sol`/medium, read-only sandbox) that independently re-verified both
+reports' claims against the saved source and the repo, then this reconciliation. The attacker
+returned `pass: false` with 5 findings, all citation-verified via `check-citations.py`; two were
+independently re-confirmed here (see below) before folding them into the table.
+
+**Attacker findings that changed the record:**
+1. Agent B's "34 skills, 4 buckets" was wrong — re-checked directly: `find skills -name SKILL.md
+   | wc -l` → **12** (matches Agent A and the attacker). Doesn't change the fit verdict (skills
+   are still a full match as a pattern), but knocks down confidence in Agent B's own diligence.
+2. Agent B called per-session git-worktree isolation a "full match" — this is backwards. Agent A
+   had it right: `docs/reference/branching-model.md:3,16` — single `develop` branch, concurrent
+   sessions **share** one working tree by design. Corrected to GAP below.
+3. Agent B's proposed gate-journal reader can't produce the "approval wait-time" metric it
+   claimed: `hooks/gates/_journal.py:37-43` records timestamp/gate/tool/decision/session, not
+   resolution time. A reader could produce an ask-count metric, not wait-time.
+4. Agent B understated the credential-content gate's blast radius: it's a plugin-level
+   `Write|Edit` hook (`hooks/hooks.json:103-125`) that would run in **every host project** that
+   loads mh, not a self-contained addition — a false-positive-prone naive regex would interrupt
+   writes repo-wide across all of them, not just this repo.
+5. Agent A's eval-suite count (70) is the stale README figure, not the live count. Re-checked:
+   `find evals -mindepth 1 -maxdepth 1 -type d ! -name results | wc -l` → **76** — the third
+   recorded instance of this exact count drifting (Round 3 already flagged it twice).
+
+### Claim-by-claim: article's practices vs. mh's current mechanism
+
+Legend: `MATCH` = confirmed against primary evidence · `PARTIAL` = partially confirmed ·
+`GAP` = not found / contradicted · `N-A` = not applicable to this repo's domain.
+
+| # | Claim | Verified? | This repo's posture | Verdict |
+|---|---|---|---|---|
+| 1 | Six-stage SDLC (Plan/Design/Build/Test/Deploy/Maintain), each ending in a committed artifact | Yes — observed directly (source, line ~2691) | The article's own framework, not a claim about mh | N-A |
+| 2 | Per-change `intent.md`→`spec.md`→`plan.md` artifact triplet | Yes — observed directly | mh has topic-scoped committed artifacts (ADRs, `docs/plans/`, post-mortems) but no per-feature triplet convention; `find . -iname 'intent.md' -o -iname 'spec.md'` → none | PARTIAL |
+| 3 | Root `CLAUDE.md` as repo context, corrected when Claude repeats a mistake twice | Yes — observed directly | `CLAUDE.md` exists, tracked, short (map-only); the specific "second-mistake" rule isn't documented anywhere (`grep -i "mistake\|repeats" CLAUDE.md docs/METHODOLOGY.md` → none) | PARTIAL |
+| 4 | Skills = institutional knowledge, `SKILL.md` + frontmatter | Yes — observed, multi-instance, attacker-corrected count | 12 skills (not 34), sampled shape matches | MATCH |
+| 5 | Subagents = markdown with name/description/tools | Yes — observed, multi-instance | 10 agent files, frontmatter shape matches plus mh-specific fields | MATCH |
+| 6 | Hooks are deterministic; a block should explain itself | Yes — observed, live-confirmed mid-session | `hooks/gates/irrecoverable.sh` blocked a real command this session with a self-explaining message | MATCH |
+| 7 | A hook should back a skill's must-hold policy (e.g. protect test files during a fix) | Yes — observed directly | `hooks/gates/test-integrity.sh` exists for exactly this, cites METHODOLOGY Rule 4 by name | MATCH |
+| 8 | Managed settings lock down local engineer settings | Not independently checkable | No committed `.claude/settings.json` — mh is a plugin, not an org deploying managed settings | N-A |
+| 9 | Continuous evals (20-50 cases) gate merges in CI on every config change | Yes — observed directly | 76 cases exist (`evals/README.md` says 70, stale) in native `claude plugin eval` layout; **not wired into any CI workflow** — runs manually only | GAP |
+| 10 | A scheduled drift/eval check, separate from the push/PR gate | Yes — observed directly | `.github/workflows/harness-audit-drift.yml`, weekly cron, deterministic structural audit | MATCH |
+| 11 | `REVIEW.md` + managed/`claude-code-action` PR review, gated by branch protection | Yes — observed directly | No `REVIEW.md`, no PR flow at all (`docs/reference/branching-model.md`: single-branch `develop`, no feature branches) — architecturally excluded, not under-built | GAP |
+| 12 | Plan mode as the default start; committed as `plan.md` | Yes — observed directly | Plan mode is risk-triggered (METHODOLOGY Rule 1), not universal; no `plan.md` artifact convention | PARTIAL |
+| 13 | One Claude Code instance per git worktree, isolating sessions | Yes — observed directly, attacker-corrected (Agent B had this backwards) | Concurrent sessions deliberately **share** one working tree; discipline (file-claiming via `ListAgents`/`SendMessage`) substitutes for isolation | GAP |
+| 14 | CI/CD: `claude -p` in pipelines, autonomy tiered dev/staging/production | Not independently checkable | No deployment pipeline or environments exist in this repo at all | N-A |
+| 15 | Control-band / statistical-process-control (σ-tier) monitoring | Yes — observed absent | Zero hits for sigma/control-band/Western-Electric anywhere in tracked files | GAP |
+| 16 | Claude Security (scheduled vuln scanning) + Claude Tag (chat on-call bot) | Yes — observed absent | Zero references; both need a standing hosted service, a different surface class than a Claude Code plugin | GAP |
+| 17 | OpenTelemetry export of leading/lagging indicators | Yes — observed directly | `CHANGELOG.md` shows this was explicitly deferred 2026-06-12 and is still unresolved; actual metric path is a local JSONL log, not OTEL | GAP |
+| 18 | Every stage defines a measurable leading + lagging indicator | Author-asserted (general practice) | `mh:deep-audit`'s before/after scoring is analogous but scoped to one audit pass, not continuous per-stage dashboards | PARTIAL |
+| 19 | A CI gauntlet regression-tests the agent's configuration on every push/PR | Yes — observed directly | `.github/workflows/validate.yml` runs validate-plugin + harness-audit + the full test gauntlet on push/PR | MATCH |
+| 20 | Legacy-system / source-of-truth linkage automation | Yes — observed directly | `hooks/advisory/jira-route-nudge.sh` existed, deleted in the 2026-09-05 rebuild, never rebuilt; theoretical gap for mh itself (no Jira here), real only for host projects | GAP |
+| 21 | Credential/secret-content scanning on new diff content | Yes — observed directly, attacker-corrected blast radius | Zero scanning today (`credential-guard.sh` deleted 2026-09-05); fits the existing `Write\|Edit` gate pattern cleanly, but runs at plugin level across every host project — wider blast radius than first scoped | GAP |
+| 22 | Committed-artifact chain discipline, practiced consistently | Yes — observed directly | mh's own 2026-09-12 tier-list failure (Round 3, above) is a documented instance of mh *not* following the practice this article argues for | PARTIAL |
+| 23 | Per-gate "time waiting on approval" as a measurable indicator | Yes — observed directly, attacker-corrected | `hooks/gates/_journal.py` writes decisions with no reader; a reader would yield an ask-count metric, not the wait-time metric a naive reading suggests | PARTIAL |
+
+### Shipped
+
+Nothing — this is a read-only research pass. The user chose "re-scan, don't fix" for this round.
+
+### Deliberately not shipped (standing decisions, reaffirmed this round)
+
+- **Stage 6's autonomous σ-band-triggered Claude invocation** — `docs/reference/operating-model.md`
+  ("the model never starts work on its own; every wave begins with a human") **and** ADR-0006 /
+  ADR-0009 / ADR-0011, all citing the same no-autonomous-launch invariant. **Declined on
+  evidence** — a hard architectural conflict, not a missing build. Any future audit that reopens
+  this needs the user to reverse a named invariant, not a build proposal.
+- **`REVIEW.md` + `claude-code-action`-style automated PR review** — `docs/reference/branching-model.md`
+  (single-branch `develop`, no feature branches, no PR flow to gate). **Premise dead** for this
+  repo's current branching model.
+- **Claude Tag / chat-channel on-call bot** — needs a standing hosted service outside the plugin
+  surface entirely. **Premise dead** for a Claude Code plugin repo.
+- **Managed enterprise settings.json** — reaffirmed from the 2026-08-29 third-pass re-audit: mh
+  is single-operator, no MDM/admin-console context exists. **Declined on evidence.**
+
+### Decision score (METHODOLOGY Rule 14)
+
+| Criterion | Weight | Score | Reason |
+|---|---|---|---|
+| Primary-source fidelity | 50 | 88/100 | Real raw fetch (642 KB, no lossy-extraction banner); most checkable claims verified against 2+ instances each (12 skills, 10 agents, 15 gates); attacker found only 1 factual slip in Agent A (stale eval count) among 19 claims |
+| Fit (does mh have the need this claims to solve) | 30 | 78/100 | Strong match on Build/Test/Design-institutional-knowledge; correct N/A calls on Plan/most-of-Deploy; but 2 of Agent B's own fit-supporting claims (skill count, worktree-isolation direction) were wrong and had to be corrected by the attacker |
+| Blast-radius / reversibility of what's recommended | 20 | 68/100 | The flagship candidate (credential-content gate) has a wider deployment footprint than first scoped — plugin-level, runs in every host project — though still reversible; the other 3 gap items are genuinely small and reversible |
+
+Weighted sum: 88×0.50 + 78×0.30 + 68×0.20 = 44.0 + 23.4 + 13.6 = **81.0/100**. Pass threshold 65,
+fatal-weakness floor 40% of each criterion's own max — no criterion tripped it (lowest was 68%).
+**PASS.** Confidence: high (2 isolated analysts + 1 independent adversarial attacker with
+mechanically-validated citations; the attacker's own findings were spot-checked directly in this
+session, not accepted at face value).
+
+### Open questions
+
+Ranked, ready-to-resume starting point for a future build session — none of these were built this
+round:
+1. **Credential-content scanning gate** — closest architectural fit, but needs a real
+   allowlist/entropy-threshold design (not a naive regex) *before* building, given the corrected
+   plugin-wide blast radius. Revisit when: the user decides to build it, or a real secret leak
+   incident occurs first.
+2. **Evals-in-CI wiring** — cheap now (the hard part, real `claude plugin eval` runs, shipped
+   2026-09-26); "gate on pass-rate" needs a separate branch-protection decision `develop` doesn't
+   have today. Revisit when: branch protection is added, or the manual eval sweep cadence becomes
+   a felt pain point.
+3. **Gate-journal reader** — small, deliberately deferred since v1.1.89; only yields an ask-count
+   metric, not wait-time, per the attacker's correction. Revisit when: someone wants to query gate
+   activity for a specific investigation.
+4. **Legacy/source-of-truth linkage hook** (`jira-route-nudge.sh` equivalent) — cheap if rebuilt,
+   but solves a problem this repo doesn't have (no Jira here); real only for host projects that
+   adopt mh. Revisit when: a host-project user reports needing it.
+5. **`evals/README.md`'s case count** (70 → 76, third drift) — one-line hygiene fix, not a design
+   decision. Revisit: next time anyone touches that file.
