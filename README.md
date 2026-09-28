@@ -83,7 +83,10 @@ score not feel. `git-hooks/pre-commit` refuses a `docs/METHODOLOGY.md` over 4096
   `post-mortem`, and `cost-report`; five for `tech-humanize`; a run and an abort case for `ideate`.
   Recompute the count with `find evals -mindepth 1 -maxdepth 1 -type d ! -name results | wc -l`
   rather than trust a stale literal here. `tests/evals/test-eval-cases.sh` keeps them loadable
-  while the runner is early-access gated (`evals/README.md`).
+  while the runner is early-access gated (`evals/README.md`). No CI wiring — each run is a paid
+  API call and this repo has no `ANTHROPIC_API_KEY` secret — so `scripts/eval-changed.sh` is the
+  local substitute: run it after editing an agent/skill file and it prints the `claude plugin
+  eval` command(s) for just the tags you touched (`--run` to execute instead of print).
 - **Stop hooks:** `cost-tracker.sh` (per-session token cost to `~/.local/share/kbg/metrics/costs.jsonl`),
   `memory-audit-commit.sh` (commits a git-backed memory store, opt-in).
 - **Optional pairing:** `codex@openai-codex`, installed separately and routed to by name for a

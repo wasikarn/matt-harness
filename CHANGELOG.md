@@ -3,6 +3,25 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.143] — 2026-09-28
+
+Closes the "evals-in-CI wiring" item from `mh:idea-audit`'s Round-4 re-scan of the AI-Native SDLC
+playbook — as a local-only substitute, not an actual CI job: this repo has no `ANTHROPIC_API_KEY`
+GitHub secret, and every `claude plugin eval` run is a paid API call, so wiring it into
+`.github/workflows/validate.yml` was declined in favor of a developer-triggered script.
+
+### Added
+
+- **`scripts/eval-changed.sh`.** Maps changed `agents/*.md`/`skills/*/*/` files (working-tree diff
+  by default, or `<ref>...HEAD` when a ref is passed) to their `claude plugin eval` tag — every
+  skill directory name and agent file basename already equals its eval tag 1:1, confirmed live
+  before writing this (`find skills -name SKILL.md` / `find agents -name '*.md'` vs. every
+  `tags: [...]` line in `evals/*/prompt.md`, no mismatches). Prints the ready-to-run command per
+  tag by default; `--run` executes instead. `--allow-tools` for each tag is computed as the union
+  of `allowed_tools` declared across that tag's own eval cases' frontmatter, not a hardcoded
+  duplicate list — reuses data the cases already carry instead of a second source of truth that
+  could drift from it.
+
 ## [1.1.142] — 2026-09-28
 
 New gate: `gate:write:secret-scan`, closing a gap `mh:idea-audit`'s Round-4 re-scan of Anthropic's
