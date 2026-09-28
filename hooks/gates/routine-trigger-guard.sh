@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Gate: ask-tier confirmation before RemoteTrigger/CronCreate creates or fires
-# a scheduled/remote cloud session (a Routine). Closes the gap ADR 0004 names
-# in its own [R1 fix] to §4 ("nothing gates the model from creating or firing
-# a Routine in the first place") -- matches Phase B's `gh pr merge` ask-tier
-# rule in irrecoverable.py in shape and posture (ask, not deny: a legitimate,
-# operator-approved action).
+# Gate: ask-tier confirmation before RemoteTrigger creates, updates, runs, or
+# wires a webhook onto a Routine (a cloud session). Closes the gap ADR 0004
+# names in its own [R1 fix] to §4 ("nothing gates the model from creating or
+# firing a Routine in the first place") -- matches Phase B's `gh pr merge`
+# ask-tier rule in irrecoverable.py in shape and posture (ask, not deny: a
+# legitimate, operator-approved action). CronCreate is out of scope (mh:deep-
+# audit, 2026-09-28): it only re-enqueues a prompt in this same, already-
+# attended session -- see routine-trigger-guard.py for the full rationale.
 set -uo pipefail
 
 # Portability guard (#93): announced fail-open when python3 is missing.

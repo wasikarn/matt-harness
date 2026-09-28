@@ -84,7 +84,7 @@
       },
       {
         "id": "gate:tool:routine-trigger-guard",
-        "description": "Ask before RemoteTrigger/CronCreate creates or fires a scheduled/remote cloud session (a Routine) -- interactive-session-only, cannot constrain a Routine already running outside this session (ADR 0004).",
+        "description": "Ask before RemoteTrigger creates, updates, runs, or wires a webhook onto a Routine (mutating/firing actions only, not list/get/list_runs/get_run_log) -- interactive-session-only, cannot constrain a Routine already running outside this session (ADR 0004). CronCreate is out of scope: session-only, no new credential.",
         "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/routine-trigger-guard.sh\""
       },
       {

@@ -3,6 +3,41 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.153] — 2026-09-28
+
+`mh:deep-audit` on PRs #167-#170 (baseline 6.8/10, fail): an independent Codex checker found the
+1.1.151 gate action-blind (asked on every `RemoteTrigger` action, including read-only `list`/
+`get`) and `CronCreate` misclassified as a cloud-Routine trigger — its own tool description says
+jobs are session-only, in-memory, and die when the session ends, so it re-enqueues a prompt in the
+same already-attended session and grants no new credential. Both fixed:
+`gate:tool:routine-trigger-guard` now asks only on `RemoteTrigger`'s `create`/`update`/`run`/
+`create_webhook_trigger` actions (fails toward asking on a missing or unrecognized action, allows
+`list`/`get`/`list_runs`/`get_run_log`); `CronCreate` is dropped from `hooks.json`'s matcher
+entirely. `docs/reference/operating-model.md`'s gate table, `hooks/hook-registry.json`'s
+description, and the auto-memory record are corrected to match. `tests/hooks/test-gates.sh` gains
+per-action ask/allow cases plus a missing-sibling-script regression test this gate never had —
+346/346 passing (up from 336).
+
+Also closed three doc-accuracy findings from the same checker pass, all inside
+`docs/adr/0004-operator-authorized-routine-self-launch.md` (a new dated addendum, `status:
+proposed` unchanged): §4/§5's pre-gate "nothing gates a Routine's creation" language is now marked
+superseded now that item 6 has shipped; the `operating-model.md:100` citation is annotated (not
+edited in place — a later, unrelated edit shifted the quote to line 102) rather than corrected;
+and the round-1 block's own stale-forward-reference edit (made in the 1.1.150 commit) is now
+noted as itself a deviation from this ADR's normally-additive addendum convention, not silently
+left as if it never happened.
+
+A follow-up `mh:blind-spot-hunter` pass on this fix set found one more real defect: a non-string
+`tool_input.action` (a list or dict) crashed the gate's `action in READ_ONLY_ACTIONS` check with
+an unhandled `TypeError`, and Claude Code treats a non-zero, non-2 hook exit as non-blocking —
+the call went through with no ask, silently allowing the exact case this gate exists to catch.
+Fixed by coercing any non-string action to `None` before the membership check, so it falls
+through to asking like any other unrecognized value; also fixed two cosmetic issues from the same
+pass — the ask-reason text asserted the action *does* create/modify/fire a Routine even when the
+action is unknown (now says "may"), and the new ADR addendum's §5 quote was reworded from the
+source's actual wording ("does not ship with this ADR" vs. "None of items 2-6 ship with this
+ADR" — now verbatim).
+
 ## [1.1.152] — 2026-09-28
 
 Records a 2-round adversarial debate on ADR 0004, run at the operator's explicit request after
