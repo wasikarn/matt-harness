@@ -3,6 +3,23 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.144] — 2026-09-28
+
+Closes the "gate-journal reader" item from `mh:idea-audit`'s Round-4 re-scan of the AI-Native SDLC
+playbook — scoped as the audit itself corrected it: an ask-count metric, not the approval
+wait-time metric first claimed (`hooks/gates/_journal.py`'s row has no resolution timestamp to
+derive that from).
+
+### Added
+
+- **`mh:gate-report` skill** (`skills/meta/gate-report/`), mirroring `mh:cost-report`'s shape: one
+  script (`scripts/gate-report.py`) reads `~/.local/share/kbg/metrics/gate-decisions.jsonl` (or
+  `MH_GATE_JOURNAL_PATH`, the same env var `_journal.py` itself already reads) and prints ask/deny
+  counts by gate id and by tool, plus the covered date range. Missing/empty journal and malformed
+  lines are handled without a traceback. `tests/skills/test-gate-report.sh` (10 cases) pins the
+  count math, the decision-bucket separation (`ask`/`deny`/`allow-suppressed` never merged), and
+  both edge paths.
+
 ## [1.1.143] — 2026-09-28
 
 Closes the "evals-in-CI wiring" item from `mh:idea-audit`'s Round-4 re-scan of the AI-Native SDLC

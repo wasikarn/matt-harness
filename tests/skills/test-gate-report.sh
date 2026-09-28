@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# Regression test for the mh:gate-report skill's script,
+# skills/meta/gate-report/scripts/gate-report.py. Points it at a synthetic
+# MH_GATE_JOURNAL_PATH so it never touches the real
+# ~/.local/share/kbg/metrics/gate-decisions.jsonl, and checks the ask-count math
+# plus the missing-file and malformed-line paths.
+# Run standalone: bash tests/skills/test-gate-report.sh
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+REPORT_PY="$ROOT/skills/meta/gate-report/scripts/gate-report.py"
+SKILL_MD="$ROOT/skills/meta/gate-report/SKILL.md"
+
+pass=0
+fail=0
+
+assert() {
+  local desc="$1" ok="$2"
+  if [[ "$ok" == "1" ]]; then
+    echo "  ✅ $desc"
+    pass=$((pass + 1))
+  else
+    echo "  ❌ $desc" >&2
+    fail=$((fail + 1))
+  fi
+}
+
+[[ -f "$REPORT_PY" ]] || { echo "FATAL: $REPORT_PY not found — the gate-report skill's script moved without updating this test" >&2; exit 1; }
+[[ -f "$SKILL_MD" ]] || { echo "FATAL: $SKILL_MD not found — the skill moved without updating this test" >&2; exit 1; }
+
+TMPDIR_TEST="$(mktemp -d)"
+trap 'trash "$TMPDIR_TEST" 2>/dev/null || rm -rf "$TMPDIR_TEST"' EXIT
+
+echo "=== gate-report ==="
+
+# Wiring guard: the skill must invoke this exact script, not a copy.
+assert "SKILL.md references scripts/gate-report.py" \
+  "$(grep -c 'scripts/gate-report.py' "$SKILL_MD" | grep -qv '^0$' && echo 1 || echo 0)"
+
+JOURNAL="$TMPDIR_TEST/gate-decisions.jsonl"
+cat > "$JOURNAL" <<'EOF'
+{"ts": "2026-09-27T10:00:00Z", "id": "gate:write:secret-scan", "tool_name": "Write", "decision": "ask", "session_id": "s1"}
+{"ts": "2026-09-27T10:05:00Z", "id": "gate:write:secret-scan", "tool_name": "Edit", "decision": "ask", "session_id": "s1"}
+{"ts": "2026-09-28T09:00:00Z", "id": "gate:bash:irrecoverable", "tool_name": "Bash", "decision": "deny", "session_id": "s2"}
+{"ts": "2026-09-28T09:10:00Z", "id": "gate:write:secret-scan", "tool_name": "Write", "decision": "allow-suppressed", "session_id": "s2"}
+not-json-garbage
+EOF
+
+out="$(MH_GATE_JOURNAL_PATH="$JOURNAL" python3 "$REPORT_PY")"
+rc=$?
+assert "exits 0 on a populated journal" "$([[ $rc -eq 0 ]] && echo 1 || echo 0)"
+assert "counts 4 events, skips the 1 garbage line" \
+  "$(grep -q '^Gate journal: 4 ask/deny event(s), 1 unparsable line(s) skipped$' <<<"$out" && echo 1 || echo 0)"
+assert "secret-scan ask count is 2, not double-counted across tools" \
+  "$(grep -qE '^ *2  gate:write:secret-scan  ask$' <<<"$out" && echo 1 || echo 0)"
+assert "irrecoverable deny counted separately from secret-scan" \
+  "$(grep -qE '^ *1  gate:bash:irrecoverable  deny$' <<<"$out" && echo 1 || echo 0)"
+assert "allow-suppressed kept as its own decision bucket, not folded into ask" \
+  "$(grep -qE '^ *1  gate:write:secret-scan  allow-suppressed$' <<<"$out" && echo 1 || echo 0)"
+assert "range line uses the earliest and latest ts" \
+  "$(grep -q '^Range: 2026-09-27T10:00:00Z .. 2026-09-28T09:10:00Z$' <<<"$out" && echo 1 || echo 0)"
+
+MISSING="$TMPDIR_TEST/does-not-exist.jsonl"
+out_missing="$(MH_GATE_JOURNAL_PATH="$MISSING" python3 "$REPORT_PY")"
+rc_missing=$?
+assert "missing journal exits 0" "$([[ $rc_missing -eq 0 ]] && echo 1 || echo 0)"
+assert "missing journal prints the documented line, not a traceback" \
+  "$([[ "$out_missing" == "Gate journal not set up." ]] && echo 1 || echo 0)"
+
+EMPTY="$TMPDIR_TEST/empty.jsonl"
+: > "$EMPTY"
+out_empty="$(MH_GATE_JOURNAL_PATH="$EMPTY" python3 "$REPORT_PY")"
+assert "empty journal reports empty, not a divide-by-zero" \
+  "$(grep -q '^Gate journal is empty' <<<"$out_empty" && echo 1 || echo 0)"
+
+echo
+echo "=== $pass passed, $fail failed ==="
+[[ $fail -eq 0 ]]
