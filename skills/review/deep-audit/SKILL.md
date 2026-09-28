@@ -120,13 +120,13 @@ Choose `<selected-model>` and `<selected-effort>` using
 for this adversarial checker. Check availability and remaining quota before a substantial run.
 Raise effort only for a concrete reasoning need; acceptance criteria below never weaken.
 `<schema-file>` is `references/checker-output-schema.json` (this skill's own JSON Schema for
-`{pass, findings[], checked[], scope_ok, unexpected_files[]}`). This is sandboxed against
+`{contract_version, pass, findings[], checked[], scope_ok, unexpected_files[]}`). This is sandboxed against
 model-generated shell commands (`codex exec --help`'s own wording) plus the brief's no-mutation
 line above — not an unqualified "read-only, guaranteed," since neither layer alone covers every
 tool an environment might load.
 
 **Accept the result only if all of:** `codex exec` exits 0; the output-last-message file parses
-against the schema with all five fields present, **`checked[]` non-empty**; and the result shows
+against the schema with all six fields present, **`checked[]` non-empty**; and the result shows
 real review evidence — findings that each cite one checkable fact, or an explicit, legitimate
 zero-findings pass (see below) — and does not state or imply it couldn't or didn't complete the
 review. Schema-valid JSON that still refuses in prose is not review evidence. `checked[]` is required because
@@ -138,12 +138,13 @@ a failure, never a fallback trigger.
 **On any other outcome** — non-zero exit, empty or malformed output, a schema mismatch, timeout,
 auth failure, or a semantic refusal — fall back to a Claude `Explore`/review agent (same brief;
 its return contract is `docs/reference/spawn-brief.md`'s `Validator/re-validator:` shape **plus
-the `checked[]` field this skill requires** — `{pass, findings[], checked[], scope_ok,
-unexpected_files[]}`, not the bare 4-field spawn-brief.md line verbatim: `check-verdict.py` below
-validates both paths against the same unconditional 5-key contract, so a fallback agent following
-the generic 4-field shape gets a valid response rejected — verify with
-`echo '{"pass": true, "findings": [], "scope_ok": true, "unexpected_files": []}' | python3
-scripts/check-verdict.py`, which exits 1 on "missing=['checked']". `docs/reference/spawn-brief.md`'s
+the `checked[]` and `contract_version` fields this skill requires** — `{contract_version, pass,
+findings[], checked[], scope_ok, unexpected_files[]}`, not the bare 4-field spawn-brief.md line
+verbatim: `check-verdict.py` below validates both paths against the same unconditional 6-key
+contract, so a fallback agent following the generic 4-field shape gets a valid response rejected —
+verify with `echo '{"pass": true, "findings": [], "scope_ok": true, "unexpected_files": []}' |
+python3 scripts/check-verdict.py`, which exits 1 on "missing=['checked', 'contract_version']".
+`docs/reference/spawn-brief.md`'s
 generic shape is intentionally left unchanged — it backs many unrelated Rule-13 validator
 dispatches that don't need this guard) and note "independence reduced for this pass" in the final
 report.
@@ -163,9 +164,9 @@ hedged/hypothetical object quoted ahead of a real escalation can't override it, 
 JSON-shaped prose after the escalation (an example, a config snippet) can't get misclassified as
 a malformed verdict. Otherwise it scans every `{` in the text (trying every byte in order, not
 just the first — narration before the real JSON can itself contain a brace, e.g. the agent
-echoing this skill's own `{pass, findings[], checked[], scope_ok, unexpected_files[]}`
-return-contract line) and keeps every candidate that fully validates against
-the contract: exact key-set equality (not merely all five keys present — an extra invented field
+echoing this skill's own `{contract_version, pass, findings[], checked[], scope_ok,
+unexpected_files[]}` return-contract line) and keeps every candidate that fully validates against
+the contract: exact key-set equality (not merely all six keys present — an extra invented field
 is rejected too), `pass`/`scope_ok` as real booleans, every `findings[]` item as exactly
 `{summary, evidence}` with string values, **`checked[]` non-empty, every item exactly `{claim,
 evidence}` with string values** — required even on a clean pass, closing the same vacuous-accept
@@ -192,8 +193,8 @@ say, since its "insufficient evidence, left out of the total" allowance would ot
 checker-less run still pass on its remaining dimensions. Say plainly this means the audit
 couldn't verify the work, not that the work is wrong — the two are different claims.
 
-The checker returns `{pass, findings[], checked[], scope_ok, unexpected_files[]}` — its own return value,
-distinct from this skill's Final Verdict and report in "Final output" below.
+The checker returns `{contract_version, pass, findings[], checked[], scope_ok, unexpected_files[]}` — its own
+return value, distinct from this skill's Final Verdict and report in "Final output" below.
 
 Reconcile its findings with your own. A finding survives only with a concrete trigger; a
 speculative "consider X" is dropped. Rank survivors by severity, impact, likelihood, confidence,

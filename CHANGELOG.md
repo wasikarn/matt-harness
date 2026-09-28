@@ -3,6 +3,29 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.145] — 2026-09-28
+
+Ships two items the "Jev-engineering patterns" idea-audit round marked deferred (cheap, real,
+just waiting for a natural trigger — see `docs/research/jev-engineering-playbook-patterns-audit-2026-09-28.md`).
+
+### Added
+
+- **`mh_version` on the gate-verdict journal** (`hooks/gates/_journal.py`): each journaled row now
+  reads `CLAUDE_PLUGIN_ROOT`'s `plugin.json` version, same pattern `cost-tracker.sh` already uses
+  for `costs.jsonl`. `null` on read failure; never affects the gate's own exit code.
+- **`contract_version` on the three judge-output contracts** (deep-audit's checker, idea-audit's
+  attacker, compliance-audit's verifier): each schema now requires an integer `contract_version`
+  matching each script's own `CONTRACT_VERSION` constant. A mismatch — or a caller still emitting
+  the pre-version 4/5-key shape — now fails with an explicit "schema/script/brief may have
+  drifted apart" reason instead of a generic key-set mismatch. Turned out to be a bigger change
+  than the deferred note implied: all three `check-verdict.py` copies do exact key-set matching
+  against `additionalProperties: false` schemas, so this touched every selftest fixture in all
+  three scripts plus their standalone shell tests (`tests/skills/test-*-check-verdict.sh`) and
+  five SKILL.md/reference doc mentions of the literal contract shape. The generic Rule-13
+  `{pass, findings[], checked[], scope_ok, unexpected_files[]}` shape (`docs/reference/spawn-brief.md`,
+  `METHODOLOGY.md`, the `subagent-verdict-check` gate) is a separate, more general contract and is
+  deliberately unversioned here.
+
 ## [1.1.144] — 2026-09-28
 
 Closes the "gate-journal reader" item from `mh:idea-audit`'s Round-4 re-scan of the AI-Native SDLC

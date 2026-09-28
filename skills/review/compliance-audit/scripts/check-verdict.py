@@ -22,7 +22,10 @@ Behavior:
   - Scans every '{' in the text and keeps every candidate that fully validates
     against the schema (exact key-set equality) AND the semantic rule below.
     Exactly one valid candidate is required; two or more distinct ones reject as
-    ambiguous.
+    ambiguous. `contract_version` must equal CONTRACT_VERSION exactly -- a
+    mismatch gets its own rejection reason distinct from a generic key-set
+    mismatch, so a stale brief/schema copy fails loud instead of quietly
+    passing shape checks it happens to still satisfy.
   - `requirements` must be non-empty. An empty list plus a trivially-clean
     gauntlet (e.g. `exit_code: 0` on an empty `command`) would otherwise satisfy
     `compute_pass`'s `all()` vacuously — found by deep-audit 2026-09-19, the
@@ -46,7 +49,8 @@ import json
 import re
 import sys
 
-REQUIRED_KEYS = {"requirements", "gauntlet", "scope_ok", "unexpected_files"}
+CONTRACT_VERSION = 1
+REQUIRED_KEYS = {"contract_version", "requirements", "gauntlet", "scope_ok", "unexpected_files"}
 REQUIREMENT_KEYS = {"id", "verdict", "note", "accepted"}
 GAUNTLET_KEYS = {"command", "sha", "exit_code", "output_tail"}
 VERDICTS = {"CONFORMS", "DEVIATED", "MISSING", "UNVERIFIABLE"}
@@ -119,6 +123,10 @@ def validate(obj):
         extra = set(obj.keys()) - REQUIRED_KEYS
         missing = REQUIRED_KEYS - set(obj.keys())
         return False, f"key set mismatch: extra={sorted(extra)} missing={sorted(missing)}"
+    if not isinstance(obj["contract_version"], int) or isinstance(obj["contract_version"], bool) \
+            or obj["contract_version"] != CONTRACT_VERSION:
+        return False, (f"'contract_version' is {obj['contract_version']!r}, expected "
+                        f"{CONTRACT_VERSION} -- schema/script/brief may have drifted apart")
 
     reqs = obj["requirements"]
     if not isinstance(reqs, list):
@@ -253,6 +261,7 @@ def _selftest():
         return code, buf_out.getvalue(), buf_err.getvalue()
 
     good = json.dumps({
+        "contract_version": 1,
         "requirements": [
             {"id": "R1", "verdict": "CONFORMS", "note": "", "accepted": None},
             {"id": "R2", "verdict": "DEVIATED", "note": "renamed field, see `git diff HEAD~1 -- foo.py`",
@@ -306,6 +315,19 @@ def _selftest():
     extra_field["notes"] = "extra"
     code, out, err = run(json.dumps(extra_field))
     assert code == 1 and "key set mismatch" in err, (code, out, err)
+
+    # contract_version mismatch gets its own reason, distinct from a generic
+    # key-set mismatch -- a stale caller running an old brief/schema copy
+    # fails loud and specifically, not silently on some unrelated shape check.
+    wrong_version = json.loads(good)
+    wrong_version["contract_version"] = 2
+    code, out, err = run(json.dumps(wrong_version))
+    assert code == 1 and "contract_version" in err and "expected 1" in err, (code, out, err)
+
+    missing_version = json.loads(good)
+    del missing_version["contract_version"]
+    code, out, err = run(json.dumps(missing_version))
+    assert code == 1 and "key set mismatch" in err and "contract_version" in err, (code, out, err)
 
     bad_verdict = json.loads(good)
     bad_verdict["requirements"][0]["verdict"] = "PARTIAL"

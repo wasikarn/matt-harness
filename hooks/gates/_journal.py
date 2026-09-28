@@ -36,12 +36,20 @@ def journal(gate_id, tool_name, decision, session_id=None):
             # cost-tracker.sh applies to costs.jsonl.
             return
         from datetime import datetime, timezone  # lazy: irrecoverable.py runs
-        row = {                                   # on every Bash call and its
-            "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),  # .sh
-            "id": gate_id,                                                    # wrapper
-            "tool_name": tool_name,                                          # exists to
-            "decision": decision,                                            # dodge
-            "session_id": session_id,                                        # cold-start
+        mh_version = None                          # on every Bash call and its
+        try:                                        # .sh wrapper exists to dodge
+            plugin_root = os.environ.get("CLAUDE_PLUGIN_ROOT", "/nonexistent")
+            with open(os.path.join(plugin_root, ".claude-plugin", "plugin.json")) as pf:
+                mh_version = json.load(pf).get("version")
+        except Exception:
+            pass
+        row = {                                   # cold-start
+            "ts": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "id": gate_id,
+            "tool_name": tool_name,
+            "decision": decision,
+            "session_id": session_id,
+            "mh_version": mh_version,
         }
         with open(path, "a") as f:
             f.write(json.dumps(row) + "\n")

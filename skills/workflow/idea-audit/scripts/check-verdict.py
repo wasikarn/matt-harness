@@ -4,11 +4,11 @@
 Added 2026-09-20 (harness gap-audit M2) — mirrors mh:deep-audit's
 scripts/check-verdict.py (same NEEDS-DECISION escape hatch, same
 brace-scanning, same ambiguity handling), adapted to idea-audit's own
-contract: references/attacker-output-schema.json's {pass, findings[],
-checked[]} shape has no scope_ok/unexpected_files (idea-audit's attacker
-never touches the repo, so there is no scope to report on). Not a copy of
-deep-audit's script verbatim -- that script's REQUIRED_KEYS include two
-keys this schema doesn't have and would reject every real object outright.
+contract: references/attacker-output-schema.json's {contract_version, pass,
+findings[], checked[]} shape has no scope_ok/unexpected_files (idea-audit's
+attacker never touches the repo, so there is no scope to report on). Not a
+copy of deep-audit's script verbatim -- that script's REQUIRED_KEYS include
+two keys this schema doesn't have and would reject every real object outright.
 
 Used on both paths: pipe Codex's --output-last-message file through this
 too, not just the Claude-fallback path, since --output-schema only
@@ -21,10 +21,12 @@ file contents, or the Claude-fallback agent's final message).
 Behavior: identical to deep-audit's check-verdict.py -- NEEDS-DECISION
 outside any JSON span wins over nearby JSON; every '{' in the text is a
 scan start; exactly one schema-valid candidate is required, two or more
-distinct ones reject as ambiguous; findings[]/checked[] items must be
-exactly {summary, evidence}/{claim, evidence}, both non-blank strings;
-checked[] must be non-empty even on a clean pass (the vacuous-pass guard
-SKILL.md's Phase 2 already describes in prose, made mechanical here).
+distinct ones reject as ambiguous; `contract_version` must equal
+CONTRACT_VERSION exactly, its own rejection reason distinct from a generic
+key-set mismatch; findings[]/checked[] items must be exactly {summary,
+evidence}/{claim, evidence}, both non-blank strings; checked[] must be
+non-empty even on a clean pass (the vacuous-pass guard SKILL.md's Phase 2
+already describes in prose, made mechanical here).
 
 Exit codes: 0 = exactly one valid verdict (printed to stdout as JSON); 1 =
 malformed, rejected, or ambiguous (reason on stderr, nothing on stdout); 2 =
@@ -35,7 +37,8 @@ import json
 import re
 import sys
 
-REQUIRED_KEYS = {"pass", "findings", "checked"}
+CONTRACT_VERSION = 1
+REQUIRED_KEYS = {"contract_version", "pass", "findings", "checked"}
 FINDING_KEYS = {"summary", "evidence"}
 CHECKED_KEYS = {"claim", "evidence"}
 
@@ -99,6 +102,10 @@ def validate(obj):
         extra = set(obj.keys()) - REQUIRED_KEYS
         missing = REQUIRED_KEYS - set(obj.keys())
         return False, f"key set mismatch: extra={sorted(extra)} missing={sorted(missing)}"
+    if not isinstance(obj["contract_version"], int) or isinstance(obj["contract_version"], bool) \
+            or obj["contract_version"] != CONTRACT_VERSION:
+        return False, (f"'contract_version' is {obj['contract_version']!r}, expected "
+                        f"{CONTRACT_VERSION} -- schema/script/brief may have drifted apart")
     if obj["pass"] is None:
         return False, "'pass' is null — the attacker's documented can't-tell state, not a valid verdict to act on"
     if not isinstance(obj["pass"], bool):
@@ -168,57 +175,71 @@ def _selftest():
         return code, buf_out.getvalue(), buf_err.getvalue()
 
     checked = [{"claim": "c", "evidence": "e"}]
-    good = json.dumps({"pass": True, "findings": [], "checked": checked})
+    good = json.dumps({"contract_version": 1, "pass": True, "findings": [], "checked": checked})
     code, out, err = run(good)
     assert code == 0 and json.loads(out) == json.loads(good), (code, out, err)
 
-    extra_field = json.dumps({"pass": True, "findings": [], "checked": checked, "scope_ok": True})
+    extra_field = json.dumps({"contract_version": 1, "pass": True, "findings": [], "checked": checked,
+                               "scope_ok": True})
     code, out, err = run(extra_field)
     assert code == 1 and "key set mismatch" in err, (code, out, err)
 
-    pass_as_string = json.dumps({"pass": "mostly", "findings": [], "checked": checked})
+    # contract_version mismatch gets its own reason, distinct from a generic
+    # key-set mismatch -- a stale caller running an old brief/schema copy
+    # fails loud and specifically, not silently on some unrelated shape check.
+    wrong_version = json.dumps({"contract_version": 2, "pass": True, "findings": [], "checked": checked})
+    code, out, err = run(wrong_version)
+    assert code == 1 and "contract_version" in err and "expected 1" in err, (code, out, err)
+
+    missing_version = json.dumps({"pass": True, "findings": [], "checked": checked})
+    code, out, err = run(missing_version)
+    assert code == 1 and "key set mismatch" in err and "contract_version" in err, (code, out, err)
+
+    pass_as_string = json.dumps({"contract_version": 1, "pass": "mostly", "findings": [], "checked": checked})
     code, out, err = run(pass_as_string)
     assert code == 1 and "'pass' is not a boolean" in err, (code, out, err)
 
     # LOW (harness gap-audit, 2026-09-20): pass:null is the attacker's
     # documented can't-tell state, schema-legal now, but must still be
     # rejected -- not silently laundered into a guessed true/false.
-    pass_null = json.dumps({"pass": None, "findings": [], "checked": checked})
+    pass_null = json.dumps({"contract_version": 1, "pass": None, "findings": [], "checked": checked})
     code, out, err = run(pass_null)
     assert code == 1 and "can't-tell state" in err, (code, out, err)
 
-    bad_finding = json.dumps({"pass": False, "findings": [{"issue": "x"}], "checked": checked})
+    bad_finding = json.dumps({"contract_version": 1, "pass": False,
+                               "findings": [{"issue": "x"}], "checked": checked})
     code, out, err = run(bad_finding)
     assert code == 1 and "findings[0]" in err, (code, out, err)
 
     # Vacuous-pass guard: empty checked[] rejected even on a clean pass.
-    empty_checked = json.dumps({"pass": True, "findings": [], "checked": []})
+    empty_checked = json.dumps({"contract_version": 1, "pass": True, "findings": [], "checked": []})
     code, out, err = run(empty_checked)
     assert code == 1 and "'checked' is empty" in err, (code, out, err)
 
     # Blank (whitespace-only or empty) summary/evidence/claim are schema-valid
     # non-empty-type but carry no content.
-    blank_finding = json.dumps({"pass": False, "findings": [{"summary": "  ", "evidence": "e"}],
+    blank_finding = json.dumps({"contract_version": 1, "pass": False,
+                                 "findings": [{"summary": "  ", "evidence": "e"}],
                                  "checked": checked})
     code, out, err = run(blank_finding)
     assert code == 1 and "must not be blank" in err, (code, out, err)
 
-    blank_checked = json.dumps({"pass": True, "findings": [],
+    blank_checked = json.dumps({"contract_version": 1, "pass": True, "findings": [],
                                  "checked": [{"claim": "c", "evidence": ""}]})
     code, out, err = run(blank_checked)
     assert code == 1 and "must not be blank" in err, (code, out, err)
 
     # Narration echoing the return contract's own brace before the real JSON.
-    echoed = 'Return {pass, findings[], checked[]} as instructed.\n' + good
+    echoed = 'Return {contract_version, pass, findings[], checked[]} as instructed.\n' + good
     code, out, err = run(echoed)
     assert code == 0 and json.loads(out) == json.loads(good), (code, out, err)
 
     # Decoy bypass: a fully schema-valid example quoted in narration ahead of
     # the agent's real, differently-valued verdict must be rejected as
     # ambiguous.
-    decoy = json.dumps({"pass": False, "findings": [], "checked": checked})
-    real = json.dumps({"pass": True, "findings": [{"summary": "s", "evidence": "e"}],
-                        "checked": checked})
+    decoy = json.dumps({"contract_version": 1, "pass": False, "findings": [], "checked": checked})
+    real = json.dumps({"contract_version": 1, "pass": True,
+                        "findings": [{"summary": "s", "evidence": "e"}], "checked": checked})
     code, out, err = run(f"Example shape: {decoy}\nActual result: {real}")
     assert code == 1 and "ambiguous" in err and out == "", (code, out, err)
 
@@ -230,6 +251,7 @@ def _selftest():
     # "NEEDS-DECISION" must be accepted as the verdict, not misclassified as
     # an escalation.
     verdict_citing_escalation = json.dumps({
+        "contract_version": 1,
         "pass": True, "findings": [],
         "checked": [{"claim": "attacker-brief.md documents its escape hatch",
                       "evidence": "attacker-brief.md tells it to return "

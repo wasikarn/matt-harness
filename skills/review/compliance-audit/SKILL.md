@@ -93,7 +93,7 @@ must discover independently, then get an independent answer from a different mod
    --cd <worktree> --model <selected-model> -c model_reasoning_effort=<selected-effort>
    --output-last-message <file> --output-schema <schema-file>` (sandbox and cwd explicit, not the
    config-dependent default). `<schema-file>` is `references/verifier-output-schema.json` (this
-   skill's own JSON Schema for `{requirements[], gauntlet, scope_ok, unexpected_files[]}` —
+   skill's own JSON Schema for `{contract_version, requirements[], gauntlet, scope_ok, unexpected_files[]}` —
    `mh:deep-audit`'s `checker-output-schema.json` is the pattern this copies). Select the
    model/effort through `docs/reference/codex-integration-map.md`: Terra/medium for explicit
    requirements, Sol/medium when interpretation is material; check availability and quota first.

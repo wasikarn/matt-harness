@@ -27,18 +27,18 @@ assert_exit() {
 }
 
 checked='[{"claim": "c", "evidence": "e"}]'
-good='{"pass": true, "findings": [], "checked": '"$checked"', "scope_ok": true, "unexpected_files": []}'
+good='{"contract_version": 1, "pass": true, "findings": [], "checked": '"$checked"', "scope_ok": true, "unexpected_files": []}'
 assert_exit "well-formed verdict accepted" 0 "$good"
-assert_exit "extra invented field rejected" 1 '{"pass": true, "findings": [], "checked": '"$checked"', "scope_ok": true, "unexpected_files": [], "notes": "x"}'
-assert_exit "pass as string rejected" 1 '{"pass": "mostly", "findings": [], "checked": '"$checked"', "scope_ok": true, "unexpected_files": []}'
-assert_exit "scope_ok null rejected" 1 '{"pass": true, "findings": [], "checked": '"$checked"', "scope_ok": null, "unexpected_files": []}'
-assert_exit "malformed findings item rejected" 1 '{"pass": false, "findings": [{"issue": "x"}], "checked": '"$checked"', "scope_ok": true, "unexpected_files": []}'
-assert_exit "empty checked rejected (vacuous-pass guard)" 1 '{"pass": true, "findings": [], "checked": [], "scope_ok": true, "unexpected_files": []}'
+assert_exit "extra invented field rejected" 1 '{"contract_version": 1, "pass": true, "findings": [], "checked": '"$checked"', "scope_ok": true, "unexpected_files": [], "notes": "x"}'
+assert_exit "pass as string rejected" 1 '{"contract_version": 1, "pass": "mostly", "findings": [], "checked": '"$checked"', "scope_ok": true, "unexpected_files": []}'
+assert_exit "scope_ok null rejected" 1 '{"contract_version": 1, "pass": true, "findings": [], "checked": '"$checked"', "scope_ok": null, "unexpected_files": []}'
+assert_exit "malformed findings item rejected" 1 '{"contract_version": 1, "pass": false, "findings": [{"issue": "x"}], "checked": '"$checked"', "scope_ok": true, "unexpected_files": []}'
+assert_exit "empty checked rejected (vacuous-pass guard)" 1 '{"contract_version": 1, "pass": true, "findings": [], "checked": [], "scope_ok": true, "unexpected_files": []}'
 assert_exit "NEEDS-DECISION escalation, not malformed" 2 "I can't tell safely.
 NEEDS-DECISION does gate X apply to Y?"
 
-decoy='{"pass": false, "findings": [], "checked": '"$checked"', "scope_ok": false, "unexpected_files": []}'
-real='{"pass": true, "findings": [{"summary": "s", "evidence": "e"}], "checked": '"$checked"', "scope_ok": true, "unexpected_files": []}'
+decoy='{"contract_version": 1, "pass": false, "findings": [], "checked": '"$checked"', "scope_ok": false, "unexpected_files": []}'
+real='{"contract_version": 1, "pass": true, "findings": [{"summary": "s", "evidence": "e"}], "checked": '"$checked"', "scope_ok": true, "unexpected_files": []}'
 assert_exit "decoy verdict ahead of the real one rejected as ambiguous" 1 "Example shape: $decoy
 Actual result: $real"
 
@@ -49,13 +49,13 @@ assert_exit "escalation not misclassified as malformed by unrelated JSON prose" 
 NEEDS-DECISION which config value is the source of truth here?'
 
 # M1 (harness gap-audit, 2026-09-20): pass:true can't override the host's own scope facts.
-assert_exit "pass:true over scope_ok:false rejected" 1 '{"pass": true, "findings": [], "checked": '"$checked"', "scope_ok": false, "unexpected_files": []}'
-assert_exit "pass:true with non-empty unexpected_files rejected" 1 '{"pass": true, "findings": [], "checked": '"$checked"', "scope_ok": true, "unexpected_files": ["x.py"]}'
-assert_exit "pass:false over scope_ok:false still accepted (a legit failing run)" 0 '{"pass": false, "findings": [], "checked": '"$checked"', "scope_ok": false, "unexpected_files": []}'
+assert_exit "pass:true over scope_ok:false rejected" 1 '{"contract_version": 1, "pass": true, "findings": [], "checked": '"$checked"', "scope_ok": false, "unexpected_files": []}'
+assert_exit "pass:true with non-empty unexpected_files rejected" 1 '{"contract_version": 1, "pass": true, "findings": [], "checked": '"$checked"', "scope_ok": true, "unexpected_files": ["x.py"]}'
+assert_exit "pass:false over scope_ok:false still accepted (a legit failing run)" 0 '{"contract_version": 1, "pass": false, "findings": [], "checked": '"$checked"', "scope_ok": false, "unexpected_files": []}'
 
 # M6: blank summary/evidence/claim strings are schema-valid non-empty-type but carry no content.
-assert_exit "blank findings.summary rejected" 1 '{"pass": false, "findings": [{"summary": "  ", "evidence": "e"}], "checked": '"$checked"', "scope_ok": true, "unexpected_files": []}'
-assert_exit "blank checked.evidence rejected" 1 '{"pass": true, "findings": [], "checked": [{"claim": "c", "evidence": ""}], "scope_ok": true, "unexpected_files": []}'
+assert_exit "blank findings.summary rejected" 1 '{"contract_version": 1, "pass": false, "findings": [{"summary": "  ", "evidence": "e"}], "checked": '"$checked"', "scope_ok": true, "unexpected_files": []}'
+assert_exit "blank checked.evidence rejected" 1 '{"contract_version": 1, "pass": true, "findings": [], "checked": [{"claim": "c", "evidence": ""}], "scope_ok": true, "unexpected_files": []}'
 
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ] && echo "PASS: test-deep-audit-check-verdict"

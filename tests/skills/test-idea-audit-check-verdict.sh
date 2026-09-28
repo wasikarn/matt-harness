@@ -30,19 +30,19 @@ assert_exit() {
 }
 
 checked='[{"claim": "c", "evidence": "e"}]'
-good='{"pass": true, "findings": [], "checked": '"$checked"'}'
+good='{"contract_version": 1, "pass": true, "findings": [], "checked": '"$checked"'}'
 assert_exit "well-formed verdict accepted" 0 "$good"
-assert_exit "extra invented field rejected (scope_ok doesn't belong here)" 1 '{"pass": true, "findings": [], "checked": '"$checked"', "scope_ok": true}'
-assert_exit "pass as string rejected" 1 '{"pass": "mostly", "findings": [], "checked": '"$checked"'}'
-assert_exit "malformed findings item rejected" 1 '{"pass": false, "findings": [{"issue": "x"}], "checked": '"$checked"'}'
-assert_exit "empty checked rejected (vacuous-pass guard)" 1 '{"pass": true, "findings": [], "checked": []}'
-assert_exit "blank findings.summary rejected" 1 '{"pass": false, "findings": [{"summary": "  ", "evidence": "e"}], "checked": '"$checked"'}'
-assert_exit "blank checked.evidence rejected" 1 '{"pass": true, "findings": [], "checked": [{"claim": "c", "evidence": ""}]}'
+assert_exit "extra invented field rejected (scope_ok doesn't belong here)" 1 '{"contract_version": 1, "pass": true, "findings": [], "checked": '"$checked"', "scope_ok": true}'
+assert_exit "pass as string rejected" 1 '{"contract_version": 1, "pass": "mostly", "findings": [], "checked": '"$checked"'}'
+assert_exit "malformed findings item rejected" 1 '{"contract_version": 1, "pass": false, "findings": [{"issue": "x"}], "checked": '"$checked"'}'
+assert_exit "empty checked rejected (vacuous-pass guard)" 1 '{"contract_version": 1, "pass": true, "findings": [], "checked": []}'
+assert_exit "blank findings.summary rejected" 1 '{"contract_version": 1, "pass": false, "findings": [{"summary": "  ", "evidence": "e"}], "checked": '"$checked"'}'
+assert_exit "blank checked.evidence rejected" 1 '{"contract_version": 1, "pass": true, "findings": [], "checked": [{"claim": "c", "evidence": ""}]}'
 assert_exit "NEEDS-DECISION escalation, not malformed" 2 "I can't tell safely.
 NEEDS-DECISION does the source's own citation hold up?"
 
-decoy='{"pass": false, "findings": [], "checked": '"$checked"'}'
-real='{"pass": true, "findings": [{"summary": "s", "evidence": "e"}], "checked": '"$checked"'}'
+decoy='{"contract_version": 1, "pass": false, "findings": [], "checked": '"$checked"'}'
+real='{"contract_version": 1, "pass": true, "findings": [{"summary": "s", "evidence": "e"}], "checked": '"$checked"'}'
 assert_exit "decoy verdict ahead of the real one rejected as ambiguous" 1 "Example shape: $decoy
 Actual result: $real"
 

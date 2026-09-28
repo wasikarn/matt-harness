@@ -190,8 +190,9 @@ scan — this skill is its own backstop against that leak, not the repo's hooks 
 
 **Accept the result only if:** `codex exec` exits 0 and the `--output-last-message` file's raw
 text validates through `scripts/check-verdict.py` (stdin: that file's contents; mirrors
-`mh:deep-audit`'s own `check-verdict.py`, adapted to this skill's 3-key `{pass, findings[],
-checked[]}` contract — no `scope_ok`/`unexpected_files`, this attacker never touches the repo):
+`mh:deep-audit`'s own `check-verdict.py`, adapted to this skill's 4-key `{contract_version, pass,
+findings[], checked[]}` contract — no `scope_ok`/`unexpected_files`, this attacker never touches
+the repo):
 
 ```
 python3 "${CLAUDE_SKILL_DIR}/scripts/check-verdict.py" < <output-last-message file>
@@ -365,7 +366,7 @@ Python `os.remove`).
   rule, the explicit "writes nothing" rule, the Done-when quoted from `spawn-brief.md`, the
   unreachable-evidence-class note, entity-normalized matching guidance. **Load before dispatching
   Phase 2.**
-- `references/attacker-output-schema.json` — `{pass, findings[{summary, evidence}],
+- `references/attacker-output-schema.json` — `{contract_version, pass, findings[{summary, evidence}],
   checked[{claim, evidence}]}`, `additionalProperties: false` at all three object levels, adapted
   from `deep-audit`'s own checker schema (not copied verbatim — this skill has no
   fingerprint/re-fingerprint mechanism to back `scope_ok`/`unexpected_files`). `checked[]` is
