@@ -25,8 +25,92 @@ ADR may treat it as decided.
 > repos/wasikarn/matt-harness/branches/develop/protection`, 2026-09-28) and the repo's merge
 > settings (`allow_squash_merge: false`, `delete_branch_on_merge: true`) were corrected to match
 > what `docs/reference/branching-model.md` already claimed. Every other finding below is addressed
-> inline, each marked `[R1 fix]`. This is round 1's fix pass; Wave 1 has not yet been re-run against
-> this revision — that is the next step, not something this revision claims for itself.
+> inline, each marked `[R1 fix]`. This was round 1's fix pass; Wave 1 was re-run against this
+> revision — see the round-2 block immediately below. That block, not this one, is authoritative
+> on whether the pass is clean.
+
+> **Wave 1 review, round 2 (2026-09-28): 5/5 REJECT — no `[R2 fix]` markers, because nothing below
+> is fixed.** Round 1 fixed a live gap and a set of citation/framing defects. Round 2 found the
+> credential-scoping premise §5 rests on does not exist as designed, plus several independent
+> doctrine contradictions round 1 missed. Nothing in §1-§7 has been edited to address any of this;
+> editing the prose without a real design would repeat the exact pattern that drew round 1's
+> REJECTs. This block is a record, not a repair. `status: proposed` remains correct, and none of
+> the findings below should be read as resolved until a future round explicitly says so.
+>
+> **The finding that invalidates §5's design, independently reached by 4 of 5 reviewers:** a
+> Routine authenticates as the operator's own connected GitHub identity — `wasikarn`, this repo's
+> sole collaborator and admin (`gh api repos/wasikarn/matt-harness/collaborators`) — not a
+> separately-scoped credential. §5's fork-flow and scoped-PAT framing both address a threat model
+> that does not match how Routines actually work: there is no per-Routine credential to scope in
+> the first place. Compounding this: GitHub's merge endpoint requires `Contents:write`, the exact
+> same permission needed just to push the branch — so any credential capable of doing the Routine's
+> job can also call the merge endpoint once required checks pass (`required_approving_review_count`
+> is 0). §5's stated reason for rejecting the scoped-PAT path (blaming `pull-requests:write`) is
+> wrong; the real reason is that no scoping can separate "can push" from "can merge" on this
+> platform. The fork-flow's prerequisite (a second, non-admin GitHub identity) is not just unmet —
+> per Routines' own docs, the connected GitHub identity is account-wide, so satisfying it would mean
+> reconnecting the operator's Claude account to a different GitHub identity for *every* cloud
+> session, not scoping one Routine. §5 item 1's empirical test cannot currently be run on any viable
+> path, and as specified it is vague enough to record a false negative (a 405 from failing branch
+> protection reads identically to a real permission denial).
+>
+> **Other findings, independently evidence-cited, not previously named:**
+> - The "Routines push only to `claude/`-prefixed branches" restriction §3/§4 rely on is a
+>   prompt-level convention, not a mechanical platform control — any unprotected branch (everything
+>   on this repo except `develop`) carrying only the operator's own commits accepts a Routine push
+>   today.
+> - The local `gh pr merge`/`gh api .../merge` ask-tier gate matches only the `Bash` tool; a
+>   default-included MCP connector's own write tool (e.g. GitHub's `merge_pull_request`) is not
+>   covered at all.
+> - No threat model is stated for this being a **public repo**: a webhook-triggered Routine reacting
+>   to an external fork PR runs with attacker-controlled content in context, the operator's own
+>   admin identity, every connected connector included by default, and no approval step. The API
+>   trigger's free-text field is a second injection path.
+> - §1 claims the autonomous-loop drilldown's conclusion is "unchanged by this ADR," but that
+>   drilldown explicitly declined the σ-band autonomous trigger §3 proposes building as a future
+>   building block — a direct contradiction, not an omission.
+> - §2's L4-machinery citation says the opposite of what it's cited for: the retired L4 design kept
+>   a human-review gate before any push reached `origin`; this ADR's push-confirmation carve-out
+>   (§3) removes exactly that gate. The `composer-not-creator.md` citation for the same bullet
+>   doesn't mention launchd, cron, or self-start at all — the "platform-native, already-installed"
+>   reasoning is unsupported by the doc it cites.
+> - `docs/reference/operating-model.md:100` ("No autonomous loop: the model never starts work on its
+>   own") directly contradicts this ADR and is not listed anywhere as superseded.
+> - §2's "maker ≠ checker, retained unchanged" claim doesn't hold under inspection: `validate.yml`
+>   runs on `pull_request` (not `pull_request_target`), so a Routine's own edited copy of that
+>   workflow becomes its own required check, with no `CODEOWNERS` file and 0 required approvals
+>   backing it up.
+> - No value or benefit case is stated anywhere in this ADR — unlike this repo's own practice on
+>   `ADR 0009`/`ADR 0011`, which required the operator to weigh a stated value case against the
+>   invariant, not just hear that the operator wants it reversed. §6 (cost) is also left fully open,
+>   and §7's acceptance criteria don't require a cost figure, a chosen trigger, or any of §5's items
+>   2-6 before `accepted`.
+> - §3's "none of these require an LLM to classify" claim is false for the eval-pass-rate candidate
+>   trigger: 81 of this repo's eval cases use LLM graders (`type: llm`), so gating on that pass rate
+>   reintroduces model judgment into the trigger, contradicting §2's own retained
+>   no-model-confidence-as-trigger principle.
+> - None of §3's four candidate trigger signals is a trigger type Routines natively support
+>   (Schedule, API-POST, GitHub PR/Release events only) — bridging any of them in requires a new
+>   Anthropic-issued bearer token stored as a repository secret, the exact kind of secret §6 already
+>   says this repo deliberately doesn't carry. Half the "local-only" framing in §3 item 2 is also
+>   inaccurate: `harness-audit` and the gauntlet already run on GitHub-hosted CI; only the
+>   gate-verdict journal and `costs.jsonl` are genuinely local-only.
+>
+> **This round did not re-verify round 1's live fixes** beyond confirming branch protection and
+> merge-settings are still live (they are) — round 2's reviewers independently re-checked those and
+> found them holding.
+>
+> **Recommended next step, not yet actioned:** this is not a prose-fixable state. Two named revisit
+> conditions, either of which would make a round 3 drafting pass worthwhile: (a) Claude Code's
+> Routines platform gains a per-Routine scoped GitHub credential distinct from the account's own
+> connected identity, or (b) the operator connects a second, non-admin GitHub identity to their
+> Claude account, accepting that this changes every cloud session's GitHub identity, not only this
+> Routine's. Absent either, the honest alternatives are: redesign around a scheduled-only,
+> report-only mechanism with no push and no PR at all (removes §5 entirely, closes the public-repo
+> injection vector, but is a different mechanism and still needs a stated value case); or proceed
+> knowingly with the operator's own admin identity and no mechanical merge prevention — which is
+> what `ADR 0006`/`ADR 0009`/`ADR 0011` each already rejected. Neither choice is this document's to
+> make.
 
 ## 1. Decision and basis
 

@@ -3,6 +3,28 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.150] — 2026-09-28
+
+Records Wave-1 round 2 against ADR 0004: 5/5 REJECT again, this time on a different finding
+class than round 1. No prose in §1-§7 is edited — round 1 already showed that fixing wording
+without a real design draws the same REJECTs again. A dated addendum blockquote is added
+instead, recording every finding as-is.
+
+The headline finding, independently reached by 4 of 5 reviewers: a Claude Code Routine
+authenticates as the operator's own connected GitHub identity (this repo's sole admin), not a
+separately-scoped credential — so §5's entire fork-flow/scoped-PAT design addresses a threat
+model that doesn't match how Routines actually work. Compounding: GitHub's merge endpoint needs
+`Contents:write`, the same permission needed just to push, so no credential scoping on this
+platform can separate "can push" from "can merge." Several independent doctrine contradictions
+were also found (this ADR claims the autonomous-loop drilldown's conclusion is unchanged while
+proposing exactly the trigger that drilldown declined; the L4-machinery citation says the
+opposite of what it's cited for; `operating-model.md`'s "No autonomous loop" line isn't listed
+as superseded despite contradicting this ADR).
+
+`status: proposed` is unchanged. This is a record, not a fix — see the addendum's own
+"Recommended next step" for the two named revisit conditions and the alternatives left to the
+operator.
+
 ## [1.1.149] — 2026-09-28
 
 Fixes the Wave-1 adversarial review's findings against ADR 0004: 5/5 fresh-context reviewers
