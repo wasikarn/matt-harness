@@ -471,6 +471,16 @@ Legend: `MATCH` = confirmed against primary evidence · `PARTIAL` = partially co
 
 Nothing — this is a read-only research pass. The user chose "re-scan, don't fix" for this round.
 
+**Update (2026-09-28, same day):** the ranked open-gap list below was subsequently built out in
+full: credential-content scanning (`gate:write:secret-scan`), evals-in-CI wiring
+(`scripts/eval-changed.sh`, local substitute), gate-journal reader (`mh:gate-report`), and the 3
+doc-hygiene fixes from a follow-up drill-down. Legacy-linkage hook stays deferred (no trigger).
+Also adopted from claim #3 in the table above (not part of the original ranked list, since it's a
+process convention, not a build item): CLAUDE.md now states that a mistake recurring a second time
+gets promoted into a committed rule, not left as a memory entry alone. See
+`docs/research/autonomous-loop-doctrine-drilldown-2026-09-28.md` and memory
+`ai-native-sdlc-playbook-round4-idea-audit-2026-09-28.md`.
+
 ### Deliberately not shipped (standing decisions, reaffirmed this round)
 
 - **Stage 6's autonomous σ-band-triggered Claude invocation** — `docs/reference/operating-model.md`

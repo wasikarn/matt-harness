@@ -78,3 +78,10 @@ at startup, nothing symlinked. Operating model: deny the irrecoverable set compu
   (not an rtk alias — no `rtk` reference exists in the snapshot; it reformats via CC's own binary;
   a few flags like `--null`/`-Z` fall through to real grep); use `/usr/bin/grep` or `awk` for
   counts.
+
+## Repeated mistake -> doctrine
+
+A mistake that recurs a second time (a feedback-type auto-memory fact firing again, or observed
+directly in-session) gets promoted into a committed rule here or in `docs/reference/`, not left as
+a memory entry alone — memory is per-operator and can go stale or unread; a committed rule binds
+every session and agent that loads this repo.
