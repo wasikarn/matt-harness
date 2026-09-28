@@ -112,6 +112,63 @@ ADR may treat it as decided.
 > what `ADR 0006`/`ADR 0009`/`ADR 0011` each already rejected. Neither choice is this document's to
 > make.
 
+> **Operator-requested research + 2-round adversarial debate (2026-09-28): both sides converge on
+> reject, superseding this block's two revisit conditions with three sharper, conjunctive ones.**
+> Two fresh-context agents (FOR and AGAINST proceeding, each researching independently) wrote
+> opening statements, then each read the other's opening and rebutted. Full transcripts are not
+> reproduced here; this is the reconciled outcome, evidence-cited to what each side actually found.
+>
+> **The value case, checked directly for the first time.** FOR fetched
+> `claude.com/blog/the-ai-native-sdlc-playbook` fresh and read the Stage 6 section end to end:
+> every claimed benefit (faster triage, fewer missed 3am incidents, the three worked examples) is
+> asserted with zero numbers. The only quantified evidence anywhere traces to a linked companion
+> post (`claude.com/blog/ai-ci-cd-on-call`) — but that setting is Anthropic's own high-volume CI,
+> run through Claude Tag in Slack with humans in the channel, and "a PR that the on-call can
+> review, merge." **A human merges there.** That's Stage 6 with the exact control this ADR
+> proposes removing — the upstream evidence doesn't support the reversal, it demonstrates the
+> invariant the reversal would drop.
+>
+> **This repo's own CI has nothing to react to.** `gh run list --workflow validate.yml --limit
+> 200` (2026-09-05 to 2026-09-28): 199 green, 1 red. `harness-audit-drift.yml`: 4 runs, all green.
+> One red event in 23 days, handled by a human with no Routine involved. A σ-band trigger is
+> mathematically undefined over a near-zero-variance series even if the missing control-band math
+> (§3) were built today.
+>
+> **The identity finding is narrower than round 2 characterized it — a real correction, not just
+> a restatement.** AGAINST fetched `code.claude.com/docs/en/routines` fresh: `git push` to a
+> non-`claude/*` branch really is rejected if that branch is protected, has someone else's open
+> PR, or carries commits from anyone but the operator — round 2's "prompt-level convention" framing
+> was too pessimistic about push specifically. What stays open: PR/merge calls and connector write
+> tools pass through via the GitHub proxy's REST fallback "with your real credentials
+> substituted" — so push and merge still can't be separated, just not for the reason round 2
+> originally gave. FOR's own proposed mitigation (a committed `Bash(git push*)` deny) was retracted
+> in rebuttal once this surfaced: it would guard a path the platform already fences, while leaving
+> the actual open path (API/connector writes) untouched.
+>
+> **Even the narrowest safe form has no value today.** Schedule-only + report-only + no connectors
+> was the most defensible shape either side could construct. It still fails on two independent
+> grounds that reinforce each other: an event trigger (e.g., a red `harness-audit-drift` run)
+> needs a bearer-token repo secret this repo's own §6 already says it deliberately doesn't carry;
+> a schedule trigger avoids that secret but then runs against a repo that's already green,
+> diagnosing nothing. AGAINST's sharpest point: treating frequent red CI as the trigger for
+> building this gets the causality backwards — frequent red runs in a repo with deterministic
+> gates mean something is broken (a flaky test, gate drift), and the right response is fixing that,
+> not automating a Routine to live with it.
+>
+> **Reopening bar, superseding this block's original two conditions — now three, conjunctive, not
+> either/or:**
+> 1. A concrete value case beyond ADR 0011's already-rejected "saves typing a command periodically."
+> 2. A named, numeric red-CI-run threshold, met over a stated window, *after* flakiness/gate-drift
+>    has been ruled out as the cause (not just "red runs happened").
+> 3. A Routine's actual GitHub credential shown, empirically, to have no PR-open/merge/
+>    connector-write capability — not merely a `git push` restriction, which the platform already
+>    provides today.
+>
+> This closes the operator's explicit request to research further and have agents debate before
+> deciding — the debate converged, unprompted, on the same "reject for now" both Wave-1 rounds
+> already reached, but replaced this block's vaguer revisit conditions with ones an actual future
+> reviewer can check against evidence rather than judgment.
+
 ## 1. Decision and basis
 
 **The operator has explicitly, directly instructed this reversal** — not a capability argument,
