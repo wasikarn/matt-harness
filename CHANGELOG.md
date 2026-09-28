@@ -3,6 +3,49 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.149] — 2026-09-28
+
+Fixes the Wave-1 adversarial review's findings against ADR 0004: 5/5 fresh-context reviewers
+rejected the first draft, every REJECT evidence-cited and independently verified.
+
+### Fixed (real, live gaps — not just documentation)
+
+- **Branch protection on `develop` was never actually applied.** Phase B's B5 was deferred to the
+  operator and never followed up; ADR 0004 and `branching-model.md` both stated it as live fact.
+  Applied for real: `enforce_admins: true`, the 3 CI checks required with `strict: true`,
+  force-push/deletion disabled (`gh api -X PUT .../branches/develop/protection`).
+- **Repo merge settings corrected to match what the docs already claimed**:
+  `allow_squash_merge: false` (was `true`), `delete_branch_on_merge: true` (was `false`).
+
+### Fixed (in `docs/adr/0004-operator-authorized-routine-self-launch.md`, still `status: proposed`)
+
+- Phantom citation: §3's "grader/scoring + judgment/decision-making research" pointed at
+  nonexistent `docs/research/*.md` files — marked author-asserted, not independently citable,
+  until a real doc is written.
+- `ADR 0006` citation didn't resolve (claimed `docs/research/`; it's `git`-only, deleted in
+  `1acce027`) — now cites the actual retrieval command and its verified line 64 text.
+- `l4-machinery-design.md` citation pointed at the wrong file (`repo-gotchas.md` doesn't mention
+  it) — corrected to the real, present-on-disk `docs/research/l4-machinery-design.md`.
+- §5/§7 circular dependency (the empirical credential test required before acceptance, but never
+  named in the acceptance criteria itself) — closed: §7 now explicitly requires the test's
+  *recorded result*, and §5 explicitly authorizes running it pre-acceptance.
+- §5's recommended fork-based flow silently assumed a second GitHub identity that doesn't exist
+  (`wasikarn` is the only account, and it's this repo's own admin) — named as an explicit,
+  currently-unmet prerequisite.
+- "The PR sits exactly where any other PR sits" and "human review before merge" were both
+  overstated — fork PRs need first-run CI approval (first-time-contributor policy) that same-repo
+  PRs don't, and `required_approving_review_count: 0` (a structural necessity on a
+  single-maintainer repo) means no approval is mechanically required to merge at all, only passing
+  checks.
+- New, previously unnamed gap: nothing gates a model calling `RemoteTrigger`/`CronCreate` itself —
+  added as a required future gate (§5 item 6), matching Phase B's `gh pr merge` ask-tier shape.
+- Named residual risk: a same-repo PR could edit `validate.yml` to weaken what a required check
+  actually verifies — not closed by this pass, flagged as the same class of gap as the
+  not-yet-built alerting.
+
+Wave 1 has not been re-run against this revision yet — that's the next step, not something this
+commit claims for itself.
+
 ## [1.1.148] — 2026-09-28
 
 Phase C of the operator-approved SDLC-playbook reversal: ADR-drafting and review-scheduling
