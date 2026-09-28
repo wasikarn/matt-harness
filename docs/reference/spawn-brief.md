@@ -97,7 +97,10 @@ worktree, reusing `skills/review/compliance-audit`'s existing disposable-worktre
 mechanism — the difference is this pilot merges its result back; compliance-audit's verifier
 worktree is always discarded.
 
-1. **Create** (dispatcher, before launching the Agent call): `git worktree add <path> -b
+1. **Create** (dispatcher, before launching the Agent call): commit or stash any pending edits to
+   files the builder needs first — the next command branches from the last **commit**, not the
+   dispatcher's live working tree, so an uncommitted edit sitting in the parent worktree is
+   invisible to the builder unless it lands in a commit first. Then `git worktree add <path> -b
    subagent/<slug> HEAD` — a real branch, not `--detach` like compliance-audit's read-only
    verifier pin, because this one needs somewhere to commit onto. `<path>` under
    `.claude/worktrees/` (gitignored, matches the session-level convention).
@@ -106,14 +109,23 @@ worktree is always discarded.
    subagent commits its own work there — `gate:bash:subagent-git-guard` only denies
    `stash`/`reset`/`clean`, `git add`/`git commit` inside the worktree are unaffected.
 3. **Validate**: the fresh-context validator reads `git -C <path> diff <base-sha>..HEAD`, not the
-   shared tree — `scope_ok`/`unexpected_files` are computed against that diff.
-4. **Clean completion** (validator `pass: true`): dispatcher runs `git merge --no-ff subagent/<slug>`
-   from its own worktree, then `git worktree remove <path>` and `git branch -d subagent/<slug>`.
-5. **Anything else** (validator reject, cancelled, interrupted): do not merge. Leave the worktree in
-   place and say so in the report — mirrors a retained clone on non-clean completion; the operator
-   decides whether to salvage, retry, or discard it. Never `git worktree remove --force` or `trash`
-   it without being asked; an unmerged worktree is someone's unlanded work, same as any other
-   uncommitted state this repo already treats carefully.
+   shared tree — `scope_ok`/`unexpected_files` are computed against that diff. Record the exact
+   SHA validated (`git -C <path> rev-parse HEAD`) — step 4 merges that SHA, never the bare branch
+   name, so a commit added to the branch after validation can't ride along unreviewed.
+4. **Clean completion** (validator `pass: true`): dispatcher re-checks `git -C <path> rev-parse HEAD`
+   still equals the SHA step 3 validated (reject and re-validate if it moved), then runs
+   `git merge --no-ff <that-sha>` from its own worktree. **If the merge itself fails (conflict):**
+   `git merge --abort` immediately — never leave the dispatcher's own tree in a conflicted state —
+   then fall through to step 5's "leave it, don't discard" handling for the worktree/branch; a
+   failed merge is not a clean completion. Only on a merge that actually succeeds: `git worktree
+   remove <path>` and `git branch -d subagent/<slug>`.
+5. **Validator reject**: follow Rule 13's normal loop first — dispatch a fixer *into the same
+   worktree* (not to the operator), re-validate, stop after 3 rounds same as any other builder/
+   validator cycle. Only once that loop is exhausted, or the dispatch was cancelled/interrupted, or
+   step 4's merge itself failed, does it become an operator decision: do not merge, leave the
+   worktree in place, say so in the report — mirrors a retained clone on non-clean completion.
+   Never `git worktree remove --force` or `trash` it without being asked; an unmerged worktree is
+   someone's unlanded work, same as any other uncommitted state this repo already treats carefully.
 
 Revisit whether this earns a dedicated helper (script or skill) only if it sees repeated real use —
 `docs/research/oh-my-openagent-adoption-audit-2026-09-28.md`'s own adoption audit scored this the
