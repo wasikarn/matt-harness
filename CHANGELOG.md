@@ -3,6 +3,26 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.148] — 2026-09-28
+
+Phase C of the operator-approved SDLC-playbook reversal: ADR-drafting and review-scheduling
+only, no invocation code. `docs/adr/0004-operator-authorized-routine-self-launch.md` proposes a
+narrow reversal of the no-model-self-launch invariant (Claude Code Routines, PR-only, never
+auto-merge) — status stays `proposed` until the mandatory 5-reviewer + 2-round adversarial pass
+(matching `ADR 0009`'s precedent) completes with the operator's explicit sign-off. Building the
+actual Routine/trigger/credential is separate, later, independently-gated work.
+
+### Added
+
+- `docs/adr/0004-operator-authorized-routine-self-launch.md` (`status: proposed`).
+
+### Changed
+
+- `docs/research/autonomous-loop-doctrine-drilldown-2026-09-28.md`: in-place dated corrections
+  (insertion only, frozen-dir convention) — Finding 2b's "no CC feature found" claim was wrong
+  (Routines is the counter-example), two stale `operating-model.md` line-number citations fixed,
+  and the "revisit only if the operator reverses the invariant" trigger noted as now fired.
+
 ## [1.1.147] — 2026-09-28
 
 Phase B of the operator-approved worktree/PR-flow reversal: `develop` is now a protected,

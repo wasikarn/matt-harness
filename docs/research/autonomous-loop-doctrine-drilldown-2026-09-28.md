@@ -86,7 +86,9 @@ revisit the decision itself.
 
 ### 2b. Has Claude Code, across its version updates, shipped anything that crosses the actual line?
 
-The invariant's precise boundary (`operating-model.md:98`): *"No autonomous loop: the model never
+The invariant's precise boundary (`operating-model.md:100`, corrected 2026-09-28 — cited as `:98`
+when this Finding was written, before an unrelated edit to `operating-model.md` shifted it): *"No
+autonomous loop: the model never
 starts work on its own; every wave begins with a human."* This is scoped to **self-start**, not
 to "no loop machinery at all" — confirmed against ADR 0006's own original wording (quoted inside
 `adr-0009-bounded-review-fix-auto-loop.md`): *"The model cannot self-start the improvement loop.
@@ -118,9 +120,27 @@ actively, not passively):
   it.** The self-launch boundary (OS-level cron/launchd, or a human typing a command) is still
   drawn by the operator or the OS, never by the model, in every mechanism checked.
 
+> **Correction (2026-09-28, later same day):** the bulleted claim above is wrong. **Claude Code's
+> Routines feature** (CLI ≥2.1.225, created via `/schedule` or the `RemoteTrigger` tool) is exactly
+> the counter-example this pass missed — a cloud-hosted session the model can trigger on a
+> schedule, an HTTP fire, or a GitHub PR/release event, with **no operator present at trigger
+> time**. It runs as a fresh main session (no `agent_id`), so mh's subagent-scoped gates never
+> apply to it, and mh's hooks almost certainly don't run in that cloud environment at all — a
+> materially different enforcement surface than anything this Finding checked. It is restricted to
+> pushing only `claude/`-prefixed branches and is rejected on protected branches (relevant now that
+> `develop` carries branch protection, Phase B of the SDLC-playbook reversal). This does **not**
+> reopen the invariant on its own — ADR 0006 already forecloses reopening on a capability argument,
+> and this is exactly that: a capability existing is not a reason to use it. It does mean Finding
+> 2b's own evidence was incomplete, not that its conclusion was safe. Full context:
+> `docs/adr/0004-operator-authorized-routine-self-launch.md` (the operator-authorized reversal this
+> correction feeds into — a decision belonging to the operator, not to this doc having found a gap).
+
 **Conclusion for 2b:** Claude Code's version updates have been tracked, and the two most
 autonomy-adjacent features it has actually shipped (`/goal`, `/loop`) were examined and found to
 sit on the human-started side of the line the doctrine draws — not proof the line needs to move.
+**Superseded in part by the correction above**: a third feature (Routines) exists and does cross
+the self-launch line mechanically; whether to use it is now the operator's own decision, tracked
+in `docs/adr/0004-*`, not resolved by this Finding either way.
 
 ## Finding 3: the one precedent that *did* carve out a bounded exception is no longer live code
 
@@ -161,14 +181,19 @@ reasons, not a new one invented for this playbook specifically.
 
 ## Deliberately not shipped (reaffirmed, this pass)
 
-- **Stage 6's autonomous σ-band-triggered invocation** — `docs/reference/operating-model.md:98`
-  + ADR 0006/0009/0011, all citing the same no-autonomous-launch invariant. **Declined on
+- **Stage 6's autonomous σ-band-triggered invocation** — `docs/reference/operating-model.md:100`
+  (corrected 2026-09-28; was `:98`, see the line-number note under Finding 2b) + ADR
+  0006/0009/0011, all citing the same no-autonomous-launch invariant. **Declined on
   evidence, reconfirmed by independent 2026 external research on self-preference bias, not
   weakened by it.**
 - **Reopening ADR 0011's scheduled `recursive-improve`** — no material change to the underlying
   trade-off has occurred; its own revisit trigger (an ADR-0006/0009-level reversal) has not fired.
 
 ## Open questions / recommended small fixes (not made in this read-only pass)
+
+> **Status (2026-09-28, later same day):** all three items below were fixed in commit `d4d9c4e1`
+> ("docs: fix phantom crux citation + uncited overclaim + ADR-0009 stale header") — left as-written
+> below for the historical record of what this pass recommended, not because they're still open.
 
 - **Fix the phantom citation**: replace `agent-loop-verifier-crux.md` with
   `docs/reference/operating-model.md` ("The maker never grades its own work") across the ~10
@@ -186,5 +211,13 @@ reasons, not a new one invented for this playbook specifically.
   invariant itself at the ADR 0006/0009 level. Neither has happened; re-reading the same playbook
   article again without one of these two triggers would be re-litigating a settled question, not
   drilling into new evidence.
+
+> **Correction (2026-09-28, later same day):** the second trigger fired. The operator explicitly
+> decided to reverse the no-model-self-launch invariant, and `docs/adr/0004-operator-authorized-
+> routine-self-launch.md` is that reversal — drafted per this doc's own Method going through
+> ADR 0006/0009's actual precedent rather than a capability argument, and gated on the same
+> mandatory multi-reviewer adversarial pass ADR 0009 and ADR 0011's revisit trigger both require
+> before any implementation. This correction note exists so a future reader of this "neither has
+> happened" line isn't misled; it does not change anything else this document concluded.
 
 <!-- Reserved: a later pass appends a dated correction here, never rewrites the sections above. -->
