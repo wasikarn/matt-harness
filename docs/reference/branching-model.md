@@ -15,12 +15,17 @@ Enforcement layers, weakest to strongest:
 - `gate:bash:irrecoverable` asks (not denies — a merge can be a legitimate, operator-approved
   action) on `gh pr merge` / `gh api .../merge` from an interactive Claude Code session. This
   covers only a session running with mh loaded — it does **not** constrain the GitHub web UI, a
-  raw API call, or any credential used outside such a session (a cloud Routine, notably — not yet
-  a live threat model here, since mh has no self-launch path; would need its own ADR if that ever
-  changes).
-- GitHub branch protection on `develop` (required status checks, `enforce_admins`) is the real
-  enforcement; a single-maintainer repo means an admin can still edit the protection rule itself —
-  a named, accepted residual risk, not something any of the above closes.
+  raw API call, or any credential used outside such a session (a cloud Routine, notably —
+  `docs/adr/0004-operator-authorized-routine-self-launch.md`, `status: proposed`, is where that
+  threat model is actually being worked through; mh has no self-launch path shipped today).
+- GitHub branch protection on `develop` (required status checks, `enforce_admins`, live-applied
+  2026-09-28) is the real enforcement of the checks themselves; a single-maintainer repo means
+  `required_pull_request_reviews.required_approving_review_count` stays at **0** (GitHub refuses to
+  let a PR author approve their own PR, so any higher count would make every PR permanently
+  unmergeable with only one account) — merging still requires nothing more than the checks passing
+  and a write-access credential. "Review" here is this repo's own operating custom, not something
+  branch protection mechanically enforces. An admin editing the protection rule itself is a
+  separate, named, accepted residual risk, not something any of the above closes.
 
 The former `git worktree add -b` deny predates this and was removed in the v1.0.0 rebuild;
 `claude --worktree` and `/branch` never routed through it anyway. `/branch` and

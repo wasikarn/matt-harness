@@ -4,15 +4,29 @@ status: proposed
 
 # Operator-authorized Routine self-launch (narrow reversal of the no-model-self-launch invariant)
 
-`docs/adr/` restarted numbering below the legacy `docs/research/adr-0006/0009/0011-*.md` records
-(the pre-rebuild set; cite those by full path, never by a bare "ADR 0006" that could be confused
-with a file under this directory). This ADR is the fourth attempt to touch the no-model-
+`docs/adr/` restarted numbering below the legacy pre-rebuild set: `ADR 0006` (deleted, `git`-only —
+see §1's `[R1 fix]` for the retrieval command), and `docs/research/adr-0009-bounded-review-fix-
+auto-loop.md` / `docs/research/adr-0011-scheduled-recursive-improve-invocation.md` (both still
+live). Cite all three by full path or retrieval command, never by a bare "ADR 0006" that could be
+confused with a file under this directory. This ADR is the fourth attempt to touch the no-model-
 self-launch invariant those three establish, and the third rejection's own revisit trigger names
 exactly the condition that licenses trying again: *"a multi-reviewer adversarial pass before any
 implementation, not a single drafting session's say-so"* (`adr-0011-scheduled-recursive-improve-
-invocation.md`). This document is that draft; the adversarial pass it requires (§6) has not yet
-run, so `status: proposed` is not a formality here — nothing downstream of this ADR may treat it
-as decided.
+invocation.md`). This document is that draft; the adversarial pass it requires (§7) has not yet
+run to a clean result, so `status: proposed` is not a formality here — nothing downstream of this
+ADR may treat it as decided.
+
+> **Wave 1 review, round 1 (2026-09-28): 5/5 REJECT, all evidence-cited, all verified live.** The
+> single biggest finding, confirmed independently by all 5 reviewers: this document's earlier draft
+> stated `develop` "now carries branch protection (Phase B)" in the present tense while the live
+> GitHub API returned `protected: false` and a 404 on the protection endpoint — a real,
+> unimplemented step in Phase B's own plan (B5), not a documentation typo. Applying real protection
+> was the fix outside this ADR's own scope; it has now been done (verified via `gh api
+> repos/wasikarn/matt-harness/branches/develop/protection`, 2026-09-28) and the repo's merge
+> settings (`allow_squash_merge: false`, `delete_branch_on_merge: true`) were corrected to match
+> what `docs/reference/branching-model.md` already claimed. Every other finding below is addressed
+> inline, each marked `[R1 fix]`. This is round 1's fix pass; Wave 1 has not yet been re-run against
+> this revision — that is the next step, not something this revision claims for itself.
 
 ## 1. Decision and basis
 
@@ -22,9 +36,15 @@ move. `docs/research/autonomous-loop-doctrine-drilldown-2026-09-28.md` traced th
 why the invariant exists and found it structurally sound as of 2026 external research; that
 conclusion is unchanged by this ADR. What changed is that the person who owns the decision said
 to reverse it anyway, for reasons outside this repo's own evidence base (matching the article this
-session originated from, "the AI-Native SDLC playbook"'s Stage 6 framing) — and `ADR 0006`
-(`docs/research/`, pre-rebuild) already states plainly that reopening this invariant **on a
-capability argument is still foreclosed**. Claude Code's Routines feature (§3) is named below only
+session originated from, "the AI-Native SDLC playbook"'s Stage 6 framing) — and `ADR 0006` already
+states plainly that reopening this invariant **on a capability argument is still foreclosed**.
+**[R1 fix] `ADR 0006` citation corrected**: it does not live under `docs/research/` — it was
+deleted from `docs/adr/` entirely (`1acce027`, "remove all 14 ADR files, owner decision,
+irreversible") and is retrievable only via
+`git show 1acce027d9cb6080e57db6c354c210ea1e4ebfd9^:docs/adr/0006-ecc-aligned-operating-model.md`.
+Verified this resolves and its actual line 64 reads: *"principle-bounded, not capability-bounded —
+reopening them on a capability argument is still foreclosed"* — confirming the claim above is
+accurate, not just the citation. Claude Code's Routines feature (§3) is named below only
 as *mechanism* — what becomes possible once the operator's decision is implemented — never as the
 *reason* for the decision. If this ADR is ever cited as "Routines exists, therefore reversed," that
 citation is wrong; the correct citation is "the operator said so."
@@ -49,13 +69,17 @@ investigate-and-PR-only cloud session. Nothing else about those three decisions 
   Phase B's own design (`docs/reference/branching-model.md`), not newly invented here.
 - **No push to `develop`** — Routines are mechanically restricted to `claude/`-prefixed branches
   and rejected on protected branches by the platform itself (not an mh-side control — see §4), and
-  `develop` now carries branch protection (Phase B).
+  `develop` **now genuinely carries branch protection** — `[R1 fix]` this was previously stated as
+  fact while still unapplied (Wave 1's central finding); applied and verified live 2026-09-28
+  (`gh api repos/wasikarn/matt-harness/branches/develop/protection`: `enforce_admins: true`,
+  the 3 CI checks required with `strict: true`, force-push/deletion disabled).
 - **No custom launchd/cron self-start machinery** — composer-not-creator
   (`docs/reference/composer-not-creator.md`) still applies; a Routine is a platform-native,
   already-installed mechanism, not a bespoke one this repo builds and maintains. The retired L4
-  autonomy-ladder machinery (`docs/reference/repo-gotchas.md`'s reference to
-  `l4-machinery-design.md`, archived memory) stays dead — this ADR does not resurrect it or
-  anything shaped like it.
+  autonomy-ladder machinery stays dead — this ADR does not resurrect it or anything shaped like it.
+  **[R1 fix] citation corrected**: the earlier draft pointed at `docs/reference/repo-gotchas.md`,
+  which doesn't reference this file at all — the design doc is `docs/research/
+  l4-machinery-design.md` directly (confirmed present on disk).
 
 ## 3. Mechanism, stated honestly
 
@@ -63,13 +87,20 @@ investigate-and-PR-only cloud session. Nothing else about those three decisions 
 triggers, each already a real, already-emitted signal in this repo: `harness-audit`'s CRIT count
 crossing zero, the gauntlet's own exit code, an eval suite's pass rate crossing a fixed threshold,
 the gate-verdict journal's `ask`-count over a window. None of these require an LLM to classify
-"is this significant" — the boundary condition doctrine research already found for the article's
-own σ-band/confidence-gate design (`docs/research/` sessions on grader/scoring mechanisms and
-judgment/decision-making mechanisms, dispatched earlier this session specifically to check this):
-the article's own gates are fully deterministic threshold crossings or a *separate* adversarial
-agent's verdict, never the acting model's own confidence report. That finding is what makes this
-mechanism section defensible at all — if the article's gates had turned out to be self-report-
-gated, this ADR would not be written this way.
+"is this significant" — matching the boundary condition two dedicated research passes checked
+before this ADR was drafted (grader/scoring mechanisms; judgment/decision-making mechanisms, both
+dispatched earlier in this same session, feeding directly into the approved plan this ADR
+implements — **[R1 fix]**: the earlier draft cited these as saved `docs/research/*.md` files; no
+such files exist, only the plan and this session's own transcript carry that research, so this is
+an author-asserted claim, not an independently-citable one, until a proper research doc is written
+and saved). The finding itself: the article's own gates are fully deterministic threshold
+crossings or a *separate* adversarial agent's verdict, never the acting model's own confidence
+report. That finding is what makes this mechanism section defensible at all — if the article's
+gates had turned out to be self-report-gated, this ADR would not be written this way. **Follow-up
+required before Wave 1 re-runs**: either write up that research as a real `docs/research/*.md`
+file, or drop this specific framing and rest the deterministic-triggers design on §3's own stated
+triggers alone (which don't need the article's own gates to be deterministic to be valid — they
+already are).
 
 **Two building blocks this repo does not have today, named plainly, not glossed over:**
 1. **No rolling-baseline/control-band math exists anywhere in this repo.** A σ-band trigger (mean
@@ -85,8 +116,24 @@ gated, this ADR would not be written this way.
    named so it isn't silently assumed solved.
 
 **Output, unconditionally:** investigate → push to `claude/<slug>` → open a PR → **never merge**.
-The PR sits exactly where any other PR sits: subject to the checks Phase B wired (required status
-checks on `develop`) and to human review before anyone — human or Routine — merges it.
+The PR is subject to the same required status checks on `develop` as any other PR (now genuinely
+live — see §2's `[R1 fix]`). **[R1 fix] two claims corrected, not just softened:**
+- *"Sits exactly where any other PR sits"* is false for §5's own recommended fork-based flow
+  specifically: this repo's Actions settings require first-run approval for a first-time
+  contributor's fork PR (`gh api repos/wasikarn/matt-harness/actions/permissions/fork-pr-
+  contributor-approval` → `first_time_contributors`) — a fork-originated Routine PR does not run CI
+  until a maintainer approves the run, an extra step a same-repo `claude/`-branch PR doesn't need.
+  Not a flaw, but the ADR should describe the real flow, not a flow that treats fork and same-repo
+  PRs as identical.
+- *"...and to human review before anyone... merges it"* overstated what branch protection actually
+  enforces here: `required_pull_request_reviews.required_approving_review_count` is **0**, a
+  structural necessity for a single-maintainer repo (GitHub refuses to let a PR author approve
+  their own PR, so any count ≥1 would make every PR permanently unmergeable — `~/.claude/CLAUDE.md`
+  names `wasikarn` as the only account). This means **no approval is mechanically required to
+  merge** — only the 3 status checks passing. "Human review before merge" is this repo's own
+  operating custom, not something branch protection enforces. §5 (credential-scoping) is therefore
+  the *only* thing standing between "checks passed" and "merged" for a credential with write
+  access — not a backstop behind human review, the sole mechanism.
 
 **Push-confirmation carve-out, named explicitly:** the global "confirm before every push" rule
 (`~/.claude/CLAUDE.md`, `# Git`) is written for an interactive session with an operator present to
@@ -108,17 +155,45 @@ wired in. **None of it constrains a Routine.**
 What *does* constrain a Routine is the platform's own restriction (Routines push only to
 `claude/`-prefixed branches, rejected on protected branches) plus whatever the Routine's own
 GitHub credential is scoped to do — which is §5's job, not this section's. Branch protection on
-`develop` (Phase B's B5, `enforce_admins: true`, required status checks) blocks a direct push from
-*any* credential, Routine or human, admin included short of editing the protection rule itself —
-but it does not, and cannot, stop a sufficiently-scoped credential from calling the merge API on a
-PR that already passed its checks. That gap is exactly what §5 must close before this ADR could
-ever move past `proposed`.
+`develop` (`enforce_admins: true`, the 3 status checks required with `strict: true` — **[R1 fix]**
+applied and live-verified 2026-09-28, not merely planned) blocks a direct push from *any*
+credential, Routine or human, admin included short of editing the protection rule itself — but it
+does not, and cannot, stop a sufficiently-scoped credential from calling the merge API on a PR that
+already passed its checks (and, per §3's `[R1 fix]` above, passing checks is *all* that's
+mechanically required to merge on this single-maintainer repo — there is no required-approval
+backstop). That gap is exactly what §5 must close before this ADR could ever move past `proposed`.
+
+**[R1 fix] A fourth gap, not previously named: nothing gates the model from creating or firing a
+Routine in the first place.** `grep -rn "RemoteTrigger\|CronCreate" hooks/hooks.json hooks/gates/`
+returns zero matches — no PreToolUse gate exists on either tool. This doesn't contradict
+"deterministic triggers only" (§3) as a *design* — nothing about a Routine's trigger condition
+becomes model-computed — but it does mean the *creation* of a Routine, today, is unconstrained by
+mh: an interactive session could call `RemoteTrigger`/`CronCreate` with no ask-tier friction at
+all, the same gap Phase B closed for `gh pr merge` but never extended to these two tools. This is
+now item 6 in §5's mandatory-before-implementation list.
+
+**[R1 fix] Named residual risk, not a gap this ADR closes**: `validate.yml` runs on `pull_request`
+(not `pull_request_target`), so a same-repo `claude/`-branch PR's own edited copy of that file runs
+for its own check. The repo's Actions settings (`default_workflow_permissions: read`,
+`can_approve_pull_request_reviews: false`) cap what any workflow-issued token can do regardless of
+what the PR's edited `permissions:` block asks for — this closes the specific "escalate to a
+merge-capable token via a workflow edit" path a bypass reviewer raised. It does **not** close a
+narrower one: a same-repo PR could edit `validate.yml` to silently weaken what `gauntlet`/
+`harness-audit` actually check, making a required check pass falsely on genuinely bad content.
+Nothing here detects that today; it's the same class of risk as §5's yet-to-be-built alerting
+(item 4), not a new mechanism this ADR needs to invent.
 
 ## 5. Credential-scoping design (required before any implementation)
 
-**No implementation may ship until this section's empirical test has actually run and passed.**
-Naming an intended scope is not evidence it holds — GitHub's actual API permission semantics are
-the ground truth, not this document's expectation of them.
+**No implementation may ship until this section's empirical test (item 1) has actually run and
+passed.** Naming an intended scope is not evidence it holds — GitHub's actual API permission
+semantics are the ground truth, not this document's expectation of them. **[R1 fix] resolving the
+§5/§7 circularity 3 reviewers independently flagged**: item 1's disposable test is explicitly
+authorized to run *while this ADR is still `status: proposed`* — it needs a throwaway credential
+and a throwaway PR, neither of which requires the ADR itself to be accepted first. §7's acceptance
+criteria now require this item's *recorded result* (§7 below) — acceptance was never meant to
+happen with §5 still just a design on paper; the earlier draft simply failed to say so explicitly
+in §7 itself, which is the actual defect, not the sequencing.
 
 **Recommended default: fork-based flow.** The Routine authenticates as an identity that pushes to
 its *own fork* of this repo and opens a PR back to `wasikarn/matt-harness`, the same shape any
@@ -126,6 +201,14 @@ external contributor without write access uses. This is structurally different f
 token with write access to the main repo: a fork-based credential never holds write access to
 `wasikarn/matt-harness` at all, so it cannot merge into it, full stop — not "is scoped not to,"
 but "cannot, because it was never granted write access to this repository in the first place."
+**[R1 fix] a real, currently-unmet prerequisite, named by 3 of 5 reviewers independently and not
+previously stated in this ADR**: a fork-based flow requires a GitHub identity *distinct from the
+operator's own account*. `~/.claude/CLAUDE.md`'s `# Git` section names exactly one account,
+`wasikarn` — an account cannot fork its own repository into itself, and `wasikarn` is this repo's
+owner/admin. **This recommendation is not viable until the operator creates and connects a second,
+non-admin GitHub identity for the Routine to authenticate as.** Until that identity exists, item 1
+below cannot even be attempted for the fork-flow path — only the scoped-PAT alternative (already
+named as a rejected candidate pending its own empirical test) is currently testable at all.
 
 **Why a fine-grained PAT scoped to `contents:write` + `pull-requests:write` is not (yet) a viable
 alternative:** GitHub's fine-grained PAT permission model does not cleanly separate "can open/push
@@ -147,8 +230,13 @@ merge endpoint, it stays a rejected candidate, not a pending one.
    looking for it.
 5. An incident runbook — what to do if a Routine's PR is wrong, if its credential leaks, or if it
    fires more often than intended.
+6. **[R1 fix, new item]** An ask-tier PreToolUse gate on `RemoteTrigger` and `CronCreate` (§4's
+   `[R1 fix]`), matching the shape of Phase B's `gh pr merge` gate — closes the "nothing gates a
+   model creating a Routine in the first place" gap for interactive sessions (same local-only
+   caveat as every other mh gate in this ADR: it constrains a human's own session, not a Routine
+   that already exists).
 
-None of items 2-5 ship with this ADR. They are named here as what the eventual implementation
+None of items 2-6 ship with this ADR. They are named here as what the eventual implementation
 must include, not built now — Phase C is explicitly ADR-drafting and review-scheduling only.
 
 ## 6. Cost
@@ -190,6 +278,12 @@ own stated reasoning, not just against a summary of them?
 - No unresolved REJECT verdict from any wave.
 - A REJECT must cite a specific file/behavior/line, not a general objection — an evidence
   standard, not a veto by assertion.
+- **[R1 fix, closes the §5/§7 circularity 3 of 5 Wave-1 reviewers independently flagged]** §5
+  item 1's empirical merge-endpoint test must have been run, with its actual result (denied — with
+  what error — or unexpectedly succeeded) recorded in this ADR as a dated addendum, before
+  acceptance. This does not require the *rest* of §5 (items 2-6, the runbook/alerting/gate
+  machinery) to be built first — only that the one load-bearing empirical fact §4 rests the whole
+  enforcement argument on has actually been checked, not merely designed.
 - **Owner and timeout, so this cannot deadlock:** the operator is the named owner for breaking any
   stalemate a REJECT creates; a review wave that has not converged within a reasonable, explicitly
   time-boxed window escalates to the operator for a direct decision rather than looping
