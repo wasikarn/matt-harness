@@ -68,6 +68,11 @@
         "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/config-write-guard.sh\""
       },
       {
+        "id": "gate:write:secret-scan",
+        "description": "Ask when a Write/Edit introduces a new vendor-specific live-credential token (AWS, Anthropic, OpenAI, GitHub, GitLab, HuggingFace, Slack, Stripe secret/restricted, Google API key, npm, PyPI, PEM private key) that isn't a canonical placeholder or same-line-suppressed.",
+        "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/secret-scan.sh\""
+      },
+      {
         "id": "gate:skill:codex-setup-guard",
         "description": "Ask before a model-invoked Skill(codex:setup) call carrying --enable-review-gate; the paired Codex plugin's review gate stays off by design.",
         "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/codex-setup-guard.sh\""

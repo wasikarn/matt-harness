@@ -1,0 +1,270 @@
+#!/usr/bin/env bash
+# Behavioral tests for secret-scan.sh (gate:write:secret-scan).
+# Run standalone: bash tests/hooks/test-secret-scan.sh
+#
+# No literal token-shaped secret string appears in this file -- every test
+# token's variable/random portion is generated at runtime via a seeded RNG,
+# so the file itself never contains a live-credential-shaped substring that
+# could trip GitHub's own push-protection scanner (or this gate) when
+# committed. The one exception is AWS's own publicly documented placeholder
+# example (AKIAIOSFODNN7EXAMPLE), which every scanner already allowlists.
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+GATE="$ROOT/hooks/gates/secret-scan.sh"
+
+pass=0
+fail=0
+
+# rnd <len> <charset> <seed> -- deterministic per-run pseudo-random body text
+rnd() {
+  python3 -c 'import random,sys; r=random.Random(int(sys.argv[3])); print("".join(r.choice(sys.argv[2]) for _ in range(int(sys.argv[1]))))' "$1" "$2" "$3"
+}
+
+UPPER36="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+ALNUM="ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+ALNUM_DASH="${ALNUM}-_"
+DIGITS="0123456789"
+
+payload_write_content() { # payload_write_content <file_path> <content>
+  python3 -c 'import json,sys; print(json.dumps({"tool_name":"Write","tool_input":{"file_path":sys.argv[1],"content":sys.argv[2]}}))' "$1" "$2"
+}
+
+payload_edit() { # payload_edit <file_path> <old_string> <new_string>
+  python3 -c 'import json,sys; print(json.dumps({"tool_name":"Edit","tool_input":{"file_path":sys.argv[1],"old_string":sys.argv[2],"new_string":sys.argv[3]}}))' "$1" "$2" "$3"
+}
+
+check() { # check <desc> <ok:0|1>
+  if [ "$2" -eq 0 ]; then echo "  ✅ $1"; pass=$((pass + 1))
+  else echo "  ❌ $1" >&2; fail=$((fail + 1)); fi
+}
+
+echo "=== secret-scan gate ==="
+
+FIXTURE=$(mktemp -d)
+NOSIBLING=$(mktemp -d)
+trap 'trash "$FIXTURE" "$NOSIBLING" 2>/dev/null || true' EXIT
+export MH_GATE_JOURNAL_PATH="$FIXTURE/gate-decisions.jsonl"
+
+asks() { # asks <content> -- the gate's stdout for a Write of <content>
+  payload_write_content "$FIXTURE/scratch.txt" "$1" | bash "$GATE" 2>/dev/null
+}
+
+# --- true positives: one per vendor pattern -----------------------------
+
+aws1="AKIA$(rnd 16 "$UPPER36" 1)"
+out=$(asks "$aws1"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "AWS access key (AKIA) -> ask" "$ok"
+
+aws2="ASIA$(rnd 16 "$UPPER36" 2)"
+out=$(asks "$aws2"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "AWS session key (ASIA) -> ask" "$ok"
+
+anthropic="sk-ant-api03-$(rnd 40 "$ALNUM_DASH" 3)"
+out=$(asks "$anthropic"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Anthropic key -> ask" "$ok"
+
+openai="sk-proj-$(rnd 25 "$ALNUM_DASH" 4)T3BlbkFJ$(rnd 25 "$ALNUM_DASH" 5)"
+out=$(asks "$openai"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "OpenAI key (marker-anchored) -> ask" "$ok"
+
+ghp="ghp_$(rnd 36 "$ALNUM" 6)"
+out=$(asks "$ghp"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "GitHub ghp_ token -> ask" "$ok"
+
+ghu="ghu_$(rnd 36 "$ALNUM" 7)"
+out=$(asks "$ghu"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "GitHub ghu_ token (round-2 addition) -> ask" "$ok"
+
+ghr="ghr_$(rnd 36 "$ALNUM" 8)"
+out=$(asks "$ghr"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "GitHub ghr_ token (round-2 addition) -> ask" "$ok"
+
+ghfine="github_pat_$(rnd 82 "${ALNUM}_" 9)"
+out=$(asks "$ghfine"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "GitHub fine-grained PAT -> ask" "$ok"
+
+gitlab="glpat-$(rnd 20 "$ALNUM_DASH" 10)"
+out=$(asks "$gitlab"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "GitLab PAT -> ask" "$ok"
+
+hf="hf_$(rnd 34 "$ALNUM" 11)"
+out=$(asks "$hf"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "HuggingFace token -> ask" "$ok"
+
+slack="xoxb-$(rnd 12 "$DIGITS" 12)-$(rnd 12 "$DIGITS" 13)-$(rnd 24 "$ALNUM" 14)"
+out=$(asks "$slack"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Slack token -> ask" "$ok"
+
+stripe_test="sk_test_$(rnd 24 "$ALNUM" 15)"
+out=$(asks "$stripe_test"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Stripe sk_test_ -> ask" "$ok"
+
+stripe_live="rk_live_$(rnd 24 "$ALNUM" 16)"
+out=$(asks "$stripe_live"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Stripe rk_live_ -> ask" "$ok"
+
+stripe_prod="sk_prod_$(rnd 24 "$ALNUM" 17)"
+out=$(asks "$stripe_prod"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Stripe sk_prod_ (round-2 correction: gitleaks covers prod too) -> ask" "$ok"
+
+google="AIza$(rnd 35 "$ALNUM_DASH" 18)"
+out=$(asks "$google"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Google API key -> ask" "$ok"
+
+npmtok="npm_$(rnd 36 "$ALNUM" 19)"
+out=$(asks "$npmtok"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "npm token -> ask" "$ok"
+
+pypitok="pypi-AgEIcHlwaS5vcmc$(rnd 50 "$ALNUM_DASH" 20)"
+out=$(asks "$pypitok"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "PyPI token -> ask" "$ok"
+
+pem=$'-----BEGIN RSA PRIVATE KEY-----\n'"$(rnd 60 "${ALNUM}+/=" 21)"
+out=$(asks "$pem"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "PEM private key with a real base64 body line -> ask" "$ok"
+
+awsE="AKIA$(rnd 16 "$UPPER36" 22)"
+out=$(payload_edit "$FIXTURE/scratch.txt" "placeholder" "$awsE" | bash "$GATE" 2>/dev/null)
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Edit new_string introduces AWS key -> ask" "$ok"
+
+# --- Codex round-4 regression: AWS/Anthropic capture group must exist ----
+# (an earlier draft omitted it entirely; match.group(1) would have raised
+# IndexError -> outer fail-open -> total, silent bypass for both vendors.)
+awsCG="AKIA$(rnd 16 "$UPPER36" 23)"
+out=$(asks "$awsCG"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "AWS key reaches the placeholder-check path without an IndexError -> ask" "$ok"
+
+anthropicCG="sk-ant-api03-$(rnd 40 "$ALNUM_DASH" 24)"
+out=$(asks "$anthropicCG"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "Anthropic key reaches the placeholder-check path without an IndexError -> ask" "$ok"
+
+# --- placeholder filter: fully specified round-2 algorithm ---------------
+
+awsExample="AKIAIOSFODNN7EXAMPLE"
+out=$(asks "$awsExample"); ok=1; [ -z "$out" ] && ok=0
+check "AWS published example token (exact-match list) -> silent" "$ok"
+
+awsAllSame="AKIA$(printf 'X%.0s' $(seq 1 16))"
+out=$(asks "$awsAllSame"); ok=1; [ -z "$out" ] && ok=0
+check "100% repeated-char body -> silent (placeholder)" "$ok"
+
+ascBody=$(python3 -c "print(''.join(chr(65+i) for i in range(16)))")
+awsAscending="AKIA${ascBody}"
+out=$(asks "$awsAscending"); ok=1; [ -z "$out" ] && ok=0
+check "100% ascending-run body -> silent (placeholder)" "$ok"
+
+descBody=$(python3 -c "print(''.join(chr(90-i) for i in range(16)))")
+awsDescending="AKIA${descBody}"
+out=$(asks "$awsDescending"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "100% DEscending-run body -> still asks (algorithm is ascending-only, round-2 spec)" "$ok"
+
+# --- Codex round-1 regression: substring word-check bypass stays closed --
+
+sampleBypass="AKIA$(rnd 5 "$UPPER36" 25)SAMPLE$(rnd 5 "$UPPER36" 26)"
+out=$(asks "$sampleBypass"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "realistic token containing substring SAMPLE -> still asks (round-1 bypass stays closed)" "$ok"
+
+yourBypass="AKIA$(rnd 4 "$UPPER36" 27)YOUR$(rnd 8 "$UPPER36" 28)"
+out=$(asks "$yourBypass"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "realistic token containing substring YOUR -> still asks (round-1 bypass stays closed)" "$ok"
+
+# --- Codex round-2 regression: a short coincidental run isn't 90% --------
+
+shortRun="AKIA$(rnd 6 "$UPPER36" 29)789$(rnd 7 "$UPPER36" 30)"
+out=$(asks "$shortRun"); ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "short 3-char coincidental ascending run inside random body -> still asks (90% threshold holds)" "$ok"
+
+# --- precision: patterns that must NOT match ------------------------------
+
+pkLive="pk_live_$(rnd 24 "$ALNUM" 31)"
+out=$(asks "$pkLive"); ok=1; [ -z "$out" ] && ok=0
+check "Stripe pk_live_ (publishable key) -> silent (dropped from pattern list)" "$ok"
+
+pemNoBody="-----BEGIN RSA PRIVATE KEY-----"
+out=$(asks "$pemNoBody"); ok=1; [ -z "$out" ] && ok=0
+check "PEM header with no base64 body line -> silent" "$ok"
+
+openaiNoMarker="sk-$(rnd 48 "$ALNUM_DASH" 32)"
+out=$(asks "$openaiNoMarker"); ok=1; [ -z "$out" ] && ok=0
+check "sk- token without the OpenAI T3BlbkFJ marker -> silent" "$ok"
+
+awsShort="AKIA$(rnd 15 "$UPPER36" 33)"
+out=$(asks "$awsShort"); ok=1; [ -z "$out" ] && ok=0
+check "AWS body one char SHORT (15 not 16) -> silent" "$ok"
+
+ghpShort="ghp_$(rnd 35 "$ALNUM" 34)"
+out=$(asks "$ghpShort"); ok=1; [ -z "$out" ] && ok=0
+check "GitHub token body one char SHORT (35 not 36) -> silent" "$ok"
+
+# Validator-flagged coverage gap: only the SHORT boundary was tested above.
+# One char LONG proves the trailing \b word-boundary guard is intact -- a
+# regression that dropped it could let a 17-char run match the first 16
+# chars anyway, which this test would catch.
+awsLong="AKIA$(rnd 17 "$UPPER36" 39)"
+out=$(asks "$awsLong"); ok=1; [ -z "$out" ] && ok=0
+check "AWS body one char LONG (17 not 16) -> silent (\\b boundary guard intact)" "$ok"
+
+# --- suppression: same-line marker only, and it's journaled ---------------
+
+: > "$MH_GATE_JOURNAL_PATH"
+suppressedTok1="AKIA$(rnd 16 "$UPPER36" 35)"
+out=$(asks "${suppressedTok1}  # gitleaks:allow"); ok=1; [ -z "$out" ] && ok=0
+check "gitleaks:allow on the match's own line -> silent" "$ok"
+ok=1; /usr/bin/grep -q '"decision": "allow-suppressed"' "$MH_GATE_JOURNAL_PATH" && ok=0
+check "suppressed match is journaled as allow-suppressed" "$ok"
+ok=1; /usr/bin/grep -qF "$suppressedTok1" "$MH_GATE_JOURNAL_PATH" || ok=0
+check "journal row never contains the actual matched token" "$ok"
+
+: > "$MH_GATE_JOURNAL_PATH"
+suppressedTok2="AKIA$(rnd 16 "$UPPER36" 36)"
+out=$(asks "${suppressedTok2} // pragma: allowlist secret"); ok=1; [ -z "$out" ] && ok=0
+check "pragma: allowlist secret on the match's own line -> silent" "$ok"
+
+markerTok="AKIA$(rnd 16 "$UPPER36" 37)"
+out=$(asks $'# gitleaks:allow\n'"${markerTok}")
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "marker on the PREVIOUS line (not the match's own line) -> still asks" "$ok"
+
+# --- reason hygiene: the ask reason never contains the actual token -------
+
+hygieneTok="AKIA$(rnd 16 "$UPPER36" 38)"
+out=$(asks "$hygieneTok")
+if echo "$out" | /usr/bin/grep -qF "$hygieneTok"; then ok=1; else ok=0; fi
+check "ask reason never contains the actual matched token" "$ok"
+ok=1; echo "$out" | /usr/bin/grep -q "AWS access/session key" && ok=0
+check "ask reason names the vendor label" "$ok"
+
+# --- error path / canary sanity -------------------------------------------
+
+for p in '{"tool_name":"Bash","tool_input":{"command":"ls -la"}}' \
+         '{"tool_name":"Bash","agent_id":"canary","tool_input":{"command":"git status"}}' \
+         '{"tool_name":"Edit","tool_input":{"file_path":"src/app.ts","old_string":"a","new_string":"b"}}' \
+         '{"tool_name":"Write","tool_input":{"file_path":"src/app.ts","content":"x"}}' \
+         '{"tool_name":"TaskUpdate","tool_input":{"taskId":"1","status":"in_progress"}}'; do
+  err=$(printf '%s' "$p" | bash "$GATE" 2>&1 >/dev/null); rc=$?
+  ok=1; [ "$rc" -eq 0 ] && [ -z "$err" ] && ok=0
+  check "gate-canary payload allows cleanly: ${p:0:45}..." "$ok"
+done
+
+out=$(printf 'not json' | bash "$GATE" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
+check "non-JSON stdin -> exit 0, no output (fail open)" "$ok"
+
+cp "$GATE" "$NOSIBLING/secret-scan.sh"
+# Captured to a variable first, then fed via a here-string -- NOT piped
+# directly from the python3 generator. The .sh wrapper exits before ever
+# invoking python3 on this path (missing sibling), so it never drains
+# stdin; piping straight in lets the generator's BrokenPipeError (SIGPIPE)
+# exit non-zero and, under this file's own `pipefail`, override the gate's
+# real exit 0. Documented gotcha, not a bug in the gate itself.
+noSiblingPayload=$(payload_write_content "$FIXTURE/x.txt" "hello")
+err=$(bash "$NOSIBLING/secret-scan.sh" <<<"$noSiblingPayload" 2>&1 >/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && echo "$err" | /usr/bin/grep -qi "allowing" && ok=0
+check "missing sibling .py -> allow with a stderr note" "$ok"
+
+echo ""
+total=$((pass + fail))
+echo "=== $pass/$total passed ==="
+[ "$fail" -eq 0 ] && exit 0 || exit 1

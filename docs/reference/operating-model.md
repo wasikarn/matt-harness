@@ -19,6 +19,7 @@ tool call — see its own row below for what that means in practice:
 | `gate:task:complete-separation` | a subagent marking its own task complete |
 | `gate:write:test-integrity` | asks before a write that weakens a test |
 | `gate:write:config-guard` | asks before a write to Claude Code settings `hooks`/`enabledPlugins` |
+| `gate:write:secret-scan` | asks when a Write/Edit introduces a new vendor-specific live-credential-shaped token (AWS, Anthropic, OpenAI, GitHub, GitLab, HuggingFace, Slack, Stripe, Google, npm, PyPI, PEM) that isn't a canonical placeholder or same-line-suppressed — the only mechanism catching a pasted secret today; `MultiEdit`, Bash-mediated writes, and Codex-rescue writes bypass it with no other backstop (`git-hooks/pre-commit`/`pre-push` have zero secret-content scanning) |
 | `gate:skill:codex-setup-guard` | asks before a model-invoked `Skill(codex:setup)` call carrying `--enable-review-gate` |
 | `gate:agent:subagent-verdict-check` | `SubagentStop`, plus a `PreToolUse` twin (`gate:agent:subagent-verdict-check-handback`, matcher `SubagentHandback`) that runs the same check on `tool_input.message` for the auto-mode delivery path on CC >= 2.1.271 (GH #160; the deny is a re-prompt with no counter, bounded by Claude Code's own turn budget): blocks a subagent's Stop and re-prompts it once when its final message contains a Rule 13 `{pass, findings[], checked[], scope_ok, unexpected_files[]}`-shaped object that is vacuous (`pass:true` with both `findings[]` and `checked[]` empty) or self-contradictory (`pass:true` with `scope_ok:false` or a non-empty `unexpected_files[]`); allows on `stop_hook_active:true`, `NEEDS-DECISION`, ambiguous multi-candidate output, or no verdict-shaped output at all |
 
@@ -30,7 +31,10 @@ Each gate owns its error path, and the policy is written in the gate, not assume
 cannot tokenize asks (`could not safely tokenize`); a missing `python3` always allows, announced
 on stderr (#93); a missing sibling script denies (exit 2) for `irrecoverable.py`, but allows
 (same stderr-note posture) for the four subagent-scoped gates (`subagent-git-guard`,
-`task-complete-separation`, `subagent-spawn-guard`, `subagent-verdict-check`). `scripts/gate-canary.sh` proves
+`task-complete-separation`, `subagent-spawn-guard`, `subagent-verdict-check`) and for
+`secret-scan.py` — its verdict is advisory on a write already happening, and it runs on every
+Write/Edit in every host project loading this plugin, so an internal exception there also allows
+rather than asking. `scripts/gate-canary.sh` proves
 every staged gate still allows benign payloads. The table is the contract; the hook type is
 not. Claude Code's proposed function hooks (anthropics/claude-code#91870, prototype behind
 `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS` since 2.1.260; `claude plugin validate` already lists a

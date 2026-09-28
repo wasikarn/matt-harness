@@ -3,6 +3,61 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.142] — 2026-09-28
+
+New gate: `gate:write:secret-scan`, closing a gap `mh:idea-audit`'s Round-4 re-scan of Anthropic's
+"AI-Native SDLC playbook" confirmed — zero secret-content scanning existed anywhere in the hook
+fleet. Plan reviewed by Codex (`codex-review:plan`, 5 rounds to APPROVED) before any code was
+written; Codex caught 2 factual errors (Stripe's `prod_` prefix, a stale "no backstop needed"
+claim disproven by checking `git-hooks/pre-commit`/`pre-push` directly), 1 real false-negative
+security bypass (a generic word-substring placeholder filter), 1 bug class this repo already paid
+to fix once before (`UnicodeDecodeError` is not an `OSError` subclass — reused from a design that
+would have reintroduced `config-write-guard.py`'s own prior incident), and 1 outright crash bug
+(AWS/Anthropic regexes missing their capture group, which would have raised `IndexError` and, via
+the fail-open handler, silently let every real AWS/Anthropic key through).
+
+### Added
+
+- **`hooks/gates/secret-scan.{sh,py}` + `tests/hooks/test-secret-scan.sh` (48 cases).** ASK, not
+  DENY — `docs/reference/operating-model.md` reserves DENY for the literal irrecoverable set; a
+  pasted secret in a working-tree file is reversible. Fails open on any internal error (missing
+  `python3`, missing sibling script, an exception in `secret-scan.py`) — its verdict is advisory
+  on a write already happening, and it runs on every Write/Edit in every host project that loads
+  this plugin, so an internal bug must never turn into an ask on every write everywhere.
+- **Pinned, vendor-specific regex list** (no entropy scanning — reused from a near-identical
+  pre-2026-06-27-rebuild gate of the same name, corrected against gitleaks' live rules rather than
+  "verify while implementing"): AWS, Anthropic, OpenAI (marker-anchored on `T3BlbkFJ`), GitHub
+  (`ghp_`/`gho_`/`ghu_`/`ghs_`/`ghr_`, plus fine-grained PATs), GitLab, HuggingFace, Slack, Stripe
+  secret/restricted (`test`/`live`/`prod`, all three — an earlier draft wrongly excluded `prod_`),
+  Google API key, npm, PyPI, and a PEM private-key body. Dropped `pk_live_` (Stripe publishable
+  keys are meant to be public).
+- **Fully-specified placeholder filter**: skips a match only when its captured variable portion is
+  ≥90% one repeated-or-ascending-by-1 run, or exactly matches a short, explicit, add-as-needed list
+  of published vendor example values (`AKIAIOSFODNN7EXAMPLE` only, for now) — never a generic
+  word-substring check (`your`/`fake`/`sample`/etc.), which would silently pass a real leaked key
+  that happens to contain one of those words.
+- **Same-line suppression**, reusing existing industry markers (`gitleaks:allow` /
+  `pragma: allowlist secret`) instead of inventing one; every suppressed match is journaled as a
+  new `"allow-suppressed"` decision via `hooks/gates/_journal.py` (never the token) — the original
+  design had zero audit trail for a suppressed match.
+- **No token material anywhere in the reason string** — only the vendor label, file path, and line
+  number (the pre-rebuild gate's 20-char preview leaked most of a real AWS key ID into the ask
+  text/transcript; even this plan's own first draft's 6-char preview was cut entirely).
+- **No target-file/baseline reads** — an earlier draft tried to suppress re-asking on an
+  already-on-disk secret by reading the file, which reintroduced the exact `UnicodeDecodeError`
+  class `config-write-guard.py`'s own header already documents from a real prior incident, plus
+  TOCTOU/FIFO/oversized-file exposure. Dropped entirely: `Write` scans `content`, `Edit` scans
+  `new_string`, no disk comparison. Accepted UX cost: a whole-file `Write` reproducing an
+  already-approved secret asks again (one keystroke, not a security cost).
+- **Scope, stated honestly**: `MultiEdit` is out of scope (matching `config-write-guard.sh`'s own
+  precedent for this tool pair); Bash-mediated writes and Codex-rescue writes also bypass this
+  gate. There is currently **no other backstop** — `git-hooks/pre-commit`/`pre-push` have zero
+  secret-content scanning, confirmed by direct grep, not assumed.
+- Registered in `hooks/hooks.json`/`hooks/hook-registry.json` (PreToolUse index 6, right after
+  `gate:write:config-guard`) and `docs/reference/operating-model.md`/`README.md`/
+  `docs/reference/codex-integration-map.md`'s gate tables/lists; `hooks/gates/_journal.py`'s header
+  comment updated to name the new `"allow-suppressed"` decision value (signature unchanged).
+
 ## [1.1.141] — 2026-09-27
 
 `mh:deep-audit` of the un-audited dotfiles doctrine/prompt-audit delta (this session's earlier

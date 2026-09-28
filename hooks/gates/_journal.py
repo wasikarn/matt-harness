@@ -10,10 +10,12 @@ import json, os
 
 
 def journal(gate_id, tool_name, decision, session_id=None):
-    # Non-allow verdicts only ("ask"/"deny") -- matches the actual need ("how
-    # often did gate X block/ask") and avoids the write-rate of logging every
-    # allow. Must NEVER affect the calling gate's own exit code or verdict:
-    # every failure mode below is swallowed silently.
+    # Non-allow verdicts only ("ask"/"deny", plus secret-scan.py's own
+    # "allow-suppressed" for a same-line-marker-suppressed match) -- matches
+    # the actual need ("how often did gate X block/ask") and avoids the
+    # write-rate of logging every allow. Must NEVER affect the calling
+    # gate's own exit code or verdict: every failure mode below is
+    # swallowed silently.
     try:
         override = os.environ.get("MH_GATE_JOURNAL_PATH")  # test-layer override,
         if override:                                        # same naming precedent

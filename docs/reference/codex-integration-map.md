@@ -37,8 +37,10 @@ above.
 
 `/codex:rescue` edits files through the Codex app-server, not through Claude Code's tool-call
 pipeline — none of mh's other gates (`gate:bash:irrecoverable`, `gate:bash:subagent-git-guard`,
-`gate:task:complete-separation`, `gate:write:test-integrity`, `gate:write:config-guard`) see
-those writes. **This repo's own git hooks (`git-hooks/pre-commit`, `pre-push`) are the
+`gate:task:complete-separation`, `gate:write:test-integrity`, `gate:write:config-guard`,
+`gate:write:secret-scan`) see those writes; `secret-scan` in particular has no other backstop at
+all — `git-hooks/pre-commit`/`pre-push` do lint/harness-audit/gauntlet, not secret-content
+scanning. **This repo's own git hooks (`git-hooks/pre-commit`, `pre-push`) are the
 vendor-agnostic floor**: whatever wrote a file, the same lint, harness-audit, and gauntlet run
 before it ships, regardless of which agent produced it. ADR-0001 records why no codex-specific
 gate picks up the rescue dispatch as a rider on this trial. `gate:agent:subagent-spawn-guard`
