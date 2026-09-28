@@ -53,8 +53,10 @@ by which side of that line its verdict sits on, not by copying an existing wrapp
 
 ## 2. The maker never grades its own work
 
-An LLM cannot reliably judge output it produced in the same context (self-preference bias;
-task-completion self-grading tops out near chance). So:
+An LLM cannot reliably judge output it produced in the same context — self-preference bias is
+structural, not a capability gap that shrinks as models improve (2026 benchmarks still find
+frontier models giving their own model family 75-84% win rates in self-judged comparisons; see
+`docs/research/autonomous-loop-doctrine-drilldown-2026-09-28.md` Finding 2a for sources). So:
 
 - A builder that touched 2+ files or a test gets a fresh-context validator (METHODOLOGY Rule 13).
 - Reviewer agents are read-only (`harness-audit` check 32) and return findings, never a verdict

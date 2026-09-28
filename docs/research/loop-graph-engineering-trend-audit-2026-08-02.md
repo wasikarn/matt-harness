@@ -179,6 +179,12 @@ mechanism changes:
     `agent()` call returns a structurally validated pass/fail — a score. Option (c) is the
     loop-engineering trend's central fix applied to the one place in kbg's own architecture that
     still lacks it.
+  - **Correction (2026-09-28, verified via `git log --all --diff-filter=A -- "*agent-loop-verifier-crux*"`,
+    zero results):** `agent-loop-verifier-crux.md` never existed in this repo's git history. The
+    real, live primary source for this argument is `docs/reference/operating-model.md`, section
+    "2. The maker never grades its own work". Full trace:
+    `docs/research/autonomous-loop-doctrine-drilldown-2026-09-28.md`, Finding 1. Doesn't change
+    this document's conclusion.
 
 Not yet done, at the time this was written: this was a real candidate, not an implemented fix.
 

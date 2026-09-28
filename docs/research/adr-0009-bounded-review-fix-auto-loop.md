@@ -22,6 +22,12 @@
 > `force_human` field — `ceiling` is now its own reason, never conflated
 > with `malformed-force-human`. Full design: `skills/review-pr/scripts/
 > should-continue-loop.sh`'s header comment.
+> **Correction (2026-09-28):** the "Implemented" half of this status is now stale —
+> `skills/review-pr/scripts/should-continue-loop.sh` and audit check 59 were deleted by commit
+> `b31eaa13` ("retire the review pipeline, route to mattpocock-skills:code-review"), an unrelated
+> decision, not a reversal of this ADR. The *decision* below still stands as precedent; there is
+> currently no live auto-continue mechanism of any kind in this repo. Full trace:
+> `docs/research/autonomous-loop-doctrine-drilldown-2026-09-28.md`, Finding 3.
 > **Date:** 2026-08-14 · **Decider:** Operator · **Supersedes:** the "no model
 > self-start" *expression* of ADR 0006, narrowly for the bounded review→fix loop.
 > **Retains:** the maker≠checker *principle*, the computational merge-gate, the
@@ -115,6 +121,13 @@ the irrecoverable set computationally, advise on the rest; the operator is the
 authority at every irreversible boundary; no model self-start.* The retiring
 crux (`agent-loop-verifier-crux.md`): *the gate is a verifier, the model is the
 maker, and the maker can never grade its own work — "two optimists agreeing."*
+
+**Correction (2026-09-28, verified via `git log --all --diff-filter=A -- "*agent-loop-verifier-crux*"`,
+zero results):** `agent-loop-verifier-crux.md` never existed in this repo's git history. The real,
+live primary source for this argument is `docs/reference/operating-model.md`, section "2. The
+maker never grades its own work" (titled "Why — the unifying crux" before the 2026-06-27 rebuild).
+Full trace: `docs/research/autonomous-loop-doctrine-drilldown-2026-09-28.md`, Finding 1. Doesn't
+change this ADR's decision or status.
 
 The broader idea — a model-driven auto-loop / "reasoning governance runtime" —
 recurred **4×** on a single day (2026-07-01), each a generic "Phase N" framework
