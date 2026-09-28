@@ -243,9 +243,10 @@ for p in '{"tool_name":"Bash","tool_input":{"command":"ls -la"}}' \
          '{"tool_name":"Edit","tool_input":{"file_path":"src/app.ts","old_string":"a","new_string":"b"}}' \
          '{"tool_name":"Write","tool_input":{"file_path":"src/app.ts","content":"x"}}' \
          '{"tool_name":"TaskUpdate","tool_input":{"taskId":"1","status":"in_progress"}}'; do
-  err=$(printf '%s' "$p" | bash "$GATE" 2>&1 >/dev/null); rc=$?
-  ok=1; [ "$rc" -eq 0 ] && [ -z "$err" ] && ok=0
-  check "gate-canary payload allows cleanly: ${p:0:45}..." "$ok"
+  out=$(printf '%s' "$p" | bash "$GATE" 2>"$FIXTURE/canary-err"); rc=$?
+  err=$(cat "$FIXTURE/canary-err")
+  ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && [ -z "$err" ] && ok=0
+  check "gate-canary payload allows cleanly, empty stdout+stderr: ${p:0:45}..." "$ok"
 done
 
 out=$(printf 'not json' | bash "$GATE" 2>/dev/null); rc=$?

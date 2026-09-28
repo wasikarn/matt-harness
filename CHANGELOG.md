@@ -33,7 +33,8 @@ the fail-open handler, silently let every real AWS/Anthropic key through).
   keys are meant to be public).
 - **Fully-specified placeholder filter**: skips a match only when its captured variable portion is
   ≥90% one repeated-or-ascending-by-1 run, or exactly matches a short, explicit, add-as-needed list
-  of published vendor example values (`AKIAIOSFODNN7EXAMPLE` only, for now) — never a generic
+  of published vendor example values (one entry for now, AWS's own documented placeholder — see
+  `EXAMPLE_TOKENS` in `hooks/gates/secret-scan.py`) — never a generic
   word-substring check (`your`/`fake`/`sample`/etc.), which would silently pass a real leaked key
   that happens to contain one of those words.
 - **Same-line suppression**, reusing existing industry markers (`gitleaks:allow` /
