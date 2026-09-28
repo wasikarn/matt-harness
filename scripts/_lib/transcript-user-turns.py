@@ -10,6 +10,19 @@ none of its content blocks are tool_result -- the JSONL format allows a
 mixed turn in principle, and treating one as non-human on any tool_result
 block errs toward under- rather than over-including tool noise.
 
+A third non-human case: an async task's completion callback (a dispatched
+Agent or a backgrounded Bash command) rides back as plain-string "user"
+content starting with "<task-notification>", not a tool_result block
+(hooks/stop/cost-tracker.sh's jq filter uses the same
+startswith("<task-notification>") check to recognize it). A fourth and
+fifth: `isMeta` events (skill bodies, local-command output, system
+reminders -- skills/meta/learn/SKILL.md's own transcript filter treats
+this the same way) and `isCompactSummary` events (a compaction's own
+re-stated prior turns, which would otherwise double-print). Other wrapper
+shapes (`<local-command-stdout>`, `<bash-stdout>`, `<bash-input>`,
+"[Request interrupted...]") are not filtered here -- out of scope until a
+caller actually needs them excluded.
+
 Usage: python3 transcript-user-turns.py <path-to-session.jsonl>
 Prints each human turn's text to stdout, separated by a "--- turn N ---"
 marker line and a blank line.
@@ -20,9 +33,10 @@ import sys
 
 def turn_text(content):
     """Return a user event's human-readable text, or "" if it is not a
-    plain human turn (content is missing, empty, or carries a tool_result)."""
+    plain human turn (content is missing, empty, carries a tool_result, or
+    is a task-notification callback)."""
     if isinstance(content, str):
-        return content
+        return "" if content.startswith("<task-notification>") else content
     if not isinstance(content, list):
         return ""
     if any(isinstance(b, dict) and b.get("type") == "tool_result" for b in content):
@@ -44,6 +58,8 @@ def human_turns(lines):
             continue
         if not isinstance(event, dict) or event.get("type") != "user":
             continue
+        if event.get("isMeta") or event.get("isCompactSummary"):
+            continue
         message = event.get("message")
         if not isinstance(message, dict):
             continue
@@ -63,6 +79,12 @@ def _selftest():
         "",
         "not json",
         json.dumps({"type": "user", "message": {"role": "user", "content": "   "}}),
+        json.dumps({"type": "user", "message": {"role": "user",
+                    "content": "<task-notification>\n<task-id>aaa</task-id>\n<status>completed</status>\n</task-notification>"}}),
+        json.dumps({"type": "user", "isMeta": True, "message": {"role": "user",
+                    "content": "Base directory for this skill: /path/to/skill"}}),
+        json.dumps({"type": "user", "isCompactSummary": True, "message": {"role": "user",
+                    "content": "This session is being continued from a previous conversation..."}}),
     ]
     turns = list(human_turns(fixture))
     assert turns == ["hello", "second prompt"], turns
