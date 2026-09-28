@@ -18,6 +18,7 @@ IRRECOVERABLE="$ROOT/hooks/gates/irrecoverable.sh"
 TASK_COMPLETE="$ROOT/hooks/gates/task-complete-separation.sh"
 SUBAGENT_GIT_GUARD="$ROOT/hooks/gates/subagent-git-guard.sh"
 SUBAGENT_SPAWN_GUARD="$ROOT/hooks/gates/subagent-spawn-guard.sh"
+ROUTINE_TRIGGER_GUARD="$ROOT/hooks/gates/routine-trigger-guard.sh"
 
 pass=0
 fail=0
@@ -165,6 +166,11 @@ key = "agent" + chr(92) + "u005f" + "id"
 print("{\"tool_name\": \"Agent\", \"tool_input\": {\"prompt\": \"do work\", "
       "\"description\": \"task\", \"subagent_type\": \"general-purpose\"}, \"" + key + "\": \"agent-1\"}")
 '
+}
+
+# Build a RemoteTrigger or CronCreate tool-call payload ($1 = tool name).
+routine_trigger_payload() {
+  python3 -c 'import json, sys; print(json.dumps({"tool_name": sys.argv[1], "tool_input": {}}))' "$1"
 }
 
 # Expect the gate to BLOCK (exit 2).
@@ -1161,6 +1167,19 @@ test_allow "$SUBAGENT_SPAWN_GUARD" "valid JSON but non-object payload (fail-safe
 test_deny "$SUBAGENT_SPAWN_GUARD" "GH #156: 5000-digit unquoted agent_id parses and denies, doesn't fail-open past the int-digit limit" \
   "$(printf '{"tool_name":"Agent","tool_input":{"prompt":"x","description":"y","subagent_type":"general-purpose"},"agent_id":%s}' "$(python3 -c "print('9'*5000)")")"
 
+echo ""
+echo "=== routine-trigger-guard (ADR 0004 §4/§5 item 6: nothing gated RemoteTrigger/CronCreate before this) ==="
+test_ask "$ROUTINE_TRIGGER_GUARD" "RemoteTrigger asks for confirmation" \
+  "$(routine_trigger_payload 'RemoteTrigger')"
+test_ask "$ROUTINE_TRIGGER_GUARD" "CronCreate asks for confirmation" \
+  "$(routine_trigger_payload 'CronCreate')"
+test_allow "$ROUTINE_TRIGGER_GUARD" "unrelated tool (Bash) is out of scope for this gate" \
+  "$(bash_payload 'ls -la')"
+test_allow "$ROUTINE_TRIGGER_GUARD" "malformed stdin (fail-safe allow)" \
+  '{"tool_name": invalid'
+test_allow "$ROUTINE_TRIGGER_GUARD" "valid JSON but non-object payload (fail-safe allow)" \
+  '["RemoteTrigger"]'
+
 echo "=== fast-path (bash pre-filter that skips python3 on commands that cannot match, added 2026-08-14) ==="
 # Irrecoverable gained a bash fast-path so a benign command skips the python3 cold-start.
 test_deny  "$IRRECOVERABLE" "r\"\"m -rf (quote-concatenation -> fast-path quote-strip)" \
@@ -1254,6 +1273,8 @@ test_nopython_allow "$TASK_COMPLETE" "task-complete-separation: subagent complet
   "$(taskupdate_payload 'completed' 'refactor-cleaner')"
 test_nopython_allow "$SUBAGENT_SPAWN_GUARD" "subagent-spawn-guard: subagent calling Agent passes with note" \
   "$(agent_payload 'general-purpose' 'agent-1' 'general-purpose')"
+test_nopython_allow "$ROUTINE_TRIGGER_GUARD" "routine-trigger-guard: RemoteTrigger passes with note" \
+  "$(routine_trigger_payload 'RemoteTrigger')"
 
 # Trash-fallback deny message (#93): with python3 present but NO trash CLI on PATH, the rm -rf
 # deny must still fire (rc=2) and the message must route to the user instead of prescribing a
