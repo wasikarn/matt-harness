@@ -1,12 +1,31 @@
 # Branching model
 
-Single branch: `develop` only. No feature branches. Commit direct; *when* to push follows the
-operator's confirm-before-push policy (`~/.claude/CLAUDE.md`, `# Git`).
+`develop` is protected (2026-09-28, Phase B of the SDLC-playbook reversal): no direct push, PR
+required. Work on a `feat/<slug>` or `claude/<slug>` branch, `gh pr create` against `develop`,
+review via the already-installed `mattpocock-skills:code-review` (verified installed:
+`skills/engineering/code-review` in the `mattpocock-skills` plugin cache) — this repo does not
+rebuild that flow as its own skill (composer-not-creator,
+`docs/reference/composer-not-creator.md`). Merge method: merge-commit or rebase, never squash —
+squash collides with the existing `git branch -D` deny gate on an already-merged feature branch.
+`delete_branch_on_merge: true` on the remote handles cleanup.
 
-Nothing enforces the single-branch rule computationally. The former `git worktree add -b` deny
-was removed in the v1.0.0 rebuild; `claude --worktree` and `/branch` never routed through it
-anyway. `/branch` and `claude --continue --fork-session` are session branches, not git branches:
-they fork the conversation without touching the working tree.
+Enforcement layers, weakest to strongest:
+- `git-hooks/pre-push` refuses a direct push whose remote ref is `refs/heads/develop`, before the
+  gauntlet even runs — local, defense-in-depth, one manual retry if a stdin ref line is malformed.
+- `gate:bash:irrecoverable` asks (not denies — a merge can be a legitimate, operator-approved
+  action) on `gh pr merge` / `gh api .../merge` from an interactive Claude Code session. This
+  covers only a session running with mh loaded — it does **not** constrain the GitHub web UI, a
+  raw API call, or any credential used outside such a session (a cloud Routine, notably — not yet
+  a live threat model here, since mh has no self-launch path; would need its own ADR if that ever
+  changes).
+- GitHub branch protection on `develop` (required status checks, `enforce_admins`) is the real
+  enforcement; a single-maintainer repo means an admin can still edit the protection rule itself —
+  a named, accepted residual risk, not something any of the above closes.
+
+The former `git worktree add -b` deny predates this and was removed in the v1.0.0 rebuild;
+`claude --worktree` and `/branch` never routed through it anyway. `/branch` and
+`claude --continue --fork-session` are session branches, not git branches: they fork the
+conversation without touching the working tree.
 
 **Never run `mattpocock-skills:git-guardrails-claude-code`'s setup here.** It wires a PreToolUse
 hook blocking *all* `git push`, not just `--force`. `gate:write:config-guard` asks on exactly

@@ -1,7 +1,33 @@
 #!/usr/bin/env bash
-# pre-push — run the full parallel gauntlet (scripts/run-gauntlet.sh).
+# pre-push — refuse a direct push to refs/heads/develop (PR-only, B5's branch
+# protection is the real enforcement; this is local defense-in-depth so a
+# rejection is instant instead of a round-trip to GitHub), then run the full
+# parallel gauntlet (scripts/run-gauntlet.sh).
 # Resolve via git: core.hooksPath is shared across linked worktrees.
 set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
+
+# Git's pre-push protocol: one "<local-ref> <local-sha> <remote-ref> <remote-sha>"
+# line per ref being pushed, on stdin. No lines at all means nothing is being
+# pushed that this hook needs to gate (git's own protocol never invokes a
+# pre-push hook with an empty ref set in the first place) — allowed. Any
+# line that fails to parse into exactly 4 whitespace-separated fields fails
+# CLOSED: this hook is defense-in-depth, not the primary control (B5's branch
+# protection is), so a rare false-closed here costs one manual retry, not a
+# security gap from silently letting an unparseable line through.
+while IFS= read -r _line; do
+  # shellcheck disable=SC2206 # deliberate word-split on whitespace-separated ref-line fields
+  _fields=($_line)
+  if [ "${#_fields[@]}" -ne 4 ]; then
+    echo "pre-push: malformed ref line on stdin (expected 4 fields, got ${#_fields[@]}): $_line" >&2
+    exit 1
+  fi
+  _remote_ref="${_fields[2]}"
+  if [ "$_remote_ref" = "refs/heads/develop" ]; then
+    echo "pre-push: direct push to refs/heads/develop is refused — open a PR instead (docs/reference/branching-model.md)." >&2
+    exit 1
+  fi
+done
+
 echo "pre-push: running validation gauntlet..."
 bash "$ROOT/scripts/run-gauntlet.sh"

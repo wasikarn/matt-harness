@@ -773,6 +773,16 @@ test_allow "$IRRECOVERABLE" "realistic longer commit message, well under the GH 
   "$(bash_payload 'git commit -m "Implement feature X with detailed rationale covering edge cases and rollback plan for the release"')"
 
 echo ""
+echo "=== gh merge ask-tier gate (Phase B, 2026-09-28: local defense-in-depth for the PR-review flow) ==="
+test_ask   "$IRRECOVERABLE" "gh pr merge <number>"                "$(bash_payload 'gh pr merge 5')"
+test_ask   "$IRRECOVERABLE" "gh pr merge with --squash flag"       "$(bash_payload 'gh pr merge --squash 5')"
+test_ask   "$IRRECOVERABLE" "gh api .../merge (PUT)"               "$(bash_payload 'gh api repos/wasikarn/matt-harness/pulls/5/merge -X PUT')"
+test_allow "$IRRECOVERABLE" "gh pr view (not a merge)"             "$(bash_payload 'gh pr view 5')"
+test_allow "$IRRECOVERABLE" "gh pr list (not a merge)"             "$(bash_payload 'gh pr list')"
+test_allow "$IRRECOVERABLE" "gh pr create (not a merge)"           "$(bash_payload 'gh pr create --title x --body y')"
+test_allow "$IRRECOVERABLE" "gh api on an unrelated endpoint"      "$(bash_payload 'gh api repos/wasikarn/matt-harness/pulls/5')"
+
+echo ""
 echo "=== task-complete-separation gate (maker≠checker: subagent cannot self-complete) ==="
 # Maker self-completion is the one thing the harness forbids — a subagent (agent_type present)
 # calling TaskUpdate(completed) is blocked at exit 2.
@@ -1164,6 +1174,11 @@ test_deny  "$IRRECOVERABLE" "gi + backslash-newline + t (argv0 split, was a fast
   "$(bash_payload $'gi\\\nt push --force origin develop')"
 test_deny  "$IRRECOVERABLE" "r + backslash-newline + m (argv0 split, was a fast-path bypass)" \
   "$(bash_payload $'r\\\nm -rf /tmp/x')"
+# "gh" was added to the fast-path candidate list alongside the ask-tier gh
+# merge rule (Phase B) -- without this, "gh pr merge" would fast-path
+# straight to allow, never reaching python3's ask() at all.
+test_ask "$IRRECOVERABLE" "gh pr merge reaches python3 through the fast path (not swallowed by it)" \
+  "$(bash_payload 'gh pr merge 5')"
 
 echo ""
 echo "=== python3-missing fail-open (#93: every deny gate must exit 0 with ONE stderr note, never rc=127 or a silent block) ==="

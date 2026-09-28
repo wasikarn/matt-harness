@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# test-pre-push-refs.sh — git-hooks/pre-push's stdin ref-line gate (Phase B,
+# 2026-09-28): refuse a direct push whose remote_ref is refs/heads/develop,
+# before the gauntlet runs. Runs the real hook script against a throwaway
+# fixture repo (own scripts/run-gauntlet.sh stub) so a passing case doesn't
+# have to pay for the real gauntlet, and so this test never touches the real
+# repo's own git state.
+set -uo pipefail
+HERE="$(cd -P "$(dirname "$0")" && pwd)"
+ROOT="$HERE/../.."
+HOOK="$ROOT/git-hooks/pre-push"
+pass=0; fail=0
+ok()  { pass=$((pass + 1)); echo "  PASS: $1"; }
+bad() { fail=$((fail + 1)); echo "  FAIL: $1" >&2; }
+
+echo "=== pre-push: refuse a direct push to refs/heads/develop ==="
+
+FIXTURE=$(mktemp -d "${TMPDIR:-/tmp}/pre-push-fixture.XXXXXX")
+cleanup() { trash "$FIXTURE" 2>/dev/null || true; }
+trap cleanup EXIT
+
+( cd "$FIXTURE" && git init -q . ) >/dev/null 2>&1
+mkdir -p "$FIXTURE/scripts"
+cat > "$FIXTURE/scripts/run-gauntlet.sh" <<'EOF'
+#!/usr/bin/env bash
+echo "stub gauntlet ran"
+exit 0
+EOF
+chmod +x "$FIXTURE/scripts/run-gauntlet.sh"
+
+run_hook() {
+  # stdin from $1 (a file), cwd the fixture repo so `git rev-parse
+  # --show-toplevel` inside the real hook resolves to the fixture, not this
+  # repo.
+  ( cd "$FIXTURE" && bash "$HOOK" < "$1" )
+}
+
+LOCAL_SHA="1111111111111111111111111111111111111111"
+REMOTE_SHA_ZERO="0000000000000000000000000000000000000000"
+
+# --- direct push to develop: refused, gauntlet never runs ---
+in=$(mktemp)
+printf 'refs/heads/feat/x %s refs/heads/develop %s\n' "$LOCAL_SHA" "$REMOTE_SHA_ZERO" > "$in"
+out=$(run_hook "$in" 2>&1); rc=$?
+[[ "$rc" -ne 0 && "$out" == *"refused"* && "$out" != *"stub gauntlet ran"* ]] && ok=1 || ok=0
+assert_pass() { [ "$1" -eq 1 ] && ok "$2" || bad "$2"; }
+assert_pass "$ok" "push to refs/heads/develop is refused, gauntlet never runs"
+trash "$in" 2>/dev/null || true
+
+# --- delete of develop (all-zero local_sha): still refused ---
+in=$(mktemp)
+printf '(delete) %s refs/heads/develop %s\n' "$REMOTE_SHA_ZERO" "$LOCAL_SHA" > "$in"
+out=$(run_hook "$in" 2>&1); rc=$?
+[[ "$rc" -ne 0 && "$out" == *"refused"* ]] && ok=1 || ok=0
+assert_pass "$ok" "deleting refs/heads/develop is also refused (any local_sha, including the delete sentinel)"
+trash "$in" 2>/dev/null || true
+
+# --- multi-ref push, only one line targets develop: refused overall ---
+in=$(mktemp)
+{
+  printf 'refs/heads/feat/x %s refs/heads/feat/x %s\n' "$LOCAL_SHA" "$REMOTE_SHA_ZERO"
+  printf 'refs/heads/y %s refs/heads/develop %s\n' "$LOCAL_SHA" "$REMOTE_SHA_ZERO"
+} > "$in"
+out=$(run_hook "$in" 2>&1); rc=$?
+[[ "$rc" -ne 0 && "$out" == *"refused"* ]] && ok=1 || ok=0
+assert_pass "$ok" "a multi-ref push where only one line targets develop is refused"
+trash "$in" 2>/dev/null || true
+
+# --- a tag push: allowed, gauntlet runs ---
+in=$(mktemp)
+printf 'refs/tags/v1 %s refs/tags/v1 %s\n' "$LOCAL_SHA" "$REMOTE_SHA_ZERO" > "$in"
+out=$(run_hook "$in" 2>&1); rc=$?
+[[ "$rc" -eq 0 && "$out" == *"stub gauntlet ran"* ]] && ok=1 || ok=0
+assert_pass "$ok" "a tag push is allowed"
+trash "$in" 2>/dev/null || true
+
+# --- a feat/* branch: allowed ---
+in=$(mktemp)
+printf 'refs/heads/feat/x %s refs/heads/feat/x %s\n' "$LOCAL_SHA" "$REMOTE_SHA_ZERO" > "$in"
+out=$(run_hook "$in" 2>&1); rc=$?
+[[ "$rc" -eq 0 && "$out" == *"stub gauntlet ran"* ]] && ok=1 || ok=0
+assert_pass "$ok" "a feat/* branch push is allowed"
+trash "$in" 2>/dev/null || true
+
+# --- a fix/* branch: allowed ---
+in=$(mktemp)
+printf 'refs/heads/fix/y %s refs/heads/fix/y %s\n' "$LOCAL_SHA" "$REMOTE_SHA_ZERO" > "$in"
+out=$(run_hook "$in" 2>&1); rc=$?
+[[ "$rc" -eq 0 && "$out" == *"stub gauntlet ran"* ]] && ok=1 || ok=0
+assert_pass "$ok" "a fix/* branch push is allowed"
+trash "$in" 2>/dev/null || true
+
+# --- genuinely empty stdin: allowed ---
+in=$(mktemp)
+: > "$in"
+out=$(run_hook "$in" 2>&1); rc=$?
+[[ "$rc" -eq 0 && "$out" == *"stub gauntlet ran"* ]] && ok=1 || ok=0
+assert_pass "$ok" "empty stdin (nothing to push) is allowed"
+trash "$in" 2>/dev/null || true
+
+# --- a malformed non-empty line: fails closed, with a diagnostic ---
+in=$(mktemp)
+printf 'only-two-fields %s\n' "$LOCAL_SHA" > "$in"
+out=$(run_hook "$in" 2>&1); rc=$?
+[[ "$rc" -ne 0 && "$out" == *"malformed"* && "$out" != *"stub gauntlet ran"* ]] && ok=1 || ok=0
+assert_pass "$ok" "a malformed ref line fails closed with a diagnostic, never a silent pass-through"
+trash "$in" 2>/dev/null || true
+
+echo "self-test: $pass passed, $fail failed"
+[ "$fail" -eq 0 ]
