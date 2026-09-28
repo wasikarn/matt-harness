@@ -3,6 +3,25 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.152] — 2026-09-28
+
+Records a 2-round adversarial debate on ADR 0004, run at the operator's explicit request after
+both Wave-1 rounds. Two fresh-context agents (FOR and AGAINST proceeding) researched
+independently, wrote opening statements, then rebutted each other. Both sides converged
+unprompted on "reject, for now" — the same verdict both Wave-1 rounds already reached, but this
+time with the value case checked directly for the first time: the source article's Stage 6
+section makes zero quantified claims, and the one real number anywhere traces to a setup where
+a human still merges. This repo's own CI has nothing to react to either (199/200 `validate.yml`
+runs green over 23 days). The identity finding is also corrected and narrowed: `git push` really
+is platform-fenced (round 2's "prompt-level convention" framing was too pessimistic about push
+specifically); what stays open is PR/merge and connector-write calls, which pass through via the
+GitHub proxy's REST fallback with the operator's real credentials substituted.
+
+Supersedes the ADR's prior two (either/or) revisit conditions with three sharper, conjunctive
+ones: a stated value case beyond ADR 0011's already-rejected "saves typing," a numeric red-CI
+threshold met after ruling out flakiness as the cause, and a Routine credential shown empirically
+to have no PR-open/merge/connector-write capability. `status: proposed` is unchanged.
+
 ## [1.1.151] — 2026-09-28
 
 Adds a ninth gate, `gate:tool:routine-trigger-guard`: an ask-tier `PreToolUse` rule on
