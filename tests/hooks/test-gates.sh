@@ -169,8 +169,14 @@ print("{\"tool_name\": \"Agent\", \"tool_input\": {\"prompt\": \"do work\", "
 }
 
 # Build a RemoteTrigger or CronCreate tool-call payload ($1 = tool name).
+# $1 = tool name. $2 = action (optional -- omitted means no "action" key at all,
+# to test the missing-action path separately from an empty/unrecognized one).
 routine_trigger_payload() {
-  python3 -c 'import json, sys; print(json.dumps({"tool_name": sys.argv[1], "tool_input": {}}))' "$1"
+  if [ "$#" -ge 2 ]; then
+    python3 -c 'import json, sys; print(json.dumps({"tool_name": sys.argv[1], "tool_input": {"action": sys.argv[2]}}))' "$1" "$2"
+  else
+    python3 -c 'import json, sys; print(json.dumps({"tool_name": sys.argv[1], "tool_input": {}}))' "$1"
+  fi
 }
 
 # Expect the gate to BLOCK (exit 2).
@@ -1168,17 +1174,66 @@ test_deny "$SUBAGENT_SPAWN_GUARD" "GH #156: 5000-digit unquoted agent_id parses 
   "$(printf '{"tool_name":"Agent","tool_input":{"prompt":"x","description":"y","subagent_type":"general-purpose"},"agent_id":%s}' "$(python3 -c "print('9'*5000)")")"
 
 echo ""
-echo "=== routine-trigger-guard (ADR 0004 §4/§5 item 6: nothing gated RemoteTrigger/CronCreate before this) ==="
-test_ask "$ROUTINE_TRIGGER_GUARD" "RemoteTrigger asks for confirmation" \
+echo "=== routine-trigger-guard (ADR 0004 §4/§5 item 6: nothing gated RemoteTrigger before this) ==="
+# mh:deep-audit (2026-09-28) found the original version action-blind (asked on
+# read-only actions too) and CronCreate misclassified as a Routine trigger --
+# both fixed; these cases cover the corrected, narrower scope.
+test_ask "$ROUTINE_TRIGGER_GUARD" "RemoteTrigger action=create asks for confirmation" \
+  "$(routine_trigger_payload 'RemoteTrigger' 'create')"
+test_ask "$ROUTINE_TRIGGER_GUARD" "RemoteTrigger action=update asks for confirmation" \
+  "$(routine_trigger_payload 'RemoteTrigger' 'update')"
+test_ask "$ROUTINE_TRIGGER_GUARD" "RemoteTrigger action=run asks for confirmation" \
+  "$(routine_trigger_payload 'RemoteTrigger' 'run')"
+test_ask "$ROUTINE_TRIGGER_GUARD" "RemoteTrigger action=create_webhook_trigger asks for confirmation" \
+  "$(routine_trigger_payload 'RemoteTrigger' 'create_webhook_trigger')"
+test_ask "$ROUTINE_TRIGGER_GUARD" "RemoteTrigger with no action key at all fails toward asking" \
   "$(routine_trigger_payload 'RemoteTrigger')"
-test_ask "$ROUTINE_TRIGGER_GUARD" "CronCreate asks for confirmation" \
-  "$(routine_trigger_payload 'CronCreate')"
+test_ask "$ROUTINE_TRIGGER_GUARD" "RemoteTrigger with an unrecognized future action fails toward asking" \
+  "$(routine_trigger_payload 'RemoteTrigger' 'some_future_action')"
+# mh:blind-spot-hunter (2026-09-28): a non-string action (list/dict) crashed the gate's
+# `action in READ_ONLY_ACTIONS` membership check with an unhandled TypeError, and Claude Code
+# treats that non-zero, non-2 exit as non-blocking -- the call went through with no ask.
+test_ask "$ROUTINE_TRIGGER_GUARD" "RemoteTrigger with a non-string (list) action fails toward asking, not a crash-through-allow" \
+  "$(python3 -c 'import json; print(json.dumps({"tool_name": "RemoteTrigger", "tool_input": {"action": ["create"]}}))')"
+test_allow "$ROUTINE_TRIGGER_GUARD" "RemoteTrigger action=list is a pure read, allowed" \
+  "$(routine_trigger_payload 'RemoteTrigger' 'list')"
+test_allow "$ROUTINE_TRIGGER_GUARD" "RemoteTrigger action=get is a pure read, allowed" \
+  "$(routine_trigger_payload 'RemoteTrigger' 'get')"
+test_allow "$ROUTINE_TRIGGER_GUARD" "RemoteTrigger action=list_runs is a pure read, allowed" \
+  "$(routine_trigger_payload 'RemoteTrigger' 'list_runs')"
+test_allow "$ROUTINE_TRIGGER_GUARD" "RemoteTrigger action=get_run_log is a pure read, allowed" \
+  "$(routine_trigger_payload 'RemoteTrigger' 'get_run_log')"
+test_allow "$ROUTINE_TRIGGER_GUARD" "CronCreate is out of scope (session-only, no new credential), allowed" \
+  "$(routine_trigger_payload 'CronCreate' 'create')"
 test_allow "$ROUTINE_TRIGGER_GUARD" "unrelated tool (Bash) is out of scope for this gate" \
   "$(bash_payload 'ls -la')"
 test_allow "$ROUTINE_TRIGGER_GUARD" "malformed stdin (fail-safe allow)" \
   '{"tool_name": invalid'
 test_allow "$ROUTINE_TRIGGER_GUARD" "valid JSON but non-object payload (fail-safe allow)" \
   '["RemoteTrigger"]'
+
+# Missing-sibling .py (corrupted/partial plugin install), mirroring the
+# irrecoverable.py case below but expecting this gate's own documented
+# allow-on-missing-sibling posture, not a deny (mh:deep-audit, 2026-09-28:
+# this path was documented in operating-model.md but had no regression test).
+MISSPY_RTG_DIR=$(mktemp -d "${TMPDIR:-/tmp}/kbg-misspy-rtg.XXXXXX")
+cp "$ROUTINE_TRIGGER_GUARD" "$MISSPY_RTG_DIR/routine-trigger-guard.sh"
+_errf=$(mktemp "${TMPDIR:-/tmp}/kbg-misspy-rtg-err.XXXXXX")
+_out=$(routine_trigger_payload 'RemoteTrigger' 'create' | bash "$MISSPY_RTG_DIR/routine-trigger-guard.sh" 2>"$_errf")
+_rc=$?
+_ok=1
+if [ "$_rc" -eq 0 ] && [ -z "$_out" ] && grep -q '\[mh:gate\]' "$_errf"; then
+  _ok=0
+fi
+if [ "$_ok" -eq 0 ]; then
+  echo "  ✅ ALLOW: missing sibling routine-trigger-guard.py -> fails open (exit 0) with [mh:gate] message"
+  pass=$((pass + 1))
+else
+  echo "  ❌ missing sibling routine-trigger-guard.py: expected exit 0 + empty stdout + [mh:gate] message, got rc=$_rc stdout='$_out' stderr: $(cat "$_errf")" >&2
+  fail=$((fail + 1))
+fi
+rm -f "$_errf"
+trash "$MISSPY_RTG_DIR" 2>/dev/null || true
 
 echo "=== fast-path (bash pre-filter that skips python3 on commands that cannot match, added 2026-08-14) ==="
 # Irrecoverable gained a bash fast-path so a benign command skips the python3 cold-start.

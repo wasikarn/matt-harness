@@ -169,6 +169,36 @@ ADR may treat it as decided.
 > already reached, but replaced this block's vaguer revisit conditions with ones an actual future
 > reviewer can check against evidence rather than judgment.
 
+> **`mh:deep-audit` on PRs #167-#170 (2026-09-28), baseline 6.8/10 (fail): 6 findings, all fixed
+> in code/docs/memory, none fixable by editing this ADR's own earlier blocks — recorded here
+> instead, per this document's own additive-only convention.**
+>
+> 1. **§5 item 6's gate shipped narrower than either §4/§5's own prose or the shipped 1.1.151
+>    version described.** `CronCreate` was misclassified as a cloud-Routine trigger throughout —
+>    the tool's own description says its jobs are session-only, in-memory, and die when the
+>    session ends: it re-enqueues a prompt in the *same*, already-operator-attended session,
+>    granting no new credential and starting no new session. It never belonged in this ADR's
+>    threat model. Separately, the shipped gate asked on every `RemoteTrigger` call, including
+>    pure reads (`list`/`get`/`list_runs`/`get_run_log`) that create or fire nothing. Both fixed in
+>    `gate:tool:routine-trigger-guard` (now 1.1.153): matcher narrowed to `RemoteTrigger`'s
+>    `create`/`update`/`run`/`create_webhook_trigger` actions only, `CronCreate` dropped entirely.
+> 2. **§4's "nothing gates the model from creating or firing a Routine in the first place" and
+>    §5's "None of items 2-6 ship with this ADR" are both now stale**, written before 1.1.151 shipped
+>    the gate this paragraph names as unbuilt. Marked superseded here, not edited in place: item 6
+>    has shipped, in the corrected/narrowed form above, independent of whether this ADR itself is
+>    ever accepted — same as originally scoped.
+> 3. **The round-2 block above cites `docs/reference/operating-model.md:100` for the "No autonomous
+>    loop" quote; that quote is now at line 102** — an unrelated later edit (this gate's own table
+>    row) shifted it by 2. Noted here rather than corrected in place, since line citations drift
+>    again on any future edit to that file; re-verify at the cited line before trusting it, the
+>    same rule this ADR asks of every other citation.
+> 4. **For the record, not a new finding**: the 1.1.150 commit that added the round-2 block above
+>    also edited two sentences inside the round-1 block's own text (the stale "Wave 1 has not yet
+>    been re-run" forward-reference, corrected to point at round 2). That was a deliberate,
+>    disclosed fix at the time, not a rewrite hidden after the fact — but it is a real, if narrow,
+>    deviation from this document's stated convention that a dated block, once written, stays as a
+>    historical record. No further instance of it has recurred since.
+
 ## 1. Decision and basis
 
 **The operator has explicitly, directly instructed this reversal** — not a capability argument,
