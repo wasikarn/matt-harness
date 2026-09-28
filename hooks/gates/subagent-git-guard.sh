@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 # Gate: a subagent (agent_id in the PreToolUse payload) may not run a bare
-# `git stash|reset|clean` -- repo-wide mutation races peers on a shared tree
-# (issue #135). Main session (no agent_id) is untouched; `claude --agent` main
+# `git stash|reset|clean` -- repo-wide mutation on a tree the parent session
+# (and any other subagent sharing it) is still working in (issue #135;
+# 2026-09-28: worktree-per-session means this is now the parent session's own
+# worktree rather than a tree shared with unrelated peer sessions, but a
+# subagent still shares that ONE tree with its parent and siblings, so the
+# same repo-wide-mutation risk applies). Main session (no agent_id) is
+# untouched; `claude --agent` main
 # sessions also lack agent_id, so agent_type is NOT the discriminant.
 # irrecoverable.sh already denies the destructive forms (reset --hard, clean -f,
 # checkout --, restore <path>) for every session; this gate only adds the three

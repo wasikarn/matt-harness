@@ -815,7 +815,7 @@ proj_noopt=$(mktemp -d)
 mem_noopt="$fake_home/.claude/projects/$(cd "$proj_noopt" && pwd -P | sed 's|/|-|g')/memory"
 mkdir -p "$mem_noopt"
 echo "not opted in" > "$mem_noopt/f.md"
-out=$(cd "$proj_noopt" && HOME="$fake_home" bash "$MEMORY_COMMIT" 2>/dev/null)
+out=$(cd "$proj_noopt" && HOME="$fake_home" CLAUDE_PLUGIN_ROOT="$ROOT" bash "$MEMORY_COMMIT" 2>/dev/null)
 rc=$?
 still_no_git="no"; [[ "$(cd "$mem_noopt" && git rev-parse --is-inside-work-tree 2>&1)" != "true" ]] && still_no_git="yes"
 [[ "$rc" == "0" && -z "$out" && "$still_no_git" == "yes" ]] && ok=1 || ok=0
@@ -834,14 +834,14 @@ echo "# Memory index" > "$mem_dir/MEMORY.md"
 # working tree instead of a clean one.
 
 before=$(cd "$mem_dir" && git rev-parse HEAD)
-out=$(cd "$proj" && HOME="$fake_home" bash "$MEMORY_COMMIT" 2>/dev/null)
+out=$(cd "$proj" && HOME="$fake_home" CLAUDE_PLUGIN_ROOT="$ROOT" bash "$MEMORY_COMMIT" 2>/dev/null)
 rc=$?
 after=$(cd "$mem_dir" && git rev-parse HEAD)
 [[ "$rc" == "0" && "$before" == "$after" ]] && ok=1 || ok=0
 assert "clean tree → no-op, HEAD unchanged" "$ok"
 
 echo "new memory" > "$mem_dir/new-note.md"
-out=$(cd "$proj" && HOME="$fake_home" bash "$MEMORY_COMMIT" 2>/dev/null)
+out=$(cd "$proj" && HOME="$fake_home" CLAUDE_PLUGIN_ROOT="$ROOT" bash "$MEMORY_COMMIT" 2>/dev/null)
 rc=$?
 log_count=$(cd "$mem_dir" && git log --oneline | wc -l | tr -d ' ')
 porcelain=$(cd "$mem_dir" && git status --porcelain)
@@ -849,7 +849,7 @@ porcelain=$(cd "$mem_dir" && git status --porcelain)
 assert "new untracked file → auto-committed, working tree clean after" "$ok"
 
 echo "edited" >> "$mem_dir/MEMORY.md"
-out=$(cd "$proj" && HOME="$fake_home" bash "$MEMORY_COMMIT" 2>/dev/null)
+out=$(cd "$proj" && HOME="$fake_home" CLAUDE_PLUGIN_ROOT="$ROOT" bash "$MEMORY_COMMIT" 2>/dev/null)
 rc=$?
 log_count2=$(cd "$mem_dir" && git log --oneline | wc -l | tr -d ' ')
 porcelain2=$(cd "$mem_dir" && git status --porcelain)

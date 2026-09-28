@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # memory-audit-commit unit tests. Isolates a fake $HOME and a fake project
-# cwd so real ~/.claude/projects state is never touched; the hook derives its
-# memory dir from `pwd -P` (physical path, slashes -> dashes), same as
-# memory-health-nudge.sh and memory-lint.py's own memory_dir().
+# cwd (not a git repo, so scripts/_lib/memory-dir.py's git-derivation falls
+# through to its non-git cwd fallback, same physical path `pwd -P` would give)
+# so real ~/.claude/projects state is never touched.
 # Run standalone: bash tests/hooks/test-memory-audit-commit.sh
 set -uo pipefail
 
@@ -22,7 +22,8 @@ mkdir -p "$PROJECT_DIR" "$FAKE_HOME/.claude/state"
 PHYSPWD=$(cd "$PROJECT_DIR" && pwd -P)
 ENC="${PHYSPWD//\//-}"
 MEMDIR="$FAKE_HOME/.claude/projects/$ENC/memory"
-FAILMARKER="$FAKE_HOME/.claude/state/memory-audit-commit-fail-$ENC"
+LOCKDIR="$FAKE_HOME/.claude/state/memory-audit-commit-lock-$ENC"
+MARKER_GLOB="$FAKE_HOME/.claude/state/memory-audit-commit-fail-$ENC-"
 
 init_memdir() {
   trash "$MEMDIR" 2>/dev/null || true
@@ -30,8 +31,34 @@ init_memdir() {
   ( cd "$MEMDIR" && git init -q && git config user.email "t@example.com" && git config user.name "t" )
 }
 
+clear_state() {
+  rm -rf "$LOCKDIR" 2>/dev/null
+  shopt -s nullglob
+  rm -f "$MARKER_GLOB"* 2>/dev/null
+  shopt -u nullglob
+}
+
+markers() {
+  shopt -s nullglob
+  local m=("$MARKER_GLOB"*)
+  shopt -u nullglob
+  printf '%s\n' "${m[@]}"
+}
+
+marker_count() {
+  shopt -s nullglob
+  local m=("$MARKER_GLOB"*)
+  shopt -u nullglob
+  echo "${#m[@]}"
+}
+
 run_hook() {
-  ( cd "$PROJECT_DIR" && HOME="$FAKE_HOME" bash "$HOOK" )
+  ( cd "$PROJECT_DIR" && HOME="$FAKE_HOME" CLAUDE_PLUGIN_ROOT="$ROOT" bash "$HOOK" )
+}
+
+run_hook_env() {
+  # $@ = extra NAME=value pairs to export for this invocation only.
+  ( cd "$PROJECT_DIR" && HOME="$FAKE_HOME" CLAUDE_PLUGIN_ROOT="$ROOT" env "$@" bash "$HOOK" )
 }
 
 check() {
@@ -50,27 +77,31 @@ echo ""
 
 echo "--- baseline: clean commit succeeds, no marker ---"
 init_memdir
-rm -f "$FAILMARKER"
+clear_state
 echo "n/a" > "$MEMDIR/topic.md"
 run_hook
 ok=1; [ -z "$(git -C "$MEMDIR" status --porcelain)" ] && ok=0
 check "dirty .md file gets committed" "$ok"
-ok=1; [ ! -f "$FAILMARKER" ] && ok=0
+ok=1; [ "$(marker_count)" -eq 0 ] && ok=0
 check "no failure marker on a successful commit" "$ok"
+ok=1; [ ! -d "$LOCKDIR" ] && ok=0
+check "lock dir removed after a normal run" "$ok"
 
 echo ""
-echo "--- H6 (2026-09-20): a failed git add/commit now writes a marker instead of failing silently ---"
+echo "--- H6 (2026-09-20): a failed git add/commit now writes a per-attempt marker ---"
 init_memdir
-rm -f "$FAILMARKER"
+clear_state
 echo "n/a" > "$MEMDIR/topic2.md"
 # A stale index.lock deterministically makes git add fail, regardless of
 # git version or global config on the host running this test.
 touch "$MEMDIR/.git/index.lock"
 run_hook
-ok=1; [ -f "$FAILMARKER" ] && ok=0
-check "git add failure writes the marker" "$ok"
-ok=1; command grep -qi "index.lock" "$FAILMARKER" 2>/dev/null && ok=0
+ok=1; [ "$(marker_count)" -eq 1 ] && ok=0
+check "git add failure writes exactly one marker" "$ok"
+ok=1; command grep -qi "index.lock" "$MARKER_GLOB"* 2>/dev/null && ok=0
 check "marker captures the real git stderr" "$ok"
+ok=1; command grep -qE '^acquisition_ts=[0-9]+(\.[0-9]+)?$' "$MARKER_GLOB"* 2>/dev/null && ok=0
+check "marker embeds its own acquisition timestamp" "$ok"
 ok=1; [ -n "$(git -C "$MEMDIR" status --porcelain)" ] && ok=0
 check "the .md file is still uncommitted after the failure" "$ok"
 
@@ -78,7 +109,7 @@ echo ""
 echo "--- marker clears on the next successful commit ---"
 rm -f "$MEMDIR/.git/index.lock"
 run_hook
-ok=1; [ ! -f "$FAILMARKER" ] && ok=0
+ok=1; [ "$(marker_count)" -eq 0 ] && ok=0
 check "marker is cleared once the commit succeeds" "$ok"
 ok=1; [ -z "$(git -C "$MEMDIR" status --porcelain)" ] && ok=0
 check "the previously-stuck file is now committed" "$ok"
@@ -86,11 +117,11 @@ check "the previously-stuck file is now committed" "$ok"
 echo ""
 echo "--- untouched behavior: not opted in / clean tree still no-op silently ---"
 trash "$MEMDIR" 2>/dev/null || true
-rm -f "$FAILMARKER"
+clear_state
 OUT=$(run_hook)
 ok=1; [ -z "$OUT" ] && ok=0
 check "no memory dir at all -> silent no-op" "$ok"
-ok=1; [ ! -f "$FAILMARKER" ] && ok=0
+ok=1; [ "$(marker_count)" -eq 0 ] && ok=0
 check "no marker written when not opted in" "$ok"
 
 init_memdir
@@ -99,19 +130,115 @@ ok=1; [ -z "$OUT" ] && ok=0
 check "clean tree (nothing to commit) -> silent no-op" "$ok"
 
 echo ""
-echo "--- (2026-09-21) a clean store clears a stale marker: the operator committed by hand ---"
+echo "--- a fabricated OLD marker is swept by a later successful invocation ---"
 init_memdir
-printf 'git commit failed (exit 1): stale\n' > "$FAILMARKER"
-run_hook
-ok=1; [ ! -f "$FAILMARKER" ] && ok=0
-check "marker is cleared when the store is clean (nothing to commit = no failure)" "$ok"
+clear_state
+OLD_TS=$(( $(date +%s) - 1000 ))
+printf 'acquisition_ts=%s\nold stale failure\n' "$OLD_TS" > "${MARKER_GLOB}99991"
+run_hook   # clean tree -> still a "success" path, sweep runs
+ok=1; [ ! -f "${MARKER_GLOB}99991" ] && ok=0
+check "a marker older than this run's acquisition time is swept" "$ok"
+
+echo ""
+echo "--- a fabricated marker timestamped AFTER this run's start is NOT swept (protects a concurrent waiter) ---"
+init_memdir
+clear_state
+FUTURE_TS=$(( $(date +%s) + 1000 ))
+printf 'acquisition_ts=%s\nconcurrent waiter, still in flight\n' "$FUTURE_TS" > "${MARKER_GLOB}99992"
+run_hook   # clean tree -> success path; this run's own ACQUIRE_TS is well before FUTURE_TS
+ok=1; [ -f "${MARKER_GLOB}99992" ] && ok=0
+check "a marker at/after this run's own acquisition time survives (ordering, not identity, protects it)" "$ok"
+rm -f "${MARKER_GLOB}99992"
+
+echo ""
+echo "--- real concurrent invocations: lock serializes, both changes land, no residue ---"
+init_memdir
+clear_state
+echo "a" > "$MEMDIR/concurrent-a.md"
+echo "b" > "$MEMDIR/concurrent-b.md"
+run_hook & p1=$!
+run_hook & p2=$!
+wait "$p1"; wait "$p2"
+ok=1; [ -z "$(git -C "$MEMDIR" status --porcelain)" ] && ok=0
+check "both concurrent invocations' changes end up committed" "$ok"
+ok=1; [ "$(marker_count)" -eq 0 ] && ok=0
+check "no marker left behind after a clean concurrent pair" "$ok"
+ok=1; [ ! -d "$LOCKDIR" ] && ok=0
+check "no orphaned lock dir after a clean concurrent pair" "$ok"
+
+echo ""
+echo "--- lock-timeout: a genuinely held lock makes the waiter give up and write its own marker ---"
+init_memdir
+clear_state
+echo "n/a" > "$MEMDIR/timeout-case.md"
+sleep 30 & HOLDER_PID=$!
+mkdir -p "$LOCKDIR"
+printf '%s\n' "$HOLDER_PID" > "$LOCKDIR/pid"
+ps -o lstart= -p "$HOLDER_PID" > "$LOCKDIR/start"
+START_T=$(date +%s)
+run_hook_env MH_MEMORY_LOCK_WAIT_MAX=1 MH_MEMORY_LOCK_POLL_INTERVAL=0.2
+END_T=$(date +%s)
+kill "$HOLDER_PID" 2>/dev/null; wait "$HOLDER_PID" 2>/dev/null
+ok=1; [ $((END_T - START_T)) -le 4 ] && ok=0
+check "waiter gives up within the bounded wait, does not hang (took $((END_T - START_T))s)" "$ok"
+ok=1; [ "$(marker_count)" -eq 1 ] && ok=0
+check "waiter writes exactly one timeout marker" "$ok"
+ok=1; command grep -qi "lock wait timed out" "$MARKER_GLOB"* 2>/dev/null && ok=0
+check "timeout marker names the cause" "$ok"
+ok=1; [ -n "$(git -C "$MEMDIR" status --porcelain)" ] && ok=0
+check "the dirty file was never committed while the lock was held elsewhere" "$ok"
+rm -rf "$LOCKDIR" 2>/dev/null
+clear_state
+
+echo ""
+echo "--- stale-lock reclaim: a dead PID's lock is reclaimed, not waited out ---"
+init_memdir
+clear_state
+echo "n/a" > "$MEMDIR/stale-case.md"
+bash -c 'exit 0' & DEAD_PID=$!
+wait "$DEAD_PID" 2>/dev/null   # now guaranteed not running
+mkdir -p "$LOCKDIR"
+printf '%s\n' "$DEAD_PID" > "$LOCKDIR/pid"
+printf 'stale-start-marker\n' > "$LOCKDIR/start"
+START_T=$(date +%s)
+run_hook_env MH_MEMORY_LOCK_WAIT_MAX=5 MH_MEMORY_LOCK_POLL_INTERVAL=0.2
+END_T=$(date +%s)
+ok=1; [ $((END_T - START_T)) -le 3 ] && ok=0
+check "a dead-PID lock is reclaimed quickly, not waited out to the bound (took $((END_T - START_T))s)" "$ok"
+ok=1; [ -z "$(git -C "$MEMDIR" status --porcelain)" ] && ok=0
+check "the file committed after reclaiming the dead holder's lock" "$ok"
+ok=1; [ "$(marker_count)" -eq 0 ] && ok=0
+check "no timeout marker written when the stale lock was reclaimed" "$ok"
+
+echo ""
+echo "--- live-holder-not-reclaimed: a real running PID with an aged lock mtime is never stolen ---"
+init_memdir
+clear_state
+echo "n/a" > "$MEMDIR/live-holder-case.md"
+sleep 30 & HOLDER_PID=$!
+mkdir -p "$LOCKDIR"
+printf '%s\n' "$HOLDER_PID" > "$LOCKDIR/pid"
+ps -o lstart= -p "$HOLDER_PID" > "$LOCKDIR/start"
+# Age the lock dir's own mtime far past the stale-metadata threshold, to
+# prove age alone (with valid, live, identity-matching metadata) never
+# triggers reclaim.
+touch -t 202001010000 "$LOCKDIR" 2>/dev/null || touch -d "2020-01-01" "$LOCKDIR" 2>/dev/null
+run_hook_env MH_MEMORY_LOCK_WAIT_MAX=1 MH_MEMORY_LOCK_POLL_INTERVAL=0.2
+ok=1; [ -d "$LOCKDIR" ] && [ "$(cat "$LOCKDIR/pid" 2>/dev/null)" = "$HOLDER_PID" ] && ok=0
+check "the live holder's lock dir is untouched despite its aged mtime" "$ok"
+ok=1; [ -n "$(git -C "$MEMDIR" status --porcelain)" ] && ok=0
+check "the file was not committed (lock correctly not reclaimed)" "$ok"
+kill "$HOLDER_PID" 2>/dev/null; wait "$HOLDER_PID" 2>/dev/null
+rm -rf "$LOCKDIR" 2>/dev/null
+clear_state
 
 echo ""
 echo "--- (2026-09-21) unset / relative HOME: skip silently, never crash under set -u or write into cwd ---"
 init_memdir
+clear_state
 echo "n/a" > "$MEMDIR/topic3.md"
 before=$(ls -A "$PROJECT_DIR" | wc -l | tr -d ' ')
-OUT=$( cd "$PROJECT_DIR" && env -u HOME bash "$HOOK" </dev/null 2>&1 ); rc=$?
+OUT=$( cd "$PROJECT_DIR" && env -u HOME CLAUDE_PLUGIN_ROOT="$ROOT" bash "$HOOK" </dev/null 2>&1 ); rc=$?
 after=$(ls -A "$PROJECT_DIR" | wc -l | tr -d ' ')
 ok=1; [ "$rc" -eq 0 ] && [ -z "$OUT" ] && [ "$before" = "$after" ] && ok=0
 check "unset HOME -> rc 0, silent, nothing written into cwd (rc=$rc out=<$OUT>)" "$ok"
@@ -122,11 +249,35 @@ REL_MEMDIR="$PROJECT_DIR/rel/.claude/projects/$ENC/memory"
 mkdir -p "$REL_MEMDIR"
 ( cd "$REL_MEMDIR" && git init -q && git config user.email "t@example.com" && git config user.name "t" )
 echo "n/a" > "$REL_MEMDIR/topic.md"
-OUT=$( cd "$PROJECT_DIR" && HOME=rel bash "$HOOK" </dev/null 2>&1 ); rc=$?
+OUT=$( cd "$PROJECT_DIR" && HOME=rel CLAUDE_PLUGIN_ROOT="$ROOT" bash "$HOOK" </dev/null 2>&1 ); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$OUT" ] && [ ! -d "$PROJECT_DIR/rel/.claude/state" ] \
   && [ -n "$(git -C "$REL_MEMDIR" status --porcelain)" ] && ok=0
 check "relative HOME -> rc 0, silent, no rel/.claude/state in cwd, planted store left uncommitted (rc=$rc out=<$OUT>)" "$ok"
 trash "$PROJECT_DIR/rel" 2>/dev/null || true
+
+echo ""
+echo "--- linked worktree resolves to the SAME memory store as the main tree ---"
+GITREPO="$TMP/gitrepo"
+mkdir -p "$GITREPO"
+( cd "$GITREPO" && git init -q && git config user.email "t@example.com" && git config user.name "t" \
+  && echo "x" > f.txt && git add f.txt && git commit -q -m init )
+WT="$TMP/gitrepo-wt"
+( cd "$GITREPO" && git worktree add -q -b test-wt "$WT" >/dev/null 2>&1 )
+# Physical path, not the raw (possibly symlinked, e.g. macOS TMPDIR under
+# /var -> /private/var) $GITREPO string -- git itself resolves symlinks when
+# deriving --git-common-dir, so the hook's own ENC would otherwise never
+# match one computed from the logical path.
+MAIN_ENC="$(cd "$GITREPO" && pwd -P)"
+MAIN_ENC="${MAIN_ENC//\//-}"
+MAIN_MEMDIR="$FAKE_HOME/.claude/projects/$MAIN_ENC/memory"
+mkdir -p "$MAIN_MEMDIR"
+( cd "$MAIN_MEMDIR" && git init -q && git config user.email "t@example.com" && git config user.name "t" )
+echo "from-worktree" > "$MAIN_MEMDIR/from-worktree.md"
+( cd "$WT" && HOME="$FAKE_HOME" CLAUDE_PLUGIN_ROOT="$ROOT" bash "$HOOK" )
+ok=1; [ -z "$(git -C "$MAIN_MEMDIR" status --porcelain)" ] && ok=0
+check "a Stop hook run from inside a linked worktree commits to the MAIN tree's memory store" "$ok"
+git -C "$GITREPO" worktree remove -f "$WT" 2>/dev/null || true
+trash "$GITREPO" "$MAIN_MEMDIR" 2>/dev/null || true
 
 echo ""
 total=$((pass + fail))

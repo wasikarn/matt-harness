@@ -54,9 +54,10 @@ asked to research. Detail: `docs/reference/repo-gotchas.md`.
 ## Branching model
 
 Single branch: `develop` only. No feature branches; commit direct, confirm before push.
-Concurrent sessions share one working tree: stage by explicit path after checking
-`git status --porcelain`, and re-read both manifests before writing a version into a commit
-message. Detail: `docs/reference/branching-model.md`.
+Each session gets its own worktree (2026-09-28); a subagent still shares its parent session's
+worktree, and the memory store + both manifests are still shared across every worktree — re-read
+manifests before writing a version into a commit message. Detail:
+`docs/reference/branching-model.md`.
 
 ## Architecture
 

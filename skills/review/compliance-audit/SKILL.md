@@ -64,9 +64,9 @@ verifier budget.
 3. Identify the diff to audit across **every** repo the plan touched (a multi-repo plan lists
    each repo separately). State explicitly, not just "the commit range": the plan's own
    version/source, the base SHA, and the head SHA.
-4. **Pin the revision safely.** This repo's tree is shared across concurrent sessions — a diff
-   checked at one revision while tests run against another silently produces a wrong verdict.
-   Create an isolated, non-moving checkout: `git worktree add --detach <path> <head-sha>`
+4. **Pin the revision safely.** This session's own worktree keeps moving while it keeps working —
+   a diff checked at one revision while tests run against another silently produces a wrong
+   verdict. Create an isolated, non-moving checkout: `git worktree add --detach <path> <head-sha>`
    (cleaned up after Phase 2). If the pinned SHA can't be cleanly checked out, the verdict is
    "cannot verify" (`scope_ok: false`), never a silent pass/fail against the wrong tree.
 5. Present the requirement checklist in prose, plus any deviation you're already aware of. Gate
@@ -115,7 +115,7 @@ must discover independently, then get an independent answer from a different mod
      (`scope_ok: false`) — a rejected verdict must never reach Phase 3's report as if it were
      ground truth.
    - **Sandbox contract**: `workspace-write`, scoped *only* to the disposable worktree — never
-     the shared main tree. This repo's own gauntlet writes (`python3 -m py_compile` leaves
+     the session's own worktree it was pinned from. This repo's own gauntlet writes (`python3 -m py_compile` leaves
      `__pycache__` next to tracked `.py` files, plus its own log dir) — `read-only` would be
      wrong here. Before/after the run, diff the worktree's tracked files against the pinned SHA;
      any tracked-file change beyond expected build artifacts is itself a finding ("verifier
@@ -225,7 +225,7 @@ fix.
 - Trusting "gauntlet was green during implementation" without re-running it fresh.
 - Declaring done with an open MISSING or unaccepted DEVIATED still on the table.
 - Entering plan mode to gate audit scope — risks overwriting the plan being audited, and its read-only mode blocks the worktree pin and gauntlet run (Phase 1).
-- Running the verifier against the shared main tree instead of a pinned detached worktree.
+- Running the verifier against the session's own live worktree instead of a pinned detached one.
 
 ## Named Model
 

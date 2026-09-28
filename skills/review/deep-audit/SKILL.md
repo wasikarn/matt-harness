@@ -183,7 +183,7 @@ evidence.
 
 **Re-fingerprint after the checker returns.** A mismatch against the pre-dispatch manifest — a
 changed hash, a path that appeared or disappeared — means a concurrent session touched scope
-mid-check (this repo runs concurrent sessions on one working tree): rebuild scope from git and
+mid-check (this session keeps working in its own worktree while the checker runs): rebuild scope from git and
 re-run the checker once.
 
 **If the fallback also fails to produce a valid result, or the manifest is still unstable after

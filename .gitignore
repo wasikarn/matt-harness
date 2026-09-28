@@ -45,3 +45,7 @@ evals/results/
 # repos used to trial third-party plugins in isolation) — never repo content.
 /bar/
 /sandbox/
+
+# Claude Code worktree-per-session support (2026-09-28): confirmed live via
+# EnterWorktree/ExitWorktree that CC creates linked worktrees under this path.
+.claude/worktrees/

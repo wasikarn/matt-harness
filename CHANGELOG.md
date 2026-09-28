@@ -3,6 +3,35 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.146] — 2026-09-28
+
+Phase A of the operator-approved worktree-per-session reversal (Codex-reviewed plan,
+`docs/reference/branching-model.md`). Feature-branch/PR flow (Phase B) and the self-launch ADR
+(Phase C) are separate, later pieces of work — not shipped here.
+
+### Added
+
+- **`scripts/_lib/memory-dir.py`**: the one shared resolver for the memory-store directory and its
+  encoded key, replacing three independent, drifted copies of this logic in `memory-lint.py`,
+  `memory-audit-commit.sh`, and `memory-health-nudge.sh`. Keys off `--git-common-dir` (same path
+  from every worktree of one repo), not `--show-toplevel` (worktree-local) — the real bug this
+  phase exists to fix, since a linked worktree used to derive a different, empty memory store.
+  Preserves the live precedence exactly: `autoMemoryDirectory` setting → both
+  `CLAUDE_CONFIG_DIR`+`CLAUDE_CODE_PROJECT_DIR_NAME` set → git-derived → `pwd -P` fallback.
+- **Cross-session lock on the now-shared memory-store commit** (`hooks/stop/memory-audit-commit.sh`):
+  an atomic `mkdir`-based lock (portable; `flock` isn't reliably available on macOS), holder
+  identity confirmed via PID + `ps -o lstart=` (never reclaims a live holder on age alone), and a
+  per-attempt, timestamp-embedded failure marker (`memory-audit-commit-fail-$ENC-$$`) so one
+  session's successful cleanup can never erase a different, still-in-flight session's diagnostic.
+  `hooks/session/memory-health-nudge.sh` globs the whole marker set.
+- `.claude/worktrees/` added to `.gitignore` — confirmed live via `EnterWorktree`/`ExitWorktree`.
+
+### Changed
+
+- `docs/reference/branching-model.md`, `CLAUDE.md`, `hooks/gates/subagent-git-guard.sh`,
+  `skills/review/compliance-audit/SKILL.md`, `skills/review/deep-audit/SKILL.md`: justification
+  text updated for worktree-per-session (mechanics of the affected gates/skills unchanged).
+
 ## [1.1.145] — 2026-09-28
 
 Ships two items the "Jev-engineering patterns" idea-audit round marked deferred (cheap, real,

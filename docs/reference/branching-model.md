@@ -15,15 +15,27 @@ the instruction still stands.
 
 ## Concurrent sessions
 
-Concurrent Claude Code sessions on this repo share one working tree, so discipline substitutes
-for isolation:
+Each interactive session gets its own working tree (2026-09-28): `EnterWorktree`/`claude
+--worktree` creates a linked worktree under `.claude/worktrees/<name>/` (gitignored), torn down
+via `ExitWorktree`/`git worktree remove` when the session ends — this replaces the old
+one-tree-for-everyone model, which needed manual path-claiming discipline to avoid stepping on a
+peer's uncommitted edits. What's still shared across every worktree of this repo, and still needs
+discipline:
 
-- **Stage by explicit path only.** Run `git status --porcelain` first and confirm every listed
-  file is one you touched; an unfamiliar file is another session's in-progress work.
-- **Re-read both manifests right before writing a version into a commit message.** Another
-  session may have bumped it; `Read` always sees the latest write.
-- **A scratch dir that reappears after cleanup belongs to another session.** Leave it alone.
-- **`/rewind` can revert another session's work.** Check `git status` before trusting it in a
-  shared tree; recover through git if it did.
-- **Subagents never stash, reset, or clean** (`gate:bash:subagent-git-guard` denies it) and
-  verify `git diff --cached --name-only` before committing.
+- **The memory store is one shared directory, not per-worktree.** `scripts/_lib/memory-dir.py`
+  resolves the same encoded key from every worktree (keyed off `--git-common-dir`, not
+  `--show-toplevel`), so `hooks/stop/memory-audit-commit.sh` serializes its own commit across
+  concurrent sessions via an atomic lock — see the script's own header for the lock protocol.
+- **A subagent shares its parent session's worktree**, not a worktree of its own — the same
+  stage-by-path discipline still applies to it (`gate:bash:subagent-git-guard` denies a bare
+  `stash`/`reset`/`clean`; verify `git diff --cached --name-only` before committing).
+- **`ListAgents`/`SendMessage` file-claim discipline** (`~/.claude/CLAUDE.md`, injected globally)
+  still applies to anyone touching a file another live session might also touch — worktree
+  isolation removes the *working-tree* collision, not a collision in a file both sessions read
+  from or write to outside git (e.g. this repo's own manifests, or the shared memory store above).
+- **Re-read both manifests right before writing a version into a commit message.** A peer session
+  in a different worktree can still push a bump first; `Read` always sees the latest committed
+  state, not what was true when this session started.
+- **`/rewind` only reverts this session's own worktree.** It can no longer touch a peer's tree at
+  all, since each session now has its own — this constraint from the old shared-tree model is
+  gone, not merely mitigated.

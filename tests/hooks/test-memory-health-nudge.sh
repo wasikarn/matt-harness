@@ -210,7 +210,11 @@ echo ""
 echo "--- M9 (2026-09-20): a crashed memory-lint.py surfaces one line, never silent ---"
 
 FAKE_PLUGIN="$TMP/fakeplugin"
-mkdir -p "$FAKE_PLUGIN/skills/meta/memory-lint/scripts"
+mkdir -p "$FAKE_PLUGIN/skills/meta/memory-lint/scripts" "$FAKE_PLUGIN/scripts/_lib"
+# The real resolver, not a fake one -- only memory-lint.py itself needs to be
+# faked to exercise the crash-handling path below; ENC/MEMDIR resolution must
+# still succeed for the hook to ever reach that far.
+cp "$ROOT/scripts/_lib/memory-dir.py" "$FAKE_PLUGIN/scripts/_lib/memory-dir.py"
 cat > "$FAKE_PLUGIN/skills/meta/memory-lint/scripts/memory-lint.py" <<'EOF'
 #!/usr/bin/env python3
 raise RuntimeError("boom")
@@ -240,8 +244,11 @@ init_memdir
 write_memory "topic-a.md" "a fully indexed topic"
 printf '%s\n' "- [topic-a](topic-a.md) — a fully indexed topic" > "$MEMDIR/MEMORY.md"
 rm -f "$FAKE_HOME/.claude/state"/memory-lint-cache-* 2>/dev/null
-FAILMARKER="$FAKE_HOME/.claude/state/memory-audit-commit-fail-$ENC"
-printf 'git commit failed (exit 1): fatal: unable to auto-detect email address\n' > "$FAILMARKER"
+# Per-attempt, PID-suffixed marker naming (2026-09-28) -- this test's own PID
+# suffix is arbitrary, it just needs to match the glob memory-health-nudge.sh
+# scans (memory-audit-commit-fail-$ENC-*).
+FAILMARKER="$FAKE_HOME/.claude/state/memory-audit-commit-fail-$ENC-999901"
+printf 'acquisition_ts=0\ngit commit failed (exit 1): fatal: unable to auto-detect email address\n' > "$FAILMARKER"
 OUT=$(run_hook)
 assert_contains "commit-failure marker surfaces its own line" \
   "[memory-lint] the memory store's auto-commit failed" "$OUT"

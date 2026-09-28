@@ -44,13 +44,28 @@ default; --yes skips confirm.
 import argparse
 import difflib
 import hashlib
+import importlib.util
 import json
 import os
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
+
+# Shared with hooks/stop/memory-audit-commit.sh and hooks/session/
+# memory-health-nudge.sh -- one resolver, loaded here via importlib (not a
+# subprocess: this is already an in-process Python consumer) rather than a
+# package import, since this file's own install location (repo checkout vs.
+# plugin cache) shouldn't need a sys.path convention that doesn't otherwise
+# exist in this repo.
+_lib_path = os.path.normpath(os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "..",
+    "scripts", "_lib", "memory-dir.py",
+))
+_spec = importlib.util.spec_from_file_location("_memory_dir_resolver", _lib_path)
+assert _spec is not None and _spec.loader is not None, f"cannot load {_lib_path}"
+_memory_dir_resolver = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_memory_dir_resolver)
 import time
 
 WIKILINK = re.compile(r"\[\[([^\]]+)\]\]")
@@ -73,65 +88,19 @@ STUB_TEMPLATE = "- [{}](_archive/{}/{}) — archived on-demand"
 # anyway — the user is explicitly saying "this entry is closed, browse on-demand."
 
 
-def _auto_memory_directory_setting():
-    # memory.md:362 — `autoMemoryDirectory` in settings.json overrides the
-    # whole storage location. Read from any scope; project scope wins over
-    # user scope, matching Claude Code's own most-specific-wins precedence
-    # (same simplification harness-audit check 43 already makes — full
-    # local/policy/--settings scopes aren't relevant to this CLI's own usage).
-    for path in (
-        os.path.join(".claude", "settings.local.json"),
-        os.path.join(".claude", "settings.json"),
-        os.path.expanduser("~/.claude/settings.json"),
-    ):
-        try:
-            with open(path) as f:
-                value = json.load(f).get("autoMemoryDirectory")
-        except (OSError, json.JSONDecodeError):
-            continue
-        if value:
-            return value
-    return None
-
-
 def memory_dir(positional):
     if positional:
         return positional
-    auto_dir = _auto_memory_directory_setting()
-    if auto_dir:
-        return os.path.expanduser(auto_dir)
-    # Match Claude Code's own auto-memory keying, not raw cwd: the official
-    # doc (code.claude.com/docs/en/memory.md:358, confirmed 2026-08-20) states
-    # the <project> path is "derived from the git repository, so all worktrees
-    # and subdirectories within the same repo share one auto memory directory."
-    # A prior version of this function keyed by raw os.getcwd() instead,
-    # reasoning it had to "agree with skills/meta/learn/scripts/find-transcript.sh"
-    # — but that script keys *session transcripts*, a separate CC mechanism
-    # with its own cwd-based rule per the same doc; the two were wrongly
-    # assumed to need one shared convention. Falls back to raw cwd outside a
-    # git repo, matching the doc's "Outside a git repo, the project root is
-    # used instead."
-    # CLAUDE_CODE_PROJECT_DIR_NAME (env-vars.md:326, requires CC v2.1.234+,
-    # corrected 2026-08-20) overrides the <project> name component, but only
-    # "together with CLAUDE_CONFIG_DIR" — Claude Code "ignores this variable
-    # when CLAUDE_CONFIG_DIR is unset". Honoring it alone (the prior bug here)
-    # points memory-lint at a directory Claude Code itself isn't using.
-    config_dir = os.environ.get("CLAUDE_CONFIG_DIR")
-    projects_root = os.path.expanduser(config_dir) if config_dir else os.path.expanduser("~/.claude")
-    projects_root = os.path.join(projects_root, "projects")
-    project_dir_name = os.environ.get("CLAUDE_CODE_PROJECT_DIR_NAME")
-    if config_dir and project_dir_name:
-        enc = project_dir_name
-    else:
-        try:
-            root = subprocess.run(
-                ["git", "rev-parse", "--show-toplevel"],
-                capture_output=True, text=True, check=True,
-            ).stdout.strip()
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            root = os.getcwd()
-        enc = root.replace("/", "-")
-    return os.path.join(projects_root, enc, "memory")
+    # Delegates to scripts/_lib/memory-dir.py -- the shared resolver also
+    # used by hooks/stop/memory-audit-commit.sh and
+    # hooks/session/memory-health-nudge.sh, so this precedence lives in
+    # exactly one place. Match Claude Code's own auto-memory keying, not raw
+    # cwd: the official doc (code.claude.com/docs/en/memory.md:358, confirmed
+    # 2026-08-20) states the <project> path is "derived from the git
+    # repository, so all worktrees and subdirectories within the same repo
+    # share one auto memory directory" -- see memory-dir.py's own header for
+    # the git-common-dir derivation this requires from inside a worktree.
+    return _memory_dir_resolver.resolve_memory_dir()
 
 
 FRONTMATTER_BLOCK_RE = re.compile(r"\A---\n.*?\n---\n?", re.DOTALL)
