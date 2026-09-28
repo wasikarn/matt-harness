@@ -4,25 +4,12 @@
 # Run standalone: bash tests/skills/test-compliance-audit-check-verdict.sh
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# shellcheck disable=SC2034  # used by assert_exit/run_selftest in the sourced lib below
 CHECK="$ROOT/skills/review/compliance-audit/scripts/check-verdict.py"
+# shellcheck source=../_lib/verdict-assert.sh
+source "$ROOT/tests/_lib/verdict-assert.sh"
 
-python3 "$CHECK" --selftest || { echo "FAIL: check-verdict.py selftest"; exit 1; }
-
-pass=0
-fail=0
-
-assert_exit() {
-  # $1=label $2=expected_exit $3=stdin_text
-  local out code
-  out=$(printf '%s' "$3" | python3 "$CHECK" 2>/dev/null)
-  code=$?
-  if [ "$code" -eq "$2" ]; then
-    pass=$((pass + 1))
-  else
-    fail=$((fail + 1))
-    echo "FAIL: $1 — expected exit $2, got $code (stdout: $out)"
-  fi
-}
+run_selftest
 
 good='{"contract_version": 1, "requirements": [{"id": "R1", "verdict": "CONFORMS", "note": "", "accepted": null}], "gauntlet": {"command": "bash gauntlet.sh", "sha": "abc1234", "exit_code": 0, "output_tail": "ok"}, "scope_ok": true, "unexpected_files": []}'
 assert_exit "well-formed all-CONFORMS verdict accepted" 0 "$good"
@@ -101,6 +88,4 @@ else
   echo "FAIL: unexpected_files non-empty — expected exit 0 with pass:false, got $stray_rc: $stray_out"
 fi
 
-echo "$pass passed, $fail failed"
-[ "$fail" -eq 0 ] && echo "PASS: test-compliance-audit-check-verdict"
-exit "$fail"
+report_verdict "test-compliance-audit-check-verdict"

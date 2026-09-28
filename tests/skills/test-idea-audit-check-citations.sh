@@ -4,31 +4,16 @@
 # Run standalone: bash tests/skills/test-idea-audit-check-citations.sh
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# shellcheck disable=SC2034  # used by assert_exit/run_selftest in the sourced lib below
 CHECK="$ROOT/skills/workflow/idea-audit/scripts/check-citations.py"
+# shellcheck source=../_lib/verdict-assert.sh
+source "$ROOT/tests/_lib/verdict-assert.sh"
 
-python3 "$CHECK" --selftest || { echo "FAIL: check-citations.py selftest"; exit 1; }
-
-pass=0
-fail=0
-
-assert_exit() {
-  # $1=label $2=expected_exit $3=stdin_text
-  local out code
-  out=$(printf '%s' "$3" | python3 "$CHECK" 2>/dev/null)
-  code=$?
-  if [ "$code" -eq "$2" ]; then
-    pass=$((pass + 1))
-  else
-    fail=$((fail + 1))
-    echo "FAIL: $1 — expected exit $2, got $code (stdout: $out)"
-  fi
-}
+run_selftest
 
 assert_exit "path:line citation accepted" 0 '{"findings": [{"summary": "s", "evidence": "skills/foo.py:12"}], "checked": []}'
 assert_exit "backticked command accepted" 0 '{"findings": [], "checked": [{"claim": "c", "evidence": "ran `git log -1`"}]}'
 assert_exit "bare prose rejected" 1 '{"findings": [{"summary": "s", "evidence": "looks correct to me"}], "checked": []}'
 assert_exit "un-backticked command rejected (format matters)" 1 '{"findings": [], "checked": [{"claim": "c", "evidence": "ran git diff, exit 0"}]}'
 
-echo "$pass passed, $fail failed"
-[ "$fail" -eq 0 ] && echo "PASS: test-idea-audit-check-citations"
-exit "$fail"
+report_verdict "test-idea-audit-check-citations"

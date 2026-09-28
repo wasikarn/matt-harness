@@ -9,25 +9,12 @@
 # Run standalone: bash tests/skills/test-idea-audit-check-verdict.sh
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+# shellcheck disable=SC2034  # used by assert_exit/run_selftest in the sourced lib below
 CHECK="$ROOT/skills/workflow/idea-audit/scripts/check-verdict.py"
+# shellcheck source=../_lib/verdict-assert.sh
+source "$ROOT/tests/_lib/verdict-assert.sh"
 
-python3 "$CHECK" --selftest || { echo "FAIL: check-verdict.py selftest"; exit 1; }
-
-pass=0
-fail=0
-
-assert_exit() {
-  # $1=label $2=expected_exit $3=stdin_text
-  local out code
-  out=$(printf '%s' "$3" | python3 "$CHECK" 2>/dev/null)
-  code=$?
-  if [ "$code" -eq "$2" ]; then
-    pass=$((pass + 1))
-  else
-    fail=$((fail + 1))
-    echo "FAIL: $1 — expected exit $2, got $code (stdout: $out)"
-  fi
-}
+run_selftest
 
 checked='[{"claim": "c", "evidence": "e"}]'
 good='{"contract_version": 1, "pass": true, "findings": [], "checked": '"$checked"'}'
@@ -46,6 +33,4 @@ real='{"contract_version": 1, "pass": true, "findings": [{"summary": "s", "evide
 assert_exit "decoy verdict ahead of the real one rejected as ambiguous" 1 "Example shape: $decoy
 Actual result: $real"
 
-echo "$pass passed, $fail failed"
-[ "$fail" -eq 0 ] && echo "PASS: test-idea-audit-check-verdict"
-exit "$fail"
+report_verdict "test-idea-audit-check-verdict"
