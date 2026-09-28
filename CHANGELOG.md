@@ -3,6 +3,41 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.147] — 2026-09-28
+
+Phase B of the operator-approved worktree/PR-flow reversal: `develop` is now a protected,
+PR-only branch. Ships as this repo's own first PR, dogfooding the flow it adds. Self-launch ADR
+(Phase C) is separate, later work — not shipped here.
+
+### Added
+
+- **`git-hooks/pre-push`**: refuses a direct push whose remote ref is `refs/heads/develop`,
+  before the gauntlet runs. Reads git's stdin ref-line protocol; empty stdin (nothing to push) is
+  allowed, a malformed non-empty line fails closed with a diagnostic. New test:
+  `tests/scripts/test-pre-push-refs.sh`.
+- **`gate:bash:irrecoverable` ask-tier rule** for `gh pr merge` / `gh api .../merge`: local,
+  interactive-session-only defense-in-depth — does not constrain the GitHub web UI, a raw API
+  call, or any credential used outside a Claude Code session with mh loaded. `gh` added to the
+  gate's own fast-path candidate list (it was falling through to allow before ever reaching
+  python3).
+- **`.github/workflows/validate.yml`**: dropped the nonexistent `main` branch from triggers.
+
+### Changed
+
+- `docs/reference/branching-model.md`, `CLAUDE.md`: rewritten for the protected-`develop`/PR
+  flow — `feat/`/`claude/` branches, `gh pr create`, review via the already-installed
+  `mattpocock-skills:code-review`, merge-commit/rebase only (never squash — collides with the
+  existing `git branch -D` deny gate), enforcement layers named weakest-to-strongest with each
+  one's actual limits stated plainly.
+
+### Not shipped here (named in the plan, left for the operator or later work)
+
+- GitHub branch protection itself (`develop`'s required status checks, `enforce_admins`) —
+  applied by the operator once this PR's 3 check-name contexts have actually appeared on it.
+- A `mcp__plugin_github_github__merge_pull_request` PreToolUse matcher — dropped rather than
+  shipped untested: hooks.json changes only take effect from the plugin cache, not this repo's
+  own working tree, so it could not be live-canaried from an interactive session this pass.
+
 ## [1.1.146] — 2026-09-28
 
 Phase A of the operator-approved worktree-per-session reversal (Codex-reviewed plan,

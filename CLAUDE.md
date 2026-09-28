@@ -12,9 +12,10 @@ bash scripts/run-gauntlet.sh                       # plugin-validate (manifest o
 
 Pre-push runs the gauntlet; pre-commit runs lint + audit + a 4096-byte cap on `docs/METHODOLOGY.md` +
 a benign-payload canary on staged gates (`scripts/gate-canary.sh`). CI also runs the gauntlet
-(`.github/workflows/validate.yml`'s `gauntlet` job, on every push/PR) as an advisory backstop if
-the local pre-push hook ever doesn't run (e.g. a broken `core.hooksPath`) — `develop` has no
-branch-protection rule, so a red `gauntlet` job reports but does not block a push or merge.
+(`.github/workflows/validate.yml`'s `gauntlet` job, on every push/PR against `develop`). Once B5's
+branch protection is applied (`docs/reference/branching-model.md`), the 3 check-name contexts
+(`claude plugin validate ...`, `harness-audit (0 CRIT)`, `gauntlet (run-gauntlet.sh)`) are required
+and a red run blocks merge — until then, treat CI as advisory only.
 
 ## Git hooks
 
@@ -53,11 +54,11 @@ asked to research. Detail: `docs/reference/repo-gotchas.md`.
 
 ## Branching model
 
-Single branch: `develop` only. No feature branches; commit direct, confirm before push.
-Each session gets its own worktree (2026-09-28); a subagent still shares its parent session's
-worktree, and the memory store + both manifests are still shared across every worktree — re-read
-manifests before writing a version into a commit message. Detail:
-`docs/reference/branching-model.md`.
+`develop` is protected (2026-09-28): no direct push, PR required (`feat/`/`claude/` branch,
+`gh pr create`, review via `mattpocock-skills:code-review`). Each session gets its own worktree; a
+subagent still shares its parent session's worktree, and the memory store + both manifests are
+still shared across every worktree — re-read manifests before writing a version into a commit
+message. Detail: `docs/reference/branching-model.md`.
 
 ## Architecture
 

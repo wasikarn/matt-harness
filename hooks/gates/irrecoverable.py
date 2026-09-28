@@ -326,6 +326,16 @@ def deny(reason):
     journal(GATE_ID, d.get("tool_name"), "deny", d.get("session_id"))
     sys.exit(2)
 
+def ask(reason):
+    # Unlike deny(), doesn't exit immediately -- a later, more severe check in
+    # the same run can still escalate to deny() (which does exit right away),
+    # same "ask now, a worse finding can still override" shape config-write-guard.py
+    # and codex-setup-guard.py's own emit_ask() already use.
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
+                                             "permissionDecision": "ask",
+                                             "permissionDecisionReason": reason}}))
+    journal(GATE_ID, d.get("tool_name"), "ask", d.get("session_id"))
+
 def delete_hint():
     # trash is not stock on macOS or Linux -- offer whichever CLI exists.
     import shutil
@@ -659,7 +669,7 @@ def _unwrap_shell(argv0, rest):
 
 # Candidate names for placeholder-splice duplication: the exact argv0 basenames
 # and git subcommands any check below dispatches on by exact string match.
-KNOWN_DANGEROUS = ("rm", "find", "git", "dd", "mysql", "psql", "sqlite3", "mariadb")
+KNOWN_DANGEROUS = ("rm", "find", "git", "gh", "dd", "mysql", "psql", "sqlite3", "mariadb")
 KNOWN_GIT_SUBS = ("push", "reset", "clean", "restore", "checkout", "switch", "branch", "stash", "commit", "add")
 
 # Duplication also fires on a token still carrying raw substitution syntax
@@ -1006,6 +1016,23 @@ for _wi, w in enumerate(windows):
                 if sub == "add" and any(t in ("-A", ".") or _is_flag(t, "--all") for t in scan) and not _mid_merge():
                     deny("git add -A/. stages everything — stage files by name instead "
                          "(allowed only while a merge is in progress, i.e. MERGE_HEAD exists)")
+
+        # Phase B (2026-09-28): local, interactive-session-only defense-in-depth
+        # for this repo's PR-review flow -- ask, never deny, since a merge can be
+        # a legitimate operator-approved action. Does NOT constrain a GitHub
+        # credential used outside a Claude Code session with mh loaded (a cloud
+        # Routine, the web UI, a raw API call) -- see docs/adr/0004-* for that
+        # threat model; branch protection (B5) is the real enforcement there.
+        if argv0 == "gh" and rest:
+            gh_scan = [t.replace(PH, "") for t in rest]
+            if gh_scan[0] == "pr" and "merge" in gh_scan[1:]:
+                ask("gh pr merge would merge a pull request into this repo — the PR-review "
+                    "flow (docs/reference/branching-model.md) expects a human to do this. "
+                    "Confirm this is intentional.")
+            if gh_scan[0] == "api" and any("/merge" in t for t in gh_scan[1:]):
+                ask("gh api .../merge calls the GitHub merge endpoint directly — the "
+                    "PR-review flow (docs/reference/branching-model.md) expects a human to "
+                    "do this. Confirm this is intentional.")
 
         if argv0 == "dd" and any(t.replace(PH, "").startswith("of=/dev/") for t in rest):
             deny("dd writing to a raw device — irrecoverable disk-level destruction")
