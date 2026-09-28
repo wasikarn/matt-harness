@@ -3,6 +3,23 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+## [1.1.151] — 2026-09-28
+
+Adds a ninth gate, `gate:tool:routine-trigger-guard`: an ask-tier `PreToolUse` rule on
+`RemoteTrigger`/`CronCreate`, matched by tool name (not a `Bash` command-string scan, so it
+doesn't inherit the MCP-connector-bypass class of gap ADR 0004's Wave-1 round 2 found in the
+`gh pr merge` rule). Closes a real, live, today gap named in that ADR's own round-1 `[R1 fix]`
+to §4 and required as item 6 of §5: nothing gated a model creating or firing a Routine in the
+first place, in any interactive session, independent of whether ADR 0004 is ever accepted.
+Same posture as Phase B's `gh pr merge` rule — ask, not deny, since creating a Routine can be a
+legitimate operator-approved action. Cannot constrain a Routine that already exists and is
+running outside this Claude Code session; the ADR's §4 already says so.
+
+Registered in `hooks/hook-registry.json` and `docs/reference/operating-model.md`'s gate table;
+both manifests' description strings now say "Nine computational deny/ask gates". Tests added to
+`tests/hooks/test-gates.sh` (ask on both tool names, allow on an unrelated tool, fail-safe allow
+on malformed/non-object stdin and on a missing `python3`) — 336/336 passing.
+
 ## [1.1.150] — 2026-09-28
 
 Records Wave-1 round 2 against ADR 0004: 5/5 REJECT again, this time on a different finding
