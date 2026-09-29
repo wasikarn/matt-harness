@@ -1128,6 +1128,16 @@ test_allow "$IRRECOVERABLE" "bash -oc pipefail, benign body (gap follow-up to #2
   "$(bash_payload "bash -oc pipefail 'git status'")"
 test_allow "$IRRECOVERABLE" "bash -c +e, benign body (gap follow-up to #227)" \
   "$(bash_payload "bash -c +e 'git status'")"
+# zsh, ksh and dash follow getopt: an `o` followed by more letters has them as its attached value
+# (`-opipefail`), so the body is the next word; bash instead takes the next word for every `o`.
+test_deny  "$IRRECOVERABLE" "zsh -c -opipefail body: attached option value (gap follow-up to #227)" \
+  "$(bash_payload "zsh -c -opipefail 'rm -rf /tmp/x' ignored")"
+test_deny  "$IRRECOVERABLE" "ksh -c -oerrexit body: attached option value (gap follow-up to #227)" \
+  "$(bash_payload "ksh -c -oerrexit 'rm -rf /tmp/x' ignored")"
+test_deny  "$IRRECOVERABLE" "zsh -c +opipefail body: attached value after a split + (gap follow-up to #227)" \
+  "$(bash_payload "zsh -c +opipefail 'rm -rf /tmp/x'")"
+test_allow "$IRRECOVERABLE" "zsh -c +opipefail 'echo' then a dangerous-looking argument (gap follow-up to #227)" \
+  "$(bash_payload "zsh -c +opipefail 'echo hi' 'rm -rf /tmp/x'")"
 # Under find, `-exec` after `bash -c` is bash's option letters (e x e c), not a second find action.
 test_deny  "$IRRECOVERABLE" "find -exec bash -c -exec body: -exec is a shell cluster (gap follow-up to #227)" \
   "$(bash_payload "find . -exec bash -c -exec 'rm -rf /tmp/x' \\;")"
