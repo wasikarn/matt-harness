@@ -69,6 +69,9 @@ if [ -f "$AUDIT" ]; then
     echo "pre-commit: harness-audit CRIT findings:" >&2
     printf '%s\n' "$out" | /usr/bin/grep 'CRIT F' >&2
     fail=1
+  else
+    # A passing audit prints nothing; surface the new-component INFO so the plugin-update reminder is seen.
+    printf '%s\n' "$out" | /usr/bin/grep 'is new vs' | sed 's/^/pre-commit: /' >&2 || true
   fi
 else
   echo "pre-commit: WARN $AUDIT missing, skipping harness-audit" >&2
