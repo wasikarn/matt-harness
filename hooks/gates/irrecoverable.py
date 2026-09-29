@@ -767,8 +767,13 @@ def _blank_substitutions(s):
 # <path> (fail-open), and the bash -c/eval tokenizer (whitespace_split) kept
 # "{fd}" as one nonflag arg (over-deny on a plain branch switch). Only matched
 # at a word start (checked at the call site): "x{fd}>f" is the literal word
-# "x{fd}" followed by a plain ">f" redirect.
-_REDIRECT_OP_RE = re.compile(r"(?:\{[A-Za-z_][A-Za-z0-9_]*\}|\d{0,2})(>>|<<<|<<|>&|<&|&>>|&>|>|<)")
+# "x{fd}" followed by a plain ">f" redirect. Like an fd number, "{var}" never
+# prefixes "&>"/"&>>" ("{fd}&>x" is the word "{fd}" plus a redirect). ">|"
+# (noclobber) and "<>" are operators too: without ">|", "{fd}>|x <path>" left
+# "|x <path>" as a pipe that cut the window before <path> (#208 validator).
+_REDIRECT_OP_RE = re.compile(
+    r"\{[A-Za-z_][A-Za-z0-9_]*\}(?:>>|<<<|<<|>&|<&|>\||<>|>|<)"
+    r"|\d{0,2}(?:>>|<<<|<<|>&|<&|&>>|&>|>\||<>|>|<)")
 _REDIRECT_TARGET_STOP = set(" \t\n;|&()")
 def _blank_redirections(s):
     out = []
@@ -834,8 +839,11 @@ def _blank_redirections(s):
             last_escaped = False
             continue
         m = _REDIRECT_OP_RE.match(s, i)
-        if m and c == "{" and (last_escaped or (out and out[-1] not in _REDIRECT_TARGET_STOP)):
-            m = None  # mid-word "{": literal text, not a named fd (GH #188)
+        # mid-word "{": literal text, not a named fd (GH #188). After an
+        # escaped char ("x\ {fd}>f") it is still read as a redirect: keeping
+        # "{" as text lets the outer tokenizer break the window at "{".
+        if m and c == "{" and out and out[-1] not in _REDIRECT_TARGET_STOP:
+            m = None
         if m:
             j = m.end()
             while j < n and s[j] in " \t":
