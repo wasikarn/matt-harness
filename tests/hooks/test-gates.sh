@@ -827,15 +827,15 @@ test_deny "$IRRECOVERABLE" 'GH #184: a double-quoted ) inside $(...) must not cl
   "$(bash_payload 'echo $(echo ")"; rm -rf hooks/gates/irrecoverable.py)')"
 test_deny "$IRRECOVERABLE" 'GH #184: a single-quoted ) inside $(...), same check' \
   "$(bash_payload "echo \$(echo ')'; rm -rf hooks/gates/irrecoverable.py)")"
-test_deny "$IRRECOVERABLE" 'GH #184: a quoted } inside a $(...) nested in ${...} still reaches the rm' \
+test_deny "$IRRECOVERABLE" 'GH #184 control (develop already denies, via the quote-blind closer + fallback split): a quoted } inside a $(...) nested in ${...} still reaches the rm' \
   "$(bash_payload 'echo ${x:-$(echo "}"; rm -rf hooks/gates/irrecoverable.py)}')"
 # Real bash prints one line here ("}; echo SECOND"): the quoted "}" is literal, the whole tail is
 # the parameter default, nothing after it runs as a command.
-test_allow "$IRRECOVERABLE" 'GH #184 control: a quoted } inside ${...} is literal text, the tail is not a command' \
+test_allow "$IRRECOVERABLE" 'GH #184 control (also passes on develop): a quoted } inside ${...} is literal text, the tail is not a command' \
   "$(bash_payload 'echo ${x:-"}"; echo SECOND}')"
 # Known cost, fail-closed on purpose: a ${...} body is re-scanned as a statement (GH #185), so
 # literal ";"-separated danger text in a parameter default denies even though bash never runs it.
-test_deny "$IRRECOVERABLE" 'GH #185 cost: danger text in a ${...} default denies (fail-closed, documented)' \
+test_deny "$IRRECOVERABLE" 'GH #185 control (also passes on develop): danger text in a ${...} default denies (fail-closed, documented)' \
   "$(bash_payload 'echo ${x:-"}"; rm -rf hooks/gates/irrecoverable.py}')"
 
 # GH #185: a "$(...)"/backtick/"${...}" body was spliced back once, never re-scanned, so a
@@ -848,9 +848,9 @@ test_deny "$IRRECOVERABLE" 'GH #185: a $(...) inside a ${...} default must be sc
   "$(bash_payload 'echo ${x:-$(rm -rf hooks/gates/irrecoverable.py)}')"
 test_deny "$IRRECOVERABLE" 'GH #185: a backtick inside a ${...} default must be scanned' \
   "$(bash_payload 'echo ${x:-`rm -rf hooks/gates/irrecoverable.py`}')"
-test_deny "$IRRECOVERABLE" 'GH #185 control: $(...) nested inside a backtick (reverse order) still denies' \
+test_deny "$IRRECOVERABLE" 'GH #185 control (also passes on develop): $(...) nested inside a backtick (reverse order) still denies' \
   "$(bash_payload 'echo `echo $(rm -rf hooks/gates/irrecoverable.py)`')"
-test_deny "$IRRECOVERABLE" 'GH #185 control: 1000-deep nested $(...) with rm -rf innermost fails closed, no crash' \
+test_deny "$IRRECOVERABLE" 'GH #185 control (also passes on develop): 1000-deep nested $(...) with rm -rf innermost fails closed, no crash' \
   "$(bash_payload "$(python3 -c "print('echo ' + '\$(' * 1000 + 'rm -rf hooks/gates/irrecoverable.py' + ')' * 1000)")")"
 test_deny "$IRRECOVERABLE" 'GH #185 control: 1000-deep nested ${x:-...} with rm -rf innermost fails closed, no crash' \
   "$(bash_payload "$(python3 -c "print('echo ' + '\${x:-' * 1000 + '\$(rm -rf hooks/gates/irrecoverable.py)' + '}' * 1000)")")"
@@ -859,7 +859,7 @@ test_deny "$IRRECOVERABLE" 'GH #185 control: 1000-deep nested ${x:-...} with rm 
 # tokenizer (no whitespace_split) split "{fd}" into "{" "fd" "}" and "{"/"}" are window breaks, so
 # the direct form allowed by accident; the bash -c/eval tokenizer (whitespace_split) kept "{fd}" as
 # one nonflag arg and false-denied checkout. Both paths now drop the whole redirect before shlex.
-test_allow "$IRRECOVERABLE" 'GH #188: {fd}>/dev/null on a branch switch allows (direct)' \
+test_allow "$IRRECOVERABLE" 'GH #188 control (also passes on develop, by accident): {fd}>/dev/null on a branch switch allows (direct)' \
   "$(bash_payload 'git checkout main {fd}>/dev/null')"
 test_allow "$IRRECOVERABLE" 'GH #188: {fd}>/dev/null on a branch switch allows (bash -c)' \
   "$(bash_payload 'bash -c "git checkout main {fd}>/dev/null"')"
@@ -867,9 +867,9 @@ test_allow "$IRRECOVERABLE" 'GH #188: {fd}>/dev/null on a branch switch allows (
   "$(bash_payload 'eval "git checkout main {fd}>/dev/null"')"
 test_deny "$IRRECOVERABLE" 'GH #188 control: {fd}> redirect does not hide a real tree-ish+path checkout (direct)' \
   "$(bash_payload 'git checkout HEAD {fd}>/dev/null hooks/gates/irrecoverable.py')"
-test_deny "$IRRECOVERABLE" 'GH #188 control: same, bash -c' \
+test_deny "$IRRECOVERABLE" 'GH #188 control (also passes on develop): same, bash -c' \
   "$(bash_payload 'bash -c "git checkout HEAD {fd}>/dev/null hooks/gates/irrecoverable.py"')"
-test_deny "$IRRECOVERABLE" 'GH #188 control: same, eval' \
+test_deny "$IRRECOVERABLE" 'GH #188 control (also passes on develop): same, eval' \
   "$(bash_payload 'eval "git checkout HEAD {fd}>/dev/null hooks/gates/irrecoverable.py"')"
 
 # GH #189: "git restore --staged" plus the worktree flag spelled -W or abbreviated (--work) also
@@ -880,20 +880,20 @@ test_deny "$IRRECOVERABLE" 'GH #189: git restore --staged --work f (abbreviation
   "$(bash_payload 'git restore --staged --work hooks/gates/irrecoverable.py')"
 test_deny "$IRRECOVERABLE" 'GH #189: git restore --staged -qW f (bundled) targets the worktree' \
   "$(bash_payload 'git restore --staged -qW hooks/gates/irrecoverable.py')"
-test_allow "$IRRECOVERABLE" 'GH #189 control: git restore --staged -sW f is --source=W, index only' \
+test_allow "$IRRECOVERABLE" 'GH #189 control (also passes on develop): git restore --staged -sW f is --source=W, index only' \
   "$(bash_payload 'git restore --staged -sW hooks/gates/irrecoverable.py')"
 
 # GH #184/#185/#188/#189 adversarial pass (3 rounds). Round 1 found a regression in the first
 # quote-aware closer: an apostrophe in a "#" comment inside "$(...)" made the search give up, and
 # the raw ")" + ";" then reached shlex as one glued ");" token (not an operator), hiding the rm.
 # Fixed by skipping word-start comments inside "(" spans.
-test_deny "$IRRECOVERABLE" 'adversarial: apostrophe in a # comment inside $(...) does not hide a later rm' \
+test_deny "$IRRECOVERABLE" 'adversarial control (also passes on develop; failed on this PR round 1): apostrophe in a # comment inside $(...) does not hide a later rm' \
   "$(bash_payload "$(printf 'echo $(true #%s\n); rm -rf hooks/gates/irrecoverable.py; echo "%s"' "'" "'")")"
 test_deny "$IRRECOVERABLE" 'adversarial: same, inside <(...)' \
   "$(bash_payload "$(printf 'echo <(true #%s\n); rm -rf hooks/gates/irrecoverable.py; echo "%s"' "'" "'")")"
-test_deny "$IRRECOVERABLE" 'adversarial: a ) inside a # comment inside $(...) is not a closer' \
+test_deny "$IRRECOVERABLE" 'adversarial control (also passes on develop): a ) inside a # comment inside $(...) is not a closer' \
   "$(bash_payload "$(printf 'echo $(true #)\n; rm -rf hooks/gates/irrecoverable.py)')")"
-test_deny "$IRRECOVERABLE" 'adversarial: # is an operator in ${x#pat}, not a comment' \
+test_deny "$IRRECOVERABLE" 'adversarial control (also passes on develop): # is an operator in ${x#pat}, not a comment' \
   "$(bash_payload "echo \${x#'}'}; rm -rf hooks/gates/irrecoverable.py")"
 test_deny "$IRRECOVERABLE" 'adversarial: GH #184 shape under bash -c' \
   "$(bash_payload "bash -c 'echo \$(echo \")\"; rm -rf hooks/gates/irrecoverable.py)'")"
@@ -901,13 +901,13 @@ test_deny "$IRRECOVERABLE" 'adversarial: GH #185 shape under bash -c' \
   "$(bash_payload "bash -c 'echo \${x:-\$(rm -rf hooks/gates/irrecoverable.py)}'")"
 test_deny "$IRRECOVERABLE" 'adversarial: three-level mixed nesting $( $( ` ` ) )' \
   "$(bash_payload 'echo $(echo $(echo `git reset --hard`))')"
-test_deny "$IRRECOVERABLE" 'adversarial: 60-deep $(echo `true`; ...) chain with rm innermost fails closed' \
+test_deny "$IRRECOVERABLE" 'adversarial control (also passes on develop): 60-deep $(echo `true`; ...) chain with rm innermost fails closed' \
   "$(bash_payload "$(python3 -c "print('echo ' + '\$(echo \`true\`; ' * 60 + 'rm -rf hooks/gates/irrecoverable.py' + ')' * 60)")")"
-test_deny "$IRRECOVERABLE" 'adversarial: 30,000 unclosed $( openers stay bounded and deny' \
+test_deny "$IRRECOVERABLE" 'adversarial control (also passes on develop): 30,000 unclosed $( openers stay bounded and deny' \
   "$(bash_payload "$(python3 -c "print('echo ' + '\$(' * 30000 + 'rm -rf hooks/gates/irrecoverable.py')")")"
-test_deny "$IRRECOVERABLE" 'adversarial: {fd}> redirect before a later ;rm' \
+test_deny "$IRRECOVERABLE" 'adversarial control (also passes on develop): {fd}> redirect before a later ;rm' \
   "$(bash_payload 'git checkout HEAD {fd}>x;rm -rf hooks/gates/irrecoverable.py')"
-test_deny "$IRRECOVERABLE" 'adversarial: quoted "{fd}>x" is a literal arg, not a redirect' \
+test_deny "$IRRECOVERABLE" 'adversarial control (also passes on develop): quoted "{fd}>x" is a literal arg, not a redirect' \
   "$(bash_payload 'git checkout HEAD "{fd}>x" hooks/gates/irrecoverable.py')"
 test_deny "$IRRECOVERABLE" 'adversarial: {fd}> redirect does not hide git reset --hard' \
   "$(bash_payload 'git reset {fd}>x --hard')"
@@ -917,12 +917,41 @@ test_deny "$IRRECOVERABLE" 'adversarial: restore --staged -$(true)W (substitutio
   "$(bash_payload 'git restore --staged -$(true)W hooks/gates/irrecoverable.py')"
 test_deny "$IRRECOVERABLE" 'adversarial: restore --staged -Ws (W before the value-taking s)' \
   "$(bash_payload 'git restore --staged -Ws hooks/gates/irrecoverable.py')"
-test_allow "$IRRECOVERABLE" 'adversarial control: ordinary nested $(...) with quotes and a ${...} default allows' \
+test_allow "$IRRECOVERABLE" 'adversarial control (also passes on develop): ordinary nested $(...) with quotes and a ${...} default allows' \
   "$(bash_payload 'echo "$(echo "nested \"quoted\" )")" ${x:-$(git rev-parse HEAD)} ${PWD##*/}')"
-test_allow "$IRRECOVERABLE" 'adversarial control: a trailing # comment inside $(...) allows' \
+test_allow "$IRRECOVERABLE" 'adversarial control (also passes on develop): a trailing # comment inside $(...) allows' \
   "$(bash_payload "$(printf 'echo $(date # trailing comment\n)')")"
-test_allow "$IRRECOVERABLE" 'adversarial control: exec {fd}>lock idiom allows' \
+test_allow "$IRRECOVERABLE" 'adversarial control (also passes on develop): exec {fd}>lock idiom allows' \
   "$(bash_payload 'exec {fd}>/tmp/lock; flock $fd true')"
+
+# GH #184 validator round 1: the first quote-aware "${...}" closer read "'" as a quote inside a
+# DOUBLE-quoted "${...}". bash does by default, but in POSIX mode (sh -c, bash --posix,
+# POSIXLY_CORRECT=1; GNU Bash manual, "Bash POSIX Mode") that "'" is literal, the expansion closes
+# at the first "}" and the tail runs. develop denied these; the first fix allowed them. Now the
+# earliest of the bash/POSIX/naive closes is taken and the longest body is also queued.
+_pq="'"
+test_deny "$IRRECOVERABLE" 'GH #184 POSIX regression guard (develop denies, round-1 fix allowed): "${x:-'"'"'}" closes at the first } in POSIX mode, tail git reset --hard runs' \
+  "$(bash_payload "echo \"\${x:-${_pq}}\"; git reset --hard; echo \"${_pq}}\"")"
+test_deny "$IRRECOVERABLE" 'GH #184 POSIX regression guard (develop denies, round-1 fix allowed): an apostrophe word in a double-quoted ${...} default, tail rm runs' \
+  "$(bash_payload "echo \"\${x:-it${_pq}s}\"; rm -rf hooks/gates/irrecoverable.py; echo \"${_pq}}\"")"
+for _pw in "sh -c" "bash --posix -c" "POSIXLY_CORRECT=1 bash -c"; do
+  test_deny "$IRRECOVERABLE" "GH #184 POSIX regression guard (develop denies, round-1 fix allowed): same shape under $_pw" \
+    "$(bash_payload "$_pw '$(printf 'echo "${x:-%s}"; git reset --hard; echo "%s}"' "'\"'\"'" "'\"'\"'")'")"
+done
+test_allow "$IRRECOVERABLE" 'GH #184 POSIX control: an ordinary double-quoted ${...} with an apostrophe default allows' \
+  "$(bash_payload "echo \"\${name:-it${_pq}s me}\"")"
+# Round 2 attack on the earliest-close fix: taking the earlier close left the main text with an
+# open quote that a quote inside a queued body then closed, swallowing the rm into one quoted
+# token. Guarded by _BODY_QUOTE_DESYNC (main text must tokenize on its own). The first two are
+# controls (develop denies them too); the third was ALLOWED on develop.
+test_deny "$IRRECOVERABLE" 'GH #184 desync control (also passes on develop): a quoted } in a double-quoted ${...} does not hide a later rm' \
+  "$(bash_payload 'echo "${x:-"}"}"; rm -rf hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #184 desync control (also passes on develop): same shape under bash -c' \
+  "$(bash_payload "bash -c 'echo \"\${x:-\"}\"}\"; rm -rf hooks/gates/irrecoverable.py'")"
+test_deny "$IRRECOVERABLE" 'GH #184 desync: two double-quoted ${...} with a quoted } around a glued ;rm (allowed on develop)' \
+  "$(bash_payload 'echo "${x:-"}"}";rm -rf hooks/gates/irrecoverable.py;echo "${y:-"}"}"')"
+test_allow "$IRRECOVERABLE" 'GH #184 desync control: the same quoted-} shape with a harmless tail allows' \
+  "$(bash_payload 'echo "${x:-"}"}"; ls -la')"
 
 # The gate correctly denies each idiom below TODAY, but no test held the deny path, so a
 # mutation to the wrapper-unwrap / hooksPath / branch-delete / backstop logic survived the whole

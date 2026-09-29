@@ -494,6 +494,7 @@ PSUB = "\x03"
 # recorded here (mutated, not rebound) and denied once after tokenization,
 # never reset across the primary and fallback calls.
 _DEPTH_BUDGET_BLOWN = [False]
+_BODY_QUOTE_DESYNC = [False]  # set by _blank_substitutions, see its end
 _DEPTH_SCAN_BUDGET = 2_000_000
 def _blank_substitutions(s):
     bodies = []
@@ -523,12 +524,15 @@ def _blank_substitutions(s):
     # not modeled: it can only make the search close too early (tail left as
     # scanned top-level text) or too late (text swallowed into the body), and
     # every body, "${...}" included, is re-scanned as its own statement.
-    def _find_close(s, j, open_c, close_c, depth_work_used):
+    # sq_quotes=False: "'" is literal (POSIX-mode reading of a double-quoted
+    # "${...}", see the "${" branch). naive=True: skip straight to the old
+    # quote-blind count below.
+    def _find_close(s, j, open_c, close_c, depth_work_used, sq_quotes=True, naive=False):
         n = len(s)
         start = j
         depth = 1
         tsq = tdq = False
-        while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
+        while not naive and j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
             depth_work_used[0] += 1
             tc = s[j]
             if tsq:
@@ -544,7 +548,7 @@ def _blank_substitutions(s):
                     tdq = False
                 j += 1
                 continue
-            if tc == SQ:
+            if tc == SQ and sq_quotes:
                 tsq = True; j += 1; continue
             if tc == DQ:
                 tdq = True; j += 1; continue
@@ -671,6 +675,25 @@ def _blank_substitutions(s):
                 # Cost: a default holding literal ";"-separated danger text
                 # denies -- the fail-closed direction.
                 j = _find_close(s, i + 2, s[i + 1], ")" if s[i + 1] == "(" else "}", depth_work_used)
+                if s[i + 1] == "{" and in_dquote:
+                    # Inside double quotes, bash reads "'" in "${...}" as a
+                    # quote by default but as a LITERAL in POSIX mode (sh -c,
+                    # bash --posix, POSIXLY_CORRECT; GNU Bash manual, "Bash
+                    # POSIX Mode"), so "${x:-'}" closes at that "}" there
+                    # and the tail runs (a GH #184 validator finding against
+                    # the first version of this fix). The gate can't know the
+                    # mode or shell: take the EARLIEST of the bash, POSIX and
+                    # pre-#184 naive readings (tail scanned as top-level text,
+                    # never less than before #184) and also queue the body up
+                    # to the LATEST one, so every reading's text is scanned.
+                    cands = [c for c in (
+                        j,
+                        _find_close(s, i + 2, "{", "}", depth_work_used, sq_quotes=False),
+                        _find_close(s, i + 2, "{", "}", depth_work_used, naive=True),
+                    ) if c != -1]
+                    if cands and min(cands) != max(cands):
+                        bodies.append(_rescan(s[i + 2:max(cands) - 1], depth_work_used, _depth))
+                    j = min(cands) if cands else -1
                 if j != -1:
                     bodies.append(_rescan(s[i + 2:j - 1], depth_work_used, _depth))
                     out.append(PH)
@@ -717,6 +740,20 @@ def _blank_substitutions(s):
             break
         s = new
     if bodies:
+        # Bodies share ONE shlex stream with the main text, so a quote char in
+        # a body can close a quote the main text left open (a span edge read
+        # differently from bash): the pair then swallows the real command
+        # between them into one quoted token ("echo \"${x:-\"}\"}\"; rm -rf
+        # x" did exactly that -- GH #184 validator round 2). If the main text
+        # does not tokenize on its own, flag it: callers must not trust the
+        # combined stream's quoting (outer call -> quote-blind fallback split,
+        # bash -c/eval -> deny).
+        try:
+            _chk = shlex.shlex(s, posix=True, punctuation_chars=True)
+            _chk.wordchars += PH + HASH_LIT + PSUB
+            list(_chk)
+        except ValueError:
+            _BODY_QUOTE_DESYNC[0] = True
         # A real "\n" before each body ends any open "#" comment (a plain " ; "
         # join let a trailing comment swallow every appended body).
         s = s + "\n; " + "\n; ".join(bodies)
@@ -902,6 +939,8 @@ try:
     lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd)))), posix=True, punctuation_chars=True)
     lex.wordchars += PH + HASH_LIT + PSUB
     tokens = list(lex)
+    if _BODY_QUOTE_DESYNC[0]:
+        raise ValueError("main text unbalanced; appended bodies rebalanced it")
 except ValueError:
     # Two causes: (1) a genuinely unbalanced quote; (2) a blanking pass above
     # misreads a span's edge (a "#" comment or backtick inside it, which the
@@ -985,7 +1024,10 @@ def _unwrap_shell(argv0, rest):
              "(claude -p/--print/--agent/--bg/--worktree), inside bash -c / eval either "
              "-- only the main session dispatches")
     try:
+        _BODY_QUOTE_DESYNC[0] = False
         lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(body))), posix=True, punctuation_chars=True)
+        if _BODY_QUOTE_DESYNC[0]:
+            raise ValueError("body text unbalanced; appended bodies rebalanced it")
         lex.wordchars += PH + HASH_LIT + PSUB
         lex.whitespace_split = True
         cur = []
