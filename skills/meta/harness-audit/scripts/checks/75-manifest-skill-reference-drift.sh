@@ -87,7 +87,7 @@ PYEOF
     if [ "${#_targets[@]}" -gt 0 ]; then
       _refs=$(/usr/bin/grep -rhoE 'mh:[a-z][a-z0-9-]*' "${_targets[@]}" 2>/dev/null | sed 's/^mh://' | sort -u || true)
     fi
-    _EXPECTED_EXCLUDED="ste-lint"
+    _EXPECTED_EXCLUDED="${MANIFEST_EXPECTED_EXCLUDED:-ste-lint}"
     for _ref in $_refs; do
       _status=$(printf '%s\n' "$_skill_status" | awk -F'\t' -v n="$_ref" '$1==n{print $2}')
       # No real skills/**/<name>/SKILL.md at all -- an agent name, a

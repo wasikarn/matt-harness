@@ -21,7 +21,7 @@ for f in "$CLAUDE_DIR/skills"/*/SKILL.md "$CLAUDE_DIR/skills"/*/*/SKILL.md; do
       _bucket=$(basename "$(dirname "$(dirname "$f")")")
       case "$_bucket" in
         meta|review|workflow|design) : ;;
-        *) crit "skill '$name' is under unrecognized bucket dir '$_bucket' — plugin.json only globs meta/review/workflow/design, so this skill is not discoverable" ;;
+        *) crit "skill '$name' is under unrecognized bucket dir '$_bucket' — plugin.json only covers meta/review and the listed workflow/design skills, so this skill is not discoverable" ;;
       esac
       ;;
     *) warn "skill '$name' is not under a bucket dir (flat skills/$name/SKILL.md) — outside the bucket convention (still loads via the default scan)" ;;
