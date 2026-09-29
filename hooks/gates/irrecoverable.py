@@ -967,6 +967,49 @@ _CMD_LEN_CAP = 150_000
 if len(cmd) > _CMD_LEN_CAP:
     deny("command too long to safely tokenize (" + str(len(cmd)) + " chars, cap " + str(_CMD_LEN_CAP) + ") - confirm with user first")
 
+# GH #184/#185/#194/#195/#196: the tokenizer mis-closes or never expands these shapes, which hides an
+# irrecoverable verb from every check below. Rather than teach it each grammar, fail closed on the raw
+# text (pre-blanking) when the command is BOTH ambiguous and names an irrecoverable verb. Over-denies
+# are the safe direction. Every test is linear or bounded: the length cap above is the only input bound.
+# ponytail: not a parser; a real parser (or a differential fuzz per shape) is the upgrade path.
+# GH #219 (named-fd "{var}>") is left out: it would deny the "{fd}>" branch switches GH #188 allows.
+_AMBIG_QUOTED_CLOSE_RE = re.compile(r"\$\([^)\n]{0,80}[\"'][^\"'\n$(]{0,20}\)[^\"'\n$(]{0,20}[\"']")
+_AMBIG_BRACE_RE = re.compile(r"(?:^|[\s;|&(])\{[^{}\s\"'`$]{1,60}\}(?=[\s;|&)]|$)")
+_AMBIG_FLAG_RE = re.compile(r"--hard\b|--force\b|(?:^|\s)-[A-Za-z]*[fdDrR]\b")
+# A brace token can hide a flag ("rm {-rf,} X"), so its verb check is broad (any rm/dd/find/git sub);
+# the other shapes leave the flags visible, so their verb check is the destructive form itself.
+_AMBIG_BROAD_VERB_RE = re.compile(
+    r"(?<![\w./-])(?:rm\s|dd\s|find\s|git\s+(?:push|reset|clean|checkout|restore|switch|branch|stash)\b)")
+_AMBIG_NARROW_VERB_RE = re.compile(
+    r"(?<![\w./-])(?:rm\s+-[A-Za-z]*[rf]|git\s+push\b[^\n;|&]{0,200}(?:--force\b|\s-[A-Za-z]*f\b)"
+    r"|git\s+reset\b[^\n;|&]{0,200}--hard|git\s+clean\b"
+    r"|git\s+checkout\b[^\n;|&]{0,200}(?:\s--(?:\s|$)|\s-f\b|\s\.(?:\s|$))|git\s+restore\b"
+    r"|git\s+branch\b[^\n;|&]{0,200}\s-D\b|git\s+stash\s+(?:drop|clear)\b"
+    r"|find\s[^\n]{0,300}(?:-delete|-exec\w*\s+rm)|dd\s[^\n]{0,200}of=)")
+
+def _ambiguous(c):
+    """(reason, verb_re) when c is syntactically ambiguous, else None."""
+    subst = "$(" in c
+    if "`" in c and subst:
+        return "a backtick and a $() in one command (nested substitution)", _AMBIG_NARROW_VERB_RE
+    if "\\`" in c:
+        return "an escaped backtick", _AMBIG_NARROW_VERB_RE
+    if subst and _AMBIG_QUOTED_CLOSE_RE.search(c):
+        return "a quoted ) inside a $()", _AMBIG_NARROW_VERB_RE
+    if subst and re.search(r"\bcase\b", c):
+        return "a case statement inside a $()", _AMBIG_NARROW_VERB_RE
+    if (subst or "`" in c) and re.search(r"\beval\b", c):
+        return "eval of a substitution", _AMBIG_NARROW_VERB_RE
+    if _AMBIG_BRACE_RE.search(c):
+        return "a brace token", _AMBIG_BROAD_VERB_RE
+    if re.search(r"[@~^]\{", c) and _AMBIG_FLAG_RE.search(c):
+        return "a flag after a git @{...}/~{...}/^{...} revision", _AMBIG_BROAD_VERB_RE
+    return None
+
+_ambig = _ambiguous(cmd)
+if _ambig and _ambig[1].search(cmd):
+    deny("ambiguous shell syntax (" + _ambig[0] + ") next to an irrecoverable verb - confirm with user first")
+
 try:
     lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd)))), posix=True, punctuation_chars=True)
     lex.wordchars += PH + HASH_LIT + PSUB
@@ -1037,6 +1080,7 @@ def basename(p):
 _SHELLS = {"bash", "sh", "zsh", "dash", "ksh"}
 _MAX_SHELL_DEPTH = 5
 _WDEPTH = {}      # window index -> unwrap depth (absent = 0, an original window)
+_XARGS_HANDOVERS = [0]  # windows appended for `xargs <wrapper> ...` (bounded, see the xargs branch)
 _cur_depth = 0
 
 def _unwrap_shell(argv0, rest):
@@ -1045,9 +1089,22 @@ def _unwrap_shell(argv0, rest):
         for i in range(len(rest) - 1):
             t = rest[i].replace(PH, "")
             if t.startswith("-") and not t.startswith("--") and "c" in t:
-                body = rest[i + 1]
-                if body.replace(PH, "") == "--" and i + 2 < len(rest):
-                    body = rest[i + 2]  # `bash -c -- 'body'` runs the body too
+                # The shell keeps parsing options after -c (`bash -c -e 'body'`,
+                # `bash -c -o pipefail 'body'`); the body is the first non-option word,
+                # and `--` / a bare `-` ends the options.
+                # A short cluster ending in o/O (`-o`, `-eo`, `-ceo`) takes the next word as its value.
+                _vf = "o" if argv0 == "zsh" else "oO"  # zsh's -O is a plain flag; only -o takes a value there
+                j = i + (2 if t[-1] in _vf else 1)
+                while j < len(rest):
+                    u = rest[j].replace(PH, "")
+                    if u in ("--", "-"):
+                        j += 1
+                        break
+                    if len(u) > 1 and u[0] in "-+":
+                        j += 2 if (u[-1] in _vf and not u.startswith("--")) else 1
+                        continue
+                    break
+                body = rest[j] if j < len(rest) else None
                 break
     elif argv0 == "eval" and rest:
         body = " ".join(rest)
@@ -1116,8 +1173,12 @@ for _wi, w in enumerate(windows):
     argv0, rest = basename(w[0]), w[1:]
     # A window can start at `-exec` (a second -exec after an escaped `;`) or `--`
     # (xargs -I{} -- CMD splits at the `{}` operator): the command follows.
-    while rest and argv0 in ("-exec", "-execdir", "-ok", "-okdir", "--"):
-        argv0, rest = basename(rest[0]), rest[1:]
+    # `find -exec true {} + -exec CMD {} +`: `{}` splits the window, so the second one starts at `+`.
+    # An index, not repeated slicing: a flood of `-exec` words must stay linear.
+    _k = 0
+    while _k < len(rest) and argv0 in ("-exec", "-execdir", "-ok", "-okdir", "--", "+"):
+        argv0, _k = basename(rest[_k]), _k + 1
+    rest = rest[_k:]
 
     # Prefix wrappers unwrap one level per iteration so "env nice rm -rf x" or
     # "sudo rm -rf x" resolve to the real command -- everyday idioms, in scope.
@@ -1151,8 +1212,10 @@ for _wi, w in enumerate(windows):
             while i < len(rest) and rest[i].replace(PH, "").startswith("-"):
                 t = rest[i].replace(PH, "")
                 i += 1
-                # exec's bundled `-la NAME`: the cluster ends in the value flag
-                bundled = argv0 == "exec" and t.startswith("-") and not t.startswith("--") and t.endswith("a")
+                # exec's bundled `-la NAME`: the cluster's FIRST `a` is its last char, so the
+                # name is the next token. `-alpha` / `-aa` carry the name attached.
+                bundled = argv0 == "exec" and t.startswith("-") and not t.startswith("--") \
+                    and t.find("a", 1) == len(t) - 1
                 if (t in FLAG_VALUE_WRAPPERS[argv0] or bundled) and i < len(rest):
                     i += 1
             if argv0 in ("timeout", "gtimeout"):
@@ -1234,14 +1297,22 @@ for _wi, w in enumerate(windows):
                 break
             argv0, rest = basename(rest[i]), rest[i + 1:]
 
-    _unwrap_shell(argv0, rest)
+    _unwrap_shell(argv0.replace(PH, ""), rest)  # `s$(true)h -c` is still sh
 
     if argv0 == "find":
         # GH #227: find -exec sh -c '<body>' \; hides the body in one token. The shell is the
         # word right after the action flag, not the first shell-named word (-name sh).
-        for j, t in enumerate(rest[:-1]):
-            if t.replace(PH, "") in ("-exec", "-execdir", "-ok", "-okdir") and basename(rest[j + 1]).replace(PH, "") in _SHELLS:
-                _unwrap_shell(basename(rest[j + 1]).replace(PH, ""), rest[j + 2:])
+        # The command after the action flag becomes a window of its own, so a wrapper before
+        # the shell (`-exec env sh -c ...`, `-exec rtk run -c ...`) unwraps like anywhere else.
+        # Each command runs from its flag to the NEXT action flag, so the appended windows
+        # partition `rest` (linear total size): a flood of -exec words, or `find -exec find
+        # -exec find ...`, cannot grow the work past the 8s hook timeout.
+        acts = [j for j, t in enumerate(rest) if t.replace(PH, "") in ("-exec", "-execdir", "-ok", "-okdir")]
+        for n, j in enumerate(acts):
+            sub = rest[j + 1:(acts[n + 1] if n + 1 < len(acts) else len(rest))]
+            if sub:
+                _WDEPTH[len(windows)] = _cur_depth
+                windows.append(sub)
 
     if argv0 == "xargs":
         # xargs args are never free-text prose, so scanning for a dangerous
@@ -1251,6 +1322,16 @@ for _wi, w in enumerate(windows):
         for j, t in enumerate(rest):
             if basename(t).replace(PH, "") in _SHELLS:  # GH #227: xargs sh -c '<body>'
                 _unwrap_shell(basename(t).replace(PH, ""), rest[j + 1:])
+                break
+        for j, t in enumerate(rest):  # xargs env sh -c / xargs rtk run -c: a wrapper hands over the command
+            if basename(t).replace(PH, "") in PREFIX_WRAPPERS:
+                # Each wrapper window re-enters this branch when it hands over another xargs and
+                # copies its tail: chained `xargs env xargs env ...` is quadratic, so bound the chain.
+                _XARGS_HANDOVERS[0] += 1
+                if _XARGS_HANDOVERS[0] > 50:
+                    deny("more than 50 chained xargs wrappers - too complex to scan safely, confirm with user first")
+                _WDEPTH[len(windows)] = _cur_depth
+                windows.append(rest[j:])
                 break
         for j, t in enumerate(rest):
             if basename(t).replace(PH, "") in ("rm", "find", "dd", "git"):

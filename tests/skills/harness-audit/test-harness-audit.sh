@@ -259,6 +259,8 @@ expect_silent 78 check-78-good-allowlisted
 expect_silent 78 check-78-good-flat
 expect_crit   78 check-78-bad-bucket-skillmd
 expect_crit   78 check-78-bad-too-deep
+expect_crit   78 check-78-bad-marketplace-skills
+expect_silent 78 check-78-good-marketplace-plain
 expect_crit   78 check-78-bad-under-skill-entry
 
 # Check 76: measurement coverage status freshness (harness gap-audit M14,
