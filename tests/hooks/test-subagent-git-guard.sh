@@ -441,7 +441,11 @@ for _c in \
   $'rtk git status\ngit stash\ngit log -1' \
   'nohup >/dev/null 2>&1 git stash' \
   'env FOO=1 2>&1 git stash' \
-  'env FOO=1 &>/dev/null git stash' ; do
+  'env FOO=1 &>/dev/null git stash' \
+  'env A=$(printf x) git stash' \
+  'env A=\;x git stash' \
+  'sudo -u $(id -un) git stash' \
+  'env A=$(a b) FOO=1 git stash' ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
   check "later statement still checked behind a wrapper: $_c" "$ok"
 done

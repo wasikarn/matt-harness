@@ -160,13 +160,14 @@ _WRAPPER_WORDS = ("env", "command", "nohup", "nice", "time", "sudo", "xargs",
                   "eval", "builtin", "rtk")
 _KEYWORDS = ("!", "if", "elif", "then", "else", "do", "while", "until", "coproc")
 _WRAPPER_ALT = r"(?:" + "|".join(_WRAPPER_WORDS) + r")(?=\s)"
-# The walk over a wrapper's arguments stays inside ONE statement: a token cannot hold `;`, `&`,
-# `|` or a paren (a `&` is fine in a redirect like `2>&1` / `&>f`) and the gap between tokens is
-# blank or tab, never a newline. With the old `\S+\s+` the greedy walk ran across `;` / `&&` /
-# newlines to the LAST `git` in the command, and finditer resumed after it, so the real
-# `git stash` in an earlier statement was never tested (`eval true; git stash; git status`).
-# The command is the quote-masked string, so a quoted `;` is not a boundary here.
-_TOK = r"(?:[^\s;&|()]|(?<=[<>])&|&(?=>))+"
+# The walk over a wrapper's arguments stays inside ONE statement: a token cannot hold a bare `;`,
+# `&` or `|` (a `&` is fine in a redirect like `2>&1` / `&>f`, an escaped `\;` is a literal, and
+# parens are fine: `env A=$(id -un) git stash`) and the gap between tokens is blank or tab, never
+# a newline. With the old `\S+\s+` the greedy walk ran across `;` / `&&` / newlines to the LAST
+# `git` in the command, and finditer resumed after it, so the real `git stash` in an earlier
+# statement was never tested (`eval true; git stash; git status`). The command is the
+# quote-masked string, so a quoted `;` is not a boundary here.
+_TOK = r"(?:\\.|[^\s;&|\\]|(?<=[<>])&|&(?=>))+"
 _WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"[ \t]+(?:(?!" + _WRAPPER_ALT + r")" + _TOK + r"[ \t]+)*)*"
 _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in _KEYWORDS) + r")\s+)*"
 _CMD_START = (r"(?:^|[|;&(]|&&|\|\|)\s*" + _KEYWORD_PREFIX +
