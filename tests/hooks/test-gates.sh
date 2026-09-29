@@ -1445,6 +1445,17 @@ for _c in \
   'env builtin=30 git status' ; do
   test_allow "$IRRECOVERABLE" "builtin control still allowed: $_c" "$(bash_payload "$_c")"
 done
+# GH #245: the same greedy walk after an old wrapper (time, timeout, env, ...) crossed the separators
+# to the LAST `claude`, and finditer resumed after it, so the earlier spawn was never scanned.
+for _c in \
+  'time ls; claude -p "x"; claude --version' \
+  'timeout 5 ls && claude --bg "x" && claude --help' \
+  'env A=1 make || claude --agent x; claude --version' ; do
+  test_deny "$IRRECOVERABLE" "subagent: spawn behind an old-wrapper statement still anchored: $_c" \
+    "$(bash_agent_payload "$_c" fork)"
+done
+test_allow "$IRRECOVERABLE" "subagent: old-wrapper walk control, no spawn flag: time ls; claude --version; claude --help" \
+  "$(bash_agent_payload 'time ls; claude --version; claude --help' fork)"
 
 echo ""
 echo "=== gh merge ask-tier gate (Phase B, 2026-09-28: local defense-in-depth for the PR-review flow) ==="

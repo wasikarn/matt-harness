@@ -160,8 +160,8 @@ _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in _KEYWORDS) + r")\s+
 # Deep-audit 4: eval (its unquoted args are a command line), builtin and rtk run the command
 # after them, but they are NOT in _WRAPPER_WORDS. That list drives the greedy argument walk
 # above, which crosses `;` / `&&` / newlines to the LAST `git` and lets finditer resume after
-# it, so a real `git stash` in an earlier statement is never tested (`eval true; git stash;
-# git status`; time, timeout and env already leak this way, see the PR). These words take
+# it, so a real `git stash` in an earlier statement was never tested (`eval true; git stash;
+# git status`; time, timeout and env leaked this way until GH #245's overlapping scan). These words take
 # their own bounded prefix instead: the word itself, `rtk`'s global flags and one runner verb
 # with its flags, never an argument walk. It sits AFTER the wrapper walk, so the walk still
 # behaves exactly as before for every old wrapper, and it can only add anchors.
@@ -170,7 +170,16 @@ _RTK_PREFIX = r"(?:rtk[ \t]+(?:-\S+[ \t]+)*(?:(?:proxy|run|err|test|summary)[ \t
 _CHAIN_PREFIX = r"(?:" + _SHELL_PASS + r"|" + _RTK_PREFIX + r")*"
 _CMD_START = (r"(?:^|[|;&(]|&&|\|\|)\s*" + _KEYWORD_PREFIX +
               r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX + _CHAIN_PREFIX)
-_ANCHOR_RE = re.compile(_CMD_START + r"\\?(?:\S*/)?git\b", re.MULTILINE)
+# GH #245: every anchor regex is scanned with overlapping matches, `(?=(...))`, read through
+# m.end(1). The old wrappers' greedy argument walk (`time ls; git stash; git status`) crosses
+# `;` / `&&` / newline to the LAST `git`, and a plain finditer resumed after that match, so the
+# earlier statement was never checked. The zero-width scan tries every position, so each
+# separator inside a walked span still anchors. At any position where finditer matched, the
+# inner regex finds the same match, so this only adds checks, never drops one.
+def _overlapping(pattern):
+    return re.compile(r"(?=(" + pattern + r"))", re.MULTILINE)
+
+_ANCHOR_RE = _overlapping(_CMD_START + r"\\?(?:\S*/)?git\b")
 # `bash -c "<body>"` / `eval "<body>"`: the body is a quoted string, so the masked
 # text hides it. The shell word is matched on the masked string (a real command,
 # not text inside a message); the body is read from the raw command at the same
@@ -184,9 +193,8 @@ _ANCHOR_RE = re.compile(_CMD_START + r"\\?(?:\S*/)?git\b", re.MULTILINE)
 # with `\S` it would swallow the next statement's separator (`rtk run -n||timeout 5 bash -c '...'`)
 # so finditer resumed after it and never saw that statement's shell word.
 _RTK_BODY = r"rtk[ \t]+(?:-\S+[ \t]+)*(?:run|err|test|summary)(?:[ \t]+-[^\s;&|]*)*"
-_SHELL_RE = re.compile(
-    _CMD_START + r"\\?(?:\S*/)?(?:(?:bash|sh|zsh|dash|ksh)\s+(?:-\S+\s+)*?-\w*c\w*|eval|" + _RTK_BODY + r")(?=\s)",
-    re.MULTILINE,
+_SHELL_RE = _overlapping(
+    _CMD_START + r"\\?(?:\S*/)?(?:(?:bash|sh|zsh|dash|ksh)\s+(?:-\S+\s+)*?-\w*c\w*|eval|" + _RTK_BODY + r")(?=\s)"
 )
 # Masking blanks the quote characters, so the raw body is found by skipping
 # whitespace from the end of the shell word.
@@ -219,14 +227,14 @@ def _skip_git_globals(tail):
 
 def _violation(masked_cmd):
     for m in _ANCHOR_RE.finditer(masked_cmd):
-        dm = _DENY_SUBCMD_RE.match(_skip_git_globals(masked_cmd[m.end():]))
+        dm = _DENY_SUBCMD_RE.match(_skip_git_globals(masked_cmd[m.end(1):]))
         if dm:
             return dm.group(1)
     return None
 
 def _violation_in_bodies(raw_cmd, masked_cmd):
     for m in _SHELL_RE.finditer(masked_cmd):
-        q = _QUOTED_RE.match(raw_cmd, m.end())
+        q = _QUOTED_RE.match(raw_cmd, m.end(1))
         if q:
             body = q.group(1) if q.group(1) is not None else q.group(2)
             hit = _violation(_mask_quotes(body))

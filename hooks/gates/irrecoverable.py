@@ -226,7 +226,8 @@ PREFIX_WRAPPERS = ("env", "command", "nohup", "time", "sudo", "setsid", "rtk") +
 # `builtin` runs the builtin after it (`builtin eval rm -rf x`) and takes no flags. It is unwrapped
 # in the rule loop only: as a member of PREFIX_WRAPPERS it also feeds _SPAWN_ANCHOR_RE, whose greedy
 # walk then crosses `&&` and lands on the LAST `claude` (`builtin cd /tmp && claude -p x && claude
-# --version` stopped denying).
+# --version` stopped denying; GH #245's overlapping scan now covers that shape too, and a
+# wider PREFIX_WRAPPERS still changes the walk for every other consumer).
 _UNWRAP_ONLY = ("builtin",)
 # GH #216: `rtk` runs the command after it. `rtk proxy <cmd...>` executes its args as an argv;
 # `rtk err|test|summary <args>` and `rtk run <args>` join the args and run them through `sh -c`
@@ -248,9 +249,13 @@ SHELL_KEYWORDS = ("!", "if", "elif", "then", "else", "do", "while", "until", "co
 _WRAPPER_ALT = r"(?:" + "|".join(PREFIX_WRAPPERS) + r")(?=\s)"
 _WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"\s+(?:(?!" + _WRAPPER_ALT + r")\S+\s+)*)*"
 _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in SHELL_KEYWORDS) + r")\s+)*"
+# GH #245: an overlapping scan, `(?=(...))` read through m.end(1). The wrapper walk crosses
+# `;` / `&&` / newline to the LAST `claude` (`time ls; claude -p x; claude --version`), and a plain
+# finditer resumed after that match, so the earlier spawn was never scanned. Where finditer
+# matched, the inner regex finds the same match, so this only adds anchors.
 _SPAWN_ANCHOR_RE = re.compile(
-    r"(?:^|[|;&(]|&&|\|\|)\s*" + _KEYWORD_PREFIX + r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX +
-    r"\\?(?:\S*/)?claude(?![-\w./])",
+    r"(?=((?:^|[|;&(]|&&|\|\|)\s*" + _KEYWORD_PREFIX + r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX +
+    r"\\?(?:\S*/)?claude(?![-\w./])))",
     re.MULTILINE,
 )
 _SPAWN_FLAG_RE = re.compile(r"-p\b|--print\b|--agent\b|--bg\b|--worktree\b")
@@ -314,7 +319,7 @@ def _nested_spawn(c):
         buf, depth, in_backtick = [], 0, False
         escape_next = False    # trailing backslash of an odd-length run
         after_backslash = False  # any backslash run, odd or even, just seen
-        for tok in _SPAWN_TOKEN_RE.finditer(c[m.end():]):
+        for tok in _SPAWN_TOKEN_RE.finditer(c[m.end(1):]):
             work += 1
             if work > _SPAWN_SCAN_BUDGET:
                 return True
