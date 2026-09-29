@@ -820,6 +820,83 @@ test_deny "$IRRECOVERABLE" 'GH #181 round 3, a git subcommand nested inside the 
 test_deny "$IRRECOVERABLE" 'GH #181 round 3 control: 1000-deep nested <(...) with a real rm -rf innermost fails closed, no crash/traceback' \
   "$(bash_payload "$(python3 -c "print('echo ' + '<(' * 1000 + 'rm -rf hooks/gates/irrecoverable.py' + ')' * 1000)")")"
 
+# GH #188: bash's named-fd redirect "{var}>file" was not a recognized redirect. The outer tokenizer
+# split "{fd}" into "{" "fd" "}" ("{"/"}" are window breaks), cutting the command off before a real
+# pathspec (fail-open); the bash -c/eval tokenizer kept "{fd}" as one nonflag arg (over-deny).
+test_allow "$IRRECOVERABLE" 'GH #188: {fd}>/dev/null on a branch switch allows (bash -c)' \
+  "$(bash_payload 'bash -c "git checkout main {fd}>/dev/null"')"
+test_allow "$IRRECOVERABLE" 'GH #188: {fd}>/dev/null on a branch switch allows (eval)' \
+  "$(bash_payload 'eval "git checkout main {fd}>/dev/null"')"
+test_allow "$IRRECOVERABLE" 'GH #188 control: {fd}>/dev/null on a branch switch allows (direct)' \
+  "$(bash_payload 'git checkout main {fd}>/dev/null')"
+test_deny "$IRRECOVERABLE" 'GH #188: {fd}> redirect does not hide a real tree-ish+path checkout (direct)' \
+  "$(bash_payload 'git checkout HEAD {fd}>/dev/null hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #188 control: same, bash -c' \
+  "$(bash_payload 'bash -c "git checkout HEAD {fd}>/dev/null hooks/gates/irrecoverable.py"')"
+test_deny "$IRRECOVERABLE" 'GH #188 control: a mid-word x{fd}>f is a literal pathspec "x{fd}" plus a plain redirect, not a named fd' \
+  "$(bash_payload 'git checkout main x{fd}>/dev/null')"
+# #208 validator round 1: ">|" (noclobber) was not an operator, so "{fd}>" matched, the target
+# stopped at "|", and "|x <path>" became a pipe that cut the window before <path>.
+test_deny "$IRRECOVERABLE" 'GH #188: {fd}>|x does not hide a tree-ish+path checkout (bash -c)' \
+  "$(bash_payload 'bash -c "git checkout HEAD {fd}>|x hooks/gates/irrecoverable.py"')"
+test_deny "$IRRECOVERABLE" 'GH #188: {fd}>| x (spaced target), same (bash -c)' \
+  "$(bash_payload 'bash -c "git checkout HEAD {fd}>| x hooks/gates/irrecoverable.py"')"
+test_deny "$IRRECOVERABLE" 'GH #188: {fd}>|/dev/null -- <path>, same (bash -c)' \
+  "$(bash_payload 'bash -c "git checkout main {fd}>|/dev/null -- hooks/gates/irrecoverable.py"')"
+test_deny "$IRRECOVERABLE" 'GH #188: {fd}>|x does not hide a restore pathspec (sh -c)' \
+  "$(bash_payload 'sh -c "git restore {fd}>|x hooks/gates/irrecoverable.py"')"
+test_deny "$IRRECOVERABLE" 'GH #188: {fd}>|x, same (eval)' \
+  "$(bash_payload 'eval "git checkout HEAD {fd}>|x hooks/gates/irrecoverable.py"')"
+test_deny "$IRRECOVERABLE" 'GH #188: {fd}>|x, same (sudo bash -c)' \
+  "$(bash_payload 'sudo bash -c "git checkout HEAD {fd}>|x hooks/gates/irrecoverable.py"')"
+test_deny "$IRRECOVERABLE" 'plain >|x does not hide a tree-ish+path checkout (was allowed on develop too)' \
+  "$(bash_payload 'git checkout HEAD >|x hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'plain 2>|x, same (was allowed on develop too)' \
+  "$(bash_payload 'git checkout HEAD 2>|x hooks/gates/irrecoverable.py')"
+test_allow "$IRRECOVERABLE" 'GH #188: {fd}>|/dev/null on a branch switch allows (bash -c)' \
+  "$(bash_payload 'bash -c "git checkout main {fd}>|/dev/null"')"
+test_allow "$IRRECOVERABLE" 'GH #188: {fd}<>/dev/null on a branch switch allows (bash -c)' \
+  "$(bash_payload 'bash -c "git checkout main {fd}<>/dev/null"')"
+test_deny "$IRRECOVERABLE" 'GH #188 control: {fd}<>x does not hide a tree-ish+path checkout (bash -c)' \
+  "$(bash_payload 'bash -c "git checkout HEAD {fd}<>x hooks/gates/irrecoverable.py"')"
+# bash takes a {var} prefix only where an fd number is allowed: never on &> / &>>, so "{fd}&>x"
+# is the literal word "{fd}" (a pathspec here) plus a redirect.
+test_deny "$IRRECOVERABLE" 'GH #188: {fd}&>x is a literal {fd} pathspec, not a named fd (bash -c)' \
+  "$(bash_payload 'bash -c "git checkout HEAD {fd}&>x"')"
+test_deny "$IRRECOVERABLE" 'GH #188: {fd}&>/dev/null after a branch is a second nonflag (bash -c)' \
+  "$(bash_payload 'bash -c "git checkout main {fd}&>/dev/null"')"
+test_deny "$IRRECOVERABLE" 'GH #188: {fd}&>/dev/null is a literal restore pathspec (sh -c)' \
+  "$(bash_payload 'sh -c "git restore {fd}&>/dev/null"')"
+test_deny "$IRRECOVERABLE" 'GH #188: {fd}&>/dev/null, same (eval)' \
+  "$(bash_payload 'eval "git checkout main {fd}&>/dev/null"')"
+# A deleted redirect leaves a space, so ")" and ";" are not glued into one ");" token.
+test_deny "$IRRECOVERABLE" 'deleted redirect leaves a space: (echo a)>x;rm -rf <dir> denies' \
+  "$(bash_payload '(echo a)>x;rm -rf build')"
+test_deny "$IRRECOVERABLE" 'deleted redirect leaves a space: (true)>/dev/null;git reset --hard denies' \
+  "$(bash_payload '(true)>/dev/null;git reset --hard')"
+# After an escaped char ("x\ {fd}>f") "{fd}>" is read as a redirect too: keeping "{" as text let
+# the outer tokenizer break the window at "{", dropping the "-f" after it.
+test_deny "$IRRECOVERABLE" 'escaped-space word before {fd}>: rm -r x\ {fd}>/dev/null -f denies' \
+  "$(bash_payload 'rm -r x\ {fd}>/dev/null -f')"
+test_deny "$IRRECOVERABLE" 'GH #188 control: an escaped \{fd}>x is the literal word {fd}, a second nonflag' \
+  "$(bash_payload 'git checkout main \{fd}>x')"
+
+# GH #189: `git restore --staged` plus -W or a --worktree abbreviation still targets the worktree.
+test_deny "$IRRECOVERABLE" 'GH #189: git restore --staged -W <path> discards worktree changes' \
+  "$(bash_payload 'git restore --staged -W hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #189: git restore --staged --work <path> (abbreviation) discards worktree changes' \
+  "$(bash_payload 'git restore --staged --work hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #189: git restore --staged -qW <path> (bundled) discards worktree changes' \
+  "$(bash_payload 'git restore --staged -qW hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #189 control: git restore --staged --worktree <path> still denies' \
+  "$(bash_payload 'git restore --staged --worktree hooks/gates/irrecoverable.py')"
+test_allow "$IRRECOVERABLE" 'GH #189 control: git restore --staged <path> alone (index only) allows' \
+  "$(bash_payload 'git restore --staged hooks/gates/irrecoverable.py')"
+test_allow "$IRRECOVERABLE" 'GH #189 control: -sW is -s (source) with value W, not -W, so --staged -sW <path> allows' \
+  "$(bash_payload 'git restore --staged -sW hooks/gates/irrecoverable.py')"
+test_allow "$IRRECOVERABLE" 'GH #189 control: after -- every token is a pathspec, so --staged -- -Wfile allows' \
+  "$(bash_payload 'git restore --staged -- -Wfile')"
+
 # The gate correctly denies each idiom below TODAY, but no test held the deny path, so a
 # mutation to the wrapper-unwrap / hooksPath / branch-delete / backstop logic survived the whole
 # suite (fail-open, undetected).
