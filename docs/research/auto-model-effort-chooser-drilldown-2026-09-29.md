@@ -325,6 +325,61 @@ incident that shows the static per-agent tiering choosing wrongly (Rule 2). Reop
 hooks reach a stable release and an incident or measured cost case appears; the probe above is the
 recheck, and the next step for a real build is a cache-cost measurement and a body-level check.
 
+## Correction 4 (2026-09-29, later same day): gap-closing research, two earlier lines corrected
+
+Four read-only research agents checked the gaps left open above. Results, each against a primary source.
+
+**Two earlier lines are wrong or incomplete; this note supersedes them.**
+- Above, "a hook that overruns its 10 s budget is skipped and the layer beneath runs (fail-open)" is
+  right as the default but incomplete. The typings (`types/claude-code.d.ts` in the `plugin-authoring`
+  bundle, `HookBudget`) say the 10 s budget is per dispatch and counts only the hook's own code, not
+  time waiting on `$` or `next`; a streaming `turn.step` hook is counted as the sum over the response.
+  Past the budget the hook is absent, "its `.catch` asked, else `next(e)` run on its behalf".
+  Fail-closed is possible through `.on(...).catch(...)` (the maintainer confirmed this in #91870).
+- Above, "`agent.spawn` and `turn.step` do not fire for background-dispatched agents" is a commenter's
+  measurement that the typings do not support: they say `turn.step` fires for "main's or a subagent's"
+  request and name no exclusion. It is unproven both ways until a probe logs `e.agentId` for a
+  background dispatch. Whether compaction and memory forks raise `turn.step` is also undocumented.
+
+**Prompt cache.** `platform.claude.com/docs/en/build-with-claude/prompt-caching.md`, invalidation table
+("Effort setting"): "Changing the `output_config.effort` value always invalidates message blocks", with
+the same model-specific effect on the tool and system caches as thinking parameters (which model falls
+on which side is not stated). Setting effort to the model's default equals omitting it and does not
+invalidate. Models with per-message effort (beta `mid-conversation-output-config-2026-07-01`) can change
+effort mid-conversation with the cached prefix intact; a hook rewriting the top-level value is not that
+path. So a per-turn effort router pays a cache miss on each change (the orchestrator carries about
+234,000 tokens per turn in the cost log), while a hook that holds one constant effort from the first
+request causes no change and no miss. Not measured: the real cost, and Sonnet 5.5's tool/system side.
+
+**Proxy on a subscription session.** `code.claude.com/docs/en/llm-gateway` documents `ANTHROPIC_BASE_URL`
+with a saved claude.ai login as expected to work (the login stays the active credential), but the
+protocol page says a gateway that "rewrites or redacts request bodies ... breaks the pairing", so
+"inspect without modifying". No page allows or forbids rewriting `model` or `effort` on a subscription
+session. The nearest restriction (`legal-and-compliance`) targets routing requests through plan
+credentials "on behalf of their users". `_CLAUDE_CODE_ASSUME_FIRST_PARTY_BASE_URL` is in none of nine
+official pages read. Unsettled; only Anthropic Support could answer in writing. Recommendation stays: do
+not use a rewriting proxy.
+
+**Function hooks status.** `mods/README.md` in anthropics/claude-code: "Early access ... the API these
+mods are written against may change between releases without notice". Gated by
+`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`; no release date found; the maintainer wrote in #91870 that whether
+it ships depends on community feedback. An answer without `next` sends no request.
+
+**`claude-shim` mapping** (all 239 lines read). A `turn.step` hook could replicate the hot branch/repo
+test, the one-tier ladder bump and the kill switch. It cannot replicate PATH resolution and the `exit 127`
+loud failure, or the skip when the caller passed `--effort`, `-p`, `--settings` (a hook cannot see argv).
+Replacing the shim would also leave `hooks/effort-signal-report.sh:94` reporting "didn't boost this
+launch" on every hot launch (nothing sets `MH_EFFORT_BOOSTED`) and break `hook-canary.sh` cases. The
+claim that function hooks would not cover Superset-launched sessions has no support in the files; the
+scoping doc points the other way for hooks.
+
+**Decision (Rule 14).** Keep `claude-shim` as the actuator: shim 7.9, function-hook replacement 4.9
+(stability 30%, fails loud 20%, launch coverage 20%, added benefit 20%, cache risk 10%); confidence
+medium-high. The one movable part, effort logging, shipped as a log-only mod (`effort-log` in the
+operator's dotfiles) so the cost log can finally show effort. Reopen when function hooks are stable and
+a measured cache cost is neutral. Still open, needs a live test: whether the rewritten value reaches the
+API body, and hot-reload of the top-level `effortLevel` key.
+
 ## Sources
 
 - `docs/research/auto-model-auto-effort-2026-09-26.md` (22 sources, this repo)
@@ -341,3 +396,4 @@ recheck, and the next step for a real build is a cache-cost measurement and a bo
 - Correction 2 sources (2026-09-29): operator-run live test on `claude --version` 2.1.284 (probe hook logs, model `claude-sonnet-5-5`); `code.claude.com/docs/en/settings.md` ("When edits take effect"), `.../settings-reference.md` (`effortLevel`, `modelSettings`), `.../model-config.md` (effort resolution order); `gh issue view` on anthropics/claude-code#43326 (open, comments) and #60200 (closed, stale, locked); the auto-effort project README's own "Cost & limitations" section (n=1 on 2.1.177)
 - Scope-fix sources (2026-09-29): source code read via `gh api` in `rezzminator/agent-effort` (`plugins/agent-effort/hooks/agent-effort.ts`, `src/effort.ts`, `types/claude-code.d.ts` `TurnStepInput`), `tzachbon/claude-model-router-hook`, `moukrea/automodel`, `handpickedlab/effort-router`, `blackreo123/claude-code-auto-effort`, `hodkovickybuh/claude-auto-model` (README, native-integration and controller sections); anthropics/claude-code#91870
 - Function-hooks thread (2026-09-29): anthropics/claude-code#91870, all 224 comments searched (frsorrentino 2026-09-04, jdainsworthsnb 2026-09-05, Butanium 2026-09-15, Marat 2026-09-15), maintainer update 2026-09-09; built-in mods listing at `anthropics/claude-code/mods` (agents-md, diff, sec-default, telemetry, none about effort routing)
+- Correction 4 sources (2026-09-29): platform.claude.com prompt-caching and effort docs; code.claude.com llm-gateway, llm-gateway-protocol, legal-and-compliance, model-config, env-vars; anthropics/claude-code `mods/README.md`; the `plugin-authoring` bundle `reference.md` and `types/claude-code.d.ts` (HookBudget, turn.step); dotfiles `claude/bin/claude-shim` and `hooks/effort-signal-report.sh`; `mh:cost-report` output (2026-09-29)
