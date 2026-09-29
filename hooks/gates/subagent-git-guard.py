@@ -160,7 +160,14 @@ _WRAPPER_WORDS = ("env", "command", "nohup", "nice", "time", "sudo", "xargs",
                   "eval", "builtin", "rtk")
 _KEYWORDS = ("!", "if", "elif", "then", "else", "do", "while", "until", "coproc")
 _WRAPPER_ALT = r"(?:" + "|".join(_WRAPPER_WORDS) + r")(?=\s)"
-_WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"\s+(?:(?!" + _WRAPPER_ALT + r")\S+\s+)*)*"
+# The walk over a wrapper's arguments stays inside ONE statement: a token cannot hold `;`, `&`,
+# `|` or a paren (a `&` is fine in a redirect like `2>&1` / `&>f`) and the gap between tokens is
+# blank or tab, never a newline. With the old `\S+\s+` the greedy walk ran across `;` / `&&` /
+# newlines to the LAST `git` in the command, and finditer resumed after it, so the real
+# `git stash` in an earlier statement was never tested (`eval true; git stash; git status`).
+# The command is the quote-masked string, so a quoted `;` is not a boundary here.
+_TOK = r"(?:[^\s;&|()]|(?<=[<>])&|&(?=>))+"
+_WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"[ \t]+(?:(?!" + _WRAPPER_ALT + r")" + _TOK + r"[ \t]+)*)*"
 _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in _KEYWORDS) + r")\s+)*"
 _CMD_START = (r"(?:^|[|;&(]|&&|\|\|)\s*" + _KEYWORD_PREFIX +
               r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX)
@@ -169,9 +176,12 @@ _ANCHOR_RE = re.compile(_CMD_START + r"\\?(?:\S*/)?git\b", re.MULTILINE)
 # text hides it. The shell word is matched on the masked string (a real command,
 # not text inside a message); the body is read from the raw command at the same
 # offset (masking is 1:1) and checked as its own command line, one level deep.
-# `rtk run [-c|--command] "<body>"` and `rtk err|test|summary "<body>"` run their
-# args through `sh -c` (irrecoverable.py, GH #216), so a quoted arg is a body too.
-_RTK_BODY = r"rtk\s+(?:-\S+\s+)*(?:run(?:\s+(?:-c|--command))?|err|test|summary)"
+# `rtk run [flags] "<body>"` and `rtk err|test|summary [flags] "<body>"` run their args through
+# `sh -c` (irrecoverable.py, GH #216), so a quoted arg is a body too. Flags after the verb
+# (`-c`, `--command`, `--command='...'`, `--skip-env`, `--ultra-compact`, a bare `--`) come
+# before it. The string is quote-masked, so an opening quote is a blank there and a flag
+# word ends at it: `--command='git stash'` leaves the quote for _QUOTED_RE.
+_RTK_BODY = r"rtk[ \t]+(?:-\S+[ \t]+)*(?:run|err|test|summary)(?:[ \t]+-\S*)*"
 _SHELL_RE = re.compile(
     _CMD_START + r"\\?(?:\S*/)?(?:(?:bash|sh|zsh|dash|ksh)\s+(?:-\S+\s+)*?-\w*c\w*|eval|" + _RTK_BODY + r")(?=\s)",
     re.MULTILINE,

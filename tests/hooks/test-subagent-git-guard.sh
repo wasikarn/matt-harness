@@ -368,7 +368,16 @@ for _c in \
   'rtk err "git clean -fd"' \
   'rtk test "git stash"' \
   'rtk summary "git reset --hard"' \
-  'env eval=1 git stash' ; do
+  'rtk -v run "git stash"' \
+  'rtk run --skip-env -c "git stash"' \
+  "rtk run --command='git stash'" \
+  'rtk run -- "git stash"' \
+  'rtk run --ultra-compact "git reset HEAD~1"' \
+  'rtk err --skip-env "git clean -fd"' \
+  'rtk test --ultra-compact "git stash"' \
+  'env eval=1 git stash' \
+  'env builtin=1 git stash' \
+  'env rtk=1 git stash' ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
   check "eval/builtin/rtk spelling denied for a subagent: $_c" "$ok"
 done
@@ -380,8 +389,11 @@ for _c in \
   'rtk git status' \
   'rtk proxy git stash list' \
   "rtk run -c 'git status'" \
+  "rtk run --command='git status'" \
   'rtk grep "git stash" docs' \
-  'eval=1 git status' ; do
+  'eval=1 git status' \
+  'builtin=1 git status' \
+  'rtk=1 git status' ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
   check "eval/builtin/rtk control allowed for a subagent: $_c" "$ok"
 done
@@ -404,6 +416,43 @@ check "drift guard read $_n wrapper words from irrecoverable.py PREFIX_WRAPPERS 
 for _w in $_wrappers; do
   rc=$(sgg_rc "$_w git stash"); ok=1; [ "$rc" = "2" ] && ok=0
   check "irrecoverable wrapper word is a wrapper in the guard too: $_w git stash" "$ok"
+  # The other direction of a wider list: a wrapper word must not hide the LATER statements. The
+  # wrapper's argument walk stops at a separator, so a real `git stash` after it is still checked
+  # (the walk used to run on to the last `git` in the command and only that one was tested).
+  rc=$(sgg_rc "$_w x && git stash && git status"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "wrapper word does not swallow the statements after it: $_w x && git stash && git status" "$ok"
+done
+
+# --- (14) the wrapper walk stays inside one statement (deep-audit 4, whole-picture pass: adding eval,
+# builtin and rtk to the list turned these from denied into allowed; time/timeout/env already leaked) --- #
+for _c in \
+  'eval "$(ssh-agent -s)" && git stash && git status' \
+  'eval true; git stash; git status' \
+  'rtk ls && git stash && git status' \
+  'builtin cd /tmp && git clean -n && git status' \
+  'time ls; git stash; git status' \
+  'timeout 60 npm test; git stash; git log -1' \
+  'env FOO=1 make; git reset HEAD~1; git status' \
+  'sudo true || git stash || git status' \
+  'eval true; bash -c "git stash"; bash -c "git status"' \
+  'builtin cd x && sh -c "git stash" && sh -c "git status"' \
+  'rtk ls && eval "git stash" && eval "git status"' \
+  $'eval "$(direnv export bash)"\ngit stash\ngit status' \
+  $'rtk git status\ngit stash\ngit log -1' \
+  'nohup >/dev/null 2>&1 git stash' \
+  'env FOO=1 2>&1 git stash' \
+  'env FOO=1 &>/dev/null git stash' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "later statement still checked behind a wrapper: $_c" "$ok"
+done
+for _c in \
+  'eval "$(ssh-agent -s)"; echo git stash done' \
+  'time ls; git status; git log' \
+  'eval true && git status && git log' \
+  'env FOO=1 make; git stash list; git status' \
+  'nohup >/dev/null 2>&1 git status' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "walk-boundary control allowed for a subagent: $_c" "$ok"
 done
 
 echo ""
