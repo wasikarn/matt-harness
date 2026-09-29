@@ -1972,6 +1972,49 @@ else
 fi
 rm -f "$_errf"
 
+# GH #184/#185/#194/#195/#196: fail closed when the command is syntactically ambiguous (nested or
+# mixed substitutions, a quoted ")" inside "$(", a "case" inside "$(", brace tokens, eval of a
+# substitution) AND names an irrecoverable verb. Raw-text check, so it holds where blanking mis-closes.
+# GH #219 (named-fd "{var}>") is deliberately NOT here: the #188 tests above allow "{fd}>" on a branch switch.
+test_deny "$IRRECOVERABLE" 'GH #184: a quoted ")" inside $() must not hide rm -rf' \
+  "$(bash_payload 'echo $(echo ")"; rm -rf /nonexistent-x)')"
+test_deny "$IRRECOVERABLE" 'GH #185: backtick nested inside $() must not hide rm -rf' \
+  "$(bash_payload 'echo $(echo `rm -rf /nonexistent-x`)')"
+test_deny "$IRRECOVERABLE" 'GH #194: brace-hidden flag, git reset {--hard,}' \
+  "$(bash_payload 'git reset {--hard,}')"
+test_deny "$IRRECOVERABLE" 'GH #194: brace-hidden flag, rm {-rf,} X' \
+  "$(bash_payload 'rm {-rf,} /nonexistent-x')"
+test_deny "$IRRECOVERABLE" 'GH #194: a flag after a git @{n} revision, git reset HEAD@{1} --hard' \
+  "$(bash_payload 'git reset HEAD@{1} --hard')"
+test_deny "$IRRECOVERABLE" 'GH #194: git push origin HEAD@{0} --force' \
+  "$(bash_payload 'git push origin HEAD@{0} --force')"
+test_deny "$IRRECOVERABLE" 'GH #194: a flag after a git ~{n} revision, git reset HEAD~{1} --hard' \
+  "$(bash_payload 'git reset HEAD~{1} --hard')"
+test_deny "$IRRECOVERABLE" 'GH #194: a flag after a git ^{commit} revision' \
+  "$(bash_payload 'git reset HEAD^{commit} --hard')"
+test_deny "$IRRECOVERABLE" 'GH #195: a case-pattern ")" inside $() must not hide rm -rf' \
+  "$(bash_payload 'echo $(case a in a) rm -rf /nonexistent-x;; esac)')"
+test_deny "$IRRECOVERABLE" 'GH #195: case inside $() then a real git reset --hard' \
+  "$(bash_payload "echo \$(case a in 'a') true;; esac); git reset --hard")"
+test_deny "$IRRECOVERABLE" 'GH #196: eval of a $() that builds rm -rf' \
+  "$(bash_payload 'eval "$(echo rm -rf /nonexistent-x)"')"
+test_deny "$IRRECOVERABLE" 'GH #196: escaped backtick nested in backticks' \
+  "$(bash_payload 'echo `echo \`rm -rf /nonexistent-x\``')"
+test_allow "$IRRECOVERABLE" 'ambiguity control: git log with @{1} and no destructive verb' \
+  "$(bash_payload 'git log HEAD@{1}')"
+test_allow "$IRRECOVERABLE" 'ambiguity control: git diff @{u}' \
+  "$(bash_payload 'git diff @{u} --stat')"
+test_allow "$IRRECOVERABLE" 'ambiguity control: brace list with no destructive verb' \
+  "$(bash_payload 'mkdir -p /tmp/{a,b}')"
+test_allow "$IRRECOVERABLE" 'ambiguity control: awk program braces, no destructive verb' \
+  "$(bash_payload "awk '{print \$1}' /etc/hosts")"
+test_allow "$IRRECOVERABLE" 'ambiguity control: plain $() and backticks with no destructive verb' \
+  "$(bash_payload 'echo $(pwd) `date`')"
+test_allow "$IRRECOVERABLE" 'ambiguity control: a plain rm of one file, no ambiguity' \
+  "$(bash_payload 'rm /tmp/nonexistent-x')"
+test_allow "$IRRECOVERABLE" 'ambiguity control: a branch switch with an ordinary $() argument' \
+  "$(bash_payload 'git checkout "$(git branch --show-current)"')"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
