@@ -210,7 +210,8 @@ def _mid_merge():
 # Wrappers whose own flags may take a space-separated value before the wrapped
 # command (an attached value, "-c3" / "-oL" / "--signal=KILL", is one token and
 # needs no case). timeout/gtimeout also take one DURATION positional; that is
-# handled where the wrapper is unwrapped. exec/setsid take bare flags only.
+# handled where the wrapper is unwrapped. setsid takes bare flags only; exec's
+# `-a name` is the one value flag (GH #227: it hid the wrapped command).
 # Open-ended by nature: a wrapper missing here (watch, flock, strace, ...) still
 # hides its command, the list covers the ones an everyday one-liner uses.
 FLAG_VALUE_WRAPPERS = {
@@ -219,8 +220,9 @@ FLAG_VALUE_WRAPPERS = {
     "stdbuf": ("-i", "-o", "-e"),
     "timeout": ("-s", "-k", "--signal"),
     "gtimeout": ("-s", "-k", "--signal"),
+    "exec": ("-a",),
 }
-PREFIX_WRAPPERS = ("env", "command", "nohup", "time", "sudo", "exec", "setsid", "rtk") + tuple(FLAG_VALUE_WRAPPERS)
+PREFIX_WRAPPERS = ("env", "command", "nohup", "time", "sudo", "setsid", "rtk") + tuple(FLAG_VALUE_WRAPPERS)
 # GH #216: `rtk` runs the command after it. `rtk proxy <cmd...>` executes its args as an argv;
 # `rtk err|test|summary <args>` and `rtk run <args>` join the args and run them through `sh -c`
 # (so one quoted string, or a quoted `;`, is a shell command line: verified live with touch);
@@ -1021,13 +1023,16 @@ def basename(p):
 # quoted body is a command line, so it is re-tokenized into windows of its own,
 # appended to `windows` while the main loop runs (a list picks up items appended
 # mid-iteration). Called AFTER the prefix-wrapper unwrap so `sudo bash -c` opens
-# too. One level only: only the original windows (index < _N_OUTER) unwrap, so a
-# body that itself says `bash -c` is a documented non-goal. The outer tokenizer
+# too. Nested bodies (`sh -c "sh -c '...'"`, GH #227) unwrap again, each level
+# recorded in _WDEPTH; a body still nested past _MAX_SHELL_DEPTH is denied
+# rather than left unscanned. The outer tokenizer
 # stripped the quotes but blanked substitutions only inside a DOUBLE-quoted body
 # (a single-quoted one is inert to the outer shell and live to the inner), so
 # the body is blanked again here and its PH tokens duplicate-classify below.
 _SHELLS = {"bash", "sh", "zsh", "dash", "ksh"}
-_N_OUTER = len(windows)
+_MAX_SHELL_DEPTH = 5
+_WDEPTH = {}      # window index -> unwrap depth (absent = 0, an original window)
+_cur_depth = 0
 
 def _unwrap_shell(argv0, rest):
     body = None
@@ -1036,26 +1041,32 @@ def _unwrap_shell(argv0, rest):
             t = rest[i].replace(PH, "")
             if t.startswith("-") and not t.startswith("--") and "c" in t:
                 body = rest[i + 1]
+                if body.replace(PH, "") == "--" and i + 2 < len(rest):
+                    body = rest[i + 2]  # `bash -c -- 'body'` runs the body too
                 break
     elif argv0 == "eval" and rest:
         body = " ".join(rest)
     if not body:
         return
+    if _cur_depth >= _MAX_SHELL_DEPTH:
+        deny("shell -c / eval body nested more than %d levels deep - confirm with user first" % _MAX_SHELL_DEPTH)
     if ("agent_id" in d) and _nested_spawn(body):
         deny("a subagent may not spawn a nested Claude Code session via Bash "
              "(claude -p/--print/--agent/--bg/--worktree), inside bash -c / eval either "
              "-- only the main session dispatches")
     try:
-        lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(body))), posix=True, punctuation_chars=True)
+        lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(body)))), posix=True, punctuation_chars=True)
         lex.wordchars += PH + HASH_LIT + PSUB
         lex.whitespace_split = True
         cur = []
         for tok in [p for t in list(lex) for p in _split_ops(t)] + [";"]:
             if tok in OPERATORS:
                 if cur:
+                    _WDEPTH[len(windows)] = _cur_depth + 1
                     windows.append(cur)
                     curc = [t for t in cur if not (t and all(c == PH for c in t))]
                     if curc != cur:
+                        _WDEPTH[len(windows)] = _cur_depth + 1
                         windows.append(curc)
                 cur = []
             else:
@@ -1092,11 +1103,16 @@ def _assignment(t):
     return key, val
 
 for _wi, w in enumerate(windows):
+    _cur_depth = _WDEPTH.get(_wi, 0)
     while w and (w[0] in SHELL_KEYWORDS or _assignment(w[0])):
         w = w[1:]
     if not w:
         continue
     argv0, rest = basename(w[0]), w[1:]
+    # A window can start at `-exec` (a second -exec after an escaped `;`) or `--`
+    # (xargs -I{} -- CMD splits at the `{}` operator): the command follows.
+    while rest and argv0 in ("-exec", "-execdir", "-ok", "-okdir", "--"):
+        argv0, rest = basename(rest[0]), rest[1:]
 
     # Prefix wrappers unwrap one level per iteration so "env nice rm -rf x" or
     # "sudo rm -rf x" resolve to the real command -- everyday idioms, in scope.
@@ -1130,7 +1146,9 @@ for _wi, w in enumerate(windows):
             while i < len(rest) and rest[i].replace(PH, "").startswith("-"):
                 t = rest[i].replace(PH, "")
                 i += 1
-                if t in FLAG_VALUE_WRAPPERS[argv0] and i < len(rest):
+                # exec's bundled `-la NAME`: the cluster ends in the value flag
+                bundled = argv0 == "exec" and t.startswith("-") and not t.startswith("--") and t.endswith("a")
+                if (t in FLAG_VALUE_WRAPPERS[argv0] or bundled) and i < len(rest):
                     i += 1
             if argv0 in ("timeout", "gtimeout"):
                 i += 1  # the DURATION positional
@@ -1211,14 +1229,24 @@ for _wi, w in enumerate(windows):
                 break
             argv0, rest = basename(rest[i]), rest[i + 1:]
 
-    if _wi < _N_OUTER:
-        _unwrap_shell(argv0, rest)
+    _unwrap_shell(argv0, rest)
+
+    if argv0 == "find":
+        # GH #227: find -exec sh -c '<body>' \; hides the body in one token. The shell is the
+        # word right after the action flag, not the first shell-named word (-name sh).
+        for j, t in enumerate(rest[:-1]):
+            if t.replace(PH, "") in ("-exec", "-execdir", "-ok", "-okdir") and basename(rest[j + 1]).replace(PH, "") in _SHELLS:
+                _unwrap_shell(basename(rest[j + 1]).replace(PH, ""), rest[j + 2:])
 
     if argv0 == "xargs":
         # xargs args are never free-text prose, so scanning for a dangerous
         # basename anywhere in them is safe; "git" is included so the git
         # checks fire on the xargs-wrapped form. Full PH removal: a splice can
         # land mid-basename (xargs g$(true)it).
+        for j, t in enumerate(rest):
+            if basename(t).replace(PH, "") in _SHELLS:  # GH #227: xargs sh -c '<body>'
+                _unwrap_shell(basename(t).replace(PH, ""), rest[j + 1:])
+                break
         for j, t in enumerate(rest):
             if basename(t).replace(PH, "") in ("rm", "find", "dd", "git"):
                 argv0, rest = basename(t), rest[j + 1:]

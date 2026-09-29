@@ -1005,6 +1005,52 @@ test_deny  "$IRRECOVERABLE" "xargs rm -rf (rm via xargs)" \
   "$(bash_payload 'echo /tmp/x | xargs rm -rf')"
 test_deny  "$IRRECOVERABLE" "docker exec CONTAINER rm -rf (unwrap inner destructive)" \
   "$(bash_payload 'docker exec c1 rm -rf /data')"
+# GH #227: shell bodies nest (`sh -c "sh -c '...'"`), xargs and find -exec hand a body to a
+# shell, and `exec -a NAME` puts a value flag before the command.
+test_deny  "$IRRECOVERABLE" "nested sh -c (GH #227)" \
+  "$(bash_payload "sh -c \"sh -c 'rm -rf /tmp/x'\"")"
+test_deny  "$IRRECOVERABLE" "three-deep bash -c (GH #227)" \
+  "$(bash_payload "bash -c 'bash -c \"bash -c \\\"rm -rf /tmp/x\\\"\"'")"
+test_deny  "$IRRECOVERABLE" "xargs sh -c body (GH #227)" \
+  "$(bash_payload "echo a | xargs sh -c 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "xargs -I{} bash -c body (GH #227)" \
+  "$(bash_payload "xargs -I{} bash -c 'rm -rf {}'")"
+test_deny  "$IRRECOVERABLE" "find -exec sh -c body (GH #227)" \
+  "$(bash_payload "find . -exec sh -c 'rm -rf {}' \\;")"
+test_deny  "$IRRECOVERABLE" "exec -a NAME then the command (GH #227)" \
+  "$(bash_payload 'exec -a foo rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "sudo exec -a NAME then the command (GH #227)" \
+  "$(bash_payload 'sudo exec -a foo rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "shell nested past the depth cap (GH #227)" \
+  "$(python3 -c 'import json,shlex;b="git status"
+for _ in range(8): b="sh -c "+shlex.quote(b)
+print(json.dumps({"tool_name":"Bash","tool_input":{"command":b}}))')"
+test_deny  "$IRRECOVERABLE" "exec -la NAME bundled value flag (GH #227)" \
+  "$(bash_payload 'exec -la x rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "bash -c -- body (GH #227)" \
+  "$(bash_payload "bash -c -- 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "find -name sh -exec bash -c body: shell is the word after -exec (GH #227)" \
+  "$(bash_payload "find . -name sh -exec bash -c 'rm -rf {}' +")"
+test_deny  "$IRRECOVERABLE" "find second -exec after an escaped semicolon (GH #227)" \
+  "$(bash_payload 'find . -exec true \; -exec rm -rf {} \;')"
+test_deny  "$IRRECOVERABLE" "find -ok sh -c body (GH #227)" \
+  "$(bash_payload "find . -ok sh -c 'rm -rf {}' \\;")"
+test_deny  "$IRRECOVERABLE" "xargs -I{} -- sh -c body (GH #227)" \
+  "$(bash_payload "echo a | xargs -I{} -- sh -c 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "nested body with an ANSI-C quoted command (GH #227)" \
+  "$(bash_payload "sh -c \"sh -c \$'rm -rf /tmp/x'\"")"
+test_allow "$IRRECOVERABLE" "nested body with an ANSI-C quoted benign command (GH #227)" \
+  "$(bash_payload "sh -c \"sh -c \$'git status'\"")"
+test_allow "$IRRECOVERABLE" "find -name sh with a benign -exec (GH #227)" \
+  "$(bash_payload 'find . -name sh -exec ls {} +')"
+test_allow "$IRRECOVERABLE" "nested sh -c, benign body (GH #227)" \
+  "$(bash_payload "sh -c \"sh -c 'ls /tmp'\"")"
+test_allow "$IRRECOVERABLE" "xargs sh -c, benign body (GH #227)" \
+  "$(bash_payload "xargs sh -c 'echo hi'")"
+test_allow "$IRRECOVERABLE" "find -exec sh -c, benign body (GH #227)" \
+  "$(bash_payload "find . -exec sh -c 'ls {}' \\;")"
+test_allow "$IRRECOVERABLE" "exec -a NAME, benign command (GH #227)" \
+  "$(bash_payload 'exec -a foo ls /tmp')"
 # --- git -c core.hooksPath= : the --no-verify-equivalent hook bypass ---
 test_deny  "$IRRECOVERABLE" "git -c core.hooksPath= (hook bypass, space form)" \
   "$(bash_payload 'git -c core.hooksPath=/tmp/evil commit -m x')"
