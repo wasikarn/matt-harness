@@ -170,6 +170,161 @@ If this is ever built, it belongs in dotfiles (extending `claude-shim` or as a p
 operator's own installed Claude Code version before being trusted, rather than inheriting the
 community projects' claim untested.
 
+## Correction 2 (2026-09-29, later same day): live test and official docs say the side channel does not work
+
+The first correction above rated the side channel "plausible, corroborated but not self-verified".
+It has now been tested and checked against Claude Code's official docs. **That rating is
+withdrawn: writing effort into a settings file does not change a running session's effort on
+Claude Code 2.1.284.** Three things in the first correction also need fixing:
+- "Two open upstream feature requests" was wrong. #43326 is open (labels `area:model`,
+  `area:hooks`); #60200 was closed as stale and locked, with no maintainer reply.
+- The `ConfigChange` event and the `permissions.additionalDirectories` fix were offered as
+  corroboration of hot-reload. They prove that some keys reload live, not that effort keys do.
+- The claim that a community project's hot-reload "works" rests on its own README, which reports
+  one measurement (n=1, Claude Code 2.1.177, Windows) and warns that the set of live-reloaded keys
+  can change between versions.
+
+**Live test (operator-run, in the dotfiles repo, model `claude-sonnet-5-5`).** A `PreToolUse`,
+`PostToolUse` and `Stop` probe hook logged the `effort` field from hook input; `CLAUDE_CODE_EFFORT_LEVEL`
+was unset and `MH_EFFORT_SIGNAL=0`. The operator ran every settings edit (the Self-Modification
+classifier blocks the agent from editing `.claude/settings.local.json`). Three runs:
+1. First run: inconclusive (one log line, no turn attribution). The probe was upgraded to log the
+   command, session id and env, and to write marker lines.
+2. Second run: the session was already running when `modelSettings.claude-sonnet-5-5.effortLevel`
+   was set to `low`; it reported `medium` (Sonnet 5.5's default) before and after both edits, so
+   it never picked up either file change. Not clean, because that session never loaded `low` at launch.
+3. Clean run: a fresh session started after the file said `low` reported `low` at launch and on
+   turn 1 (so launch-time loading works). After the file was flipped to `high`, turn 2 still
+   reported `low` on both `PreToolUse` and `PostToolUse` lines. The hook kept firing after the
+   flip, so hooks reload live and only the effort value stays fixed.
+A same-time contrast agrees: on the same model and the same file, the session started before the
+edit stayed at `medium` while the session started after it read `low`.
+
+**Official docs (fetched 2026-09-29).** `settings.md`, "When edits take effect": Claude Code
+reloads most settings edits into a running session (`permissions`, `hooks`, credential helpers) but
+"reads some keys only once, at session start". Among the keys listed for mid-session change,
+`effortLevel` and `modelSettings` are given as "use `/effort` to change effort mid-session".
+That names the top-level `effortLevel` too, so the top-level variant is refuted by the docs, not by our own test. `model-config.md`
+gives the effort resolution order: an explicit choice first (`CLAUDE_CODE_EFFORT_LEVEL`, `--effort`,
+`/effort` in the session), then saved settings, then the model default (`medium` for Opus 5.5 and
+Sonnet 5.5). An upstream comment on #43326 reports the same for `model`: a hook that rewrites the
+settings file affects only the next session.
+
+**Revised verdict.** Platform feasibility of a settings-file side channel: 0/10 on the current
+version (documented as read-once and confirmed by test). The decline for mh stands. What works for
+effort selection today: `/effort`, `--effort` or `CLAUDE_CODE_EFFORT_LEVEL` at launch, agent
+frontmatter, and advisory context injected from a `UserPromptSubmit` hook (which the model may or
+may not follow). Reopen only if a changelog entry moves effort keys out of the read-once set;
+recheck with the probe method above, since the community README suggests this behaviour differed on
+2.1.177.
+
+**Scope fix (same day, after 5 explorer agents read the 6 community repos and 5 opus attackers
+re-checked them).** An earlier draft said "nothing changes the effort of a running main session
+automatically". That is too broad. It holds for settings-file edits and hook fields, not for every
+route. Routes found, with what survived the attack round:
+- **Function hooks** (experimental, `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`; anthropics/claude-code#91870).
+  Confirmed from the host-generated `types/claude-code.d.ts` in `rezzminator/agent-effort` (written
+  by CC 2.1.282, "EARLY ACCESS"): `turn.step` fires for "main's or a subagent's" request,
+  `effort` is rewritable via `next({...e, effort})` (d.ts:3923-3928, 11534, 11554), and `agentId` is
+  "absent on main" (d.ts:11564). No text in types, README, CHANGELOG or the issue says main is
+  pinned or bypassed; the plugin skips main by its own design (`agent-effort.ts:112`), and its test
+  runs against a mock engine. **Not live-tested on main**, and whether the rewrite reaches the API
+  body is unverified. "Prototype since 2.1.260" is attested by one commenter, not a maintainer
+  (thread comment 2026-09-04: read and ran it in 2.1.260 behind the flag); the maintainer update of
+  2026-09-09 names v267/v268 and publicly endorses `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` for testing.
+  Thread commenters also confirm `effort` and `model` are the only rewritable `turn.step` fields
+  (2026-09-15), and that `AgentSpawnInput` has no `effort` (2026-09-04). A per-request change might break
+  prompt caching (unverified).
+- **Function-hook limits from the thread** (commenter measurements on CC 2.1.263-2.1.284, not
+  maintainer statements): a hook that overruns its 10 s budget is skipped and the layer beneath runs
+  (fail-open), so an effort rewrite must be fast and do no heavy work; `agent.spawn` and `turn.step`
+  do not fire for background-dispatched agents (2026-09-05), so this route would not cover them; the
+  surface is still changing (new APIs keep being requested). Searched all 224 thread comments for
+  `effort`/`turn.step`: 21 mention them, none reports a live main-session effort rewrite.
+- **Probe correction.** The hook input field `effort.level` / `$CLAUDE_EFFORT` is "reasoning effort
+  applied to the current turn" and reads as the session setting, so a normal logging hook can show
+  the old level even when a `turn.step` rewrite worked, and record a false "refuted". A valid probe
+  reads the outgoing request body (a logging `ANTHROPIC_BASE_URL` proxy or `--debug` request log),
+  compared against a plain `/effort high` run, and also logs `e.model` and `e.effort`.
+- **SDK controller wrapper** (`hodkovickybuh/claude-auto-model`). Confirmed against
+  `@anthropic-ai/claude-agent-sdk` 0.3.284 `sdk.d.ts`: `applyFlagSettings` (L2911-2939) merges
+  settings "mid-session", streaming-input mode only, and documents `effortLevel`; `set_model` and
+  `get_settings` exist (L5018, L4189), and `get_settings` reports the effective value after env,
+  caps and downgrades (L5891). The repo applies effort at `auto_model.py:533`. Limits: it replaces the
+  native TUI with a `-p` REPL, tested on CC 2.1.263 only, one synthetic 5-turn run, 32 development-set
+  routing cases; an `effortLevel` sent without `ultracode` turns ultracode off (SDK L2927-2931). Lives
+  at the launcher/dotfiles layer, not in a plugin. Its own README agrees settings-file edits do not
+  reach a running session (documentation-based, not an experiment).
+- **Remote Control** (official docs): model and effort can be set from a connected claude.ai/code or
+  mobile client and apply to the terminal session (effort v2.1.234+). Client-driven, not scriptable.
+- **Skill `effort:`/`model:` frontmatter** (`handpickedlab/effort-router`). Official skills docs say
+  `effort` "overrides the session effort level" while the skill is active, without saying when it
+  ends (the repo's "resets at the next prompt" is unconfirmed); it is compliance-gated when Claude
+  must choose to invoke the skill, but a user can type the skill's slash command, which is
+  deterministic. The docs say `model` applies "for the rest of the current turn" without
+  distinguishing who invoked it, which contradicts the repo's "ignored when Claude invokes"; neither
+  side has transcript evidence, and the repo's "checked on 2.1.280" has no test.
+- **Agent-variant files + `updatedInput.model`** (`tzachbon/claude-model-router-hook`, under
+  `plugins/claude-model-router-hook/hooks/`; `moukrea/automodel`). Sub-agents only: a PreToolUse hook
+  rewrites `model` (alias) and `subagent_type` to a variant with `effort:` frontmatter. `updatedInput`
+  cannot carry effort (automodel spike S4, one run, requested value not recorded). tzachbon's
+  `autoswitch` writes `~/.claude/settings.json` and "only affects new sessions".
+- **Local API proxy** (`moukrea/automodel`): the only route found that changes a main session
+  automatically (`ANTHROPIC_BASE_URL` plus a pseudo-model id rewriting `model` and
+  `output_config.effort`). Risks: `ANTHROPIC_BASE_URL` sits in global settings, so a dead proxy stops
+  every session; prompts, recent replies and compaction summaries go to two third parties; it sets an
+  underscore-prefixed internal env var that may break on an update; its effort numbers (S10, S11) are
+  n=1. Whether routing a subscription session through a proxy is allowed by the vendor terms is not
+  settled by anything read, and is the operator decision.
+- **Settings-file route, narrowed.** Our live test flipped `modelSettings.<model>.effortLevel` only.
+  For the top-level `effortLevel` (what `blackreo123/claude-code-auto-effort` writes), the refutation
+  rests on the docs (`settings.md`, "reads some keys only once"), not on our experiment; that
+  project evidence is n=1 on CC 2.1.177, Opus, stream-json. No CHANGELOG entry between 2.1.177 and
+  2.1.284 says the behaviour changed. One probe settles it: a fresh session with no `modelSettings`
+  entry for the model anywhere, top-level `effortLevel: low` in `.claude/settings.local.json`, flipped
+  to `high` mid-session, then read the per-message `effort` in the transcript JSONL (recorded since
+  2.1.212) beside the hook `effort.level`.
+
+The mh decision is unchanged, on different grounds: not "impossible", but "only an experimental API,
+a launcher-layer wrapper or a third-party proxy remain, and there is no incident" (Rule 2). If the
+main session should be routed automatically, test `turn.step` on main first with the corrected probe,
+and build it in dotfiles, not in mh.
+
+## Correction 3 (2026-09-29, later same day): function-hooks `turn.step` effort rewrite works on the main session
+
+The scope fix above left one route untested: a `turn.step` hook rewriting `effort` on the main
+session. It has now been run. **Result: it works on Claude Code 2.1.284 with `claude-sonnet-5-5`.**
+
+**Probe.** A function-hooks plugin (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`, loaded with
+`--plugin-dir`) hooked `turn.step`. Each step it read a control file and, when the step had no
+`agentId` (the main loop) and the file named a level, called `next({...e, effort})`. It logged
+`effortIn`, target and `effortOut`. The operator ran the session and changed the control file between
+turns, with no restart and no `/effort`.
+
+| control file | `effortIn` | `effortOut` | effort recorded per assistant message in the transcript | output tokens |
+|---|---|---|---|---|
+| `off` | medium | medium | medium | 202, 213 |
+| `low` | medium | low | low | 75 to 254 |
+| `max` | medium | max | max | 2086 (then 336) |
+
+`turn.step` fired for the main loop (`agent: main`), the rewrite changed the effort the transcript
+records, and the `max` turn produced roughly 8 to 27 times the output of the `low` turns. That is
+behavioural evidence that the request effort changed, not only a displayed value.
+
+**What this does not prove.** n=1 per level, and the prompts differ (an `echo` against a five-step
+proof), so the token ratio is a strong signal, not a measurement. The transcript field may record the
+client's value rather than the request body; no logging proxy was used (a subscription session, and
+the terms question above is open). Prompt-cache cost of a per-request change was not measured. The
+10 s hook budget and the background-agent gap listed above still apply.
+
+**Effect on the verdict.** The feasibility of an automatic main-session effort change moves from
+"untested" to "works in a probe on 2.1.284, on an experimental API". The mh decision stays decline,
+now for this reason: the mechanism exists but is experimental and its surface is still changing, it
+belongs in a launcher or dotfiles layer or a separate mod rather than the mh plugin, and there is no
+incident that shows the static per-agent tiering choosing wrongly (Rule 2). Reopen for mh if function
+hooks reach a stable release and an incident or measured cost case appears; the probe above is the
+recheck, and the next step for a real build is a cache-cost measurement and a body-level check.
+
 ## Sources
 
 - `docs/research/auto-model-auto-effort-2026-09-26.md` (22 sources, this repo)
@@ -183,3 +338,6 @@ community projects' claim untested.
 - This session's own Agent-tool input schema (system prompt), showing `model` enum with no `effort` field
 - `~/Codes/Personals/dotfiles/claude/bin/claude-shim` header (user-settings-layer "auto" effort boost — the mechanism the plugin layer cannot duplicate)
 - Correction sources (2026-09-29): https://github.com/blackreo123/claude-code-auto-effort, https://github.com/tzachbon/claude-model-router-hook, https://github.com/handpickedlab/effort-router, https://github.com/hodkovickybuh/claude-auto-model, https://github.com/moukrea/automodel, https://github.com/anthropics/claude-code/issues/43326, https://github.com/anthropics/claude-code/issues/60200, `code.claude.com/docs/en/hooks.md` (`ConfigChange` event, live-fetched), upstream CHANGELOG (`permissions.additionalDirectories` mid-session fix), this session's own blocked `Edit`/`Bash` attempts against `.claude/settings.local.json` (Claude Code auto-mode Self-Modification classifier)
+- Correction 2 sources (2026-09-29): operator-run live test on `claude --version` 2.1.284 (probe hook logs, model `claude-sonnet-5-5`); `code.claude.com/docs/en/settings.md` ("When edits take effect"), `.../settings-reference.md` (`effortLevel`, `modelSettings`), `.../model-config.md` (effort resolution order); `gh issue view` on anthropics/claude-code#43326 (open, comments) and #60200 (closed, stale, locked); the auto-effort project README's own "Cost & limitations" section (n=1 on 2.1.177)
+- Scope-fix sources (2026-09-29): source code read via `gh api` in `rezzminator/agent-effort` (`plugins/agent-effort/hooks/agent-effort.ts`, `src/effort.ts`, `types/claude-code.d.ts` `TurnStepInput`), `tzachbon/claude-model-router-hook`, `moukrea/automodel`, `handpickedlab/effort-router`, `blackreo123/claude-code-auto-effort`, `hodkovickybuh/claude-auto-model` (README, native-integration and controller sections); anthropics/claude-code#91870
+- Function-hooks thread (2026-09-29): anthropics/claude-code#91870, all 224 comments searched (frsorrentino 2026-09-04, jdainsworthsnb 2026-09-05, Butanium 2026-09-15, Marat 2026-09-15), maintainer update 2026-09-09; built-in mods listing at `anthropics/claude-code/mods` (agents-md, diff, sec-default, telemetry, none about effort routing)
