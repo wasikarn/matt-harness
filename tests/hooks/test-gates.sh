@@ -1907,6 +1907,10 @@ test_deny "$IRRECOVERABLE" 'GH #194: a flag after a git @{n} revision, git reset
   "$(bash_payload 'git reset HEAD@{1} --hard')"
 test_deny "$IRRECOVERABLE" 'GH #194: git push origin HEAD@{0} --force' \
   "$(bash_payload 'git push origin HEAD@{0} --force')"
+test_deny "$IRRECOVERABLE" 'GH #194: a flag after a git ~{n} revision, git reset HEAD~{1} --hard' \
+  "$(bash_payload 'git reset HEAD~{1} --hard')"
+test_deny "$IRRECOVERABLE" 'GH #194: a flag after a git ^{commit} revision' \
+  "$(bash_payload 'git reset HEAD^{commit} --hard')"
 test_deny "$IRRECOVERABLE" 'GH #195: a case-pattern ")" inside $() must not hide rm -rf' \
   "$(bash_payload 'echo $(case a in a) rm -rf /nonexistent-x;; esac)')"
 test_deny "$IRRECOVERABLE" 'GH #195: case inside $() then a real git reset --hard' \

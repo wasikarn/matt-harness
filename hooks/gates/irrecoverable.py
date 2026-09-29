@@ -997,8 +997,8 @@ def _ambiguous(c):
         return "eval of a substitution", _AMBIG_NARROW_VERB_RE
     if _AMBIG_BRACE_RE.search(c):
         return "a brace token", _AMBIG_BROAD_VERB_RE
-    if "@{" in c and _AMBIG_FLAG_RE.search(c):
-        return "a flag after a git @{...} revision", _AMBIG_BROAD_VERB_RE
+    if re.search(r"[@~^]\{", c) and _AMBIG_FLAG_RE.search(c):
+        return "a flag after a git @{...}/~{...}/^{...} revision", _AMBIG_BROAD_VERB_RE
     return None
 
 _ambig = _ambiguous(cmd)
