@@ -7,6 +7,9 @@
 # never loads, and nothing else notices: check 02 goes silent once the cache holds the file, check 05
 # accepts the bucket, check 75 only fires when a doc names `mh:<skill>`. Skills that are meant to
 # stay unshipped are listed in MANIFEST_EXPECTED_EXCLUDED (audit.sh), shared with check 75.
+# A flat `skills/<name>/SKILL.md` is skipped: the default scan loads it with no manifest entry
+# (probe 2026-09-29, Claude Code 2.1.284, `--plugin-dir` + the stream-json init `skills` list: a flat
+# unlisted skill and a listed bucket's skill loaded, a nested unlisted skill did not).
 _MANIFEST_JSON="$CLAUDE_DIR/.claude-plugin/plugin.json"
 if [ -f "$_MANIFEST_JSON" ]; then
   _unregistered=$(python3 - "$CLAUDE_DIR" "$_MANIFEST_JSON" "${MANIFEST_EXPECTED_EXCLUDED:-}" <<'PYEOF'
@@ -25,7 +28,7 @@ for root, dirs, files in os.walk(os.path.join(claude_dir, "skills")):
     if "SKILL.md" not in files:
         continue
     rel = os.path.relpath(root, claude_dir)
-    if os.path.basename(rel) in allow:
+    if rel.count("/") == 1 or os.path.basename(rel) in allow:
         continue
     if not any(rel == p or rel.startswith(p + "/") for p in prefixes):
         print(rel)
