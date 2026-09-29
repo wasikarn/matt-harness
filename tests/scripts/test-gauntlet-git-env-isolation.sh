@@ -5,6 +5,9 @@
 # linked worktree) must not let a fixture `git init` inside a temp dir
 # re-target the real repo instead of creating an isolated one.
 set -uo pipefail
+# A git hook exports GIT_DIR; the sandbox git init/config would then target the real repo
+# (GH #234, tests/scripts/test-git-env-unset-lint.sh). run-gauntlet.sh does the same unset.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
 ROOT="$HERE/../.."
 GAUNTLET="$ROOT/scripts/run-gauntlet.sh"
