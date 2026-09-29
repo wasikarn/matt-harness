@@ -129,3 +129,9 @@ the plugin ships no preload-only skills.
    its own analysis order instead — item 9 doesn't apply.
 9. Run `bash skills/meta/harness-audit/scripts/audit.sh`; checks 04, 09, 24, 41, 54
    touch new agents directly.
+10. Name the check, not the intensity. Write "run the tests covering the changed behavior and
+    report what was not checked", never "verify everything thoroughly" or "CRITICAL: you MUST use
+    <tool>". Current models follow instructions literally and over-trigger on blanket or
+    all-caps tool language written for older models; "if in doubt, use <tool>" is the named
+    failure. Source: Anthropic prompting best practices, "Overthinking and excessive
+    thoroughness" and "Tune anti-laziness prompting" (checked 2026-09-29).
