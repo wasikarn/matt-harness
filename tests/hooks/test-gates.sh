@@ -5,6 +5,9 @@
 # test_ask expects exit 0 + a permissionDecision: ask JSON on stdout.
 # Run standalone: bash tests/hooks/test-gates.sh
 set -uo pipefail
+# A git hook exports GIT_DIR; the sandbox git init/config would then target the real repo
+# (GH #234, tests/scripts/test-git-env-unset-lint.sh). run-gauntlet.sh does the same unset.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 # Isolate the gate-verdict journal (hooks/gates/_journal.py) from this file's

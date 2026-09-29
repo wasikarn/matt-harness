@@ -6,6 +6,9 @@
 # have to pay for the real gauntlet, and so this test never touches the real
 # repo's own git state.
 set -uo pipefail
+# A git hook exports GIT_DIR; the sandbox git init/config would then target the real repo
+# (GH #234, tests/scripts/test-git-env-unset-lint.sh). run-gauntlet.sh does the same unset.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
 ROOT="$HERE/../.."
 HOOK="$ROOT/git-hooks/pre-push"

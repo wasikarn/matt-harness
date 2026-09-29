@@ -7,9 +7,35 @@
 # never loads, and nothing else notices: check 02 goes silent once the cache holds the file, check 05
 # accepts the bucket, check 75 only fires when a doc names `mh:<skill>`. Skills that are meant to
 # stay unshipped are listed in MANIFEST_EXPECTED_EXCLUDED (audit.sh), shared with check 75.
+# Coverage follows the loader, not a path prefix: an entry loads its direct children only, or just itself
+# when it holds a SKILL.md, so a deeper skill, a child of a bucket that has its own SKILL.md, and a child
+# of a per-skill entry all never load (GH #230, probed live 2026-09-29 on Claude Code 2.1.284).
 # A flat `skills/<name>/SKILL.md` is skipped: the default scan loads it with no manifest entry
 # (probe 2026-09-29, Claude Code 2.1.284, `--plugin-dir` + the stream-json init `skills` list: a flat
 # unlisted skill and a listed bucket's skill loaded, a nested unlisted skill did not).
+# A `skills` array on a marketplace.json plugin entry REPLACES plugin.json's list (probe 2026-09-29, Claude
+# Code 2.1.284, isolated config: entry skills [./skills/listed/] loaded listed/one only, entry skills [./skills/]
+# loaded the flat skill only). This repo keeps plugin.json as the single list, so any entry that declares
+# `skills` makes the coverage computed here wrong in both directions (GH #230).
+_MARKET_JSON="$CLAUDE_DIR/.claude-plugin/marketplace.json"
+if [ -f "$_MARKET_JSON" ]; then
+  _market_skills=$(python3 - "$_MARKET_JSON" <<'PYEOF'
+import json, sys
+try:
+    plugins = json.load(open(sys.argv[1])).get("plugins")
+except Exception:
+    sys.exit(0)
+for p in plugins if isinstance(plugins, list) else []:
+    if isinstance(p, dict) and "skills" in p:
+        print(p.get("name", "?"))
+PYEOF
+)
+  for _p in $_market_skills; do
+    crit "marketplace.json plugin entry '$_p' declares skills, which replaces .claude-plugin/plugin.json's skills list and makes check 78's coverage wrong; remove the key from the entry"
+  done
+  unset _market_skills _p
+fi
+unset _MARKET_JSON
 _MANIFEST_JSON="$CLAUDE_DIR/.claude-plugin/plugin.json"
 if [ -f "$_MANIFEST_JSON" ]; then
   _unregistered=$(python3 - "$CLAUDE_DIR" "$_MANIFEST_JSON" "${MANIFEST_EXPECTED_EXCLUDED:-}" <<'PYEOF'
@@ -23,14 +49,22 @@ except Exception:
 if not isinstance(entries, list):
     sys.exit(0)
 prefixes = [e.lstrip("./").rstrip("/") for e in entries if isinstance(e, str)]
+def loads(rel):
+    """Mirrors Claude Code 2.1.284 (live probes, GH #230): the default scan loads skills/<name>; a
+    manifest entry loads itself when it holds a SKILL.md, else only its direct children."""
+    if rel.count("/") == 1:
+        return True
+    return any(rel == p or (os.path.dirname(rel) == p and not os.path.exists(os.path.join(claude_dir, p, "SKILL.md")))
+               for p in prefixes)
+
 for root, dirs, files in os.walk(os.path.join(claude_dir, "skills")):
     dirs[:] = sorted(d for d in dirs if not d.startswith("_") and not d.endswith("-workspace"))
     if "SKILL.md" not in files:
         continue
     rel = os.path.relpath(root, claude_dir)
-    if rel.count("/") == 1 or os.path.basename(rel) in allow:
+    if os.path.basename(rel) in allow:
         continue
-    if not any(rel == p or rel.startswith(p + "/") for p in prefixes):
+    if not loads(rel):
         print(rel)
 PYEOF
 )

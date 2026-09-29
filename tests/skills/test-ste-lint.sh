@@ -3,6 +3,9 @@
 # report-only invariants Codex flagged during plan review.
 # Run standalone: bash tests/skills/test-ste-lint.sh
 set -uo pipefail
+# A git hook exports GIT_DIR; the sandbox git init/config would then target the real repo
+# (GH #234, tests/scripts/test-git-env-unset-lint.sh). run-gauntlet.sh does the same unset.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SCRIPT="$ROOT/skills/design/ste-lint/scripts/ste-lint.py"
 FAIL=0
