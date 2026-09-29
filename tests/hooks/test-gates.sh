@@ -910,6 +910,72 @@ test_deny  "$IRRECOVERABLE" "env VAR=val rm -rf (env-assignment wrapper)" \
   "$(bash_payload 'env FOO=1 rm -rf /tmp/x')"
 test_deny  "$IRRECOVERABLE" "env -u VAR rm -rf (env-unset-flag wrapper)" \
   "$(bash_payload 'env -u FOO rm -rf /tmp/x')"
+# GH #216: `rtk proxy <cmd>` and `rtk run` run <cmd> unfiltered, and rtk's own verbs
+# (`rtk find`, `rtk git`) dispatch to the real command, so a destructive command behind any
+# of them must be classified exactly as it is bare.
+test_deny  "$IRRECOVERABLE" "rtk proxy rm -f -r (GH #216: rtk proxy wrapper)" \
+  "$(bash_payload 'rtk proxy rm -f -r /tmp/x')"
+test_deny  "$IRRECOVERABLE" "rtk proxy rm -rf (GH #216)" \
+  "$(bash_payload 'rtk proxy rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "rtk run -c \"rm -rf\" (GH #216: rtk run -c body)" \
+  "$(bash_payload 'rtk run -c "rm -rf /tmp/x"')"
+test_deny  "$IRRECOVERABLE" "rtk run --command '...' (GH #216: long form)" \
+  "$(bash_payload "rtk run --command 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "rtk run rm -rf (GH #216: positional args form)" \
+  "$(bash_payload 'rtk run rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "rtk proxy find -delete (GH #216)" \
+  "$(bash_payload 'rtk proxy find . -delete')"
+test_deny  "$IRRECOVERABLE" "rtk find -delete (GH #216: rtk verb dispatches to find)" \
+  "$(bash_payload 'rtk find . -delete')"
+test_deny  "$IRRECOVERABLE" "rtk proxy git push --force (GH #216)" \
+  "$(bash_payload 'rtk proxy git push --force origin main')"
+test_deny  "$IRRECOVERABLE" "rtk git reset --hard (GH #216: rtk verb dispatches to git)" \
+  "$(bash_payload 'rtk git reset --hard')"
+test_deny  "$IRRECOVERABLE" "env rtk proxy rm -rf (GH #216: chained with env)" \
+  "$(bash_payload 'env FOO=1 rtk proxy rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "rtk proxy env rm -rf (GH #216: env behind rtk)" \
+  "$(bash_payload 'rtk proxy env rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "rtk proxy sudo rm -rf (GH #216: sudo behind rtk)" \
+  "$(bash_payload 'rtk proxy sudo rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "rtk proxy bash -c 'rm -rf' (GH #216: shell body behind rtk)" \
+  "$(bash_payload "rtk proxy bash -c 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "rtk run -c \"a; rm -rf\" (GH #216: rm after a separator inside the body)" \
+  "$(bash_payload 'rtk run -c "echo hi; rm -rf /tmp/x"')"
+# Controls: the unwrap must not turn ordinary rtk usage into a denial.
+test_allow "$IRRECOVERABLE" "rtk proxy ls -la (GH #216 control)" \
+  "$(bash_payload 'rtk proxy ls -la')"
+test_allow "$IRRECOVERABLE" "rtk proxy rm file (GH #216 control: no -r/-f)" \
+  "$(bash_payload 'rtk proxy rm /tmp/x')"
+test_allow "$IRRECOVERABLE" "rtk grep foo (GH #216 control)" \
+  "$(bash_payload 'rtk grep foo src')"
+test_allow "$IRRECOVERABLE" "rtk find . -name x (GH #216 control)" \
+  "$(bash_payload 'rtk find . -name x')"
+test_allow "$IRRECOVERABLE" "rtk run -c \"ls\" (GH #216 control)" \
+  "$(bash_payload 'rtk run -c "ls -la"')"
+test_allow "$IRRECOVERABLE" "rtk gain (GH #216 control: rtk meta command)" \
+  "$(bash_payload 'rtk gain')"
+test_allow "$IRRECOVERABLE" "rtk proxy git status (GH #216 control)" \
+  "$(bash_payload 'rtk proxy git status')"
+# rtk run/err/test/summary join their args and run them through `sh -c` (verified live: a quoted
+# `;` starts a second command), unlike `rtk proxy`, which executes its args as an argv.
+test_deny  "$IRRECOVERABLE" "rtk run 'rm -rf' (GH #216: one quoted string is a shell line)" \
+  "$(bash_payload "rtk run 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "rtk err 'git push --force' (GH #216)" \
+  "$(bash_payload "rtk err 'git push --force origin main'")"
+test_deny  "$IRRECOVERABLE" "rtk test 'git reset --hard' (GH #216)" \
+  "$(bash_payload "rtk test 'git reset --hard'")"
+test_deny  "$IRRECOVERABLE" "rtk summary 'find -delete' (GH #216)" \
+  "$(bash_payload "rtk summary 'find . -delete'")"
+test_deny  "$IRRECOVERABLE" "rtk run echo 'x;' rm -rf (GH #216: quoted separator joins into a second command)" \
+  "$(bash_payload "rtk run echo 'hi;' rm -rf /tmp/x")"
+test_deny  "$IRRECOVERABLE" "rtk err true 'x;' rm -rf (GH #216)" \
+  "$(bash_payload "rtk err true 'x;' rm -rf /tmp/x")"
+test_allow "$IRRECOVERABLE" "rtk err 'ls -la' (GH #216 control)" \
+  "$(bash_payload "rtk err 'ls -la'")"
+test_allow "$IRRECOVERABLE" "rtk test 'echo hi' (GH #216 control)" \
+  "$(bash_payload "rtk test 'echo hi'")"
+test_allow "$IRRECOVERABLE" "rtk summary 'git status' (GH #216 control)" \
+  "$(bash_payload "rtk summary 'git status'")"
 test_deny  "$IRRECOVERABLE" "nice -n 5 rm -rf (nice with value flag)" \
   "$(bash_payload 'nice -n 5 rm -rf /tmp/x')"
 test_deny  "$IRRECOVERABLE" "nice rm -rf (bare nice wrapper)" \
