@@ -927,8 +927,8 @@ test_allow "$IRRECOVERABLE" 'adversarial control (also passes on develop): exec 
 # GH #184 validator round 1: the first quote-aware "${...}" closer read "'" as a quote inside a
 # DOUBLE-quoted "${...}". bash does by default, but in POSIX mode (sh -c, bash --posix,
 # POSIXLY_CORRECT=1; GNU Bash manual, "Bash POSIX Mode") that "'" is literal, the expansion closes
-# at the first "}" and the tail runs. develop denied these; the first fix allowed them. Now the
-# earliest of the bash/POSIX/naive closes is taken and the longest body is also queued.
+# at the first "}" and the tail runs. develop denied these; the first fix allowed them. Now a
+# disagreement between the bash and POSIX readings denies as ambiguous (see the r2 block below).
 _pq="'"
 test_deny "$IRRECOVERABLE" 'GH #184 POSIX regression guard (develop denies, round-1 fix allowed): "${x:-'"'"'}" closes at the first } in POSIX mode, tail git reset --hard runs' \
   "$(bash_payload "echo \"\${x:-${_pq}}\"; git reset --hard; echo \"${_pq}}\"")"
@@ -938,12 +938,14 @@ for _pw in "sh -c" "bash --posix -c" "POSIXLY_CORRECT=1 bash -c"; do
   test_deny "$IRRECOVERABLE" "GH #184 POSIX regression guard (develop denies, round-1 fix allowed): same shape under $_pw" \
     "$(bash_payload "$_pw '$(printf 'echo "${x:-%s}"; git reset --hard; echo "%s}"' "'\"'\"'" "'\"'\"'")'")"
 done
-test_allow "$IRRECOVERABLE" 'GH #184 POSIX control: an ordinary double-quoted ${...} with an apostrophe default allows' \
+# Known over-deny: bash itself rejects this ("unexpected EOF while looking for matching '"), POSIX
+# shells run it -- the two readings disagree, so it denies as ambiguous.
+test_deny "$IRRECOVERABLE" 'GH #184 known over-deny: an apostrophe default in a double-quoted ${...} is ambiguous (bash errors, POSIX runs)' \
   "$(bash_payload "echo \"\${name:-it${_pq}s me}\"")"
-# Round 2 attack on the earliest-close fix: taking the earlier close left the main text with an
-# open quote that a quote inside a queued body then closed, swallowing the rm into one quoted
-# token. Guarded by _BODY_QUOTE_DESYNC (main text must tokenize on its own). The first two are
-# controls (develop denies them too); the third was ALLOWED on develop.
+# A quote inside a queued body must never close a quote the main text left open (that pairing
+# once swallowed the rm into one quoted token). Now covered by the ambiguity deny: no cut body is
+# ever queued. The first two are controls (develop denies them too); the third was ALLOWED on
+# develop.
 test_deny "$IRRECOVERABLE" 'GH #184 desync control (also passes on develop): a quoted } in a double-quoted ${...} does not hide a later rm' \
   "$(bash_payload 'echo "${x:-"}"}"; rm -rf hooks/gates/irrecoverable.py')"
 test_deny "$IRRECOVERABLE" 'GH #184 desync control (also passes on develop): same shape under bash -c' \
@@ -952,6 +954,33 @@ test_deny "$IRRECOVERABLE" 'GH #184 desync: two double-quoted ${...} with a quot
   "$(bash_payload 'echo "${x:-"}"}";rm -rf hooks/gates/irrecoverable.py;echo "${y:-"}"}"')"
 test_allow "$IRRECOVERABLE" 'GH #184 desync control: the same quoted-} shape with a harmless tail allows' \
   "$(bash_payload 'echo "${x:-"}"}"; ls -la')"
+
+# GH #184 validator round 2: class "a truncated queued body must never reach the shared shlex
+# stream". 0830cd9e picked the earliest close in a double-quoted ${...} and queued a body cut there
+# (unpaired quote or trailing backslash); that desynced the combined stream into the quote-blind
+# fallback split, which keeps quotes, so a quoted argv0 ("rm") escaped. Now: when the bash and
+# POSIX readings of a double-quoted ${...} disagree (a give-up counts as a reading), deny as
+# ambiguous; a ${...} whose quote-aware close gives up queues no body at all (develop never did).
+test_deny "$IRRECOVERABLE" 'GH #184 r2: quoted } in double-quoted ${...} does not let a quoted "rm" escape' \
+  "$(bash_payload "echo \"\${x:-${_pq}}${_pq}}\"; \"rm\" -rf hooks/gates/irrecoverable.py")"
+test_deny "$IRRECOVERABLE" 'GH #184 r2: escaped \} in double-quoted ${...} does not let a quoted "rm" escape' \
+  "$(bash_payload 'echo "${x:-\}}"; "rm" -rf hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #184 r2: escaped \} in a ${x//pat/rep} does not let a quoted "rm" escape' \
+  "$(bash_payload 'echo "${x//\}/y}"; "rm" -rf hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #184 r2: unpaired quote in double-quoted ${...} does not let a quoted "rm" escape' \
+  "$(bash_payload "echo \"\${x:-${_pq}}\"; \"rm\" -rf hooks/gates/irrecoverable.py")"
+test_deny "$IRRECOVERABLE" 'GH #184 r2: same with a quoted "--hard" flag' \
+  "$(bash_payload "echo \"\${x:-${_pq}}\" && git reset \"--hard\"")"
+test_allow "$IRRECOVERABLE" 'GH #184 r2: escaped \} in a double-quoted ${...} under bash -c allows (0830cd9e false-denied)' \
+  "$(bash_payload "bash -c 'echo \"\${x//\\}/y}\"'")"
+test_allow "$IRRECOVERABLE" 'GH #184 r2: same under eval allows (0830cd9e false-denied)' \
+  "$(bash_payload "eval 'echo \"\${x//\\}/y}\"'")"
+test_allow "$IRRECOVERABLE" 'GH #189 r2: after --, -Wfile is a pathspec, not the -W flag (--staged only, allows)' \
+  "$(bash_payload 'git restore --staged -- -Wfile')"
+test_deny "$IRRECOVERABLE" 'GH #189 r2 control: --staged after -- is a pathspec too, so the restore targets the worktree' \
+  "$(bash_payload 'git restore -- --staged hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #184 r2 known over-deny: a quoted } in a double-quoted ${...} with a harmless tail denies as ambiguous' \
+  "$(bash_payload "echo \"\${x:-${_pq}}${_pq}}\"; ls -la")"
 
 # The gate correctly denies each idiom below TODAY, but no test held the deny path, so a
 # mutation to the wrapper-unwrap / hooksPath / branch-delete / backstop logic survived the whole

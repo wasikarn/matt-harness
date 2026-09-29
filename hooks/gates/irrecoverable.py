@@ -494,7 +494,7 @@ PSUB = "\x03"
 # recorded here (mutated, not rebound) and denied once after tokenization,
 # never reset across the primary and fallback calls.
 _DEPTH_BUDGET_BLOWN = [False]
-_BODY_QUOTE_DESYNC = [False]  # set by _blank_substitutions, see its end
+_AMBIGUOUS_SPAN = [False]  # set by the double-quoted "${" branch; denies
 _DEPTH_SCAN_BUDGET = 2_000_000
 def _blank_substitutions(s):
     bodies = []
@@ -527,7 +527,8 @@ def _blank_substitutions(s):
     # sq_quotes=False: "'" is literal (POSIX-mode reading of a double-quoted
     # "${...}", see the "${" branch). naive=True: skip straight to the old
     # quote-blind count below.
-    def _find_close(s, j, open_c, close_c, depth_work_used, sq_quotes=True, naive=False):
+    # giveup_naive=False: return -1 on give-up instead of the naive count.
+    def _find_close(s, j, open_c, close_c, depth_work_used, sq_quotes=True, naive=False, giveup_naive=True):
         n = len(s)
         start = j
         depth = 1
@@ -571,6 +572,8 @@ def _blank_substitutions(s):
         # never leaves less blanked than before GH #184. Raw "$(" text is not
         # safe to hand shlex: "$(true #x) $(git push --force)" left raw lets
         # a glued ");"-style token (not an operator) hide the next command.
+        if depth and not giveup_naive and not naive:
+            return -1
         if depth:
             depth, j = 1, start
             while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
@@ -675,6 +678,14 @@ def _blank_substitutions(s):
                 # Cost: a default holding literal ";"-separated danger text
                 # denies -- the fail-closed direction.
                 j = _find_close(s, i + 2, s[i + 1], ")" if s[i + 1] == "(" else "}", depth_work_used)
+                queue_body = True
+                if s[i + 1] == "{":
+                    # A "${...}" whose quote-aware close gave up is blanked
+                    # with the naive close exactly as before GH #184 and its
+                    # (cut, possibly unpaired-quote) body is NOT queued:
+                    # a truncated body in the shared shlex stream desyncs it
+                    # (validator round 2). Only a cleanly closed body is.
+                    queue_body = _find_close(s, i + 2, "{", "}", depth_work_used, giveup_naive=False) != -1
                 if s[i + 1] == "{" and in_dquote:
                     # Inside double quotes, bash reads "'" in "${...}" as a
                     # quote by default but as a LITERAL in POSIX mode (sh -c,
@@ -682,20 +693,26 @@ def _blank_substitutions(s):
                     # POSIX Mode"), so "${x:-'}" closes at that "}" there
                     # and the tail runs (a GH #184 validator finding against
                     # the first version of this fix). The gate can't know the
-                    # mode or shell: take the EARLIEST of the bash, POSIX and
-                    # pre-#184 naive readings (tail scanned as top-level text,
-                    # never less than before #184) and also queue the body up
-                    # to the LATEST one, so every reading's text is scanned.
-                    cands = [c for c in (
-                        j,
-                        _find_close(s, i + 2, "{", "}", depth_work_used, sq_quotes=False),
-                        _find_close(s, i + 2, "{", "}", depth_work_used, naive=True),
-                    ) if c != -1]
-                    if cands and min(cands) != max(cands):
-                        bodies.append(_rescan(s[i + 2:max(cands) - 1], depth_work_used, _depth))
-                    j = min(cands) if cands else -1
+                    # mode or shell, and any choice between readings leaves a
+                    # cut span whose unpaired quote or trailing backslash
+                    # desyncs the shared shlex stream (validator round 2:
+                    # picking the earliest close let `"rm"` escape). So when
+                    # the bash and POSIX readings DISAGREE, the command is
+                    # ambiguous and denies outright. (The naive count is not
+                    # compared: it is no shell's reading, and comparing it
+                    # false-denied inert heredoc text with unmatched "${".)
+                    # Known over-deny: a
+                    # quoted or escaped "}" inside a double-quoted "${...}".
+                    # Readings are compared WITHOUT the give-up fallback: a
+                    # bash reading that gives up ("${x:-'}" -- an error in
+                    # bash, a closed span in POSIX) must count as a
+                    # disagreement, not silently agree via the naive count.
+                    if len({_find_close(s, i + 2, "{", "}", depth_work_used, giveup_naive=False),
+                            _find_close(s, i + 2, "{", "}", depth_work_used, sq_quotes=False, giveup_naive=False)}) > 1:
+                        _AMBIGUOUS_SPAN[0] = True
                 if j != -1:
-                    bodies.append(_rescan(s[i + 2:j - 1], depth_work_used, _depth))
+                    if queue_body:
+                        bodies.append(_rescan(s[i + 2:j - 1], depth_work_used, _depth))
                     out.append(PH)
                     i = j
                     last_escaped = False
@@ -740,20 +757,6 @@ def _blank_substitutions(s):
             break
         s = new
     if bodies:
-        # Bodies share ONE shlex stream with the main text, so a quote char in
-        # a body can close a quote the main text left open (a span edge read
-        # differently from bash): the pair then swallows the real command
-        # between them into one quoted token ("echo \"${x:-\"}\"}\"; rm -rf
-        # x" did exactly that -- GH #184 validator round 2). If the main text
-        # does not tokenize on its own, flag it: callers must not trust the
-        # combined stream's quoting (outer call -> quote-blind fallback split,
-        # bash -c/eval -> deny).
-        try:
-            _chk = shlex.shlex(s, posix=True, punctuation_chars=True)
-            _chk.wordchars += PH + HASH_LIT + PSUB
-            list(_chk)
-        except ValueError:
-            _BODY_QUOTE_DESYNC[0] = True
         # A real "\n" before each body ends any open "#" comment (a plain " ; "
         # join let a trailing comment swallow every appended body).
         s = s + "\n; " + "\n; ".join(bodies)
@@ -939,8 +942,6 @@ try:
     lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd)))), posix=True, punctuation_chars=True)
     lex.wordchars += PH + HASH_LIT + PSUB
     tokens = list(lex)
-    if _BODY_QUOTE_DESYNC[0]:
-        raise ValueError("main text unbalanced; appended bodies rebalanced it")
 except ValueError:
     # Two causes: (1) a genuinely unbalanced quote; (2) a blanking pass above
     # misreads a span's edge (a "#" comment or backtick inside it, which the
@@ -964,6 +965,8 @@ except ValueError:
     except ValueError:
         deny("could not safely tokenize command for pattern matching (unbalanced quote/substitution) - confirm with user first")
 
+if _AMBIGUOUS_SPAN[0]:
+    deny("could not safely tokenize command (a double-quoted ${...} closes at different points under bash vs POSIX quoting) - confirm with user first")
 # A scan that could not finish left a span un-blanked -- deny before dispatch.
 if _DEPTH_BUDGET_BLOWN[0]:
     deny("command too long to safely tokenize (nested substitution exceeded depth-scan budget) - confirm with user first")
@@ -1024,10 +1027,7 @@ def _unwrap_shell(argv0, rest):
              "(claude -p/--print/--agent/--bg/--worktree), inside bash -c / eval either "
              "-- only the main session dispatches")
     try:
-        _BODY_QUOTE_DESYNC[0] = False
         lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(body))), posix=True, punctuation_chars=True)
-        if _BODY_QUOTE_DESYNC[0]:
-            raise ValueError("body text unbalanced; appended bodies rebalanced it")
         lex.wordchars += PH + HASH_LIT + PSUB
         lex.whitespace_split = True
         cur = []
@@ -1043,6 +1043,8 @@ def _unwrap_shell(argv0, rest):
                 cur.append(tok)
     except ValueError:
         deny("could not safely tokenize the body of a bash -c / eval string - confirm with user first")
+    if _AMBIGUOUS_SPAN[0]:
+        deny("could not safely tokenize the body of a bash -c / eval string (ambiguous double-quoted ${...}) - confirm with user first")
     if _DEPTH_BUDGET_BLOWN[0]:
         deny("command too long to safely tokenize (nested substitution exceeded depth-scan budget) - confirm with user first")
 
@@ -1386,10 +1388,12 @@ for _wi, w in enumerate(windows):
                     # GH #189: -W and any --worktree abbreviation (--work)
                     # count too, bundled or not; a short cluster stops at
                     # "s" (-s/--source takes a value: "-sW" is source "W").
-                    targets_worktree = "--staged" not in scan or any(
+                    # After "--" every token is a pathspec ("-- -Wfile").
+                    _opts = scan[:scan.index("--")] if "--" in scan else scan
+                    targets_worktree = "--staged" not in _opts or any(
                         _is_flag(t, "--worktree")
                         or (t.startswith("-") and not t.startswith("--") and "W" in t.split("s", 1)[0])
-                        for t in scan)
+                        for t in _opts)
                     if has_pathspec and targets_worktree:
                         deny("git restore discards working-tree changes — confirm with user first")
                 # Bundled short flags: "-qf" means -q -f. Stop scanning a cluster
