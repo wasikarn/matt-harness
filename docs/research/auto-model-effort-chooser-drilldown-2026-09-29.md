@@ -229,9 +229,18 @@ route. Routes found, with what survived the attack round:
   "absent on main" (d.ts:11564). No text in types, README, CHANGELOG or the issue says main is
   pinned or bypassed; the plugin skips main by its own design (`agent-effort.ts:112`), and its test
   runs against a mock engine. **Not live-tested on main**, and whether the rewrite reaches the API
-  body is unverified. The "prototype since 2.1.260" claim copied from `operating-model.md` is also
-  unverified (the issue was opened 2026-09-03 and never names 260). A per-request change might break
+  body is unverified. "Prototype since 2.1.260" is attested by one commenter, not a maintainer
+  (thread comment 2026-09-04: read and ran it in 2.1.260 behind the flag); the maintainer update of
+  2026-09-09 names v267/v268 and publicly endorses `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` for testing.
+  Thread commenters also confirm `effort` and `model` are the only rewritable `turn.step` fields
+  (2026-09-15), and that `AgentSpawnInput` has no `effort` (2026-09-04). A per-request change might break
   prompt caching (unverified).
+- **Function-hook limits from the thread** (commenter measurements on CC 2.1.263-2.1.284, not
+  maintainer statements): a hook that overruns its 10 s budget is skipped and the layer beneath runs
+  (fail-open), so an effort rewrite must be fast and do no heavy work; `agent.spawn` and `turn.step`
+  do not fire for background-dispatched agents (2026-09-05), so this route would not cover them; the
+  surface is still changing (new APIs keep being requested). Searched all 224 thread comments for
+  `effort`/`turn.step`: 21 mention them, none reports a live main-session effort rewrite.
 - **Probe correction.** The hook input field `effort.level` / `$CLAUDE_EFFORT` is "reasoning effort
   applied to the current turn" and reads as the session setting, so a normal logging hook can show
   the old level even when a `turn.step` rewrite worked, and record a false "refuted". A valid probe
@@ -296,3 +305,4 @@ and build it in dotfiles, not in mh.
 - Correction sources (2026-09-29): https://github.com/blackreo123/claude-code-auto-effort, https://github.com/tzachbon/claude-model-router-hook, https://github.com/handpickedlab/effort-router, https://github.com/hodkovickybuh/claude-auto-model, https://github.com/moukrea/automodel, https://github.com/anthropics/claude-code/issues/43326, https://github.com/anthropics/claude-code/issues/60200, `code.claude.com/docs/en/hooks.md` (`ConfigChange` event, live-fetched), upstream CHANGELOG (`permissions.additionalDirectories` mid-session fix), this session's own blocked `Edit`/`Bash` attempts against `.claude/settings.local.json` (Claude Code auto-mode Self-Modification classifier)
 - Correction 2 sources (2026-09-29): operator-run live test on `claude --version` 2.1.284 (probe hook logs, model `claude-sonnet-5-5`); `code.claude.com/docs/en/settings.md` ("When edits take effect"), `.../settings-reference.md` (`effortLevel`, `modelSettings`), `.../model-config.md` (effort resolution order); `gh issue view` on anthropics/claude-code#43326 (open, comments) and #60200 (closed, stale, locked); the auto-effort project README's own "Cost & limitations" section (n=1 on 2.1.177)
 - Scope-fix sources (2026-09-29): source code read via `gh api` in `rezzminator/agent-effort` (`plugins/agent-effort/hooks/agent-effort.ts`, `src/effort.ts`, `types/claude-code.d.ts` `TurnStepInput`), `tzachbon/claude-model-router-hook`, `moukrea/automodel`, `handpickedlab/effort-router`, `blackreo123/claude-code-auto-effort`, `hodkovickybuh/claude-auto-model` (README, native-integration and controller sections); anthropics/claude-code#91870
+- Function-hooks thread (2026-09-29): anthropics/claude-code#91870, all 224 comments searched (frsorrentino 2026-09-04, jdainsworthsnb 2026-09-05, Butanium 2026-09-15, Marat 2026-09-15), maintainer update 2026-09-09; built-in mods listing at `anthropics/claude-code/mods` (agents-md, diff, sec-default, telemetry, none about effort routing)
