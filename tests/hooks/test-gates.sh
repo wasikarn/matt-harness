@@ -1085,6 +1085,36 @@ test_allow "$IRRECOVERABLE" "find -exec env sh -c, benign body (audit of #227)" 
   "$(bash_payload "find . -exec env sh -c 'git status' \\;")"
 test_allow "$IRRECOVERABLE" "xargs rtk run -c, benign body (audit of #227)" \
   "$(bash_payload "echo a | xargs rtk run -c 'git status'")"
+# Whole-picture pass of the audit: a short-option cluster ending in o/O takes the next word as its
+# value (`-eo pipefail`), including the -c cluster itself (`-ceo pipefail`).
+test_deny  "$IRRECOVERABLE" "bash -c -eo pipefail body: cluster ending in o takes a value (audit of #227)" \
+  "$(bash_payload "bash -c -eo pipefail 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "bash -ceo pipefail body: the -c cluster itself takes a value (audit of #227)" \
+  "$(bash_payload "bash -ceo pipefail 'rm -rf /tmp/x'")"
+test_allow "$IRRECOVERABLE" "bash -c -eo pipefail, benign body (audit of #227)" \
+  "$(bash_payload "bash -c -eo pipefail 'git status'")"
+# A `{} +` terminator splits the window, so a second -exec starts with `+`.
+test_deny  "$IRRECOVERABLE" "find -exec true {} + then a second -exec sh -c body (audit of #227)" \
+  "$(bash_payload "find . -exec true {} + -exec sh -c 'rm -rf /x' sh {} +")"
+test_allow "$IRRECOVERABLE" "find -exec true {} + then a benign second -exec (audit of #227)" \
+  "$(bash_payload 'find . -exec true {} + -exec ls {} +')"
+# Fix C appends one window per action flag: a flood of -exec words, or nested `find -exec find`, must
+# stay inside the gate's own 8s hook timeout (the deny must not arrive after the budget).
+_timed_case() {  # <name> <expected rc> <command>
+  local name="$1" want="$2" cmd="$3" t0 rc t1
+  t0=$(date +%s)
+  bash_payload "$cmd" | timeout 10 bash "$IRRECOVERABLE" >/dev/null 2>&1; rc=$?
+  t1=$(( $(date +%s) - t0 ))
+  if [[ "$rc" == "$want" ]] && [ "$t1" -le 4 ]; then
+    echo "  ✅ $name (rc=$rc in ${t1}s)"; pass=$((pass + 1))
+  else
+    echo "  ❌ $name: expected rc=$want within 4s, got rc=$rc in ${t1}s" >&2; fail=$((fail + 1))
+  fi
+}
+_timed_case "find -exec sh -c body followed by 3000 more -exec words is denied fast (audit of #227)" 2 \
+  "$(python3 -c "print(\"find . -exec sh -c 'rm -rf /x' \" + '-exec ' * 3000 + '\\\\;')")"
+_timed_case "25 nested find -exec find stays fast and allowed (audit of #227)" 0 \
+  "$(python3 -c "print('find . ' + '-exec find . ' * 25 + '-print')")"
 # --- git -c core.hooksPath= : the --no-verify-equivalent hook bypass ---
 test_deny  "$IRRECOVERABLE" "git -c core.hooksPath= (hook bypass, space form)" \
   "$(bash_payload 'git -c core.hooksPath=/tmp/evil commit -m x')"

@@ -1043,14 +1043,15 @@ def _unwrap_shell(argv0, rest):
                 # The shell keeps parsing options after -c (`bash -c -e 'body'`,
                 # `bash -c -o pipefail 'body'`); the body is the first non-option word,
                 # and `--` / a bare `-` ends the options.
-                j = i + 1
+                # A short cluster ending in o/O (`-o`, `-eo`, `-ceo`) takes the next word as its value.
+                j = i + (2 if t[-1] in "oO" else 1)
                 while j < len(rest):
                     u = rest[j].replace(PH, "")
                     if u in ("--", "-"):
                         j += 1
                         break
                     if len(u) > 1 and u[0] in "-+":
-                        j += 2 if u in ("-o", "+o", "-O", "+O") else 1
+                        j += 2 if (u[-1] in "oO" and not u.startswith("--")) else 1
                         continue
                     break
                 body = rest[j] if j < len(rest) else None
@@ -1122,8 +1123,12 @@ for _wi, w in enumerate(windows):
     argv0, rest = basename(w[0]), w[1:]
     # A window can start at `-exec` (a second -exec after an escaped `;`) or `--`
     # (xargs -I{} -- CMD splits at the `{}` operator): the command follows.
-    while rest and argv0 in ("-exec", "-execdir", "-ok", "-okdir", "--"):
-        argv0, rest = basename(rest[0]), rest[1:]
+    # `find -exec true {} + -exec CMD {} +`: `{}` splits the window, so the second one starts at `+`.
+    # An index, not repeated slicing: a flood of `-exec` words must stay linear.
+    _k = 0
+    while _k < len(rest) and argv0 in ("-exec", "-execdir", "-ok", "-okdir", "--", "+"):
+        argv0, _k = basename(rest[_k]), _k + 1
+    rest = rest[_k:]
 
     # Prefix wrappers unwrap one level per iteration so "env nice rm -rf x" or
     # "sudo rm -rf x" resolve to the real command -- everyday idioms, in scope.
@@ -1249,10 +1254,15 @@ for _wi, w in enumerate(windows):
         # word right after the action flag, not the first shell-named word (-name sh).
         # The command after the action flag becomes a window of its own, so a wrapper before
         # the shell (`-exec env sh -c ...`, `-exec rtk run -c ...`) unwraps like anywhere else.
-        for j, t in enumerate(rest[:-1]):
-            if t.replace(PH, "") in ("-exec", "-execdir", "-ok", "-okdir"):
+        # Each command runs from its flag to the NEXT action flag, so the appended windows
+        # partition `rest` (linear total size): a flood of -exec words, or `find -exec find
+        # -exec find ...`, cannot grow the work past the 8s hook timeout.
+        acts = [j for j, t in enumerate(rest) if t.replace(PH, "") in ("-exec", "-execdir", "-ok", "-okdir")]
+        for n, j in enumerate(acts):
+            sub = rest[j + 1:(acts[n + 1] if n + 1 < len(acts) else len(rest))]
+            if sub:
                 _WDEPTH[len(windows)] = _cur_depth
-                windows.append(rest[j + 1:])
+                windows.append(sub)
 
     if argv0 == "xargs":
         # xargs args are never free-text prose, so scanning for a dangerous
