@@ -962,6 +962,49 @@ _CMD_LEN_CAP = 150_000
 if len(cmd) > _CMD_LEN_CAP:
     deny("command too long to safely tokenize (" + str(len(cmd)) + " chars, cap " + str(_CMD_LEN_CAP) + ") - confirm with user first")
 
+# GH #184/#185/#194/#195/#196: the tokenizer mis-closes or never expands these shapes, which hides an
+# irrecoverable verb from every check below. Rather than teach it each grammar, fail closed on the raw
+# text (pre-blanking) when the command is BOTH ambiguous and names an irrecoverable verb. Over-denies
+# are the safe direction. Every test is linear or bounded: the length cap above is the only input bound.
+# ponytail: not a parser; a real parser (or a differential fuzz per shape) is the upgrade path.
+# GH #219 (named-fd "{var}>") is left out: it would deny the "{fd}>" branch switches GH #188 allows.
+_AMBIG_QUOTED_CLOSE_RE = re.compile(r"\$\([^)\n]{0,80}[\"'][^\"'\n$(]{0,20}\)[^\"'\n$(]{0,20}[\"']")
+_AMBIG_BRACE_RE = re.compile(r"(?:^|[\s;|&(])\{[^{}\s\"'`$]{1,60}\}(?=[\s;|&)]|$)")
+_AMBIG_FLAG_RE = re.compile(r"--hard\b|--force\b|(?:^|\s)-[A-Za-z]*[fdDrR]\b")
+# A brace token can hide a flag ("rm {-rf,} X"), so its verb check is broad (any rm/dd/find/git sub);
+# the other shapes leave the flags visible, so their verb check is the destructive form itself.
+_AMBIG_BROAD_VERB_RE = re.compile(
+    r"(?<![\w./-])(?:rm\s|dd\s|find\s|git\s+(?:push|reset|clean|checkout|restore|switch|branch|stash)\b)")
+_AMBIG_NARROW_VERB_RE = re.compile(
+    r"(?<![\w./-])(?:rm\s+-[A-Za-z]*[rf]|git\s+push\b[^\n;|&]{0,200}(?:--force\b|\s-[A-Za-z]*f\b)"
+    r"|git\s+reset\b[^\n;|&]{0,200}--hard|git\s+clean\b"
+    r"|git\s+checkout\b[^\n;|&]{0,200}(?:\s--(?:\s|$)|\s-f\b|\s\.(?:\s|$))|git\s+restore\b"
+    r"|git\s+branch\b[^\n;|&]{0,200}\s-D\b|git\s+stash\s+(?:drop|clear)\b"
+    r"|find\s[^\n]{0,300}(?:-delete|-exec\w*\s+rm)|dd\s[^\n]{0,200}of=)")
+
+def _ambiguous(c):
+    """(reason, verb_re) when c is syntactically ambiguous, else None."""
+    subst = "$(" in c
+    if "`" in c and subst:
+        return "a backtick and a $() in one command (nested substitution)", _AMBIG_NARROW_VERB_RE
+    if "\\`" in c:
+        return "an escaped backtick", _AMBIG_NARROW_VERB_RE
+    if subst and _AMBIG_QUOTED_CLOSE_RE.search(c):
+        return "a quoted ) inside a $()", _AMBIG_NARROW_VERB_RE
+    if subst and re.search(r"\bcase\b", c):
+        return "a case statement inside a $()", _AMBIG_NARROW_VERB_RE
+    if (subst or "`" in c) and re.search(r"\beval\b", c):
+        return "eval of a substitution", _AMBIG_NARROW_VERB_RE
+    if _AMBIG_BRACE_RE.search(c):
+        return "a brace token", _AMBIG_BROAD_VERB_RE
+    if "@{" in c and _AMBIG_FLAG_RE.search(c):
+        return "a flag after a git @{...} revision", _AMBIG_BROAD_VERB_RE
+    return None
+
+_ambig = _ambiguous(cmd)
+if _ambig and _ambig[1].search(cmd):
+    deny("ambiguous shell syntax (" + _ambig[0] + ") next to an irrecoverable verb - confirm with user first")
+
 try:
     lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd)))), posix=True, punctuation_chars=True)
     lex.wordchars += PH + HASH_LIT + PSUB
