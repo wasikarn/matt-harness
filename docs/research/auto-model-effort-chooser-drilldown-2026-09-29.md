@@ -108,6 +108,68 @@ escalation between rounds — `spawn-brief.md`'s fixer loop already stops at 3 r
 to a human, which is the doctrinal backstop this would duplicate. Not adopted; noted here so a 6th
 round doesn't re-derive it from scratch.
 
+## Correction (2026-09-29, same day): a real side-channel exists, still doesn't change the verdict for mh
+
+The body above concluded no hook can change a session's model/effort mid-turn, checked against
+`hookSpecificOutput` decision-control fields only (block/allow/inject-context). That check was
+incomplete, not wrong on its own terms: it missed a second, orthogonal channel — a hook is an
+arbitrary shell command with full user permissions (`hooks.md`'s own security disclaimer), so it
+can write files as a side effect, independent of any decision-control field.
+
+**What a web search surfaced (2026-09-29):** at least 5 community projects already build exactly
+this for Claude Code — [claude-code-auto-effort](https://github.com/blackreo123/claude-code-auto-effort),
+[claude-model-router-hook](https://github.com/tzachbon/claude-model-router-hook),
+[effort-router](https://github.com/handpickedlab/effort-router),
+[claude-auto-model](https://github.com/hodkovickybuh/claude-auto-model),
+[automodel](https://github.com/moukrea/automodel) — via a `UserPromptSubmit` hook that classifies
+the prompt (`claude-code-auto-effort` uses a Haiku sub-call) and **writes the result to
+`.claude/settings.local.json`'s `modelSettings.<model>.effortLevel`**, which the README claims
+Claude Code hot-reloads mid-session. Two open upstream feature requests —
+[anthropics/claude-code#43326](https://github.com/anthropics/claude-code/issues/43326) and
+[#60200](https://github.com/anthropics/claude-code/issues/60200) — confirm this isn't an official,
+first-class capability yet; it's a community workaround built on an undocumented (from Anthropic's
+side) side effect.
+
+**Corroborating primary-source signal, not proof:** the upstream CHANGELOG lists a `ConfigChange`
+hook event ("fires when configuration files change during a session"), which presupposes settings
+files are watched live, and confirms at least one other key
+(`permissions.additionalDirectories`) was fixed to apply mid-session without a restart. Neither
+directly confirms `modelSettings.effortLevel` specifically hot-reloads — that remains a
+third-party claim, not independently verified against Anthropic's own docs.
+
+**Attempted live verification, blocked structurally — not by mh, by Claude Code itself.** The
+plan was a temporary `PreToolUse` hook in this project's own `.claude/settings.local.json`
+logging the `effort` field from hook input, toggled against a `modelSettings.claude-sonnet-5.effortLevel`
+edit, entirely reversible and gitignored. Every `Edit`/`Bash` attempt to touch
+`.claude/settings.local.json` from inside the running session was denied by **Claude Code's own
+auto-mode "Self-Modification" classifier** — a host-level safety gate refusing to let a running
+session edit its own live hook/settings configuration, with an explicit instruction not to route
+around it via another tool, encoding, or later turn. Honored; not worked around. (This block is
+itself weak corroborating evidence for the hot-reload claim — Claude Code wouldn't need a
+dedicated classifier for a live session editing its own `settings.local.json` if that edit had no
+live effect.) `modelSettings.effortLevel` hot-reload during a session is therefore **unverified
+first-hand**, resting only on the community projects' consistent, independent claims plus the
+`ConfigChange`/`additionalDirectories` corroboration above.
+
+**Revised feasibility, unchanged verdict for mh.** Platform feasibility moves from "0/10, hard
+blocker" to "plausible via an undocumented side channel, corroborated but not self-verified."
+That does not reopen the decision for mh, for three separate reasons, each sufficient alone:
+1. Every existing mh hook is a gate or an advisory context-injector; none mutates a file outside
+   the plugin's own control as a side effect. Building one would be a new category of action this
+   plugin has never taken, in tension with `operating-model.md`'s "no orchestration layer of its
+   own" and adjacent in spirit to why `gate:write:config-guard` exists (asks before a write to
+   Claude Code settings) even though that gate's matcher doesn't cover `modelSettings` today.
+2. The operator's own dotfiles already run a tuned, hand-authored `modelSettings` baseline plus
+   `claude-shim`'s launch-time hot-branch boost — a second writer (an mh hook) targeting the same
+   file mid-session introduces a real race/override risk against a system the operator already
+   trusts and tuned deliberately.
+3. Rule 2 (don't build blind) still has no incident on either side of this correction — the
+   feasibility question changed, the justification question didn't.
+If this is ever built, it belongs in dotfiles (extending `claude-shim` or as a project-level
+`UserPromptSubmit` hook there), not in mh, and should live-verify the hot-reload claim against the
+operator's own installed Claude Code version before being trusted, rather than inheriting the
+community projects' claim untested.
+
 ## Sources
 
 - `docs/research/auto-model-auto-effort-2026-09-26.md` (22 sources, this repo)
@@ -120,3 +182,4 @@ round doesn't re-derive it from scratch.
 - `claude --version` → 2.1.283 (live, this session, 2026-09-29); upstream CHANGELOG indexed and searched for post-2.1.283 entries
 - This session's own Agent-tool input schema (system prompt), showing `model` enum with no `effort` field
 - `~/Codes/Personals/dotfiles/claude/bin/claude-shim` header (user-settings-layer "auto" effort boost — the mechanism the plugin layer cannot duplicate)
+- Correction sources (2026-09-29): https://github.com/blackreo123/claude-code-auto-effort, https://github.com/tzachbon/claude-model-router-hook, https://github.com/handpickedlab/effort-router, https://github.com/hodkovickybuh/claude-auto-model, https://github.com/moukrea/automodel, https://github.com/anthropics/claude-code/issues/43326, https://github.com/anthropics/claude-code/issues/60200, `code.claude.com/docs/en/hooks.md` (`ConfigChange` event, live-fetched), upstream CHANGELOG (`permissions.additionalDirectories` mid-session fix), this session's own blocked `Edit`/`Bash` attempts against `.claude/settings.local.json` (Claude Code auto-mode Self-Modification classifier)
