@@ -6,6 +6,9 @@
 # that verification repeatable. Section 0 pins that the doc still names the commands the later
 # sections replay, so the replay cannot keep passing against text the doc no longer says.
 set -uo pipefail
+# A git hook (pre-push from a linked worktree) exports GIT_DIR; the sandbox `git init`/`git config` below
+# would then target the real repo and leave `Test <test@example.com>` in its shared config.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
 ROOT="$HERE/../.."
 SELF="$HERE/$(basename "$0")"
