@@ -380,6 +380,60 @@ operator's dotfiles) so the cost log can finally show effort. Reopen when functi
 a measured cache cost is neutral. Still open, needs a live test: whether the rewritten value reaches the
 API body, and hot-reload of the top-level `effortLevel` key.
 
+## Correction 5 (2026-09-29, later same day): measured results close the remaining gaps
+
+Four gaps were left open by Correction 4. Two were closed from transcripts that already existed and two
+by operator-run tests on Claude Code 2.1.284. The `effort-log` mod (log-only, function hooks, enabled
+through `CLAUDE_CODE_PLUGIN_DIRS` in the operator's dotfiles) supplied the per-turn effort for the
+tests.
+
+**1. The rewritten effort reaches the API, and what a change costs the cache.** In the probe session
+(`claude-sonnet-5-5`, effort rewritten by a `turn.step` hook), per-assistant-message usage in the
+transcript, one row per message id:
+
+| request | effort | cache_read | cache_creation |
+|---|---|---|---|
+| first of session | medium | 28,031 | 38,180 |
+| last before change | medium | 68,845 | 403 |
+| first after change to `low` | low | **28,031** | **41,539** |
+| first after change to `max` | max | 70,616 | 501 |
+| first after change back to `medium` | medium | 73,528 | 736 |
+
+The first change dropped the read to the system and tools part (28,031, the same figure as the
+session's first request) and recreated the message part (about 41.5k tokens): the server saw a
+different request, which is direct evidence that the hook's value reaches the API, and it matches the
+prompt-caching doc's "Effort setting" row. The later changes (`low` to `max`, `max` to `medium`) did
+not invalidate: reads stayed at 70k to 73k with normal small creations. So on this model one effort
+change cost one message-cache rebuild and later changes cost about nothing. The cause of that
+difference is not established (a hypothesis: Claude Code sends effort per message after the first
+change, the path the docs say preserves the cache; the transcript's `perTurnEffort` field fits but
+proves nothing). n=1 session, one model. Correction 4's expectation of "a miss on each change" was too
+pessimistic for this case and is superseded here; a hook holding one constant effort still costs
+nothing.
+
+**2. A top-level `effortLevel` edit does not reach a running session.** Scratch project, model
+`claude-sonnet-4-6` (no `modelSettings` entry anywhere), top-level `effortLevel: low` in
+`.claude/settings.local.json`. Turn 1: `effort-log` and the transcript both record `low`. The file was
+flipped to `high` 15 seconds before turn 2. Turn 2: both still record `low`. This refutes the community
+project's hot-reload claim for the top-level key by experiment (it was refuted by docs only before) and
+agrees with `settings.md`: edits reach only the next session.
+
+**3. Subagents, background agents and compaction.** In the same test session `effort-log` recorded
+`turn.step` rows for two subagents, each with an agent id and the parent's effort (`low`): a `fork`
+and a `general-purpose` agent. Both tool results read "Async agent launched successfully", so both ran
+in the background even though the input carried no `run_in_background` field in this build. That
+refutes the community claim that `turn.step` does not fire for background-dispatched agents, at least
+for these launch paths on 2.1.284 (n=2). Running `/compact` (the transcript shows the compact
+boundary) produced no `turn.step` row: the hook, which logs each loop's first request, did not see a
+compaction request (n=1; a compaction that is not a turn would look the same).
+
+**Consequence.** A `turn.step` hook can see and set effort for the main loop and for subagents, and a
+constant value costs no cache. That makes a per-spawn or per-agent-type effort policy technically sound
+(the route the `agent-effort` plugin takes), separate from the per-turn router this doc declines. It
+does not change the mh decision: the mechanism is still experimental, mh already pins model and effort
+per agent in frontmatter, and there is no incident (Rule 2). No gap from Correction 4 remains open
+except the proxy terms question, which only Anthropic Support can answer.
+
 ## Sources
 
 - `docs/research/auto-model-auto-effort-2026-09-26.md` (22 sources, this repo)
@@ -397,3 +451,4 @@ API body, and hot-reload of the top-level `effortLevel` key.
 - Scope-fix sources (2026-09-29): source code read via `gh api` in `rezzminator/agent-effort` (`plugins/agent-effort/hooks/agent-effort.ts`, `src/effort.ts`, `types/claude-code.d.ts` `TurnStepInput`), `tzachbon/claude-model-router-hook`, `moukrea/automodel`, `handpickedlab/effort-router`, `blackreo123/claude-code-auto-effort`, `hodkovickybuh/claude-auto-model` (README, native-integration and controller sections); anthropics/claude-code#91870
 - Function-hooks thread (2026-09-29): anthropics/claude-code#91870, all 224 comments searched (frsorrentino 2026-09-04, jdainsworthsnb 2026-09-05, Butanium 2026-09-15, Marat 2026-09-15), maintainer update 2026-09-09; built-in mods listing at `anthropics/claude-code/mods` (agents-md, diff, sec-default, telemetry, none about effort routing)
 - Correction 4 sources (2026-09-29): platform.claude.com prompt-caching and effort docs; code.claude.com llm-gateway, llm-gateway-protocol, legal-and-compliance, model-config, env-vars; anthropics/claude-code `mods/README.md`; the `plugin-authoring` bundle `reference.md` and `types/claude-code.d.ts` (HookBudget, turn.step); dotfiles `claude/bin/claude-shim` and `hooks/effort-signal-report.sh`; `mh:cost-report` output (2026-09-29)
+- Correction 5 sources (2026-09-29): operator-run tests on CC 2.1.284 (probe session transcript usage rows; scratch-project top-level `effortLevel` test with `effort-log` rows and transcript effort; background-agent and `/compact` test with `effort-log` rows and tool results); dotfiles `claude/mods/effort-log`
