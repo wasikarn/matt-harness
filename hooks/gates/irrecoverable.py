@@ -1045,14 +1045,15 @@ def _unwrap_shell(argv0, rest):
                 # `bash -c -o pipefail 'body'`); the body is the first non-option word,
                 # and `--` / a bare `-` ends the options.
                 # A short cluster ending in o/O (`-o`, `-eo`, `-ceo`) takes the next word as its value.
-                j = i + (2 if t[-1] in "oO" else 1)
+                _vf = "o" if argv0 == "zsh" else "oO"  # zsh's -O is a plain flag; only -o takes a value there
+                j = i + (2 if t[-1] in _vf else 1)
                 while j < len(rest):
                     u = rest[j].replace(PH, "")
                     if u in ("--", "-"):
                         j += 1
                         break
                     if len(u) > 1 and u[0] in "-+":
-                        j += 2 if (u[-1] in "oO" and not u.startswith("--")) else 1
+                        j += 2 if (u[-1] in _vf and not u.startswith("--")) else 1
                         continue
                     break
                 body = rest[j] if j < len(rest) else None

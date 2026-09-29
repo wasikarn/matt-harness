@@ -1098,6 +1098,11 @@ test_deny  "$IRRECOVERABLE" "bash -ceo pipefail body: the -c cluster itself take
   "$(bash_payload "bash -ceo pipefail 'rm -rf /tmp/x'")"
 test_allow "$IRRECOVERABLE" "bash -c -eo pipefail, benign body (audit of #227)" \
   "$(bash_payload "bash -c -eo pipefail 'git status'")"
+# In zsh -O is a plain flag (no value), so `zsh -cO body` runs the body; only -o takes a value there.
+test_deny  "$IRRECOVERABLE" "zsh -cO body: -O takes no value in zsh (audit of #227)" \
+  "$(bash_payload "zsh -cO 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "zsh -ceO body (audit of #227)" \
+  "$(bash_payload "zsh -ceO 'rm -rf /tmp/x'")"
 # A `{} +` terminator splits the window, so a second -exec starts with `+`.
 test_deny  "$IRRECOVERABLE" "find -exec true {} + then a second -exec sh -c body (audit of #227)" \
   "$(bash_payload "find . -exec true {} + -exec sh -c 'rm -rf /x' sh {} +")"
