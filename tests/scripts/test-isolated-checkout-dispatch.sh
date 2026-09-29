@@ -3,17 +3,46 @@
 # docs/reference/spawn-brief.md's "Isolated checkout dispatch (opt-in pilot, 2026-09-28)" section
 # (steps 1, 3, 4) against a disposable git sandbox built fresh under mktemp -d, never the real
 # repo. The pilot was hand-verified once via an ad hoc scratch-repo probe (now gone); this makes
-# that verification repeatable.
+# that verification repeatable. Section 0 pins that the doc still names the commands the later
+# sections replay, so the replay cannot keep passing against text the doc no longer says.
 set -uo pipefail
+HERE="$(cd -P "$(dirname "$0")" && pwd)"
+ROOT="$HERE/../.."
+SELF="$HERE/$(basename "$0")"
+# SPAWN_BRIEF points the whole suite at another copy of the doc (used to prove a broken doc fails).
+DOC="${SPAWN_BRIEF:-$ROOT/docs/reference/spawn-brief.md}"
 pass=0; fail=0
 ok()  { pass=$((pass + 1)); echo "  PASS: $1"; }
 bad() { fail=$((fail + 1)); echo "  FAIL: $1" >&2; }
 
 echo "=== isolated checkout dispatch git-mechanics self-test ==="
 
-sandbox="$(mktemp -d)"
-cleanup() { rm -rf "$sandbox"; }
+sandbox="$(mktemp -d)" || { echo "FAIL: mktemp -d failed" >&2; exit 1; }
+cleanup() { [ -n "${sandbox:-}" ] && rm -rf "$sandbox"; }
 trap cleanup EXIT
+
+# === 0. Doc coupling ===
+# Every command the sections below replay must still appear in the doc. Negative control: the same
+# check has to fail on a copy with one command altered, or it proves nothing.
+doc_has() { /usr/bin/grep -qF -- "$2" "$1"; }
+DOC_CMDS=(
+  'git worktree add <path> -b subagent/<slug> HEAD'
+  'git -C <path> status --porcelain'
+  'git -C <path> diff <base-sha>..HEAD'
+  'git merge --no-ff <that-sha> -m "Merge subagent/<slug> @ <that-sha>"'
+  'git rev-parse -q --verify MERGE_HEAD'
+  'git merge --abort'
+  'git worktree remove <path>'
+)
+for c in "${DOC_CMDS[@]}"; do
+  doc_has "$DOC" "$c" \
+    && ok "spawn-brief.md still documents: $c" \
+    || bad "spawn-brief.md no longer documents: $c"
+done
+sed 's/--no-ff/--ff/' "$DOC" > "$sandbox/mutated-brief.md"
+doc_has "$sandbox/mutated-brief.md" "${DOC_CMDS[3]}" \
+  && bad "negative control: the doc check still passed with --no-ff altered in the doc" \
+  || ok "negative control: the doc check fails when the documented merge command is altered"
 
 repo="$sandbox/repo"
 mkdir -p "$repo"
@@ -58,11 +87,14 @@ diff_out="$(git -C "$wt1" diff "$base_sha"..HEAD)"
 [[ "$diff_out" == *"branch-change"* ]] \
   && ok "diff base-sha..HEAD shows the branch's committed change" \
   || bad "diff base-sha..HEAD is missing the branch's change (got: $diff_out)"
-sha_call1="$(git -C "$wt1" rev-parse HEAD)"
-sha_call2="$(git -C "$wt1" rev-parse HEAD)"
-[ -n "$sha_call1" ] && [ "$sha_call1" = "$sha_call2" ] \
-  && ok "rev-parse HEAD returns a stable SHA across two calls" \
-  || bad "rev-parse HEAD was unstable ($sha_call1 vs $sha_call2)"
+# Step 4's recheck: a commit added to the branch after validation must move HEAD off the SHA that
+# was validated, so the dispatcher can see it and re-validate instead of merging it unreviewed.
+validated_sha="$(git -C "$wt1" rev-parse HEAD)"
+echo post-validation >> "$wt1/file.txt"
+git -C "$wt1" commit -q -am "commit added after validation"
+[ -n "$validated_sha" ] && [ "$(git -C "$wt1" rev-parse HEAD)" != "$validated_sha" ] \
+  && ok "a commit added after validation moves HEAD off the validated SHA" \
+  || bad "HEAD did not move after a post-validation commit (still $validated_sha)"
 
 # === 4. Merge-conflict vs. dirty-tree-preflight-refusal (step 4) ===
 # Case (a): the DISPATCHER's own tree has a conflicting uncommitted edit — a preflight refusal,
@@ -108,20 +140,23 @@ abort_status=$?
 # A non-conflicting case, on a fresh branch that touches a different file so it can merge cleanly
 # regardless of section 4's leftover repo state.
 wt5="$sandbox/wt5"
-git -C "$repo" worktree add -q "$wt5" -b clean-branch "$base_sha"
+git -C "$repo" worktree add -q "$wt5" -b subagent/clean "$base_sha"
 echo clean-content > "$wt5/newfile.txt"
 git -C "$wt5" add newfile.txt
 git -C "$wt5" commit -q -m "clean branch change"
 clean_sha="$(git -C "$wt5" rev-parse HEAD)"
-git -C "$repo" merge --no-ff "$clean_sha" -m "Merge test-branch @ $clean_sha" >/dev/null 2>&1
+# The -m text is the doc's template ("Merge subagent/<slug> @ <that-sha>", pinned in section 0)
+# with slug=clean; the assertion below reads the real branch name back from git.
+git -C "$repo" merge --no-ff "$clean_sha" -m "Merge subagent/clean @ $clean_sha" >/dev/null 2>&1
 merge5_status=$?
 [ "$merge5_status" -eq 0 ] \
   && ok "a clean, non-conflicting merge succeeds" \
   || bad "clean merge unexpectedly failed"
 subject="$(git -C "$repo" log -1 --format=%s)"
-[[ "$subject" == *"test-branch"* ]] \
-  && ok "merge commit subject names the branch, not just a bare SHA" \
-  || bad "merge commit subject is missing the branch name (got: $subject)"
+clean_branch="$(git -C "$wt5" rev-parse --abbrev-ref HEAD)"
+[[ "$subject" == *"$clean_branch"* ]] \
+  && ok "merge commit subject names the merged branch ($clean_branch), not just a bare SHA" \
+  || bad "merge commit subject is missing the merged branch name $clean_branch (got: $subject)"
 
 # === 6. Untracked file blocks worktree remove (step 4) ===
 # wt1 still holds the untracked.txt left by section 2.
@@ -136,6 +171,22 @@ remove_status_clean=$?
 [ "$remove_status_clean" -eq 0 ] \
   && ok "worktree remove succeeds once the untracked file is gone" \
   || bad "worktree remove still failed after removing the untracked file"
+
+# === 7. A failed mktemp aborts before the sandbox is used ===
+# With mktemp failing, `sandbox` would be empty and repo="$sandbox/repo" would be /repo. Extract the
+# assignment line (running this whole script again would recurse) and eval it with mktemp shimmed
+# to fail: it must exit non-zero and never fall through.
+SANDBOX_LINE="$(/usr/bin/grep -m1 '^sandbox="\$(mktemp -d)"' "$SELF")"
+mkdir -p "$sandbox/shim"
+printf '#!/bin/sh\nexit 1\n' > "$sandbox/shim/mktemp"
+chmod +x "$sandbox/shim/mktemp"
+guard_out="$(PATH="$sandbox/shim:$PATH" bash -c "set -uo pipefail; $SANDBOX_LINE; echo fell-through" 2>&1)"
+guard_rc=$?
+if [ -n "$SANDBOX_LINE" ] && [ "$guard_rc" -ne 0 ] && [[ "$guard_out" != *fell-through* ]]; then
+  ok "a failed mktemp -d aborts before the sandbox is used (rc=$guard_rc)"
+else
+  bad "a failed mktemp -d did not abort (rc=$guard_rc): $(printf '%s' "$guard_out" | tr '\n' '|')"
+fi
 
 echo
 echo "=== Summary: $pass passed, $fail failed ==="
