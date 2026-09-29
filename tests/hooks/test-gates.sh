@@ -1138,6 +1138,20 @@ test_deny  "$IRRECOVERABLE" "zsh -c +opipefail body: attached value after a spli
   "$(bash_payload "zsh -c +opipefail 'rm -rf /tmp/x'")"
 test_allow "$IRRECOVERABLE" "zsh -c +opipefail 'echo' then a dangerous-looking argument (gap follow-up to #227)" \
   "$(bash_payload "zsh -c +opipefail 'echo hi' 'rm -rf /tmp/x'")"
+# bash's --rcfile / --init-file take a file: the word after them is an option value, not the body.
+test_deny  "$IRRECOVERABLE" "bash --rcfile FILE -oc pipefail body: the file is not the body (audit 3 of #227)" \
+  "$(bash_payload "bash --rcfile /dev/null -oc pipefail 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "env bash --init-file FILE -Oc extglob body (audit 3 of #227)" \
+  "$(bash_payload "env bash --init-file /dev/null -Oc extglob 'rm -rf /tmp/x'")"
+test_allow "$IRRECOVERABLE" "bash --rcfile FILE -oc pipefail, benign body (audit 3 of #227)" \
+  "$(bash_payload "bash --rcfile /dev/null -oc pipefail 'git status'")"
+# ksh93 runs a first operand that is not a readable file as the command string, no -c needed.
+test_deny  "$IRRECOVERABLE" "ksh 'body' with no -c runs the string (audit 3 of #227)" \
+  "$(bash_payload "ksh 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "ksh -o pipefail 'body' with no -c (audit 3 of #227)" \
+  "$(bash_payload "ksh -o pipefail 'rm -rf /tmp/x'")"
+test_allow "$IRRECOVERABLE" "ksh with a script operand and a benign later word (audit 3 of #227)" \
+  "$(bash_payload "ksh deploy.sh 'git status'")"
 # Under find, `-exec` after `bash -c` is bash's option letters (e x e c), not a second find action.
 test_deny  "$IRRECOVERABLE" "find -exec bash -c -exec body: -exec is a shell cluster (gap follow-up to #227)" \
   "$(bash_payload "find . -exec bash -c -exec 'rm -rf /tmp/x' \\;")"
