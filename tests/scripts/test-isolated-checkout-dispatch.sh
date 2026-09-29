@@ -9,7 +9,8 @@ set -uo pipefail
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
 ROOT="$HERE/../.."
 SELF="$HERE/$(basename "$0")"
-# SPAWN_BRIEF points the whole suite at another copy of the doc (used to prove a broken doc fails).
+# SPAWN_BRIEF points section 0's doc checks at another copy of the doc (used to prove a broken doc
+# fails); the git replays in sections 1-6 never read the doc.
 DOC="${SPAWN_BRIEF:-$ROOT/docs/reference/spawn-brief.md}"
 pass=0; fail=0
 ok()  { pass=$((pass + 1)); echo "  PASS: $1"; }
@@ -22,22 +23,30 @@ cleanup() { [ -n "${sandbox:-}" ] && rm -rf "$sandbox"; }
 trap cleanup EXIT
 
 # === 0. Doc coupling ===
-# Every command the sections below replay must still appear in the doc. Negative control: the same
-# check has to fail on a copy with one command altered, or it proves nothing.
-doc_has() { /usr/bin/grep -qF -- "$2" "$1"; }
+# Every command and rule the sections below replay must still appear in the pilot section of the
+# doc. The section is squashed to one line so a rewrap of the prose cannot split a pinned string.
+# Negative control: the same check has to fail on a copy with one command altered, or it proves
+# nothing.
+pilot_section() {
+  awk '/^## Isolated checkout dispatch/{f=1; next} /^## /{f=0} f' "$1" | tr '\n' ' ' | tr -s ' '
+}
+doc_has() { [[ "$(pilot_section "$1")" == *"$2"* ]]; }
+DOC_NAME="$(basename "$DOC")"
 DOC_CMDS=(
   'git worktree add <path> -b subagent/<slug> HEAD'
   'git -C <path> status --porcelain'
-  'git -C <path> diff <base-sha>..HEAD'
+  'then reads `git -C <path> diff <base-sha>..HEAD`'
   'git merge --no-ff <that-sha> -m "Merge subagent/<slug> @ <that-sha>"'
   'git rev-parse -q --verify MERGE_HEAD'
   'git merge --abort'
   'git worktree remove <path>'
+  're-checks `git -C <path> rev-parse HEAD` still equals the SHA step 3 validated'
+  'never the bare branch name'
 )
 for c in "${DOC_CMDS[@]}"; do
   doc_has "$DOC" "$c" \
-    && ok "spawn-brief.md still documents: $c" \
-    || bad "spawn-brief.md no longer documents: $c"
+    && ok "$DOC_NAME pilot section still documents: $c" \
+    || bad "$DOC_NAME pilot section no longer documents: $c"
 done
 sed 's/--no-ff/--ff/' "$DOC" > "$sandbox/mutated-brief.md"
 doc_has "$sandbox/mutated-brief.md" "${DOC_CMDS[3]}" \
@@ -145,13 +154,24 @@ echo clean-content > "$wt5/newfile.txt"
 git -C "$wt5" add newfile.txt
 git -C "$wt5" commit -q -m "clean branch change"
 clean_sha="$(git -C "$wt5" rev-parse HEAD)"
-# The -m text is the doc's template ("Merge subagent/<slug> @ <that-sha>", pinned in section 0)
-# with slug=clean; the assertion below reads the real branch name back from git.
-git -C "$repo" merge --no-ff "$clean_sha" -m "Merge subagent/clean @ $clean_sha" >/dev/null 2>&1
+# A commit added after "validation": merging the validated SHA (step 4) must leave it out.
+echo late > "$wt5/late.txt"
+git -C "$wt5" add late.txt
+git -C "$wt5" commit -q -m "late commit after validation"
+# The -m text is the message template inside the pinned merge command (section 0) with slug=clean
+# and the validated SHA filled in; the assertion below reads the real branch name back from git.
+msg_tpl="${DOC_CMDS[3]#*-m \"}"
+msg_tpl="${msg_tpl%\"}"
+merge_msg="${msg_tpl//<slug>/clean}"
+merge_msg="${merge_msg//<that-sha>/$clean_sha}"
+git -C "$repo" merge --no-ff "$clean_sha" -m "$merge_msg" >/dev/null 2>&1
 merge5_status=$?
 [ "$merge5_status" -eq 0 ] \
   && ok "a clean, non-conflicting merge succeeds" \
   || bad "clean merge unexpectedly failed"
+[ -e "$repo/newfile.txt" ] && [ ! -e "$repo/late.txt" ] \
+  && ok "merging the validated SHA leaves out a commit added after validation" \
+  || bad "the post-validation commit rode along (or the validated change is missing)"
 subject="$(git -C "$repo" log -1 --format=%s)"
 clean_branch="$(git -C "$wt5" rev-parse --abbrev-ref HEAD)"
 [[ "$subject" == *"$clean_branch"* ]] \
@@ -182,7 +202,10 @@ printf '#!/bin/sh\nexit 1\n' > "$sandbox/shim/mktemp"
 chmod +x "$sandbox/shim/mktemp"
 guard_out="$(PATH="$sandbox/shim:$PATH" bash -c "set -uo pipefail; $SANDBOX_LINE; echo fell-through" 2>&1)"
 guard_rc=$?
-if [ -n "$SANDBOX_LINE" ] && [ "$guard_rc" -ne 0 ] && [[ "$guard_out" != *fell-through* ]]; then
+# rc != 0 alone proves nothing (the failed command substitution already returns 1), so the guard's
+# own message must appear too.
+if [ -n "$SANDBOX_LINE" ] && [ "$guard_rc" -ne 0 ] && [[ "$guard_out" != *fell-through* ]] \
+   && [[ "$guard_out" == *"mktemp -d failed"* ]]; then
   ok "a failed mktemp -d aborts before the sandbox is used (rc=$guard_rc)"
 else
   bad "a failed mktemp -d did not abort (rc=$guard_rc): $(printf '%s' "$guard_out" | tr '\n' '|')"
