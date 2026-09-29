@@ -318,7 +318,8 @@ HOME="$EMPTY_HOME" run_check 02 "$F1_OLD" --plugin-cache "$DECOY"
 if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 skill already on base ref stays CRIT"
 else bad "check-02 skill already on base ref did not fire CRIT (crit=$CRIT_FOUND)"; fi
 # Hook context: pre-commit/pre-push export GIT_DIR/GIT_INDEX_FILE for the outer repo; the check must ignore them.
-GIT_DIR="$(git rev-parse --absolute-git-dir)" GIT_INDEX_FILE="$CODEX_TMP/no-such-index" HOME="$EMPTY_HOME" run_check 02 "$F1_NEW" --plugin-cache "$DECOY"
+# GIT_DIR names a repo whose base ref already holds the skill, so a check that honoured it would read CRIT.
+GIT_DIR="$F1_OLD/.git" GIT_INDEX_FILE="$CODEX_TMP/no-such-index" HOME="$EMPTY_HOME" run_check 02 "$F1_NEW" --plugin-cache "$DECOY"
 if [ "$CRIT_FOUND" -eq 0 ] && [ "$INFO_FOUND" -ge 1 ]; then ok "check-02 new-skill INFO survives exported GIT_DIR/GIT_INDEX_FILE"
 else bad "check-02 new-skill INFO broke under exported GIT_DIR (crit=$CRIT_FOUND info=$INFO_FOUND)"; fi
 # Toplevel guard: the same new skill audited from a subdirectory of a git repo gets no exemption.
