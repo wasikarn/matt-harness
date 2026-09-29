@@ -34,8 +34,7 @@ Quote the script's counts as printed.
 
 - **Ask-count only, never wait-time.** `_journal.py`'s row (`ts`, `id`, `tool_name`, `decision`,
   `session_id`) has no resolution timestamp, so this report cannot say how long a user took to
-  answer a prompt — an earlier draft of this gap (`docs/research/ai-native-sdlc-playbook-audit-2026-08-28.md`,
-  Round 4) proposed an approval-wait-time metric and that was corrected before this was built.
+  answer a prompt.
 - **`allow-suppressed` isn't a block.** `secret-scan.py` logs this decision when a same-line
   suppression marker (`gitleaks:allow` etc.) let a match through — it's informational, not a
   friction event, so don't fold it into an "interruptions" total without saying so.
