@@ -12,10 +12,10 @@ bash scripts/run-gauntlet.sh                       # plugin-validate (manifest o
 
 Pre-push runs the gauntlet; pre-commit runs lint + audit + a 4096-byte cap on `docs/METHODOLOGY.md` +
 a benign-payload canary on staged gates (`scripts/gate-canary.sh`). CI also runs the gauntlet
-(`.github/workflows/validate.yml`'s `gauntlet` job, on every push/PR against `develop`). Once B5's
-branch protection is applied (`docs/reference/branching-model.md`), the 3 check-name contexts
-(`claude plugin validate ...`, `harness-audit (0 CRIT)`, `gauntlet (run-gauntlet.sh)`) are required
-and a red run blocks merge — until then, treat CI as advisory only.
+(`.github/workflows/validate.yml`'s `gauntlet` job, on every push/PR against `develop`). Branch
+protection (`docs/reference/branching-model.md`) requires the 3 check-name contexts
+(`claude plugin validate ...`, `harness-audit (0 CRIT)`, `gauntlet (run-gauntlet.sh)`), so a red
+run blocks merge.
 
 ## Git hooks
 
@@ -42,7 +42,7 @@ Issue tracker: GitHub Issues on `wasikarn/matt-harness` via `gh`. Domain docs: r
 plus `docs/adr/`, created lazily by `mattpocock-skills:domain-modeling`; each file under
 `docs/adr/` carries upstream's optional `status:` frontmatter (`proposed`/`accepted`/
 `deprecated`/`superseded by ADR-NNNN`, per `mattpocock-skills`' `ADR-FORMAT.md`), which mh treats
-as required — revisit at ~6 files in `docs/adr/` (currently 3; unrelated ADR-numbered records
+as required — revisit at ~6 files in `docs/adr/` (4 as of 2026-09-29; unrelated ADR-numbered records
 under the frozen `docs/research/` are a separate set this convention does not cover).
 
 ## Research: check qmd before web search
