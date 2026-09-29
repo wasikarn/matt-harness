@@ -381,6 +381,28 @@ else bad "check-02 used a non-matching installed_plugins entry (crit=$CRIT_FOUND
 HARNESS_AUDIT_BASE_REF=origin/develop HOME="$CODEX_TMP/home-cs1" run_check 02 "$F1_CS" --plugin-cache "$DECOY"
 if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 HARNESS_AUDIT_BASE_REF outranks the cache sha"
 else bad "check-02 cache sha outranked HARNESS_AUDIT_BASE_REF (crit=$CRIT_FOUND)"; fi
+# Check 03 shares the base-commit exemption (GH #211): a new agent absent from the base is INFO, one already
+# on the base but missing from the cache stays CRIT, and no base ref fails closed.
+mk_a3_repo() { # <dir> <agent-on-base:0|1> <base-ref:0|1>
+  mkdir -p "$1/agents"
+  ( cd "$1" && f1_git init -q && : > agents/.keep
+    if [ "$2" = 1 ]; then printf -- '---\nname: newagent\ndescription: Use when testing.\n---\n' > agents/newagent.md; fi
+    f1_git add agents && f1_git commit -q -m base
+    if [ "$3" = 1 ]; then f1_git update-ref refs/remotes/origin/develop HEAD; fi
+    printf -- '---\nname: newagent\ndescription: Use when testing.\n---\n' > agents/newagent.md )
+}
+A3_NEW="$CODEX_TMP/a3-new"; mk_a3_repo "$A3_NEW" 0 1
+HOME="$EMPTY_HOME" run_check 03 "$A3_NEW" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -eq 0 ] && printf '%s\n' "$OUT" | /usr/bin/grep -E '^ *INFO ' | /usr/bin/grep -q 'newagent'; then ok "check-03 agent new vs base ref passes as INFO"
+else bad "check-03 agent new vs base ref did not pass as INFO (crit=$CRIT_FOUND info=$INFO_FOUND)"; fi
+A3_OLD="$CODEX_TMP/a3-old"; mk_a3_repo "$A3_OLD" 1 1
+HOME="$EMPTY_HOME" run_check 03 "$A3_OLD" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-03 agent already on base ref stays CRIT"
+else bad "check-03 agent already on base ref did not fire CRIT (crit=$CRIT_FOUND)"; fi
+A3_NOREF="$CODEX_TMP/a3-noref"; mk_a3_repo "$A3_NOREF" 0 0
+HOME="$EMPTY_HOME" run_check 03 "$A3_NOREF" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-03 no base ref fails closed (CRIT)"
+else bad "check-03 no base ref did not fail closed (crit=$CRIT_FOUND)"; fi
 for id in 07 08 09 11 17 18 19 23 32 33; do
   expect_crit   "$id" fleet-bad  --plugin-cache "$CACHE"
   expect_silent "$id" fleet-good --plugin-cache "$CACHE"

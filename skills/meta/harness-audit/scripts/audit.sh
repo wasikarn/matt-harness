@@ -117,6 +117,54 @@ is_plugin_delivered() {
   esac
 }
 
+# new_vs_base <file> (GH #204, #211): 0 if <file> (a skill SKILL.md or an agent .md) is absent
+# from the base commit, so it was added after the commit the plugin cache was built from and cannot
+# be in the cache yet. Checks 02 and 03 report such a component as INFO instead of CRIT, because
+# this repo denies --no-verify and does not symlink plugin components. Base, first hit wins:
+# HARNESS_AUDIT_BASE_REF; the gitCommitSha installed_plugins.json records for the cache being
+# audited; origin/develop. Fails closed (returns 1, CRIT stays) unless CLAUDE_DIR is its own git
+# toplevel and the base resolves, so fixtures and repos with no base get no exemption. A component
+# that is on the base commit but missing from the cache is a real gap and stays CRIT.
+plugin_cache_sha() {
+  python3 - "$HOME/.claude/plugins/installed_plugins.json" "${PLUGIN_CACHE:-}" <<'PY' 2>/dev/null
+import json, sys
+try:
+    plugins = json.load(open(sys.argv[1])).get("plugins", {})
+except Exception:
+    sys.exit(0)
+want = sys.argv[2].rstrip("/")
+for entries in plugins.values():
+    for e in entries if isinstance(entries, list) else []:
+        if want and str(e.get("installPath", "")).rstrip("/") == want and e.get("gitCommitSha"):
+            print(e["gitCommitSha"])
+            sys.exit(0)
+PY
+}
+new_vs_base_ref() {
+  local sha
+  if [ -n "${HARNESS_AUDIT_BASE_REF:-}" ]; then printf '%s' "$HARNESS_AUDIT_BASE_REF"; return; fi
+  sha=$(plugin_cache_sha)
+  if [ -n "$sha" ] && env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "$CLAUDE_DIR" rev-parse --verify -q "$sha^{commit}" >/dev/null 2>&1; then
+    printf '%s' "$sha"
+  else
+    printf '%s' origin/develop
+  fi
+}
+new_vs_base() {
+  local file="$1" base top rel
+  base="${NEW_VS_BASE:=$(new_vs_base_ref)}"
+  top=$(env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "$CLAUDE_DIR" rev-parse --show-toplevel 2>/dev/null) || return 1
+  [ "$(cd -P "$CLAUDE_DIR" && pwd)" = "$(cd -P "$top" && pwd)" ] || return 1
+  env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "$CLAUDE_DIR" rev-parse --verify -q "$base^{commit}" >/dev/null 2>&1 || return 1
+  rel="${file#"$CLAUDE_DIR"/}"
+  # ls-tree exits 0 with empty output for an absent path but non-zero on a git error (missing
+  # object in a shallow or partial clone); cat-file -e and rev-parse --verify both exit non-zero
+  # for either, which would read an error as "absent" and fail open.
+  local hit
+  hit=$(env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "$CLAUDE_DIR" ls-tree --name-only "$base" -- "$rel" 2>/dev/null) || return 1
+  [ -z "$hit" ]
+}
+
 # hook_wired_transitively <basename>: true if a script hooks.json names invokes
 # <basename> (comment text stripped so a prose mention does not count). Shared by
 # checks 03 and 11.
