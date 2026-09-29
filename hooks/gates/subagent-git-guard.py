@@ -151,27 +151,25 @@ masked = _mask_quotes(cmd)
 # stash; done"). A wrapper word must be followed by whitespace in the lookahead
 # too: with a bare \b a token that only STARTS with one ("timeout=30") is neither
 # a wrapper nor an ordinary token, and the regex dead-ends.
-# Deep-audit 4: eval (unquoted args are a command line), builtin and rtk joined.
-# rtk was already in irrecoverable.py's list when this file's copy was typed, so
-# `rtk proxy git stash` slipped through; tests/hooks/test-subagent-git-guard.sh
-# now fails when a PREFIX_WRAPPERS word is not a wrapper here.
 _WRAPPER_WORDS = ("env", "command", "nohup", "nice", "time", "sudo", "xargs",
-                  "exec", "setsid", "timeout", "gtimeout", "stdbuf", "ionice",
-                  "eval", "builtin", "rtk")
+                  "exec", "setsid", "timeout", "gtimeout", "stdbuf", "ionice")
 _KEYWORDS = ("!", "if", "elif", "then", "else", "do", "while", "until", "coproc")
 _WRAPPER_ALT = r"(?:" + "|".join(_WRAPPER_WORDS) + r")(?=\s)"
-# The walk over a wrapper's arguments stays inside ONE statement: a token cannot hold a bare `;`,
-# `&` or `|` (a `&` is fine in a redirect like `2>&1` / `&>f`, an escaped `\;` is a literal, and
-# parens are fine: `env A=$(id -un) git stash`) and the gap between tokens is blank or tab, never
-# a newline. With the old `\S+\s+` the greedy walk ran across `;` / `&&` / newlines to the LAST
-# `git` in the command, and finditer resumed after it, so the real `git stash` in an earlier
-# statement was never tested (`eval true; git stash; git status`). The command is the
-# quote-masked string, so a quoted `;` is not a boundary here.
-_TOK = r"(?:\\.|[^\s;&|\\]|(?<=[<>])&|&(?=>))+"
-_WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"[ \t]+(?:(?!" + _WRAPPER_ALT + r")" + _TOK + r"[ \t]+)*)*"
+_WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"\s+(?:(?!" + _WRAPPER_ALT + r")\S+\s+)*)*"
 _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in _KEYWORDS) + r")\s+)*"
+# Deep-audit 4: eval (its unquoted args are a command line), builtin and rtk run the command
+# after them, but they are NOT in _WRAPPER_WORDS. That list drives the greedy argument walk
+# above, which crosses `;` / `&&` / newlines to the LAST `git` and lets finditer resume after
+# it, so a real `git stash` in an earlier statement is never tested (`eval true; git stash;
+# git status`; time, timeout and env already leak this way, see the PR). These words take
+# their own bounded prefix instead: the word itself, `rtk`'s global flags and one runner verb
+# with its flags, never an argument walk. It sits AFTER the wrapper walk, so the walk still
+# behaves exactly as before for every old wrapper, and it can only add anchors.
+_SHELL_PASS = r"(?:(?:eval|builtin|command|exec)[ \t]+(?:--[ \t]+)?)"
+_RTK_PREFIX = r"(?:rtk[ \t]+(?:-\S+[ \t]+)*(?:(?:proxy|run|err|test|summary)[ \t]+(?:-\S+[ \t]+)*)?)"
+_CHAIN_PREFIX = r"(?:" + _SHELL_PASS + r"|" + _RTK_PREFIX + r")*"
 _CMD_START = (r"(?:^|[|;&(]|&&|\|\|)\s*" + _KEYWORD_PREFIX +
-              r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX)
+              r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX + _CHAIN_PREFIX)
 _ANCHOR_RE = re.compile(_CMD_START + r"\\?(?:\S*/)?git\b", re.MULTILINE)
 # `bash -c "<body>"` / `eval "<body>"`: the body is a quoted string, so the masked
 # text hides it. The shell word is matched on the masked string (a real command,
@@ -182,7 +180,10 @@ _ANCHOR_RE = re.compile(_CMD_START + r"\\?(?:\S*/)?git\b", re.MULTILINE)
 # (`-c`, `--command`, `--command='...'`, `--skip-env`, `--ultra-compact`, a bare `--`) come
 # before it. The string is quote-masked, so an opening quote is a blank there and a flag
 # word ends at it: `--command='git stash'` leaves the quote for _QUOTED_RE.
-_RTK_BODY = r"rtk[ \t]+(?:-\S+[ \t]+)*(?:run|err|test|summary)(?:[ \t]+-\S*)*"
+# The flags after the verb may not hold `;`, `&` or `|`: this alternative can match on its own, and
+# with `\S` it would swallow the next statement's separator (`rtk run -n||timeout 5 bash -c '...'`)
+# so finditer resumed after it and never saw that statement's shell word.
+_RTK_BODY = r"rtk[ \t]+(?:-\S+[ \t]+)*(?:run|err|test|summary)(?:[ \t]+-[^\s;&|]*)*"
 _SHELL_RE = re.compile(
     _CMD_START + r"\\?(?:\S*/)?(?:(?:bash|sh|zsh|dash|ksh)\s+(?:-\S+\s+)*?-\w*c\w*|eval|" + _RTK_BODY + r")(?=\s)",
     re.MULTILINE,
