@@ -1085,6 +1085,11 @@ test_allow "$IRRECOVERABLE" "find -exec env sh -c, benign body (audit of #227)" 
   "$(bash_payload "find . -exec env sh -c 'git status' \\;")"
 test_allow "$IRRECOVERABLE" "xargs rtk run -c, benign body (audit of #227)" \
   "$(bash_payload "echo a | xargs rtk run -c 'git status'")"
+# A shell name spelled with an empty substitution (`s$(true)h`) is still the shell, under find -exec too.
+test_deny  "$IRRECOVERABLE" "find -exec s\$(true)h -c body: placeholder in the shell name (audit of #227)" \
+  "$(bash_payload 'find . -exec s$(true)h -c '"'"'rm -rf /tmp/x'"'"' \;')"
+test_deny  "$IRRECOVERABLE" "top-level s\$(true)h -c body (audit of #227)" \
+  "$(bash_payload 's$(true)h -c '"'"'rm -rf /tmp/x'"'"'')"
 # Whole-picture pass of the audit: a short-option cluster ending in o/O takes the next word as its
 # value (`-eo pipefail`), including the -c cluster itself (`-ceo pipefail`).
 test_deny  "$IRRECOVERABLE" "bash -c -eo pipefail body: cluster ending in o takes a value (audit of #227)" \
@@ -1113,6 +1118,10 @@ _timed_case() {  # <name> <expected rc> <command>
 }
 _timed_case "find -exec sh -c body followed by 3000 more -exec words is denied fast (audit of #227)" 2 \
   "$(python3 -c "print(\"find . -exec sh -c 'rm -rf /x' \" + '-exec ' * 3000 + '\\\\;')")"
+_timed_case "3000 chained xargs env xargs is denied fast, not quadratic (audit of #227)" 2 \
+  "$(python3 -c "print('echo a | xargs ' + 'env xargs ' * 3000 + 'git status')")"
+test_allow "$IRRECOVERABLE" "a short xargs env xargs chain, benign (audit of #227)" \
+  "$(bash_payload "echo a | xargs env xargs env git status")"
 _timed_case "25 nested find -exec find stays fast and allowed (audit of #227)" 0 \
   "$(python3 -c "print('find . ' + '-exec find . ' * 25 + '-print')")"
 # --- git -c core.hooksPath= : the --no-verify-equivalent hook bypass ---

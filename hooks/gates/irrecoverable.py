@@ -1032,6 +1032,7 @@ def basename(p):
 _SHELLS = {"bash", "sh", "zsh", "dash", "ksh"}
 _MAX_SHELL_DEPTH = 5
 _WDEPTH = {}      # window index -> unwrap depth (absent = 0, an original window)
+_XARGS_HANDOVERS = [0]  # windows appended for `xargs <wrapper> ...` (bounded, see the xargs branch)
 _cur_depth = 0
 
 def _unwrap_shell(argv0, rest):
@@ -1247,7 +1248,7 @@ for _wi, w in enumerate(windows):
                 break
             argv0, rest = basename(rest[i]), rest[i + 1:]
 
-    _unwrap_shell(argv0, rest)
+    _unwrap_shell(argv0.replace(PH, ""), rest)  # `s$(true)h -c` is still sh
 
     if argv0 == "find":
         # GH #227: find -exec sh -c '<body>' \; hides the body in one token. The shell is the
@@ -1275,6 +1276,11 @@ for _wi, w in enumerate(windows):
                 break
         for j, t in enumerate(rest):  # xargs env sh -c / xargs rtk run -c: a wrapper hands over the command
             if basename(t).replace(PH, "") in PREFIX_WRAPPERS:
+                # Each wrapper window re-enters this branch when it hands over another xargs and
+                # copies its tail: chained `xargs env xargs env ...` is quadratic, so bound the chain.
+                _XARGS_HANDOVERS[0] += 1
+                if _XARGS_HANDOVERS[0] > 50:
+                    deny("more than 50 chained xargs wrappers - too complex to scan safely, confirm with user first")
                 _WDEPTH[len(windows)] = _cur_depth
                 windows.append(rest[j:])
                 break
