@@ -69,7 +69,8 @@ for root, dirs, files in os.walk(os.path.join(claude_dir, "skills")):
         continue
     if not name:
         continue
-    shipped = any(rel == p or rel.startswith(p + "/") for p in prefixes)
+    # A flat skills/<name> loads through the default scan (see check 78), so it counts as shipped.
+    shipped = rel.count("/") == 1 or any(rel == p or rel.startswith(p + "/") for p in prefixes)
     print(f"{name}\t{'shipped' if shipped else 'excluded'}")
 PYEOF
 )
