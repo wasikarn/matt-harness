@@ -13,6 +13,29 @@
 # A flat `skills/<name>/SKILL.md` is skipped: the default scan loads it with no manifest entry
 # (probe 2026-09-29, Claude Code 2.1.284, `--plugin-dir` + the stream-json init `skills` list: a flat
 # unlisted skill and a listed bucket's skill loaded, a nested unlisted skill did not).
+# A `skills` array on a marketplace.json plugin entry REPLACES plugin.json's list (probe 2026-09-29, Claude
+# Code 2.1.284, isolated config: entry skills [./skills/listed/] loaded listed/one only, entry skills [./skills/]
+# loaded the flat skill only). This repo keeps plugin.json as the single list, so any entry that declares
+# `skills` makes the coverage computed here wrong in both directions (GH #230).
+_MARKET_JSON="$CLAUDE_DIR/.claude-plugin/marketplace.json"
+if [ -f "$_MARKET_JSON" ]; then
+  _market_skills=$(python3 - "$_MARKET_JSON" <<'PYEOF'
+import json, sys
+try:
+    plugins = json.load(open(sys.argv[1])).get("plugins")
+except Exception:
+    sys.exit(0)
+for p in plugins if isinstance(plugins, list) else []:
+    if isinstance(p, dict) and "skills" in p:
+        print(p.get("name", "?"))
+PYEOF
+)
+  for _p in $_market_skills; do
+    crit "marketplace.json plugin entry '$_p' declares skills, which replaces .claude-plugin/plugin.json's skills list and makes check 78's coverage wrong; remove the key from the entry"
+  done
+  unset _market_skills _p
+fi
+unset _MARKET_JSON
 _MANIFEST_JSON="$CLAUDE_DIR/.claude-plugin/plugin.json"
 if [ -f "$_MANIFEST_JSON" ]; then
   _unregistered=$(python3 - "$CLAUDE_DIR" "$_MANIFEST_JSON" "${MANIFEST_EXPECTED_EXCLUDED:-}" <<'PYEOF'
