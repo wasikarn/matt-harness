@@ -246,6 +246,7 @@ expect_crit   74 check-74-bad-one-site-regressed
 # describing it without that prefix must stay silent.
 expect_crit   75 check-75-bad-excluded-referenced
 expect_silent 75 check-75-good-clean
+expect_silent 75 check-75-good-flat
 
 # Check 78: a skill no plugin.json skills entry covers never loads (GH #211).
 expect_crit   78 check-78-bad-unregistered
