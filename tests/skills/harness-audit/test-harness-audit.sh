@@ -347,6 +347,40 @@ else bad "check-02 HARNESS_AUDIT_BASE_REF override not honoured (crit=$CRIT_FOUN
 HARNESS_AUDIT_BASE_REF=refs/heads/no-such-ref HOME="$EMPTY_HOME" run_check 02 "$F1_NEW" --plugin-cache "$DECOY"
 if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 unresolvable HARNESS_AUDIT_BASE_REF fails closed (CRIT)"
 else bad "check-02 unresolvable HARNESS_AUDIT_BASE_REF did not fail closed (crit=$CRIT_FOUND)"; fi
+# Cache-sha base (GH #211): with no override, the base is the gitCommitSha installed_plugins.json records
+# for the audited cache. A skill merged to origin/develop but absent from that commit stays INFO (the cache
+# cannot hold it yet); one already on that commit is a real gap. A missing, unresolvable or non-matching
+# entry falls back to origin/develop.
+F1_CS="$CODEX_TMP/f1-cs"; mk_f1_repo "$F1_CS" 0 0
+F1_CS_BASE=$(f1_git -C "$F1_CS" rev-parse HEAD)
+( cd "$F1_CS" && f1_git add skills && f1_git commit -q -m addskill && f1_git update-ref refs/remotes/origin/develop HEAD )
+F1_CS_TIP=$(f1_git -C "$F1_CS" rev-parse HEAD)
+mk_cs_home() { # <dir> <sha> <installPath>
+  mkdir -p "$1/.claude/plugins"
+  printf '{"version":2,"plugins":{"mh@x":[{"installPath":"%s","gitCommitSha":"%s"}]}}' "$3" "$2" > "$1/.claude/plugins/installed_plugins.json"
+}
+HOME="$EMPTY_HOME" run_check 02 "$F1_CS" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 skill merged to origin/develop, no installed_plugins entry: CRIT (control)"
+else bad "check-02 cache-sha control did not fire CRIT (crit=$CRIT_FOUND)"; fi
+mk_cs_home "$CODEX_TMP/home-cs1" "$F1_CS_BASE" "$DECOY"
+HOME="$CODEX_TMP/home-cs1" run_check 02 "$F1_CS" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$INFO_FOUND" -ge 1 ]; then ok "check-02 skill absent from the cache's build commit passes as INFO"
+else bad "check-02 cache-sha base not used (crit=$CRIT_FOUND info=$INFO_FOUND)"; fi
+mk_cs_home "$CODEX_TMP/home-cs2" "$F1_CS_TIP" "$DECOY"
+HOME="$CODEX_TMP/home-cs2" run_check 02 "$F1_CS" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 skill on the cache's build commit but not in the cache stays CRIT"
+else bad "check-02 skill on the cache commit did not fire CRIT (crit=$CRIT_FOUND)"; fi
+mk_cs_home "$CODEX_TMP/home-cs3" "0000000000000000000000000000000000000000" "$DECOY"
+HOME="$CODEX_TMP/home-cs3" run_check 02 "$F1_CS" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 unresolvable cache sha falls back to origin/develop (CRIT)"
+else bad "check-02 unresolvable cache sha did not fall back (crit=$CRIT_FOUND)"; fi
+mk_cs_home "$CODEX_TMP/home-cs4" "$F1_CS_BASE" "$CODEX_TMP/other-cache"
+HOME="$CODEX_TMP/home-cs4" run_check 02 "$F1_CS" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 installed_plugins entry for another cache is ignored (CRIT)"
+else bad "check-02 used a non-matching installed_plugins entry (crit=$CRIT_FOUND)"; fi
+HARNESS_AUDIT_BASE_REF=origin/develop HOME="$CODEX_TMP/home-cs1" run_check 02 "$F1_CS" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 HARNESS_AUDIT_BASE_REF outranks the cache sha"
+else bad "check-02 cache sha outranked HARNESS_AUDIT_BASE_REF (crit=$CRIT_FOUND)"; fi
 for id in 07 08 09 11 17 18 19 23 32 33; do
   expect_crit   "$id" fleet-bad  --plugin-cache "$CACHE"
   expect_silent "$id" fleet-good --plugin-cache "$CACHE"

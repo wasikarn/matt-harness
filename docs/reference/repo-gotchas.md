@@ -59,12 +59,12 @@ required status checks, so a red run blocks merge.
   hand before committing; the next `claude plugin update` loads a fresh versioned dir anyway
   (the old dir and its hand copy stay behind, harmless), and the agent is usable after the
   next restart without waiting for it (2026-09-06, v1.1.18). Check 02 (skill loadability) needs no
-  hand-copy for a brand-new `skills/<bucket>/<name>/`: a skill whose `SKILL.md` is absent from
-  `origin/develop` (override `HARNESS_AUDIT_BASE_REF`) reports INFO. CRIT returns once the skill
-  is on `origin/develop` but not in the loaded cache, and whenever the audited dir is not its own
-  git toplevel or the base ref does not resolve. Ship a new skill's version bump in the same PR;
-  merged without one, CRIT blocks every commit, the bump commit included, until
-  `HARNESS_AUDIT_BASE_REF=<pre-merge sha>` is set for that commit.
+  hand-copy for a brand-new `skills/<bucket>/<name>/`: a skill whose `SKILL.md` is absent from the
+  commit the loaded cache was built from (`gitCommitSha` in `installed_plugins.json`, else
+  `origin/develop`; override `HARNESS_AUDIT_BASE_REF`) reports INFO, including after its PR merges
+  and before the release is installed. CRIT returns only for a skill that is on that commit but
+  missing from the cache, and whenever the audited dir is not its own git toplevel or the base
+  does not resolve.
 - **The plugin runs every hook machine-wide.** A gate crash locks out every session that has
   `mh@wasikarn` enabled, not just sessions in this repo. A missing sibling `.py` or lib module
   must fail open with a diagnostic, never exit non-zero.
