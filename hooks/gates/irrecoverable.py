@@ -207,11 +207,35 @@ def _mid_merge():
 # no backtracking blowup, so both axes go back to genuinely unbounded,
 # matching the plan ("env -u X FOO=bar sudo nice -n 10 command env claude -p x"
 # now anchors regardless of chain length).
-PREFIX_WRAPPERS = ("env", "command", "nohup", "nice", "time", "sudo")
-_WRAPPER_ALT = r"(?:" + "|".join(PREFIX_WRAPPERS) + r")\b"
+# Wrappers whose own flags may take a space-separated value before the wrapped
+# command (an attached value, "-c3" / "-oL" / "--signal=KILL", is one token and
+# needs no case). timeout/gtimeout also take one DURATION positional; that is
+# handled where the wrapper is unwrapped. exec/setsid take bare flags only.
+# Open-ended by nature: a wrapper missing here (watch, flock, strace, ...) still
+# hides its command, the list covers the ones an everyday one-liner uses.
+FLAG_VALUE_WRAPPERS = {
+    "nice": ("-n",),
+    "ionice": ("-c", "-n"),
+    "stdbuf": ("-i", "-o", "-e"),
+    "timeout": ("-s", "-k", "--signal"),
+    "gtimeout": ("-s", "-k", "--signal"),
+}
+PREFIX_WRAPPERS = ("env", "command", "nohup", "time", "sudo", "exec", "setsid") + tuple(FLAG_VALUE_WRAPPERS)
+# Reserved words that open a command position inside a compound statement
+# ("for x in a; do rm -rf y; done": the segment after ";" starts with "do"), so
+# the real argv0 comes right after them. Stripped at segment start only, never
+# scanned for inside arguments, so `echo do rm -rf x` stays an echo. The same
+# statement split over lines was already denied, only the ";" spelling leaked.
+# Shared by the token windows (below) and the spawn anchor.
+SHELL_KEYWORDS = ("!", "if", "elif", "then", "else", "do", "while", "until", "coproc")
+# A wrapper word must be followed by whitespace, in the lookahead too: with a bare
+# \b a token that only STARTS with one ("timeout=30", "exec-bot") is neither a
+# wrapper nor an ordinary token, the regex dead-ends and the anchor never fires.
+_WRAPPER_ALT = r"(?:" + "|".join(PREFIX_WRAPPERS) + r")(?=\s)"
 _WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"\s+(?:(?!" + _WRAPPER_ALT + r")\S+\s+)*)*"
+_KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in SHELL_KEYWORDS) + r")\s+)*"
 _SPAWN_ANCHOR_RE = re.compile(
-    r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX +
+    r"(?:^|[|;&(]|&&|\|\|)\s*" + _KEYWORD_PREFIX + r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX +
     r"\\?(?:\S*/)?claude(?![-\w./])",
     re.MULTILINE,
 )
@@ -878,6 +902,28 @@ def _blank_redirections(s):
 # splits them out as their own tokens while respecting quotes. ( ) { } get the
 # same treatment so "(rm -rf x)" / "{ rm -rf x; }" do not leave "(" as argv0.
 OPERATORS = {";", "&&", "||", "|", "&", "(", ")", "{", "}"}
+_OPS_LONGEST_FIRST = sorted(OPERATORS, key=len, reverse=True)
+
+# shlex fuses a run of punctuation into ONE token: ");", "&&(", ")|", ")|&", ";;".
+# None of those is in OPERATORS, so the window never split and the next command
+# stayed an argument of the previous one. A token made only of operators is cut
+# back into them; anything with another character (a redirection) is left alone.
+# shlex has already dropped the quotes, so a QUOTED argument of that shape
+# (echo ');' rm -rf x) is split too: an over-deny, the safe direction, and the
+# same limit a quoted ";" always had here.
+def _split_ops(tok):
+    if tok in OPERATORS:
+        return [tok]
+    out, i = [], 0
+    while i < len(tok):
+        for op in _OPS_LONGEST_FIRST:
+            if tok.startswith(op, i):
+                out.append(op)
+                i += len(op)
+                break
+        else:
+            return [tok]
+    return out
 
 # shlex cost is superlinear in the longest SINGLE token (700k chars blows a 2s
 # timeout), so an oversized command denies on length ALONE before shlex runs.
@@ -916,7 +962,7 @@ if _DEPTH_BUDGET_BLOWN[0]:
     deny("command too long to safely tokenize (nested substitution exceeded depth-scan budget) - confirm with user first")
 
 windows, cur = [], []
-for tok in tokens:
+for tok in [p for t in tokens for p in _split_ops(t)]:
     if tok in OPERATORS:
         if cur:
             windows.append(cur)
@@ -975,7 +1021,7 @@ def _unwrap_shell(argv0, rest):
         lex.wordchars += PH + HASH_LIT + PSUB
         lex.whitespace_split = True
         cur = []
-        for tok in list(lex) + [";"]:
+        for tok in [p for t in list(lex) for p in _split_ops(t)] + [";"]:
             if tok in OPERATORS:
                 if cur:
                     windows.append(cur)
@@ -1017,7 +1063,7 @@ def _assignment(t):
     return key, val
 
 for _wi, w in enumerate(windows):
-    while w and _assignment(w[0]):
+    while w and (w[0] in SHELL_KEYWORDS or _assignment(w[0])):
         w = w[1:]
     if not w:
         continue
@@ -1025,8 +1071,9 @@ for _wi, w in enumerate(windows):
 
     # Prefix wrappers unwrap one level per iteration so "env nice rm -rf x" or
     # "sudo rm -rf x" resolve to the real command -- everyday idioms, in scope.
-    # env/nice/sudo take flags+values before the wrapped command; command/nohup/
-    # time only take bare flags. Every flag test strips PH first: a disguised
+    # env/sudo and FLAG_VALUE_WRAPPERS take flags+values before the wrapped
+    # command; command/nohup/time/exec/setsid only take bare flags. Every flag
+    # test strips PH first: a disguised
     # flag ("env $(true)-u FOO") no longer starts with a dash otherwise.
     # Shared with _SPAWN_ANCHOR_RE's wrapper allowance above (module-level
     # PREFIX_WRAPPERS) -- one definition, not two independently-typed lists;
@@ -1049,13 +1096,15 @@ for _wi, w in enumerate(windows):
             if i >= len(rest):
                 break
             argv0, rest = basename(rest[i]), rest[i + 1:]
-        elif argv0 == "nice":
+        elif argv0 in FLAG_VALUE_WRAPPERS:
             i = 0
             while i < len(rest) and rest[i].replace(PH, "").startswith("-"):
                 t = rest[i].replace(PH, "")
                 i += 1
-                if t == "-n" and i < len(rest):
+                if t in FLAG_VALUE_WRAPPERS[argv0] and i < len(rest):
                     i += 1
+            if argv0 in ("timeout", "gtimeout"):
+                i += 1  # the DURATION positional
             if i >= len(rest):
                 break
             argv0, rest = basename(rest[i]), rest[i + 1:]
@@ -1085,7 +1134,7 @@ for _wi, w in enumerate(windows):
             if i >= len(rest):
                 break
             argv0, rest = basename(rest[i]), rest[i + 1:]
-        else:  # command, nohup, time — bare flags then the wrapped command
+        else:  # command, nohup, time, exec, setsid — bare flags then the wrapped command
             i = 0
             while i < len(rest) and rest[i].replace(PH, "").startswith("-"):
                 i += 1
@@ -1333,13 +1382,15 @@ for _wi, w in enumerate(windows):
                 # Bundled short flags: "-qf" means -q -f. Stop scanning a cluster
                 # at a value-taking letter (checkout -b/-B, switch -c/-C) so
                 # "-bfoo" is not misread as -f hiding inside a branch name.
-                def _bundled_force(t, stop_chars):
+                # `flag` is the letter looked for (default -f; commit -n, branch
+                # -d, add -A use the same scan).
+                def _bundled_flag(t, stop_chars, flag="f"):
                     if not (t.startswith("-") and not t.startswith("--")):
                         return False
                     for ch in t[1:]:
                         if ch in stop_chars:
                             return False
-                        if ch == "f":
+                        if ch == flag:
                             return True
                     return False
                 # checkout: "--"/"." = discard; 2+ nonflag = tree-ish + path
@@ -1365,20 +1416,28 @@ for _wi, w in enumerate(windows):
                 if sub == "checkout" and ("--" in scan or "." in scan or
                                             _co_nonflag >= 2 or
                                             any(_is_flag(t.split("=", 1)[0], "--pathspec-from-file") for t in scan) or
-                                            any(t == "-f" or _is_flag(t, "--force") or _bundled_force(t, ("b", "B")) for t in scan)):
+                                            any(t == "-f" or _is_flag(t, "--force") or _bundled_flag(t, ("b", "B")) for t in scan)):
                     deny("git checkout -- / git checkout . / git checkout -f / git checkout <tree> <file> discards working-tree changes — confirm with user first")
-                if sub == "switch" and any(t == "-f" or _is_flag(t, "--force", "--discard-changes") or _bundled_force(t, ("c", "C")) for t in scan):
+                if sub == "switch" and any(t == "-f" or _is_flag(t, "--force", "--discard-changes") or _bundled_flag(t, ("c", "C")) for t in scan):
                     deny("git switch --force discards working-tree changes — confirm with user first")
                 if sub == "branch" and (
                     any(t == "-D" or (t.startswith("-") and not t.startswith("--") and "D" in t) for t in scan)
-                    or (any(_is_flag(t, "--delete") for t in scan) and any(_is_flag(t, "--force") for t in scan))
+                    # -d -f, -df, -fd, -d --force and --delete -f are -D by another spelling.
+                    or (any(_is_flag(t, "--delete") or _bundled_flag(t, "", "d") for t in scan)
+                        and any(_is_flag(t, "--force") or _bundled_flag(t, "", "f") for t in scan))
                 ):
                     deny("git branch -D / --delete --force force-deletes a branch, discarding unmerged commits — confirm with user first")
                 if sub == "stash" and args and args[0].replace(PH, "") in ("drop", "clear"):
                     deny("git stash drop/clear discards stashed changes — confirm with user first")
                 if sub == "commit" and any(_is_flag(t, "--amend") for t in scan):
                     deny("git commit --amend rewrites history — confirm with user first")
-                if sub == "add" and any(t in ("-A", ".") or _is_flag(t, "--all") for t in scan) and not _mid_merge():
+                # `commit -n` is --no-verify (push -n is --dry-run, merge -n --no-stat, so
+                # commit only). Cluster stops at a value-taking letter: -mnew is a message,
+                # -Fnotes.txt a file, -tnotes a template, -uno the untracked-files mode.
+                if sub == "commit" and any(_bundled_flag(t, "mFtu", "n") for t in scan):
+                    deny("git commit -n is --no-verify, it bypasses safety hooks")
+                # -A also arrives bundled (-Af, -fA, -vA); add has no value-taking short flag.
+                if sub == "add" and any(t == "." or _bundled_flag(t, "", "A") or _is_flag(t, "--all") for t in scan) and not _mid_merge():
                     deny("git add -A/. stages everything — stage files by name instead "
                          "(allowed only while a merge is in progress, i.e. MERGE_HEAD exists)")
 

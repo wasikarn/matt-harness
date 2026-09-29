@@ -982,6 +982,135 @@ fi
 test_allow "$IRRECOVERABLE" "realistic longer commit message, well under the GH #140 length cap -> still allows" \
   "$(bash_payload 'git commit -m "Implement feature X with detailed rationale covering edge cases and rollback plan for the release"')"
 
+# 2026-09-29 deep-audit (Codex checker + a wrapper x verb sweep): a denied command hidden by a
+# SPELLING its rule did not know. Every case below was already open before the gate chain (0 flips
+# against the pre-chain gate), none is a regression. (a) command position after a shell keyword
+# (do/then/else/elif/if/while/until/!), a wrapper missing from PREFIX_WRAPPERS (exec, timeout,
+# ...), and the |& pipe; the same commands split over lines were already denied. (b) the short or
+# bundled form of a flag the rule only checked long: commit -n is --no-verify, branch -d -f is -D,
+# add -Af is add -A.
+for _c in \
+  'for d in a b; do rm -rf /tmp/x; done' \
+  'while true; do git reset --hard; done' \
+  'until false; do rm -rf /tmp/x; done' \
+  'if true; then git add -A; fi' \
+  'if false; then :; else rm -rf /tmp/x; fi' \
+  'if false; then :; elif true; then rm -rf /tmp/x; fi' \
+  'if false; then :; elif rm -rf /tmp/x; then :; fi' \
+  'if rm -rf /tmp/x; then echo ok; fi' \
+  'while git reset --hard; do :; done' \
+  'until rm -rf /tmp/x; do :; done' \
+  'while ! rm -rf /tmp/x; do :; done' \
+  'coproc rm -rf /tmp/x' \
+  'for d in a; do FOO=1 rm -rf "$d"; done' \
+  'for d in a; do timeout 5 rm -rf "$d"; done' \
+  '! rm -rf /tmp/x' \
+  'exec rm -rf /tmp/x' \
+  'true |& rm -rf /tmp/x' \
+  'timeout 5 rm -rf /tmp/x' \
+  'timeout -s KILL 5 rm -rf /tmp/x' \
+  'timeout -k 2 -s KILL 5 rm -rf /tmp/x' \
+  'timeout --signal KILL 5 rm -rf /tmp/x' \
+  'gtimeout 5 rm -rf /tmp/x' \
+  'setsid rm -rf /tmp/x' \
+  'stdbuf -oL rm -rf /tmp/x' \
+  'stdbuf -i 0 -e 0 -o 0 rm -rf /tmp/x' \
+  'ionice -c3 rm -rf /tmp/x' \
+  'ionice -c 3 -n 4 rm -rf /tmp/x' \
+  'for d in a; do git commit -n -m x; done' \
+  'git commit -n -m x' \
+  'git commit -nm x' \
+  'git commit -anm x' \
+  'git commit -m x -n' \
+  'git branch -d -f x' \
+  'git branch -df x' \
+  'git branch -fd x' \
+  'git branch -d --force x' \
+  'git branch --delete -f x' \
+  'git branch -r -d -f origin/x' \
+  'git add -Af' \
+  'git add -fA' \
+  'git add -vA' ; do
+  test_deny "$IRRECOVERABLE" "spelling variant still denied: $_c" "$(bash_payload "$_c")"
+done
+test_deny  "$IRRECOVERABLE" "subagent spawns claude through the exec wrapper (spawn guard shares the wrapper list)" \
+  "$(bash_agent_payload 'exec claude -p "x"' fork)"
+test_deny  "$IRRECOVERABLE" "subagent spawns claude through timeout (spawn guard shares the wrapper list)" \
+  "$(bash_agent_payload 'timeout 60 claude -p "x"' fork)"
+# Controls: none of the fixes may deny an ordinary command that only LOOKS similar. The keyword
+# strip applies at command position only, so a keyword used as an argument or inside a quoted
+# message is data, and -n only counts on `commit` (push -n is --dry-run).
+for _c in \
+  'for d in a b; do echo "$d"; done' \
+  'for f in a.txt b.txt; do git add "$f"; done' \
+  'if true; then echo hi; fi' \
+  'while read l; do echo "$l"; done < list.txt' \
+  '! git diff --quiet' \
+  'echo do rm -rf x' \
+  'echo then git add -A' \
+  'git log --grep do' \
+  'true |& cat' \
+  'timeout 5 ls' \
+  'timeout -s KILL 5 make test' \
+  'exec ls' \
+  'setsid ls' \
+  'stdbuf -oL ls' \
+  'ionice -c3 ls' \
+  'git commit -m msg' \
+  'git commit -am msg' \
+  'git commit -mnew' \
+  'git commit -Fnotes.txt' \
+  'git commit -tnotes.txt -m x' \
+  'git commit -uno -m x' \
+  'git commit -m "fix n handling, then rm -rf notes"' \
+  'git push -n' \
+  'git branch -d merged-branch' \
+  'git branch --delete merged-branch' \
+  'git add file.py' \
+  'git add -u' \
+  'git add -p' \
+  'git add -n file.py' \
+  'git add -f ignored.txt' ; do
+  test_allow "$IRRECOVERABLE" "spelling-variant control still allowed: $_c" "$(bash_payload "$_c")"
+done
+
+# Round 2 of the same audit (whole-picture pass over the round-1 fix). (a) Regression the round-1
+# wrapper names introduced: a token that only STARTS with a wrapper word ("timeout=30", "exec-bot")
+# dead-ended the spawn anchor's regex, so `env timeout=30 claude -p x` stopped denying. (b) The spawn
+# anchor did not see loop keywords: `for i in 1; do claude -p x; done`. (c) shlex fuses glued
+# punctuation into ONE token (");", "&&(", ")|", ")|&") that is not in OPERATORS, so the command after
+# it stayed an argument and no rule dispatched on it: `(cd a && make); rm -rf build`.
+test_deny  "$IRRECOVERABLE" "subagent: env timeout=30 claude -p (wrapper-word prefix token must not defeat the spawn anchor)" \
+  "$(bash_agent_payload 'env timeout=30 claude -p "x"' fork)"
+test_deny  "$IRRECOVERABLE" "subagent: sudo -u exec-bot claude -p (same anchor dead end)" \
+  "$(bash_agent_payload 'sudo -u exec-bot claude -p "x"' fork)"
+test_deny  "$IRRECOVERABLE" "subagent: claude -p inside a for/do loop" \
+  "$(bash_agent_payload 'for i in 1; do claude -p "x"; done' fork)"
+test_deny  "$IRRECOVERABLE" "subagent: claude -p after then" \
+  "$(bash_agent_payload 'if true; then claude -p "x"; fi' fork)"
+test_deny  "$IRRECOVERABLE" "subagent: claude -p after !" \
+  "$(bash_agent_payload '! claude -p "x"' fork)"
+test_allow "$IRRECOVERABLE" "subagent control: env timeout=30 with a harmless command" \
+  "$(bash_agent_payload 'env timeout=30 echo hi' fork)"
+test_allow "$IRRECOVERABLE" "subagent control: a for/do loop with no spawn" \
+  "$(bash_agent_payload 'for i in 1; do echo "$i"; done' fork)"
+for _c in \
+  '(cd a && :); rm -rf x' \
+  'cd a&&(git push --force)' \
+  'true;(git commit -n -m x)' \
+  '(true)|rm -rf x' \
+  '(true)|&rm -rf x' \
+  'bash -c "(true);rm -rf x"' ; do
+  test_deny "$IRRECOVERABLE" "glued punctuation still separates commands: $_c" "$(bash_payload "$_c")"
+done
+for _c in \
+  '(cd sub && make); ls' \
+  '(echo a); echo b' \
+  'cd a&&(ls)' \
+  'env timeout=30 ls' ; do
+  test_allow "$IRRECOVERABLE" "glued-punctuation control still allowed: $_c" "$(bash_payload "$_c")"
+done
+
 echo ""
 echo "=== gh merge ask-tier gate (Phase B, 2026-09-28: local defense-in-depth for the PR-review flow) ==="
 test_ask   "$IRRECOVERABLE" "gh pr merge <number>"                "$(bash_payload 'gh pr merge 5')"
