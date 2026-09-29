@@ -1075,6 +1075,7 @@ def basename(p):
 _SHELLS = {"bash", "sh", "zsh", "dash", "ksh"}
 _MAX_SHELL_DEPTH = 5
 _WDEPTH = {}      # window index -> unwrap depth (absent = 0, an original window)
+_XARGS_HANDOVERS = [0]  # windows appended for `xargs <wrapper> ...` (bounded, see the xargs branch)
 _cur_depth = 0
 
 def _unwrap_shell(argv0, rest):
@@ -1083,9 +1084,22 @@ def _unwrap_shell(argv0, rest):
         for i in range(len(rest) - 1):
             t = rest[i].replace(PH, "")
             if t.startswith("-") and not t.startswith("--") and "c" in t:
-                body = rest[i + 1]
-                if body.replace(PH, "") == "--" and i + 2 < len(rest):
-                    body = rest[i + 2]  # `bash -c -- 'body'` runs the body too
+                # The shell keeps parsing options after -c (`bash -c -e 'body'`,
+                # `bash -c -o pipefail 'body'`); the body is the first non-option word,
+                # and `--` / a bare `-` ends the options.
+                # A short cluster ending in o/O (`-o`, `-eo`, `-ceo`) takes the next word as its value.
+                _vf = "o" if argv0 == "zsh" else "oO"  # zsh's -O is a plain flag; only -o takes a value there
+                j = i + (2 if t[-1] in _vf else 1)
+                while j < len(rest):
+                    u = rest[j].replace(PH, "")
+                    if u in ("--", "-"):
+                        j += 1
+                        break
+                    if len(u) > 1 and u[0] in "-+":
+                        j += 2 if (u[-1] in _vf and not u.startswith("--")) else 1
+                        continue
+                    break
+                body = rest[j] if j < len(rest) else None
                 break
     elif argv0 == "eval" and rest:
         body = " ".join(rest)
@@ -1154,8 +1168,12 @@ for _wi, w in enumerate(windows):
     argv0, rest = basename(w[0]), w[1:]
     # A window can start at `-exec` (a second -exec after an escaped `;`) or `--`
     # (xargs -I{} -- CMD splits at the `{}` operator): the command follows.
-    while rest and argv0 in ("-exec", "-execdir", "-ok", "-okdir", "--"):
-        argv0, rest = basename(rest[0]), rest[1:]
+    # `find -exec true {} + -exec CMD {} +`: `{}` splits the window, so the second one starts at `+`.
+    # An index, not repeated slicing: a flood of `-exec` words must stay linear.
+    _k = 0
+    while _k < len(rest) and argv0 in ("-exec", "-execdir", "-ok", "-okdir", "--", "+"):
+        argv0, _k = basename(rest[_k]), _k + 1
+    rest = rest[_k:]
 
     # Prefix wrappers unwrap one level per iteration so "env nice rm -rf x" or
     # "sudo rm -rf x" resolve to the real command -- everyday idioms, in scope.
@@ -1189,8 +1207,10 @@ for _wi, w in enumerate(windows):
             while i < len(rest) and rest[i].replace(PH, "").startswith("-"):
                 t = rest[i].replace(PH, "")
                 i += 1
-                # exec's bundled `-la NAME`: the cluster ends in the value flag
-                bundled = argv0 == "exec" and t.startswith("-") and not t.startswith("--") and t.endswith("a")
+                # exec's bundled `-la NAME`: the cluster's FIRST `a` is its last char, so the
+                # name is the next token. `-alpha` / `-aa` carry the name attached.
+                bundled = argv0 == "exec" and t.startswith("-") and not t.startswith("--") \
+                    and t.find("a", 1) == len(t) - 1
                 if (t in FLAG_VALUE_WRAPPERS[argv0] or bundled) and i < len(rest):
                     i += 1
             if argv0 in ("timeout", "gtimeout"):
@@ -1272,14 +1292,22 @@ for _wi, w in enumerate(windows):
                 break
             argv0, rest = basename(rest[i]), rest[i + 1:]
 
-    _unwrap_shell(argv0, rest)
+    _unwrap_shell(argv0.replace(PH, ""), rest)  # `s$(true)h -c` is still sh
 
     if argv0 == "find":
         # GH #227: find -exec sh -c '<body>' \; hides the body in one token. The shell is the
         # word right after the action flag, not the first shell-named word (-name sh).
-        for j, t in enumerate(rest[:-1]):
-            if t.replace(PH, "") in ("-exec", "-execdir", "-ok", "-okdir") and basename(rest[j + 1]).replace(PH, "") in _SHELLS:
-                _unwrap_shell(basename(rest[j + 1]).replace(PH, ""), rest[j + 2:])
+        # The command after the action flag becomes a window of its own, so a wrapper before
+        # the shell (`-exec env sh -c ...`, `-exec rtk run -c ...`) unwraps like anywhere else.
+        # Each command runs from its flag to the NEXT action flag, so the appended windows
+        # partition `rest` (linear total size): a flood of -exec words, or `find -exec find
+        # -exec find ...`, cannot grow the work past the 8s hook timeout.
+        acts = [j for j, t in enumerate(rest) if t.replace(PH, "") in ("-exec", "-execdir", "-ok", "-okdir")]
+        for n, j in enumerate(acts):
+            sub = rest[j + 1:(acts[n + 1] if n + 1 < len(acts) else len(rest))]
+            if sub:
+                _WDEPTH[len(windows)] = _cur_depth
+                windows.append(sub)
 
     if argv0 == "xargs":
         # xargs args are never free-text prose, so scanning for a dangerous
@@ -1289,6 +1317,16 @@ for _wi, w in enumerate(windows):
         for j, t in enumerate(rest):
             if basename(t).replace(PH, "") in _SHELLS:  # GH #227: xargs sh -c '<body>'
                 _unwrap_shell(basename(t).replace(PH, ""), rest[j + 1:])
+                break
+        for j, t in enumerate(rest):  # xargs env sh -c / xargs rtk run -c: a wrapper hands over the command
+            if basename(t).replace(PH, "") in PREFIX_WRAPPERS:
+                # Each wrapper window re-enters this branch when it hands over another xargs and
+                # copies its tail: chained `xargs env xargs env ...` is quadratic, so bound the chain.
+                _XARGS_HANDOVERS[0] += 1
+                if _XARGS_HANDOVERS[0] > 50:
+                    deny("more than 50 chained xargs wrappers - too complex to scan safely, confirm with user first")
+                _WDEPTH[len(windows)] = _cur_depth
+                windows.append(rest[j:])
                 break
         for j, t in enumerate(rest):
             if basename(t).replace(PH, "") in ("rm", "find", "dd", "git"):

@@ -1054,6 +1054,84 @@ test_allow "$IRRECOVERABLE" "find -exec sh -c, benign body (GH #227)" \
   "$(bash_payload "find . -exec sh -c 'ls {}' \\;")"
 test_allow "$IRRECOVERABLE" "exec -a NAME, benign command (GH #227)" \
   "$(bash_payload 'exec -a foo ls /tmp')"
+# 2026-09-29 deep-audit of #227: exec's -a takes an ATTACHED name too (`exec -alpha CMD` runs CMD
+# with argv0 "lpha"); only a cluster whose first `a` is its last char takes the next token.
+test_deny  "$IRRECOVERABLE" "exec -alpha CMD: attached name, command still runs (audit of #227)" \
+  "$(bash_payload 'exec -alpha rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "exec -aa CMD: attached name (audit of #227)" \
+  "$(bash_payload 'exec -aa rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "exec -afooa CMD: attached name ending in a (audit of #227)" \
+  "$(bash_payload 'exec -afooa git push --force origin main')"
+test_allow "$IRRECOVERABLE" "exec -alpha CMD, benign command (audit of #227)" \
+  "$(bash_payload 'exec -alpha ls /tmp')"
+# Options after -c: bash/sh keep parsing options and take the first non-option word as the body.
+test_deny  "$IRRECOVERABLE" "bash -c -e body (audit of #227)" \
+  "$(bash_payload "bash -c -e 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "sh -c -x body nested (audit of #227)" \
+  "$(bash_payload "sh -c \"sh -c -x 'rm -rf /tmp/x'\"")"
+test_deny  "$IRRECOVERABLE" "bash -c -o pipefail body: -o takes a value (audit of #227)" \
+  "$(bash_payload "bash -c -o pipefail 'rm -rf /tmp/x'")"
+test_allow "$IRRECOVERABLE" "bash -c -e, benign body (audit of #227)" \
+  "$(bash_payload "bash -c -e 'git status'")"
+# find -exec / xargs put a wrapper before the shell or runner.
+test_deny  "$IRRECOVERABLE" "find -exec env sh -c body (audit of #227)" \
+  "$(bash_payload "find . -exec env sh -c 'rm -rf {}' \\;")"
+test_deny  "$IRRECOVERABLE" "find -exec sudo git push --force (audit of #227)" \
+  "$(bash_payload 'find . -exec sudo git push --force origin main \;')"
+test_deny  "$IRRECOVERABLE" "find -exec rtk run -c body (audit of #227)" \
+  "$(bash_payload "find . -exec rtk run -c 'rm -rf {}' \\;")"
+test_deny  "$IRRECOVERABLE" "xargs rtk run -c body (audit of #227)" \
+  "$(bash_payload "echo a | xargs rtk run -c 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "xargs env sh -c body (audit of #227)" \
+  "$(bash_payload "echo a | xargs env sh -c 'rm -rf /tmp/x'")"
+test_allow "$IRRECOVERABLE" "find -exec env sh -c, benign body (audit of #227)" \
+  "$(bash_payload "find . -exec env sh -c 'git status' \\;")"
+test_allow "$IRRECOVERABLE" "xargs rtk run -c, benign body (audit of #227)" \
+  "$(bash_payload "echo a | xargs rtk run -c 'git status'")"
+# A shell name spelled with an empty substitution (`s$(true)h`) is still the shell, under find -exec too.
+test_deny  "$IRRECOVERABLE" "find -exec s\$(true)h -c body: placeholder in the shell name (audit of #227)" \
+  "$(bash_payload 'find . -exec s$(true)h -c '"'"'rm -rf /tmp/x'"'"' \;')"
+test_deny  "$IRRECOVERABLE" "top-level s\$(true)h -c body (audit of #227)" \
+  "$(bash_payload 's$(true)h -c '"'"'rm -rf /tmp/x'"'"'')"
+# Whole-picture pass of the audit: a short-option cluster ending in o/O takes the next word as its
+# value (`-eo pipefail`), including the -c cluster itself (`-ceo pipefail`).
+test_deny  "$IRRECOVERABLE" "bash -c -eo pipefail body: cluster ending in o takes a value (audit of #227)" \
+  "$(bash_payload "bash -c -eo pipefail 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "bash -ceo pipefail body: the -c cluster itself takes a value (audit of #227)" \
+  "$(bash_payload "bash -ceo pipefail 'rm -rf /tmp/x'")"
+test_allow "$IRRECOVERABLE" "bash -c -eo pipefail, benign body (audit of #227)" \
+  "$(bash_payload "bash -c -eo pipefail 'git status'")"
+# In zsh -O is a plain flag (no value), so `zsh -cO body` runs the body; only -o takes a value there.
+test_deny  "$IRRECOVERABLE" "zsh -cO body: -O takes no value in zsh (audit of #227)" \
+  "$(bash_payload "zsh -cO 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "zsh -ceO body (audit of #227)" \
+  "$(bash_payload "zsh -ceO 'rm -rf /tmp/x'")"
+# A `{} +` terminator splits the window, so a second -exec starts with `+`.
+test_deny  "$IRRECOVERABLE" "find -exec true {} + then a second -exec sh -c body (audit of #227)" \
+  "$(bash_payload "find . -exec true {} + -exec sh -c 'rm -rf /x' sh {} +")"
+test_allow "$IRRECOVERABLE" "find -exec true {} + then a benign second -exec (audit of #227)" \
+  "$(bash_payload 'find . -exec true {} + -exec ls {} +')"
+# Fix C appends one window per action flag: a flood of -exec words, or nested `find -exec find`, must
+# stay inside the gate's own 8s hook timeout (the deny must not arrive after the budget).
+_timed_case() {  # <name> <expected rc> <command>
+  local name="$1" want="$2" cmd="$3" t0 rc t1
+  t0=$(date +%s)
+  bash_payload "$cmd" | timeout 10 bash "$IRRECOVERABLE" >/dev/null 2>&1; rc=$?
+  t1=$(( $(date +%s) - t0 ))
+  if [[ "$rc" == "$want" ]] && [ "$t1" -le 4 ]; then
+    echo "  ✅ $name (rc=$rc in ${t1}s)"; pass=$((pass + 1))
+  else
+    echo "  ❌ $name: expected rc=$want within 4s, got rc=$rc in ${t1}s" >&2; fail=$((fail + 1))
+  fi
+}
+_timed_case "find -exec sh -c body followed by 3000 more -exec words is denied fast (audit of #227)" 2 \
+  "$(python3 -c "print(\"find . -exec sh -c 'rm -rf /x' \" + '-exec ' * 3000 + '\\\\;')")"
+_timed_case "3000 chained xargs env xargs is denied fast, not quadratic (audit of #227)" 2 \
+  "$(python3 -c "print('echo a | xargs ' + 'env xargs ' * 3000 + 'git status')")"
+test_allow "$IRRECOVERABLE" "a short xargs env xargs chain, benign (audit of #227)" \
+  "$(bash_payload "echo a | xargs env xargs env git status")"
+_timed_case "25 nested find -exec find stays fast and allowed (audit of #227)" 0 \
+  "$(python3 -c "print('find . ' + '-exec find . ' * 25 + '-print')")"
 # --- git -c core.hooksPath= : the --no-verify-equivalent hook bypass ---
 test_deny  "$IRRECOVERABLE" "git -c core.hooksPath= (hook bypass, space form)" \
   "$(bash_payload 'git -c core.hooksPath=/tmp/evil commit -m x')"
