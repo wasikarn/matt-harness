@@ -313,6 +313,11 @@ impossible, not merely inconvenient. This ADR carves out exactly one exception: 
 may push unconfirmed, but *only* to a `claude/`-prefixed branch, never to `develop` or any other
 branch. This carve-out is the ADR's own explicit grant, not a silent gap in the global rule.
 
+> Correction (2026-09-29): the global rule this carve-out names changed on 2026-09-28. Push no
+> longer requires confirmation by default (`~/.claude/CLAUDE.md`, `# Git`; only a known
+> deploy-on-push branch is hard-blocked), so the carve-out has nothing left to grant. The
+> `claude/`-prefix restriction still stands as this ADR's own scope limit.
+
 ## 4. Enforcement reality
 
 **Stated plainly, not softened:** mh's own PreToolUse/Stop hooks (`hooks/gates/*.py`,

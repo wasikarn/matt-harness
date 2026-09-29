@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# pre-push — refuse a direct push to refs/heads/develop (PR-only, B5's branch
-# protection is the real enforcement; this is local defense-in-depth so a
+# pre-push — refuse a direct push to refs/heads/develop (PR-only, branch
+# protection, docs/reference/branching-model.md, is the real enforcement; this is local defense-in-depth so a
 # rejection is instant instead of a round-trip to GitHub), then run the full
 # parallel gauntlet (scripts/run-gauntlet.sh).
 # Resolve via git: core.hooksPath is shared across linked worktrees.
@@ -12,7 +12,7 @@ ROOT="$(git rev-parse --show-toplevel)"
 # pushed that this hook needs to gate (git's own protocol never invokes a
 # pre-push hook with an empty ref set in the first place) — allowed. Any
 # line that fails to parse into exactly 4 whitespace-separated fields fails
-# CLOSED: this hook is defense-in-depth, not the primary control (B5's branch
+# CLOSED: this hook is defense-in-depth, not the primary control (branch
 # protection is), so a rare false-closed here costs one manual retry, not a
 # security gap from silently letting an unparseable line through.
 while IFS= read -r _line; do

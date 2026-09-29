@@ -19,11 +19,10 @@ path no longer exists, it runs no hooks. Confirmed 2026-08-26 when renaming this
 commit and one push running zero gates. Verify with `test -d "$(git config core.hooksPath)"`.
 Since GH #159 (v1.1.87), `.github/workflows/validate.yml`'s `gauntlet` job also runs
 `scripts/run-gauntlet.sh` on every push/PR — a broken local `core.hooksPath` no longer means the
-gauntlet silently never runs at all; CI still surfaces it, on the pushed commit, as a normal red
-job (confirmed green on a real run 2026-09-12, no `continue-on-error` left). This is advisory,
-not enforced: `develop` has no branch-protection rule, so a red `gauntlet` job doesn't block a
-push or merge — confirmed via `gh api repos/wasikarn/matt-harness/branches/develop/protection`
-returning 404 "Branch not protected."
+gauntlet silently never runs at all; CI still surfaces it, on the PR run, as a normal red
+job (confirmed green on a real run 2026-09-12, no `continue-on-error` left). Since `develop`
+became protected (2026-09-28, `docs/reference/branching-model.md`), that job is one of the 3
+required status checks, so a red run blocks merge.
 
 ## Repo and commit hygiene
 
@@ -59,9 +58,13 @@ returning 404 "Branch not protected."
   Pre-commit needs 0 CRIT. Copy the new `agents/*.md` into the currently loaded cache dir by
   hand before committing; the next `claude plugin update` loads a fresh versioned dir anyway
   (the old dir and its hand copy stay behind, harmless), and the agent is usable after the
-  next restart without waiting for it (2026-09-06, v1.1.18). Check 02 (skill loadability) is the
-  same trap for a brand-new `skills/<bucket>/<name>/` — same fix: hand-copy it into the loaded
-  cache dir before committing (confirmed 2026-09-10, v1.1.60, on a skill removed since).
+  next restart without waiting for it (2026-09-06, v1.1.18). Check 02 (skill loadability) needs no
+  hand-copy for a brand-new `skills/<bucket>/<name>/`: a skill whose `SKILL.md` is absent from the
+  commit the loaded cache was built from (`gitCommitSha` in `installed_plugins.json`, else
+  `origin/develop`; override `HARNESS_AUDIT_BASE_REF`) reports INFO, including after its PR merges
+  and before the release is installed. CRIT returns only for a skill that is on that commit but
+  missing from the cache, and whenever the audited dir is not its own git toplevel or the base
+  does not resolve.
 - **The plugin runs every hook machine-wide.** A gate crash locks out every session that has
   `mh@wasikarn` enabled, not just sessions in this repo. A missing sibling `.py` or lib module
   must fail open with a diagnostic, never exit non-zero.
