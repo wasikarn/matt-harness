@@ -1254,7 +1254,7 @@ for _wi, w in enumerate(windows):
             sub, args = rest[i], rest[i + 1:]
             # drop the value token after a free-text flag so message content
             # (e.g. "commit -m ...rm -rf...") is never pattern-matched.
-            scan, skip = [], False
+            scan_raw, skip = [], False
             for t in args:
                 if skip:
                     skip = False
@@ -1262,11 +1262,18 @@ for _wi, w in enumerate(windows):
                 if t.replace(PH, "") in ("-m", "--message"):
                     skip = True
                     continue
-                scan.append(t)
+                scan_raw.append(t)
             # "$(true)--force" IS "--force" in bash but blanks to "PH--force";
             # strip PH once here so every sub == "..." branch below sees the
-            # flag shape.
-            scan = [t.replace(PH, "") for t in scan]
+            # flag shape. scan_raw (pre-strip) is kept index-aligned alongside
+            # for the PSUB-identity checks below: a glued "$(...)<(...)" token
+            # (no space between them -- one shlex token, "PH_char+PSUB_char")
+            # collapses to a value textually identical to a lone PSUB once PH
+            # is stripped out, wrongly inheriting PSUB's "safe to exclude"
+            # treatment even though the $(...) half is attacker-controlled.
+            # Checking the RAW (pre-strip) token for exact PSUB identity
+            # instead of the stripped one closes that (deep-audit, 2026-09-29).
+            scan = [t.replace(PH, "") for t in scan_raw]
 
             for sub in (KNOWN_GIT_SUBS if (PH in sub or _has_raw_subst(sub)) else (sub,)):
                 if sub == "push" and any(
@@ -1297,8 +1304,29 @@ for _wi, w in enumerate(windows):
                 # allowed). Unlike checkout, a restore pathspec is never a branch
                 # switch, so a worktree-targeting pathspec is always destructive.
                 if sub == "restore":
+                    # A PURE PSUB token is a real nonflag argument but never a
+                    # real worktree pathspec restore could discard (its
+                    # expanded value is always a synthesized "/dev/fd/<n>"
+                    # path) -- same reasoning as checkout's _co_nonflag
+                    # exclusion above; missed here on the first pass, found
+                    # by a deep-audit pass (2026-09-29). Checked against
+                    # scan_raw (pre-PH-strip), not scan, so a glued
+                    # "$(...)<(...)" token that only LOOKS like a lone PSUB
+                    # after stripping still counts (see scan_raw's own
+                    # comment above).
+                    # --pathspec-from-file's VALUE is read by git as a list of
+                    # real pathspecs, so the flag alone means path mode
+                    # regardless of what its argument token looks like --
+                    # excluding a bare PSUB from the nonflag count is wrong
+                    # for THIS flag specifically, since the process
+                    # substitution's OUTPUT, not the token itself, is the
+                    # actual pathspec source (also closes the same gap for
+                    # --pathspec-from-file=<file>/- with no substitution at
+                    # all, GH #189).
                     has_pathspec = ("." in scan or "--" in scan or
-                                    any(not t.startswith("-") for t in scan))
+                                    any(_is_flag(t.split("=", 1)[0], "--pathspec-from-file") for t in scan) or
+                                    any(not t.startswith("-") and traw != PSUB
+                                        for t, traw in zip(scan, scan_raw)))
                     targets_worktree = "--worktree" in scan or "--staged" not in scan
                     if has_pathspec and targets_worktree:
                         deny("git restore discards working-tree changes — confirm with user first")
@@ -1324,10 +1352,19 @@ for _wi, w in enumerate(windows):
                 # value is always a synthesized "/dev/fd/<n>" path, not
                 # attacker-controlled the way "$(...)" is), so it's excluded
                 # here rather than counted toward the tree-ish+path deny.
-                _co_nonflag = len([t for t in scan if not t.startswith("-") and t != PSUB]) - (
+                # Checked against scan_raw (pre-PH-strip), not scan -- see
+                # scan_raw's own comment above; a glued "$(...)<(...)" token
+                # only LOOKS like a lone PSUB after PH-stripping.
+                # --pathspec-from-file is checked separately, unconditionally
+                # of _co_nonflag: its VALUE is read by git as a list of real
+                # pathspecs regardless of how many other nonflag args are
+                # present (deep-audit, 2026-09-29; same reasoning as
+                # restore's identical check above).
+                _co_nonflag = len([t for t, traw in zip(scan, scan_raw) if not t.startswith("-") and traw != PSUB]) - (
                     1 if any(t in ("-b", "-B", "--orphan") for t in scan) else 0)
                 if sub == "checkout" and ("--" in scan or "." in scan or
                                             _co_nonflag >= 2 or
+                                            any(_is_flag(t.split("=", 1)[0], "--pathspec-from-file") for t in scan) or
                                             any(t == "-f" or _is_flag(t, "--force") or _bundled_force(t, ("b", "B")) for t in scan)):
                     deny("git checkout -- / git checkout . / git checkout -f / git checkout <tree> <file> discards working-tree changes — confirm with user first")
                 if sub == "switch" and any(t == "-f" or _is_flag(t, "--force", "--discard-changes") or _bundled_force(t, ("c", "C")) for t in scan):
