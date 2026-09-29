@@ -444,14 +444,14 @@ def _newlines_to_seps(s):
 # still containing PH is duplicate-classified across every KNOWN_DANGEROUS /
 # KNOWN_GIT_SUBS candidate downstream.
 # Closer-search depth-counts same-type brackets so nested spans ("$(echo
-# $(date))", "$(f() { :; }; f)") resolve in one pass; the fixed-point loop stays
-# as defense-in-depth. Out of scope: a bracket hidden behind a quote/escape
-# boundary INSIDE the span (quotes tracked at top level only).
+# $(date))", "$(f() { :; }; f)") resolve in one pass, skipping quoted and
+# escaped brackets inside the span (GH #184, see _find_close); the fixed-point
+# loop stays as defense-in-depth.
 # Each downstream flag comparison strips PH itself (full .replace, not a
 # leading-only strip: a mid-flag PH like --for<PH>ce is an exact-match bypass).
 # Blanking must not DISCARD the body ("$ (git push --force)" is a real deny), so
-# every backtick/$(...)/<(...)/>(...) body is re-appended as its own statement;
-# ${...} bodies are not (parameter expansion, not a command). Single-quoted
+# every backtick/$(...)/${...}/<(...)/>(...) body is re-appended as its own
+# statement (${...} too since GH #185, see its branch). Single-quoted
 # spans are never blanked; double-quoted $(...) IS live in bash -- telling them
 # apart needs the real quote-state scan below, not a regex. A span inside a "#"
 # comment passes through unchanged. <(...)/>(...) (GH #181) is never a real
@@ -500,18 +500,97 @@ def _blank_substitutions(s):
 
     # One left-to-right pass with real quote/comment state; collects
     # backtick/$(...) bodies (never ${...}) into the shared `bodies` list.
-    # `depth_work_used`/`_depth`: only the <(...)/>(...) branch (GH #181)
-    # passes these, to recursively re-scan ITS OWN extracted body for a
-    # nested different-type substitution before splicing it back in verbatim
-    # (a backtick nested inside "<(...)" was found live/unscanned by an
-    # adversarial pass -- see the GH #181 comment on that branch). The
-    # top-level fixed-point loop below never passes them, so its own budget
-    # and depth are unchanged from before. Sharing one `depth_work_used`
+    # `depth_work_used`/`_depth`: passed only by _rescan, which every
+    # substitution branch calls on its extracted body (GH #181 for "<(...)",
+    # GH #185 for the rest). The top-level fixed-point loop below never
+    # passes them, so each pass starts a fresh budget. Sharing one `depth_work_used`
     # list across the whole recursion (never a fresh one per call) keeps the
     # total work bounded by one _DEPTH_SCAN_BUDGET regardless of nesting
     # depth; `_depth` caps the recursion itself, since a budget check alone
     # does not stop Python's own RecursionError on ~1000 properly-closed,
     # budget-cheap nested spans.
+    # Quote-aware closer search shared by "$(", "${", "<(", ">(" (GH #184: the
+    # "$("/"${" searches used to count every raw bracket, so a quoted ")"/"}"
+    # in the body closed the span early). j is the index just past the opener;
+    # returns the index just past the matching closer, or -1. Quotes and
+    # backslash pairs are skipped the way bash skips them when matching (live
+    # check: "${x:-'}'}" and "${x:-\"}\"}" close at the LAST "}", in or out
+    # of double quotes). A word-start "#" comment inside a "(" span is skipped
+    # to the newline (bash does; without it a quote char in the comment made
+    # the search give up, leaving raw "$(" text for shlex -- a regression an
+    # adversarial pass caught). "#" is never a comment inside "${...}" (it is
+    # an operator there: "${#x}", "${x#pat}"). A backtick inside the span is
+    # not modeled: it can only make the search close too early (tail left as
+    # scanned top-level text) or too late (text swallowed into the body), and
+    # every body, "${...}" included, is re-scanned as its own statement.
+    def _find_close(s, j, open_c, close_c, depth_work_used):
+        n = len(s)
+        start = j
+        depth = 1
+        tsq = tdq = False
+        while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
+            depth_work_used[0] += 1
+            tc = s[j]
+            if tsq:
+                if tc == SQ:
+                    tsq = False
+                j += 1
+                continue
+            if tdq:
+                if tc == "\\" and j + 1 < n and s[j + 1] in (DQ, "\\", "$", "`"):
+                    j += 2
+                    continue
+                if tc == DQ:
+                    tdq = False
+                j += 1
+                continue
+            if tc == SQ:
+                tsq = True; j += 1; continue
+            if tc == DQ:
+                tdq = True; j += 1; continue
+            if tc == "\\" and j + 1 < n:
+                j += 2
+                continue
+            if tc == "#" and open_c == "(" and (j == start or s[j - 1] in _REDIRECT_TARGET_STOP):
+                nl = s.find("\n", j)
+                nl = n if nl == -1 else nl
+                depth_work_used[0] += nl - j  # the skip is walked work too
+                j = nl
+                continue
+            if tc == open_c:
+                depth += 1
+            elif tc == close_c:
+                depth -= 1
+            j += 1
+        # Gave up (an unclosed quote or comment in the span, usually a bash
+        # syntax error anyway): fall back to the old naive count, so a give-up
+        # never leaves less blanked than before GH #184. Raw "$(" text is not
+        # safe to hand shlex: "$(true #x) $(git push --force)" left raw lets
+        # a glued ");"-style token (not an operator) hide the next command.
+        if depth:
+            depth, j = 1, start
+            while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
+                depth_work_used[0] += 1
+                if s[j] == open_c:
+                    depth += 1
+                elif s[j] == close_c:
+                    depth -= 1
+                j += 1
+        if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
+            _DEPTH_BUDGET_BLOWN[0] = True
+        return -1 if depth else j
+
+    # GH #185: every extracted body is re-scanned before it is queued, so a
+    # different-type substitution nested in it (a backtick inside "$(...)", a
+    # "$(...)" inside "${x:-...}") is blanked and its own body queued too,
+    # instead of reaching shlex glued to its neighbors. Same shared budget and
+    # depth cap the "<(...)" branch introduced (GH #181).
+    def _rescan(body, depth_work_used, _depth):
+        if _depth < 50:
+            return _scan_once(body, depth_work_used, _depth + 1)
+        _DEPTH_BUDGET_BLOWN[0] = True
+        return body
+
     def _scan_once(s, depth_work_used=None, _depth=0):
         if depth_work_used is None:
             depth_work_used = [0]
@@ -579,40 +658,21 @@ def _blank_substitutions(s):
             if c == "`":
                 j = s.find("`", i + 1)
                 if j != -1:
-                    bodies.append(s[i + 1:j])
+                    bodies.append(_rescan(s[i + 1:j], depth_work_used, _depth))
                     out.append(PH)
                     i = j + 1
                     last_escaped = False
                     continue
-            elif c == "$" and s[i + 1:i + 2] == "(":
-                depth, j = 1, i + 2
-                while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
-                    depth_work_used[0] += 1
-                    if s[j] == "(":
-                        depth += 1
-                    elif s[j] == ")":
-                        depth -= 1
-                    j += 1
-                if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
-                    _DEPTH_BUDGET_BLOWN[0] = True
-                if not depth:
-                    bodies.append(s[i + 2:j - 1])
-                    out.append(PH)
-                    i = j
-                    last_escaped = False
-                    continue
-            elif c == "$" and s[i + 1:i + 2] == "{":
-                depth, j = 1, i + 2
-                while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
-                    depth_work_used[0] += 1
-                    if s[j] == "{":
-                        depth += 1
-                    elif s[j] == "}":
-                        depth -= 1
-                    j += 1
-                if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
-                    _DEPTH_BUDGET_BLOWN[0] = True
-                if not depth:
+            elif c == "$" and s[i + 1:i + 2] in ("(", "{"):
+                # "${...}" is parameter expansion, not a command, but its body
+                # is still queued (GH #185): a "$(...)"/backtick inside a
+                # default ("${x:-$(rm -rf x)}") is live, and _find_close's
+                # too-late case must never swallow a real command unseen.
+                # Cost: a default holding literal ";"-separated danger text
+                # denies -- the fail-closed direction.
+                j = _find_close(s, i + 2, s[i + 1], ")" if s[i + 1] == "(" else "}", depth_work_used)
+                if j != -1:
+                    bodies.append(_rescan(s[i + 2:j - 1], depth_work_used, _depth))
                     out.append(PH)
                     i = j
                     last_escaped = False
@@ -633,72 +693,15 @@ def _blank_substitutions(s):
                 # harmless literal string, not get its quoted body extracted
                 # and re-scanned as a real command (an adversarial pass caught
                 # this as an over-deny regression).
-                # Quote-aware, unlike the sibling "$(...)"/"${...}" closer-
-                # searches above: a ")" inside a quoted string in the body
-                # ("<(echo \")\"; rm -rf x)") is not a real closer, and the
-                # naive count-every-paren approach those siblings use closes
-                # the span early on it, leaving the real dangerous tail as
-                # unblanked literal text (a real regression, caught by an
-                # adversarial pass; the identical gap in "$(...)" itself is
-                # pre-existing and unrelated -- filed as GH #184, not fixed
-                # here).
-                depth, j = 1, i + 2
-                tsq = tdq = False
-                while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
-                    depth_work_used[0] += 1
-                    tc = s[j]
-                    if tsq:
-                        if tc == SQ:
-                            tsq = False
-                        j += 1
-                        continue
-                    if tdq:
-                        if tc == "\\" and j + 1 < n and s[j + 1] in (DQ, "\\", "$", "`"):
-                            j += 2
-                            continue
-                        if tc == DQ:
-                            tdq = False
-                        j += 1
-                        continue
-                    if tc == SQ:
-                        tsq = True; j += 1; continue
-                    if tc == DQ:
-                        tdq = True; j += 1; continue
-                    if tc == "\\" and j + 1 < n:
-                        j += 2
-                        continue
-                    if tc == "(":
-                        depth += 1
-                    elif tc == ")":
-                        depth -= 1
-                    j += 1
-                if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
-                    _DEPTH_BUDGET_BLOWN[0] = True
-                if not depth:
-                    # The extracted body is spliced back as its own top-level
-                    # statement ("\n; " + body) only once, after this whole
-                    # function returns -- never re-examined by this scan loop
-                    # again. A DIFFERENT-type substitution nested inside it
-                    # (a backtick inside "<(...)") would otherwise survive
-                    # unblanked all the way to shlex, still glued to its
-                    # neighbor characters and evading exact-match dispatch
-                    # (an adversarial pass caught this live: "<(echo `rm -rf
-                    # x`)" reached shlex as "`rm", never matching "rm").
-                    # Recursively re-scanning it here (this branch only --
-                    # the sibling "$(...)"/"${...}" branches above share the
-                    # identical gap, confirmed pre-existing, filed as GH
-                    # #185, not fixed here) closes that while a shared
-                    # depth_work_used bounds the total work across every
-                    # recursion level to one budget; _depth caps the
-                    # recursion itself, since a budget check alone doesn't
-                    # stop Python's own RecursionError on a deep chain of
-                    # cheap, properly-closed spans.
-                    body = s[i + 2:j - 1]
-                    if _depth < 50:
-                        body = _scan_once(body, depth_work_used, _depth + 1)
-                    else:
-                        _DEPTH_BUDGET_BLOWN[0] = True
-                    bodies.append(body)
+                # Quote-aware closer (a quoted ")" in "<(echo \")\"; rm -rf
+                # x)" is not a closer) and recursive body re-scan (a backtick
+                # in "<(echo `rm -rf x`)" must not reach shlex as "`rm"): both
+                # were first added here for GH #181 and are now shared with
+                # the "$(...)"/"${...}"/backtick branches above (GH #184/#185)
+                # via _find_close/_rescan.
+                j = _find_close(s, i + 2, "(", ")", depth_work_used)
+                if j != -1:
+                    bodies.append(_rescan(s[i + 2:j - 1], depth_work_used, _depth))
                     out.append(PSUB)
                     i = j
                     last_escaped = False
@@ -761,7 +764,15 @@ def _blank_substitutions(s):
 # only paired, comma/range-shaped brace expansion is special, and only at a
 # word boundary). `git checkout HEAD >out{suffix <realfile>` bypassed the same
 # way the "#" case did before this line excluded them too.
-_REDIRECT_OP_RE = re.compile(r"\d{0,2}(>>|<<<|<<|>&|<&|&>>|&>|>|<)")
+# GH #188: bash 4+'s named-fd form "{var}>file" is a redirect too; its
+# "{var}" prefix used to survive as a literal token. The outer tokenizer (no
+# whitespace_split) then split it into "{" "var" "}" -- "{"/"}" are window
+# breaks in OPERATORS -- so the direct form allowed by accident (and a real
+# "checkout HEAD {fd}>/dev/null <path>" was cut off before <path>, a fail-
+# open), while _unwrap_shell's tokenizer (whitespace_split) kept "{fd}" as one
+# nonflag arg and false-denied `bash -c "git checkout main {fd}>/dev/null"`.
+# Only matched at a word start (bash's own rule; "x{fd}>f" is a literal word).
+_REDIRECT_OP_RE = re.compile(r"(?:\{[A-Za-z_][A-Za-z0-9_]*\}|\d{0,2})(>>|<<<|<<|>&|<&|&>>|&>|>|<)")
 _REDIRECT_TARGET_STOP = set(" \t\n;|&()")
 def _blank_redirections(s):
     out = []
@@ -827,6 +838,8 @@ def _blank_redirections(s):
             last_escaped = False
             continue
         m = _REDIRECT_OP_RE.match(s, i)
+        if m and c == "{" and out and out[-1] not in _REDIRECT_TARGET_STOP:
+            m = None
         if m:
             j = m.end()
             while j < n and s[j] in " \t":
@@ -890,9 +903,10 @@ try:
     lex.wordchars += PH + HASH_LIT + PSUB
     tokens = list(lex)
 except ValueError:
-    # Two causes: (1) a genuinely unbalanced quote; (2) the closer-search above
-    # does not track quotes INSIDE a span, so a span crossing a quote char
-    # desyncs quote state on a valid command. Re-parse the ORIGINAL cmd as a
+    # Two causes: (1) a genuinely unbalanced quote; (2) a blanking pass above
+    # misreads a span's edge (a "#" comment or backtick inside it, which the
+    # closer-search does not model), desyncing quote state on a valid command,
+    # or a re-appended body carries an unpaired quote. Re-parse the ORIGINAL cmd as a
     # predicate: if it parses, the error is self-inflicted (2) and a separator-
     # aware split of the SAME blanked pipeline is used (never the raw cmd: every
     # downstream PH check assumes blanked tokens, and a bare split glues
@@ -1299,7 +1313,13 @@ for _wi, w in enumerate(windows):
                 if sub == "restore":
                     has_pathspec = ("." in scan or "--" in scan or
                                     any(not t.startswith("-") for t in scan))
-                    targets_worktree = "--worktree" in scan or "--staged" not in scan
+                    # GH #189: -W and any --worktree abbreviation (--work)
+                    # count too, bundled or not; a short cluster stops at
+                    # "s" (-s/--source takes a value: "-sW" is source "W").
+                    targets_worktree = "--staged" not in scan or any(
+                        _is_flag(t, "--worktree")
+                        or (t.startswith("-") and not t.startswith("--") and "W" in t.split("s", 1)[0])
+                        for t in scan)
                     if has_pathspec and targets_worktree:
                         deny("git restore discards working-tree changes — confirm with user first")
                 # Bundled short flags: "-qf" means -q -f. Stop scanning a cluster
