@@ -1081,6 +1081,29 @@ _cur_depth = 0
 def _unwrap_shell(argv0, rest):
     body = None
     if argv0 in _SHELLS:
+        # getopt-style scan of the leading option words: every o/O in a cluster takes one following
+        # word (`-oc pipefail`, `-coo a b`; zsh's -O takes none), the -c may sit anywhere in a `-`
+        # cluster (`-Oc`, `-exec` is the letters e,x,e,c), and the tokenizer splits `+e` / `+o name`
+        # into `+` and the letters. The body is the first word after the options.
+        _vf = "o" if argv0 == "zsh" else "oO"
+        _i, _c = 0, False
+        while _i < len(rest):
+            _u = rest[_i].replace(PH, "")
+            if _u in ("--", "-"):
+                _i += 1
+                break
+            if _u == "+" and _i + 1 < len(rest) and rest[_i + 1].replace(PH, "").isalpha():
+                _i += 2 + sum(ch in _vf for ch in rest[_i + 1].replace(PH, ""))
+            elif len(_u) > 1 and _u[0] in "-+" and not _u.startswith("--"):
+                _c = _c or (_u[0] == "-" and "c" in _u)
+                _i += 1 + sum(ch in _vf for ch in _u[1:])
+            elif _u.startswith("--") and len(_u) > 2:
+                _i += 1
+            else:
+                break
+        if _c and _i < len(rest):
+            body = rest[_i]
+    if argv0 in _SHELLS and body is None:
         for i in range(len(rest) - 1):
             t = rest[i].replace(PH, "")
             if t.startswith("-") and not t.startswith("--") and "c" in t:
@@ -1308,6 +1331,15 @@ for _wi, w in enumerate(windows):
             if sub:
                 _WDEPTH[len(windows)] = _cur_depth
                 windows.append(sub)
+        if len(acts) > 1:
+            # A later `-exec` may be a shell's option letters (`bash -c -exec 'body'`), not a find
+            # action: also scan everything after the first action as ONE command. Each such window
+            # can be a find again, so the chain is bounded like the xargs one below.
+            _XARGS_HANDOVERS[0] += 1
+            if _XARGS_HANDOVERS[0] > 50:
+                deny("more than 50 chained find/xargs wrappers - too complex to scan safely, confirm with user first")
+            _WDEPTH[len(windows)] = _cur_depth
+            windows.append(rest[acts[0] + 1:])
 
     if argv0 == "xargs":
         # xargs args are never free-text prose, so scanning for a dangerous
