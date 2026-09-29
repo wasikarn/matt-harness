@@ -42,7 +42,7 @@ Issue tracker: GitHub Issues on `wasikarn/matt-harness` via `gh`. Domain docs: r
 plus `docs/adr/`, created lazily by `mattpocock-skills:domain-modeling`; each file under
 `docs/adr/` carries upstream's optional `status:` frontmatter (`proposed`/`accepted`/
 `deprecated`/`superseded by ADR-NNNN`, per `mattpocock-skills`' `ADR-FORMAT.md`), which mh treats
-as required — revisit at ~6 files in `docs/adr/` (4 as of 2026-09-29; unrelated ADR-numbered records
+as required — revisit at ~6 files in `docs/adr/` (unrelated ADR-numbered records
 under the frozen `docs/research/` are a separate set this convention does not cover).
 
 ## Research: check qmd before web search
@@ -54,7 +54,7 @@ asked to research. Detail: `docs/reference/repo-gotchas.md`.
 
 ## Branching model
 
-`develop` is protected (2026-09-28): no direct push, PR required (`feat/`/`claude/` branch,
+`develop` is protected: no direct push, PR required (`feat/`/`claude/` branch,
 `gh pr create`, review via `mattpocock-skills:code-review`). Each session gets its own worktree; a
 subagent still shares its parent session's worktree, and the memory store + both manifests are
 still shared across every worktree — re-read manifests before writing a version into a commit
