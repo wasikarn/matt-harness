@@ -1476,7 +1476,7 @@ for _wi, w in enumerate(windows):
         # a legitimate operator-approved action. Does NOT constrain a GitHub
         # credential used outside a Claude Code session with mh loaded (a cloud
         # Routine, the web UI, a raw API call) -- see docs/adr/0004-* for that
-        # threat model; branch protection (B5) is the real enforcement there.
+        # threat model; branch protection on develop is the real enforcement there.
         if argv0 == "gh" and rest:
             gh_scan = [t.replace(PH, "") for t in rest]
             if gh_scan[0] == "pr" and "merge" in gh_scan[1:]:
