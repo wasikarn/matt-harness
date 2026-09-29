@@ -422,6 +422,10 @@ check "drift guard read $_n wrapper words from irrecoverable.py PREFIX_WRAPPERS 
 for _w in $_wrappers; do
   rc=$(sgg_rc "$_w git stash"); ok=1; [ "$rc" = "2" ] && ok=0
   check "irrecoverable wrapper word is a wrapper in the guard too: $_w git stash" "$ok"
+  # command and exec are also in the guard's bounded chain, which hides their removal from the wrapper
+  # list when the flag is absent; a flag before the command word only the wrapper walk can skip.
+  rc=$(sgg_rc "$_w -x git stash"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "irrecoverable wrapper word is a wrapper in the guard too, flag before the command: $_w -x git stash" "$ok"
 done
 
 # --- (14) eval / builtin / rtk must not hide the statements after them (deep-audit 4, whole-picture
