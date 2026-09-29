@@ -300,6 +300,49 @@ out=$(echo "not json" | bash "$GATE" 2>/dev/null); rc=$?
 ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && ok=0
 check "malformed stdin: fail-safe allow, exit 0, no stdout" "$ok"
 
+# --- (12) spelling variants (GH #213): the same denied verbs behind a wrapper the anchor did not
+# know, a shell keyword, a bash -c / eval body, or a git global flag with a separate value --- #
+sgg_rc() { payload "$1" fork | bash "$GATE" >/dev/null 2>&1; echo $?; }
+for _c in \
+  'exec git stash' \
+  'timeout 5 git stash' \
+  'gtimeout 5 git stash' \
+  'setsid git stash' \
+  'stdbuf -oL git stash' \
+  'ionice -c3 git stash' \
+  'env timeout=30 git stash' \
+  'for i in 1; do git stash; done' \
+  'while true; do git reset HEAD~1; done' \
+  'until false; do git clean -n; done' \
+  'if true; then git stash; fi' \
+  'if false; then :; else git stash; fi' \
+  '! git stash' \
+  'coproc git stash' \
+  'bash -c "git stash"' \
+  "sh -c 'git stash'" \
+  'zsh -lc "git reset HEAD~1"' \
+  'sudo bash -c "git stash"' \
+  'eval "git stash"' \
+  'git --namespace x stash' \
+  'git --attr-source HEAD stash' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "spelling variant denied for a subagent: $_c" "$ok"
+done
+for _c in \
+  'echo do git stash' \
+  'git commit -m "then git stash"' \
+  'git commit -m "run bash -c '"'"'git stash'"'"'"' \
+  'bash -c "git status"' \
+  'bash -c "git stash list"' \
+  'timeout 5 git status' \
+  'env timeout=30 git status' \
+  'for i in 1; do git stash list; done' \
+  'eval "git status"' \
+  'git --namespace x status' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "spelling-variant control allowed for a subagent: $_c" "$ok"
+done
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]
