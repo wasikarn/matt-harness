@@ -820,6 +820,22 @@ test_deny "$IRRECOVERABLE" 'GH #181 round 3, a git subcommand nested inside the 
 test_deny "$IRRECOVERABLE" 'GH #181 round 3 control: 1000-deep nested <(...) with a real rm -rf innermost fails closed, no crash/traceback' \
   "$(bash_payload "$(python3 -c "print('echo ' + '<(' * 1000 + 'rm -rf hooks/gates/irrecoverable.py' + ')' * 1000)")")"
 
+# GH #188: bash's named-fd redirect "{var}>file" was not a recognized redirect. The outer tokenizer
+# split "{fd}" into "{" "fd" "}" ("{"/"}" are window breaks), cutting the command off before a real
+# pathspec (fail-open); the bash -c/eval tokenizer kept "{fd}" as one nonflag arg (over-deny).
+test_allow "$IRRECOVERABLE" 'GH #188: {fd}>/dev/null on a branch switch allows (bash -c)' \
+  "$(bash_payload 'bash -c "git checkout main {fd}>/dev/null"')"
+test_allow "$IRRECOVERABLE" 'GH #188: {fd}>/dev/null on a branch switch allows (eval)' \
+  "$(bash_payload 'eval "git checkout main {fd}>/dev/null"')"
+test_allow "$IRRECOVERABLE" 'GH #188 control: {fd}>/dev/null on a branch switch allows (direct)' \
+  "$(bash_payload 'git checkout main {fd}>/dev/null')"
+test_deny "$IRRECOVERABLE" 'GH #188: {fd}> redirect does not hide a real tree-ish+path checkout (direct)' \
+  "$(bash_payload 'git checkout HEAD {fd}>/dev/null hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #188 control: same, bash -c' \
+  "$(bash_payload 'bash -c "git checkout HEAD {fd}>/dev/null hooks/gates/irrecoverable.py"')"
+test_deny "$IRRECOVERABLE" 'GH #188 control: a mid-word x{fd}>f is a literal pathspec "x{fd}" plus a plain redirect, not a named fd' \
+  "$(bash_payload 'git checkout main x{fd}>/dev/null')"
+
 # The gate correctly denies each idiom below TODAY, but no test held the deny path, so a
 # mutation to the wrapper-unwrap / hooksPath / branch-delete / backstop logic survived the whole
 # suite (fail-open, undetected).

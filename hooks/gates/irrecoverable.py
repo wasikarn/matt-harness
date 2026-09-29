@@ -761,7 +761,14 @@ def _blank_substitutions(s):
 # only paired, comma/range-shaped brace expansion is special, and only at a
 # word boundary). `git checkout HEAD >out{suffix <realfile>` bypassed the same
 # way the "#" case did before this line excluded them too.
-_REDIRECT_OP_RE = re.compile(r"\d{0,2}(>>|<<<|<<|>&|<&|&>>|&>|>|<)")
+# GH #188: bash 4+'s named-fd form "{var}>file" is a redirect too. Its "{var}"
+# prefix used to survive as text: the outer tokenizer split it into "{" "var"
+# "}" (window breaks), cutting `checkout HEAD {fd}>/dev/null <path>` off before
+# <path> (fail-open), and the bash -c/eval tokenizer (whitespace_split) kept
+# "{fd}" as one nonflag arg (over-deny on a plain branch switch). Only matched
+# at a word start (checked at the call site): "x{fd}>f" is the literal word
+# "x{fd}" followed by a plain ">f" redirect.
+_REDIRECT_OP_RE = re.compile(r"(?:\{[A-Za-z_][A-Za-z0-9_]*\}|\d{0,2})(>>|<<<|<<|>&|<&|&>>|&>|>|<)")
 _REDIRECT_TARGET_STOP = set(" \t\n;|&()")
 def _blank_redirections(s):
     out = []
@@ -827,6 +834,8 @@ def _blank_redirections(s):
             last_escaped = False
             continue
         m = _REDIRECT_OP_RE.match(s, i)
+        if m and c == "{" and (last_escaped or (out and out[-1] not in _REDIRECT_TARGET_STOP)):
+            m = None  # mid-word "{": literal text, not a named fd (GH #188)
         if m:
             j = m.end()
             while j < n and s[j] in " \t":
@@ -865,6 +874,11 @@ def _blank_redirections(s):
                 if tc in _REDIRECT_TARGET_STOP:
                     break
                 k += 1
+            # Leave a space where the redirect was: deleting it outright can
+            # glue the punctuation on either side into one shlex token (")"
+            # + ";" -> ");", not in OPERATORS), hiding the window break before
+            # a dangerous tail (found by the GH #188 differential fuzz).
+            out.append(" ")
             i = k
             last_escaped = False
             continue
