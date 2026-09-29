@@ -102,7 +102,8 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   redirect depends on the binary and version (GH #219).
 - **Validator:** a fresh agent writes its own generator; the builder's generator is never reused.
 - **A piece that still fails after one patch round is dropped.** PR #208's redirect fix took one
-  patch (validator round 1) and merged; shipping only the pieces that pass is how it merged after
-  PR #192 failed.
+  patch (validator round 1) and merged; validator round 2 then found an sh/dash residue, and its
+  fix (PR #218) was the piece dropped, with the residue tracked in GH #219. Shipping only the
+  pieces that pass is how #208 merged after PR #192 failed.
 - **When the shell is ambiguous, check both readings; any deny wins** (GH #219).
 - Attack strings live in files, never in Bash command text, and the gate only classifies them.
