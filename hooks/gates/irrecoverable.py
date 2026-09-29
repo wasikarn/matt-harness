@@ -908,6 +908,9 @@ _OPS_LONGEST_FIRST = sorted(OPERATORS, key=len, reverse=True)
 # None of those is in OPERATORS, so the window never split and the next command
 # stayed an argument of the previous one. A token made only of operators is cut
 # back into them; anything with another character (a redirection) is left alone.
+# shlex has already dropped the quotes, so a QUOTED argument of that shape
+# (echo ');' rm -rf x) is split too: an over-deny, the safe direction, and the
+# same limit a quoted ";" always had here.
 def _split_ops(tok):
     if tok in OPERATORS:
         return [tok]
