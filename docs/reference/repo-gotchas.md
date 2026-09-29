@@ -19,7 +19,7 @@ path no longer exists, it runs no hooks. Confirmed 2026-08-26 when renaming this
 commit and one push running zero gates. Verify with `test -d "$(git config core.hooksPath)"`.
 Since GH #159 (v1.1.87), `.github/workflows/validate.yml`'s `gauntlet` job also runs
 `scripts/run-gauntlet.sh` on every push/PR — a broken local `core.hooksPath` no longer means the
-gauntlet silently never runs at all; CI still surfaces it, on the pushed commit, as a normal red
+gauntlet silently never runs at all; CI still surfaces it, on the PR run, as a normal red
 job (confirmed green on a real run 2026-09-12, no `continue-on-error` left). Since `develop`
 became protected (2026-09-28, `docs/reference/branching-model.md`), that job is one of the 3
 required status checks, so a red run blocks merge.
