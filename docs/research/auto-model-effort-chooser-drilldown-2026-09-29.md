@@ -451,10 +451,10 @@ points below. Nothing here changes the mh decision; it narrows what the evidence
 | Earlier claim | Where | Status |
 |---|---|---|
 | "a genuine runtime auto-chooser is blocked by the platform"; feasibility 0/10 | Verdict, Score | Superseded by Correction 3: a `turn.step` hook set effort on the main loop (experimental API). The decline now rests on Rule 2 (no incident), the experimental status and mh's frontmatter tiering, not on impossibility |
-| Reopen only for an Agent-tool `effort` field or a plugin-honoured settings key | "What would change this verdict" | Additional, not replaced. Governing conditions today: function hooks reach a stable release **and** an incident or a measured cost case appears; the two original triggers still count |
+| Reopen for an Agent-tool `effort` field or a plugin-honoured settings key, "or on a concrete incident" where static tiering chose wrong | "What would change this verdict" | Additional, not replaced: all three original triggers still count, and an incident alone still reopens. Added trigger: function hooks reach a stable release and a measured cost case appears (Correction 4's "stable and a measured cache cost is neutral" line is folded into this one) |
 | "Two open upstream feature requests" (#43326, #60200) | Correction | Fixed in Correction 2 |
 | The settings-file side channel is "plausible, ~6/10" | Correction | Withdrawn in Correction 2; the modelSettings and top-level variants are both refuted by test (Corrections 2 and 5) |
-| "Hook overruns 10 s, fail-open"; "no `turn.step` for background agents" | Correction 2 | Both corrected in Correction 4 |
+| "Hook overruns 10 s, fail-open"; "no `turn.step` for background agents" | Correction 2 | Hook timing corrected in Correction 4; the background-agent claim was made "unproven both ways" in Correction 4 and refuted in Correction 5 (n=2) |
 | "A per-change cache miss" | Correction 4 | Narrowed by Correction 5, and again below |
 | "No gap from Correction 4 remains open except the proxy terms question" | Correction 5 | Wrong; see the open list below |
 
@@ -467,6 +467,8 @@ transcript). What they support is narrower than "direct evidence that the hook's
   (bash-input and bash-stdout lines, apparently the control-file write). Appended messages alone cannot make the earlier prefix miss
   (the read fell back to the system and tools part), but the history did differ, and no request body
   was captured.
+- The one change that missed came in the session's only `!`-bash turn; the two that hit came in
+  cross-session-message turns. Turn type is a second confound with the effort value itself.
 - Consistent reading: the server saw a changed request at that point. It does not show which field
   changed, and the body-level check named in Correction 3 was never done. The other evidence that the
   rewrite took effect is the transcript's recorded effort and the 8x to 27x change in output tokens.
@@ -485,14 +487,16 @@ was actually sent; whether compaction and the memory forks raise `turn.step` on 
 does not see; the cache cost of a per-spawn effort on a fork; and the proxy terms question.
 
 **Wording fixes.** `effort-log` logs each turn's first step (`index === 0`), not each loop's first
-request. The `MH_EFFORT_BOOSTED` reader is `claude/hooks/effort-signal-report.sh` in the operator's
-dotfiles, at lines 118 and 121 (lines 93 to 94 are the boost branch that motivates the claim). In the
+request. `claude/hooks/effort-signal-report.sh` in the operator's dotfiles reads `MH_EFFORT_BOOSTED` at line 94;
+lines 118 and 121 emit the "claude-shim did not boost this launch" messages. In the
 top-level `effortLevel` test the model's own default is `high`, so the turn-1 `low` can only have come
 from the file. `effort-log` ignored `process.run`'s exit code (a failed append vanished); fixed in
 dotfiles commit `b21d0d9f`, which now logs the exit code and stderr.
 
-**The Correction 3 probe, quoted** (its source folder was deleted after the run, so the "recheck with the
-same probe" in Corrections 2 and 3 had nothing to run). A function-hooks plugin, loaded with
+**The Correction 3 probe, condensed** (its source folder was deleted after the run; the full `Write` is
+recoverable from the operator session transcript. The real source also logs an `effortOut` column, which
+is the same value as `target` whenever the hook rewrites, so it is not a measurement. Correction 3's
+"recheck" needs this probe rewritten). A function-hooks plugin, loaded with
 `--plugin-dir` and `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`; a `control.txt` beside it holds `off`, `low`,
 `medium`, `high`, `xhigh` or `max`, changed between turns:
 
