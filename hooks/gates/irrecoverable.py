@@ -1122,8 +1122,10 @@ def _shell_body(argv0, rest, getopt, need_c=True):
             i += 2 if u in _LONG_VALUE_OPTS else 1
         else:
             break
-    if (seen_c or not need_c) and i < len(rest):
+    if seen_c and i < len(rest):
         return rest[i]
+    if not need_c and i < len(rest):
+        return " ".join(rest[i:])  # ksh joins every operand word into the command string
     # Fallback (a script word before -c, `--rcfile FILE -c body`): the first `-c` cluster anywhere.
     for i in range(len(rest) - 1):
         t = rest[i].replace(PH, "")
@@ -1160,11 +1162,13 @@ def _unwrap_shell(argv0, rest):
             b = _shell_body(argv0, rest, g)
             if b and b not in bodies:
                 bodies.append(b)
-        if argv0 == "ksh" and not bodies:
-            # ksh93 runs a first operand that is not a readable file as the command string
-            # (`ksh 'rm -rf x'`); a script name scans as harmless text, so it is read as a body too.
+        if argv0 == "ksh":
+            # ksh93 runs a first operand that is not a readable file as the command string and joins
+            # the later words into it (`ksh 'echo a' --hard` runs `echo a --hard`; a later -c is part
+            # of that string). A script name scans as harmless text, so it is read as a body too.
             b = _shell_body(argv0, rest, True, need_c=False)
-            bodies = [b] if b else []
+            if b and b not in bodies:
+                bodies.append(b)
     else:
         return
     for body in bodies:

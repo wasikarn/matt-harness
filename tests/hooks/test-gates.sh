@@ -1152,6 +1152,16 @@ test_deny  "$IRRECOVERABLE" "ksh -o pipefail 'body' with no -c (audit 3 of #227)
   "$(bash_payload "ksh -o pipefail 'rm -rf /tmp/x'")"
 test_allow "$IRRECOVERABLE" "ksh with a script operand and a benign later word (audit 3 of #227)" \
   "$(bash_payload "ksh deploy.sh 'git status'")"
+# ksh joins every operand word into the command string (`ksh 'echo a' --hard` runs `echo a --hard`), and a
+# -c after the operand is part of that string, not an option (blind-spot pass, audit 3 of #227).
+test_deny  "$IRRECOVERABLE" "ksh operand then -c: the operand is still the command (audit 3 of #227)" \
+  "$(bash_payload "ksh 'rm -rf /tmp/x' -c true")"
+test_deny  "$IRRECOVERABLE" "ksh -- operand then -c (audit 3 of #227)" \
+  "$(bash_payload "ksh -- 'rm -rf /tmp/x' -c true")"
+test_deny  "$IRRECOVERABLE" "ksh operands joined: 'git reset' --hard (audit 3 of #227)" \
+  "$(bash_payload "ksh 'git reset' --hard")"
+test_allow "$IRRECOVERABLE" "ksh benign operand then -c (audit 3 of #227)" \
+  "$(bash_payload "ksh 'git status' -c true")"
 # Under find, `-exec` after `bash -c` is bash's option letters (e x e c), not a second find action.
 test_deny  "$IRRECOVERABLE" "find -exec bash -c -exec body: -exec is a shell cluster (gap follow-up to #227)" \
   "$(bash_payload "find . -exec bash -c -exec 'rm -rf /tmp/x' \\;")"
