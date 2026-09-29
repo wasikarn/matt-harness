@@ -836,6 +836,22 @@ test_deny "$IRRECOVERABLE" 'GH #188 control: same, bash -c' \
 test_deny "$IRRECOVERABLE" 'GH #188 control: a mid-word x{fd}>f is a literal pathspec "x{fd}" plus a plain redirect, not a named fd' \
   "$(bash_payload 'git checkout main x{fd}>/dev/null')"
 
+# GH #189: `git restore --staged` plus -W or a --worktree abbreviation still targets the worktree.
+test_deny "$IRRECOVERABLE" 'GH #189: git restore --staged -W <path> discards worktree changes' \
+  "$(bash_payload 'git restore --staged -W hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #189: git restore --staged --work <path> (abbreviation) discards worktree changes' \
+  "$(bash_payload 'git restore --staged --work hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #189: git restore --staged -qW <path> (bundled) discards worktree changes' \
+  "$(bash_payload 'git restore --staged -qW hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #189 control: git restore --staged --worktree <path> still denies' \
+  "$(bash_payload 'git restore --staged --worktree hooks/gates/irrecoverable.py')"
+test_allow "$IRRECOVERABLE" 'GH #189 control: git restore --staged <path> alone (index only) allows' \
+  "$(bash_payload 'git restore --staged hooks/gates/irrecoverable.py')"
+test_allow "$IRRECOVERABLE" 'GH #189 control: -sW is -s (source) with value W, not -W, so --staged -sW <path> allows' \
+  "$(bash_payload 'git restore --staged -sW hooks/gates/irrecoverable.py')"
+test_allow "$IRRECOVERABLE" 'GH #189 control: after -- every token is a pathspec, so --staged -- -Wfile allows' \
+  "$(bash_payload 'git restore --staged -- -Wfile')"
+
 # The gate correctly denies each idiom below TODAY, but no test held the deny path, so a
 # mutation to the wrapper-unwrap / hooksPath / branch-delete / backstop logic survived the whole
 # suite (fail-open, undetected).

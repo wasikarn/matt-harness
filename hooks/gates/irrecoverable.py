@@ -1341,7 +1341,15 @@ for _wi, w in enumerate(windows):
                                     any(_is_flag(t.split("=", 1)[0], "--pathspec-from-file") for t in scan) or
                                     any(not t.startswith("-") and traw != PSUB
                                         for t, traw in zip(scan, scan_raw)))
-                    targets_worktree = "--worktree" in scan or "--staged" not in scan
+                    # GH #189: -W (bundled too) and any --worktree
+                    # abbreviation ("--work") count; a short cluster stops at
+                    # "s" (-s takes a value: "-sW" is source "W"). After "--"
+                    # every token is a pathspec ("-- -Wfile").
+                    _opts = scan[:scan.index("--")] if "--" in scan else scan
+                    targets_worktree = "--staged" not in _opts or any(
+                        _is_flag(t, "--worktree")
+                        or (t.startswith("-") and not t.startswith("--") and "W" in t.split("s", 1)[0])
+                        for t in _opts)
                     if has_pathspec and targets_worktree:
                         deny("git restore discards working-tree changes — confirm with user first")
                 # Bundled short flags: "-qf" means -q -f. Stop scanning a cluster
