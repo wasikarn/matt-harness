@@ -128,7 +128,8 @@ the plugin ships no preload-only skills.
    (item 9); a top-down artifact leads with it instead. A structured multi-field report follows
    its own analysis order instead — item 9 doesn't apply.
 9. Run `bash skills/meta/harness-audit/scripts/audit.sh`; checks 04, 09, 24, 41, 54
-   touch new agents directly.
+   touch new agents directly; check 29 flags over-forceful imperatives in a `description:` only
+   (INFO), so the body is covered by item 10, not the audit.
 10. Name the check, not the intensity. Write "run the tests covering the changed behavior and
     report what was not checked", never "verify everything thoroughly" or "CRITICAL: you MUST use
     <tool>". Current models follow instructions literally and over-trigger on blanket or
