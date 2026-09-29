@@ -956,6 +956,26 @@ test_allow "$IRRECOVERABLE" "rtk gain (GH #216 control: rtk meta command)" \
   "$(bash_payload 'rtk gain')"
 test_allow "$IRRECOVERABLE" "rtk proxy git status (GH #216 control)" \
   "$(bash_payload 'rtk proxy git status')"
+# rtk run/err/test/summary join their args and run them through `sh -c` (verified live: a quoted
+# `;` starts a second command), unlike `rtk proxy`, which executes its args as an argv.
+test_deny  "$IRRECOVERABLE" "rtk run 'rm -rf' (GH #216: one quoted string is a shell line)" \
+  "$(bash_payload "rtk run 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "rtk err 'git push --force' (GH #216)" \
+  "$(bash_payload "rtk err 'git push --force origin main'")"
+test_deny  "$IRRECOVERABLE" "rtk test 'git reset --hard' (GH #216)" \
+  "$(bash_payload "rtk test 'git reset --hard'")"
+test_deny  "$IRRECOVERABLE" "rtk summary 'find -delete' (GH #216)" \
+  "$(bash_payload "rtk summary 'find . -delete'")"
+test_deny  "$IRRECOVERABLE" "rtk run echo 'x;' rm -rf (GH #216: quoted separator joins into a second command)" \
+  "$(bash_payload "rtk run echo 'hi;' rm -rf /tmp/x")"
+test_deny  "$IRRECOVERABLE" "rtk err true 'x;' rm -rf (GH #216)" \
+  "$(bash_payload "rtk err true 'x;' rm -rf /tmp/x")"
+test_allow "$IRRECOVERABLE" "rtk err 'ls -la' (GH #216 control)" \
+  "$(bash_payload "rtk err 'ls -la'")"
+test_allow "$IRRECOVERABLE" "rtk test 'echo hi' (GH #216 control)" \
+  "$(bash_payload "rtk test 'echo hi'")"
+test_allow "$IRRECOVERABLE" "rtk summary 'git status' (GH #216 control)" \
+  "$(bash_payload "rtk summary 'git status'")"
 test_deny  "$IRRECOVERABLE" "nice -n 5 rm -rf (nice with value flag)" \
   "$(bash_payload 'nice -n 5 rm -rf /tmp/x')"
 test_deny  "$IRRECOVERABLE" "nice rm -rf (bare nice wrapper)" \

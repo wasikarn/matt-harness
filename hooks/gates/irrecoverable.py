@@ -221,10 +221,13 @@ FLAG_VALUE_WRAPPERS = {
     "gtimeout": ("-s", "-k", "--signal"),
 }
 PREFIX_WRAPPERS = ("env", "command", "nohup", "time", "sudo", "exec", "setsid", "rtk") + tuple(FLAG_VALUE_WRAPPERS)
-# GH #216: `rtk` runs the command after it. `rtk proxy|err|test|summary <cmd...>` take a
-# command, `rtk run` takes `-c <body>` or a command, and every other rtk verb (find, git, ls,
-# psql, ...) dispatches to the real tool of that name, so it is classified as that tool.
-_RTK_RUNNERS = ("proxy", "err", "test", "summary")
+# GH #216: `rtk` runs the command after it. `rtk proxy <cmd...>` executes its args as an argv;
+# `rtk err|test|summary <args>` and `rtk run <args>` join the args and run them through `sh -c`
+# (so one quoted string, or a quoted `;`, is a shell command line: verified live with touch);
+# `rtk run -c <body>` is a shell body. Every other rtk verb (find, git, ls, psql, ...)
+# dispatches to the real tool of that name, so it is classified as that tool.
+_RTK_RUNNERS = ("proxy",)
+_RTK_SHELL_RUNNERS = ("err", "test", "summary")
 # Reserved words that open a command position inside a compound statement
 # ("for x in a; do rm -rf y; done": the segment after ";" starts with "do"), so
 # the real argv0 comes right after them. Stripped at segment start only, never
@@ -1185,12 +1188,17 @@ for _wi, w in enumerate(windows):
                     break
                 if j >= len(rest):
                     break
-                argv0, rest = basename(rest[j]), rest[j + 1:]
-            elif sub in _RTK_RUNNERS:
+                # positional args are joined and run through `sh -c` (verified live)
+                argv0, rest = "sh", ["-c", " ".join(rest[j:])]
+                break
+            elif sub in _RTK_RUNNERS or sub in _RTK_SHELL_RUNNERS:
                 j = i + 1
                 while j < len(rest) and rest[j].replace(PH, "").startswith("-"):
                     j += 1
                 if j >= len(rest):
+                    break
+                if sub in _RTK_SHELL_RUNNERS:
+                    argv0, rest = "sh", ["-c", " ".join(rest[j:])]
                     break
                 argv0, rest = basename(rest[j]), rest[j + 1:]
             else:  # an rtk verb that dispatches to the real tool of the same name
