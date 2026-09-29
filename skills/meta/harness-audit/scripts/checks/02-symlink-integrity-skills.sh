@@ -13,6 +13,25 @@
 # behavior below). If it does not, AND $PLUGIN_ACTIVE=0, neither delivery
 # mechanism is configured here at all — downgrade to one aggregated WARN
 # instead of one CRIT per skill, and skip the loop.
+#
+# Bootstrap (GH #204): the plugin cache is built from committed state, so a brand-new skill can
+# never be in it on its first commit, and this repo denies --no-verify and does not symlink plugin
+# skills. A skill whose SKILL.md is absent from the base ref (HARNESS_AUDIT_BASE_REF, default
+# origin/develop) is reported as INFO instead. Fails closed (CRIT stays) unless CLAUDE_DIR is its
+# own git toplevel and the base ref resolves, so fixtures and stale checkouts get no exemption.
+f1_new_vs_base() {
+  local dir="${1%/}" base="${HARNESS_AUDIT_BASE_REF:-origin/develop}" top rel
+  top=$(env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "$CLAUDE_DIR" rev-parse --show-toplevel 2>/dev/null) || return 1
+  [ "$(cd -P "$CLAUDE_DIR" && pwd)" = "$(cd -P "$top" && pwd)" ] || return 1
+  env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "$CLAUDE_DIR" rev-parse --verify -q "$base^{commit}" >/dev/null 2>&1 || return 1
+  rel="${dir#"$CLAUDE_DIR"/}"
+  # ls-tree exits 0 with empty output for an absent path but non-zero on a git error (missing
+  # object in a shallow or partial clone); cat-file -e and rev-parse --verify both exit non-zero
+  # for either, which would read an error as "absent" and fail open.
+  local hit
+  hit=$(env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "$CLAUDE_DIR" ls-tree --name-only "$base" -- "$rel/SKILL.md" 2>/dev/null) || return 1
+  [ -z "$hit" ]
+}
 if [ "${PLUGIN_ACTIVE:-0}" -eq 0 ] && [ ! -d "$HOME/.claude/skills" ]; then
   warn "no plugin cache and no ~/.claude/skills symlink farm present — skill loadability unverified in this environment (expected on a clean CI checkout; not a per-skill finding)"
 else
@@ -36,7 +55,11 @@ for d in "$CLAUDE_DIR/skills"/*/ "$CLAUDE_DIR/skills"/*/*/; do
     [ "$name" = "$locked" ] && continue 2
   done
   if [ ! -L "$HOME/.claude/skills/$name" ] && ! is_plugin_delivered skills "$name"; then
-    crit "skill '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
+    if f1_new_vs_base "$d"; then
+      info "skill '$name' is new vs ${HARNESS_AUDIT_BASE_REF:-origin/develop}; loadability is deferred to the plugin update after merge"
+    else
+      crit "skill '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
+    fi
   fi
 done
 fi

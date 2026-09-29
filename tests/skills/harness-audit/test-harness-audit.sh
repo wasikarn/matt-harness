@@ -295,6 +295,47 @@ for id in 02 03; do
   HOME="$EMPTY_HOME" expect_silent "$id" fleet-good --plugin-cache "$CACHE"
   HOME="$EMPTY_HOME" expect_crit   "$id" fleet-good --plugin-cache "$DECOY"
 done
+# Check 02 bootstrap (GH #204): a skill absent from the base ref (default origin/develop) passes as
+# INFO, since the plugin cache is built from committed state and cannot hold it yet. A skill already
+# on the base ref, or a repo with no base ref, stays CRIT. Repos are built here (not fixtures under
+# known-bad/) because the rule needs the audited dir to be its own git toplevel.
+f1_git() { env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -c core.hooksPath=/dev/null -c commit.gpgsign=false -c user.name=t -c user.email=t@t "$@"; }
+# mk_f1_repo <dir> <skill-on-base:0|1> <base-ref:0|1>: base commit, then newskill in the working tree.
+mk_f1_repo() {
+  mkdir -p "$1/skills/meta/newskill"
+  ( cd "$1" && f1_git init -q && : > skills/.keep
+    if [ "$2" = 1 ]; then printf -- '---\nname: newskill\ndescription: Use when testing F1.\n---\n' > skills/meta/newskill/SKILL.md; fi
+    f1_git add skills && f1_git commit -q -m base
+    if [ "$3" = 1 ]; then f1_git update-ref refs/remotes/origin/develop HEAD; fi
+    printf -- '---\nname: newskill\ndescription: Use when testing F1.\n---\n' > skills/meta/newskill/SKILL.md )
+}
+F1_NEW="$CODEX_TMP/f1-new"; mk_f1_repo "$F1_NEW" 0 1
+HOME="$EMPTY_HOME" run_check 02 "$F1_NEW" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -eq 0 ] && printf '%s\n' "$OUT" | /usr/bin/grep -E '^ *INFO ' | /usr/bin/grep -q 'newskill'; then ok "check-02 skill new vs base ref passes as INFO (no symlink needed)"
+else bad "check-02 skill new vs base ref did not pass as INFO (crit=$CRIT_FOUND info=$INFO_FOUND)"; fi
+F1_OLD="$CODEX_TMP/f1-old"; mk_f1_repo "$F1_OLD" 1 1
+HOME="$EMPTY_HOME" run_check 02 "$F1_OLD" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 skill already on base ref stays CRIT"
+else bad "check-02 skill already on base ref did not fire CRIT (crit=$CRIT_FOUND)"; fi
+# Hook context: pre-commit/pre-push export GIT_DIR/GIT_INDEX_FILE for the outer repo; the check must ignore them.
+GIT_DIR="$(git rev-parse --absolute-git-dir)" GIT_INDEX_FILE="$CODEX_TMP/no-such-index" HOME="$EMPTY_HOME" run_check 02 "$F1_NEW" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$INFO_FOUND" -ge 1 ]; then ok "check-02 new-skill INFO survives exported GIT_DIR/GIT_INDEX_FILE"
+else bad "check-02 new-skill INFO broke under exported GIT_DIR (crit=$CRIT_FOUND info=$INFO_FOUND)"; fi
+# Toplevel guard: the same new skill audited from a subdirectory of a git repo gets no exemption.
+F1_SUB="$CODEX_TMP/f1-sub"; mk_f1_repo "$F1_SUB" 0 1; mkdir -p "$F1_SUB/sub" && mv "$F1_SUB/skills" "$F1_SUB/sub/skills"
+HOME="$EMPTY_HOME" run_check 02 "$F1_SUB/sub" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 toplevel guard: audited subdir gets no exemption"
+else bad "check-02 toplevel guard missing: subdir new skill did not fire CRIT (crit=$CRIT_FOUND)"; fi
+# Error is not absence: base commit resolves but its skills tree object is gone (shallow/partial clone).
+F1_BROKEN="$CODEX_TMP/f1-broken"; mk_f1_repo "$F1_BROKEN" 1 1
+_t=$(f1_git -C "$F1_BROKEN" rev-parse origin/develop:skills); mv "$F1_BROKEN/.git/objects/${_t:0:2}/${_t:2}" "$CODEX_TMP/f1-broken-tree"
+HOME="$EMPTY_HOME" run_check 02 "$F1_BROKEN" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 git error on the base tree fails closed (CRIT)"
+else bad "check-02 git error on the base tree read as absent (crit=$CRIT_FOUND)"; fi
+F1_NOREF="$CODEX_TMP/f1-noref"; mk_f1_repo "$F1_NOREF" 0 0
+HOME="$EMPTY_HOME" run_check 02 "$F1_NOREF" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 no base ref fails closed (CRIT)"
+else bad "check-02 no base ref did not fail closed (crit=$CRIT_FOUND)"; fi
 for id in 07 08 09 11 17 18 19 23 32 33; do
   expect_crit   "$id" fleet-bad  --plugin-cache "$CACHE"
   expect_silent "$id" fleet-good --plugin-cache "$CACHE"
