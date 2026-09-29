@@ -10,6 +10,12 @@ import subprocess
 import tempfile
 import time
 
+# A git hook exports GIT_DIR; the subprocess `git init` below would then target the real repo
+# (GH #234, tests/scripts/test-git-env-unset-lint.sh).
+for _k in ("GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
+           "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_COMMON_DIR", "GIT_NAMESPACE"):
+    os.environ.pop(_k, None)
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 # SUT (memory-lint.py) stayed at skills/meta/memory-lint/scripts/ per the no-move
 # rule — Claude Code skill invocation contract relies on ${CLAUDE_SKILL_DIR}/scripts/.

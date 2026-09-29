@@ -28,6 +28,16 @@ while IFS= read -r f; do
   fi
 done < <(find "$ROOT/tests" -type f -name '*.sh' | sort)
 
+# Python tests: a subprocess `git init` inherits the hook's GIT_DIR too; the file must scrub it.
+while IFS= read -r f; do
+  rel="${f#"$ROOT"/}"
+  /usr/bin/grep -qE '"git", "init"' "$f" || continue
+  checked=$((checked + 1))
+  /usr/bin/grep -q 'GIT_DIR' "$f" \
+    && ok "$rel scrubs GIT_*" \
+    || bad "$rel runs git init in a subprocess but never scrubs GIT_DIR from os.environ"
+done < <(find "$ROOT/tests" -type f -name '*.py' | sort)
+
 [ "$checked" -ge 5 ] && ok "lint saw $checked repo-building test files (not vacuous)" \
   || bad "lint saw only $checked repo-building test files; the pattern no longer matches"
 
