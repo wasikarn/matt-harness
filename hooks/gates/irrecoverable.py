@@ -775,7 +775,7 @@ _REDIRECT_OP_RE = re.compile(
     r"\{[A-Za-z_][A-Za-z0-9_]*\}(?:>>|<<<|<<|>&|<&|>\||<>|>|<)"
     r"|\d{0,2}(?:>>|<<<|<<|>&|<&|&>>|&>|>\||<>|>|<)")
 _REDIRECT_TARGET_STOP = set(" \t\n;|&()")
-def _blank_redirections(s):
+def _blank_redirections(s, named_fd=True):
     out = []
     in_squote = in_dquote = in_comment = False
     # See _newlines_to_seps's own comment: an escaped separator is still a
@@ -842,7 +842,8 @@ def _blank_redirections(s):
         # mid-word "{": literal text, not a named fd (GH #188). After an
         # escaped char ("x\ {fd}>f") it is still read as a redirect: keeping
         # "{" as text lets the outer tokenizer break the window at "{".
-        if m and c == "{" and out and out[-1] not in _REDIRECT_TARGET_STOP:
+        # sh/dash have no named fds at all (named_fd=False): "{fd}" is an argument.
+        if m and c == "{" and (not named_fd or (out and out[-1] not in _REDIRECT_TARGET_STOP)):
             m = None
         if m:
             j = m.end()
@@ -993,7 +994,7 @@ def _unwrap_shell(argv0, rest):
              "(claude -p/--print/--agent/--bg/--worktree), inside bash -c / eval either "
              "-- only the main session dispatches")
     try:
-        lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(body))), posix=True, punctuation_chars=True)
+        lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(body)), argv0 not in ("sh", "dash")), posix=True, punctuation_chars=True)
         lex.wordchars += PH + HASH_LIT + PSUB
         lex.whitespace_split = True
         cur = []
