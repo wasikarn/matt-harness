@@ -79,6 +79,14 @@ frontier models giving their own model family 75-84% win rates in self-judged co
   `tests/evals/test-eval-cases.sh` keeps the cases loadable until it opens and proves every
   regex grader against its fixture or verdict sample.
 - `gate:task:complete-separation` makes the rule mechanical for task state.
+- A finding from a reviewer/checker (Codex adversarial pass, `blind-spot-hunter`, any Rule-13
+  validator) is not self-authorizing: applying its fix still needs the human's own
+  confirm-then-fix gate, even when the finding is clearly real and the same session already ran
+  one such gate earlier in the same audit. This has lapsed under task momentum twice
+  (2026-09-25, 2026-09-29) with the model itself having read the rule going in both times —
+  knowing the rule in the abstract does not stop it lapsing under momentum, so treat "does this
+  finding still need its own gate" as a checklist item at the moment a finding is confirmed, not
+  something inferred from having asked once already in the same run.
 
 The same rule at fan-in: when N subagent outputs feed one synthesis, agreement and conflict are
 surfaced explicitly and malformed entries are dropped by a stated rule, not by the synthesizing

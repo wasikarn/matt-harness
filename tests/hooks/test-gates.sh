@@ -733,8 +733,9 @@ test_deny "$IRRECOVERABLE" 'GH #178 round 2 control: a backslash-escaped # itsel
 # word-boundary gap GH #178 fixed for a plain mid-word "#" -- unlike "$(...)"/backtick, this file
 # never recognized <(...)/>(...) at all, so its closing ")" reached the "#"-boundary check as a
 # bare character (")" is in _REDIRECT_TARGET_STOP, wrongly read as a real word break). Fixed by
-# blanking <(...)/>(...) to PH (same as "$(...)") before _blank_redirections or the "#"-boundary
-# check ever see it, with the body re-appended and re-scanned like a real $(...) body.
+# blanking <(...)/>(...) to PSUB (its own placeholder, distinct from "$(...)"'s PH -- see PSUB's
+# own comment) before _blank_redirections or the "#"-boundary check ever see it, with the body
+# re-appended and re-scanned like a real $(...) body.
 test_deny "$IRRECOVERABLE" 'GH #181: # right after <(...) must not hide a real trailing rm -rf' \
   "$(bash_payload 'echo <(true)#bar; rm -rf hooks/gates/irrecoverable.py')"
 test_deny "$IRRECOVERABLE" 'GH #181: same check with >(...) (output process substitution)' \
@@ -762,6 +763,47 @@ test_deny "$IRRECOVERABLE" 'GH #181 round 2 control: a real 2-nonflag tree-ish+p
   "$(bash_payload 'git checkout HEAD~1 hooks/gates/irrecoverable.py')"
 test_deny "$IRRECOVERABLE" 'GH #181 round 2 control: a $(...)-derived path arg (attacker-controlled value) still counts toward checkout tree-ish+path' \
   "$(bash_payload 'git checkout main $(echo hooks/gates/irrecoverable.py) 2>&1')"
+
+# deep-audit 2026-09-29: PSUB's exclusion landed on checkout's nonflag count only; restore's
+# nearly-identical pathspec check (same "a pure PSUB token is never a real worktree pathspec"
+# reasoning) was missed, so a pure <(...)/>(...) argument false-denied restore -- same failure
+# class as GH #181 round 2 finding 3, one rule over.
+test_allow "$IRRECOVERABLE" 'deep-audit: a pure <(...) arg to restore is a real nonflag arg but never a real worktree pathspec' \
+  "$(bash_payload 'git restore <(true) 2>&1')"
+test_allow "$IRRECOVERABLE" 'deep-audit: same check with >(...) (output process substitution)' \
+  "$(bash_payload 'git restore >(true) 2>&1')"
+test_deny "$IRRECOVERABLE" 'deep-audit control: a real pathspec arg to restore still denies (no substitution)' \
+  "$(bash_payload 'git restore hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'deep-audit control: a $(...)-derived path arg (attacker-controlled value) still counts toward restore' \
+  "$(bash_payload 'git restore $(echo hooks/gates/irrecoverable.py) 2>&1')"
+
+# blind-spot-hunter (2026-09-29), whole-picture pass on the restore/PSUB fix above plus the
+# already-merged checkout/PSUB exclusion (4e739ca7): 4 confirmed HIGH-severity gaps, all
+# empirically baseline-checked to isolate which commit introduced each one.
+# F1 (introduced by the restore/PSUB fix just above, same session): --pathspec-from-file's VALUE
+# is read by git as a list of real pathspecs -- excluding a pure PSUB token from the pathspec
+# count is wrong here, since the process substitution's OUTPUT (not the token itself) is the
+# actual pathspec source.
+test_deny "$IRRECOVERABLE" 'deep-audit F1: restore --pathspec-from-file <(...) reads real pathspecs from the fd, must still deny' \
+  "$(bash_payload 'git restore --pathspec-from-file <(echo hooks/gates/irrecoverable.py) 2>&1')"
+# F2 (introduced upstream by c47f624a's new _blank_redirections: a bare "<" with an empty target
+# is silently deleted instead of counted, pre-dating PSUB/#181 entirely): same flag on checkout.
+test_deny "$IRRECOVERABLE" 'deep-audit F2: checkout --pathspec-from-file <(...) same gap, one subcommand over' \
+  "$(bash_payload 'git checkout HEAD --pathspec-from-file <(echo f) 2>&1')"
+# F3/F4 (introduced by 4e739ca7's PSUB): scan is PH-stripped (line ~1269) BEFORE the "!= PSUB"
+# check runs, so a glued "$(...)<(...)" token (no space -- one shlex token, "PH_char+PSUB_char")
+# collapses to a value textually identical to a lone PSUB once PH is stripped, wrongly inheriting
+# PSUB's "safe to exclude" treatment even though the $(...) half is attacker-controlled.
+test_deny "$IRRECOVERABLE" 'deep-audit F3: restore, glued \$(...)<(...) must not collapse to excluded-PSUB after PH-stripping' \
+  "$(bash_payload 'git restore $(echo "hooks/gates/irrecoverable.py :^x")<(true) 2>&1')"
+test_deny "$IRRECOVERABLE" 'deep-audit F4: checkout, same glued-token collapse' \
+  "$(bash_payload 'git checkout main $(echo "hooks/gates/irrecoverable.py :^x")<(true) 2>&1')"
+# Controls: the fix for F1/F2 must not touch a --pathspec-from-file-less command, and the fix for
+# F3/F4 must not touch a pure (unglued) PSUB token, which still correctly allows.
+test_allow "$IRRECOVERABLE" 'deep-audit control: checkout with a pure (unglued) PSUB arg still allows (round 2 behavior unchanged)' \
+  "$(bash_payload 'git checkout main <(true) 2>&1')"
+test_allow "$IRRECOVERABLE" 'deep-audit control: restore with a pure (unglued) PSUB arg still allows' \
+  "$(bash_payload 'git restore <(true) 2>&1')"
 
 # GH #181 round 3 (adversarial Codex pass found this before ship): a body extracted from <(...)/
 # >(...) is spliced back as its own statement only ONCE, after the whole scan finishes -- a
