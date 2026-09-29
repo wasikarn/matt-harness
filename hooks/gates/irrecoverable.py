@@ -550,6 +550,142 @@ def _blank_substitutions(s):
         s = s + "\n; " + "\n; ".join(bodies)
     return s
 
+# A real shell redirection ([n]<word / [n]>[>]word / [n]<&word / [n]>&word /
+# [n]<<<word / &>word / &>>word) is consumed entirely by bash before the
+# target program's own argv is built -- it never reaches git, so a downstream
+# nonflag-arg count or exact-token check (e.g. checkout's "1 nonflag = branch
+# switch, 2+ = tree-ish+path") must not see it. A prior attempt fixed this by
+# stripping matching tokens AFTER shlex(posix=True) tokenized the command --
+# rejected (2026-09-29, found by an adversarial Codex pass, see
+# security-gate-token-strip-needs-quote-state memory): posix=True dequotes, so
+# a LITERAL quoted ">" and a real unquoted > redirect become the identical
+# token string, and stripping "a bare digit immediately before an operator
+# token" can't tell a real fd-prefix ("2>&1", no space) from a real positional
+# arg that happens to be a digit followed by a separately-spaced redirect
+# ("checkout HEAD 2 >out" -- shlex has already discarded whether that space
+# existed). Both are only resolvable from the RAW string, where quoting and
+# spacing are both still intact -- so this runs BEFORE shlex, on the raw
+# command text, with real quote/comment state tracked char-by-char exactly
+# like _newlines_to_seps above (same escape-pair and quote-toggle rules), never
+# treating a quoted or backslash-escaped character as a real operator. Matched
+# spans are DELETED outright, not blanked to PH: PH would make a token vanish
+# from the "compacted" window copy below but still count in the RAW copy (PH
+# is a wordchar, so it's still one non-flag token there) -- and "a deny in
+# either copy wins" means the raw copy's inflated nonflag count would still
+# false-deny, exactly the bug this exists to fix. A redirect target is never
+# itself a command to re-scan for danger (unlike a $(...) body), so nothing
+# needs to survive at that position the way a substitution's body does.
+# Runs AFTER _blank_substitutions so a redirect character inside a $(...) body
+# that gets re-appended as its own statement is still correctly re-scanned
+# (it's real command text by then), and one already blanked to PH is not
+# double-processed (PH itself never matches the redirect-operator regex).
+# "#" is NOT in this set: bash only treats "#" as a comment-starter at the
+# START of a word, not glued mid-word ("out#suffix" is one literal filename) --
+# handled as a special case in the target loop below (round 2, found by an
+# adversarial Codex pass: `git checkout HEAD >out#suffix <realfile>` let the
+# target-consumption stop at "#", silently dropping <realfile> from the scan
+# entirely; that exact payload correctly denies on the unmodified gate).
+# "{"/"}" are ALSO not in this set, for the same reason, found the same way
+# (round 3): unlike "(" and ")" -- real, always-special shell operators, a bare
+# unquoted "{"/"}" mid-word is just a literal character in bash (verified live:
+# `bash -n -c 'echo out{suffix'` is a syntax error for "(" but NOT for "{" --
+# only paired, comma/range-shaped brace expansion is special, and only at a
+# word boundary). `git checkout HEAD >out{suffix <realfile>` bypassed the same
+# way the "#" case did before this line excluded them too.
+_REDIRECT_OP_RE = re.compile(r"\d{0,2}(>>|<<<|<<|>&|<&|&>>|&>|>|<)")
+_REDIRECT_TARGET_STOP = set(" \t\n;|&()")
+def _blank_redirections(s):
+    out = []
+    in_squote = in_dquote = in_comment = False
+    i, n = 0, len(s)
+    while i < n:
+        c = s[i]
+        if in_comment:
+            out.append(c)
+            if c == "\n":
+                in_comment = False
+            i += 1
+            continue
+        if in_squote:
+            out.append(c)
+            if c == SQ:
+                in_squote = False
+            i += 1
+            continue
+        if in_dquote:
+            if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`"):
+                out.append(c); out.append(s[i + 1])
+                i += 2
+                continue
+            out.append(c)
+            if c == DQ:
+                in_dquote = False
+            i += 1
+            continue
+        # unquoted, not in a comment
+        if c == SQ:
+            in_squote = True
+            out.append(c); i += 1
+            continue
+        if c == DQ:
+            in_dquote = True
+            out.append(c); i += 1
+            continue
+        if c == "\\" and i + 1 < n:
+            # an escaped char (including an escaped ">"/"<") is never a real
+            # operator -- consumed together so it is not re-examined below.
+            out.append(c); out.append(s[i + 1])
+            i += 2
+            continue
+        if c == "#":
+            in_comment = True
+            out.append(c); i += 1
+            continue
+        m = _REDIRECT_OP_RE.match(s, i)
+        if m:
+            j = m.end()
+            while j < n and s[j] in " \t":
+                j += 1
+            # Consume the operator's target word, itself quote/escape-aware
+            # (a quoted or spaced redirect target, "> \"my file\"", is one word).
+            k, tsq, tdq = j, False, False
+            while k < n:
+                tc = s[k]
+                if tsq:
+                    if tc == SQ:
+                        tsq = False
+                    k += 1
+                    continue
+                if tdq:
+                    if tc == "\\" and k + 1 < n and s[k + 1] in (DQ, "\\", "$", "`"):
+                        k += 2
+                        continue
+                    if tc == DQ:
+                        tdq = False
+                    k += 1
+                    continue
+                if tc == SQ:
+                    tsq = True; k += 1; continue
+                if tc == DQ:
+                    tdq = True; k += 1; continue
+                if tc == "\\" and k + 1 < n:
+                    k += 2
+                    continue
+                if tc == "#" and k == j:
+                    # "#" as the very first target char IS a real word-start,
+                    # i.e. a genuine comment ("> #comment") -- leave it for the
+                    # outer dispatcher's own "#" branch to enter comment state
+                    # correctly, rather than swallowing it here.
+                    break
+                if tc in _REDIRECT_TARGET_STOP:
+                    break
+                k += 1
+            i = k
+            continue
+        out.append(c)
+        i += 1
+    return "".join(out)
+
 # shlex.split() only recognizes ;/&&/||/|/& as separators when whitespace
 # surrounds them ("echo hi;rm -rf x" glued "hi;rm"); punctuation_chars=True
 # splits them out as their own tokens while respecting quotes. ( ) { } get the
@@ -563,7 +699,7 @@ if len(cmd) > _CMD_LEN_CAP:
     deny("command too long to safely tokenize (" + str(len(cmd)) + " chars, cap " + str(_CMD_LEN_CAP) + ") - confirm with user first")
 
 try:
-    lex = shlex.shlex(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd))), posix=True, punctuation_chars=True)
+    lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd)))), posix=True, punctuation_chars=True)
     lex.wordchars += PH
     tokens = list(lex)
 except ValueError:
@@ -577,7 +713,7 @@ except ValueError:
     # If the original also fails to parse, deny on ambiguity.
     try:
         shlex.split(cmd)
-        _fallback_src = _blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd)))
+        _fallback_src = _blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd))))
         parts = re.split(r"(&&|\|\||;|\||&)", _fallback_src)
         tokens = []
         for part in parts:
@@ -648,7 +784,7 @@ def _unwrap_shell(argv0, rest):
              "(claude -p/--print/--agent/--bg/--worktree), inside bash -c / eval either "
              "-- only the main session dispatches")
     try:
-        lex = shlex.shlex(_blank_substitutions(_newlines_to_seps(body)), posix=True, punctuation_chars=True)
+        lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(body))), posix=True, punctuation_chars=True)
         lex.wordchars += PH
         lex.whitespace_split = True
         cur = []

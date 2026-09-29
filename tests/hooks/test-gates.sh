@@ -622,6 +622,65 @@ test_deny "$IRRECOVERABLE" "git checkout HEAD~1 file (tree-ish + path)" \
 test_allow "$IRRECOVERABLE" "git checkout main (1 nonflag = branch switch)" \
   "$(bash_payload 'git checkout main')"
 
+# A shell redirection token (">", "2>&1", ">/dev/null", ...) is consumed by bash before it ever
+# reaches git's own argv -- counting it toward checkout's nonflag-arg tally falsely turned an
+# everyday idiom into a "tree-ish + path" deny (found live, 2026-09-29, while exercising the
+# checkout-isolation pilot: `git checkout <branch> 2>&1` was blocked).
+test_allow "$IRRECOVERABLE" "git checkout main 2>&1 (redirection must not count as a 2nd nonflag arg)" \
+  "$(bash_payload 'git checkout main 2>&1')"
+test_allow "$IRRECOVERABLE" "git checkout main >/dev/null (stdout redirect must not over-block)" \
+  "$(bash_payload 'git checkout main >/dev/null')"
+test_allow "$IRRECOVERABLE" "git checkout main >>log.txt (append redirect must not over-block)" \
+  "$(bash_payload 'git checkout main >>log.txt')"
+test_allow "$IRRECOVERABLE" "git checkout main <in.txt (input redirect must not over-block)" \
+  "$(bash_payload 'git checkout main <in.txt')"
+test_allow "$IRRECOVERABLE" "git checkout main 2>&1 | cat (redirect + pipe must not over-block)" \
+  "$(bash_payload 'git checkout main 2>&1 | cat')"
+# The redirection strip must not swallow a real dangerous token that happens to sit right before,
+# or disguise itself as, a redirection -- these must all still deny.
+test_deny "$IRRECOVERABLE" "git checkout -- file.txt 2>&1 (deny survives trailing redirection)" \
+  "$(bash_payload 'git checkout -- file.txt 2>&1')"
+test_deny "$IRRECOVERABLE" "git checkout HEAD~1 file 2>&1 (tree-ish+path deny survives trailing redirection)" \
+  "$(bash_payload 'git checkout HEAD~1 src/index.ts 2>&1')"
+# Round-2 regression (found by an adversarial Codex pass against the first attempt at this fix,
+# 2026-09-29, see security-gate-token-strip-needs-quote-state memory): a space-separated bare
+# digit is a REAL positional arg, not an fd prefix, unless glued with no space to the operator --
+# and a QUOTED redirect-lookalike character must never be treated as a real operator.
+test_deny "$IRRECOVERABLE" "git checkout HEAD 2 >/dev/null (space-separated digit is a real 2nd pathspec, not an fd prefix)" \
+  "$(bash_payload 'git checkout HEAD 2 >/dev/null')"
+test_deny "$IRRECOVERABLE" "git checkout HEAD 2 2>/dev/null (real 2nd pathspec PLUS a glued fd-prefixed redirect, still 2 real nonflag args)" \
+  "$(bash_payload 'git checkout HEAD 2 2>/dev/null')"
+test_allow "$IRRECOVERABLE" "git checkout HEAD 2>/dev/null (glued fd prefix on the ONLY digit present, genuinely 1 real nonflag arg)" \
+  "$(bash_payload 'git checkout HEAD 2>/dev/null')"
+test_deny "$IRRECOVERABLE" 'rm -r ">" -f file (quoted redirect-lookalike must not hide a real -f)' \
+  "$(bash_payload 'rm -r ">" -f hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'git checkout HEAD ">tracked" (quoted > must not be treated as a real operator)' \
+  "$(bash_payload 'git checkout HEAD ">tracked"')"
+test_deny "$IRRECOVERABLE" 'git restore ">tracked" (same quoted-operator check on restore)' \
+  "$(bash_payload 'git restore ">tracked"')"
+# Round-3 regression (found by a 2nd-round adversarial Codex pass against round 2's rewrite,
+# 2026-09-29): a "#" glued mid-word into a redirect target ("out#suffix") is a literal filename
+# character in real bash, not a comment start -- bash only treats "#" as a comment when it opens a
+# new word. The redirect-target consumption loop stopped at ANY unquoted "#", silently dropping
+# everything after it (including a real trailing dangerous pathspec) from the scan. Confirmed this
+# exact payload correctly denies on the unmodified (pre-this-fix) gate.
+test_deny "$IRRECOVERABLE" 'git checkout HEAD >out#suffix file (# glued mid-target must not truncate the scan)' \
+  "$(bash_payload 'git checkout HEAD >out#suffix hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'rm -r >out#suffix -f file (same # mid-target check on rm)' \
+  "$(bash_payload 'rm -r >out#suffix -f hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'git reset >out#suffix --hard (same # mid-target check on reset)' \
+  "$(bash_payload 'git reset >out#suffix --hard')"
+test_allow "$IRRECOVERABLE" 'git checkout main > #comment ("#" as the FIRST target char is still a real comment)' \
+  "$(bash_payload 'git checkout main > #comment')"
+# Round-4 regression (found by a 3rd-round adversarial Codex pass, 2026-09-29): same class of bug
+# as the "#" fix above, for "{"/"}" -- verified empirically (`bash -n -c 'echo out{suffix'` is
+# valid bash, unlike the same test with "(" or ")") that a bare "{"/"}" mid-word is just a literal
+# character, not a real shell metacharacter, so the target-consumption loop must not stop there.
+test_deny "$IRRECOVERABLE" 'git checkout HEAD >out{suffix file ({ glued mid-target must not truncate the scan)' \
+  "$(bash_payload 'git checkout HEAD >out{suffix hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'git checkout HEAD >out}suffix file (} glued mid-target must not truncate the scan)' \
+  "$(bash_payload 'git checkout HEAD >out}suffix hooks/gates/irrecoverable.py')"
+
 # The gate correctly denies each idiom below TODAY, but no test held the deny path, so a
 # mutation to the wrapper-unwrap / hooksPath / branch-delete / backstop logic survived the whole
 # suite (fail-open, undetected).
