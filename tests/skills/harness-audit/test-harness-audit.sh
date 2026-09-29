@@ -4,7 +4,7 @@
 # audit.sh's fragment integrity guard catches LOST checks, not SILENT ones. Each
 # known-bad fixture below is paired with a clean one; the matching check must
 # FIRE on bad and stay SILENT on good. Per-check fixtures cover 04, 05, 20, 22, 28, 29, 54,
-# 70, 71, 72, 73, 74 (five fixtures, two added 2026-09-21), 75, 76, 77; the fleet-bad / fleet-good pair covers the other sixteen with at
+# 70, 71, 72, 73, 74 (five fixtures, two added 2026-09-21), 75, 76, 77, 78; the fleet-bad / fleet-good pair covers the other sixteen with at
 # least one defect per check (43 is driven by the env ceiling, not a planted defect).
 # check-73-bad-missing-command-field and check-73-bad-args-fingerprint-mismatch (below) are
 # deep-audit fixes, 2026-09-10: a Codex-primary fresh-context checker found the original check
@@ -246,6 +246,11 @@ expect_crit   74 check-74-bad-one-site-regressed
 # describing it without that prefix must stay silent.
 expect_crit   75 check-75-bad-excluded-referenced
 expect_silent 75 check-75-good-clean
+
+# Check 78: a skill no plugin.json skills entry covers never loads (GH #211).
+expect_crit   78 check-78-bad-unregistered
+expect_silent 78 check-78-good-registered
+expect_silent 78 check-78-good-allowlisted
 
 # Check 76: measurement coverage status freshness (harness gap-audit M14,
 # 2026-09-20). Shallow on purpose -- WARN, not CRIT -- for the retired

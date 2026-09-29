@@ -144,20 +144,39 @@ masked = _mask_quotes(cmd)
 # flag", never a choice between the two -- O(n), no backtracking, and both
 # axes are genuinely unbounded again, matching irrecoverable.py's identical
 # fix to its nested-spawn anchor.
-_WRAPPER_WORDS = ("env", "command", "nohup", "nice", "time", "sudo", "xargs")
-_WRAPPER_ALT = r"(?:" + "|".join(_WRAPPER_WORDS) + r")\b"
+#
+# GH #213: the list gained exec/setsid/timeout/gtimeout/stdbuf/ionice (the same
+# words as irrecoverable.py's PREFIX_WRAPPERS, which this file still types by
+# hand), and a shell keyword may open the command position ("for i in 1; do git
+# stash; done"). A wrapper word must be followed by whitespace in the lookahead
+# too: with a bare \b a token that only STARTS with one ("timeout=30") is neither
+# a wrapper nor an ordinary token, and the regex dead-ends.
+_WRAPPER_WORDS = ("env", "command", "nohup", "nice", "time", "sudo", "xargs",
+                  "exec", "setsid", "timeout", "gtimeout", "stdbuf", "ionice")
+_KEYWORDS = ("!", "if", "elif", "then", "else", "do", "while", "until", "coproc")
+_WRAPPER_ALT = r"(?:" + "|".join(_WRAPPER_WORDS) + r")(?=\s)"
 _WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"\s+(?:(?!" + _WRAPPER_ALT + r")\S+\s+)*)*"
-_ANCHOR_RE = re.compile(
-    r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX +
-    r"\\?(?:\S*/)?git\b",
+_KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in _KEYWORDS) + r")\s+)*"
+_CMD_START = (r"(?:^|[|;&(]|&&|\|\|)\s*" + _KEYWORD_PREFIX +
+              r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX)
+_ANCHOR_RE = re.compile(_CMD_START + r"\\?(?:\S*/)?git\b", re.MULTILINE)
+# `bash -c "<body>"` / `eval "<body>"`: the body is a quoted string, so the masked
+# text hides it. The shell word is matched on the masked string (a real command,
+# not text inside a message); the body is read from the raw command at the same
+# offset (masking is 1:1) and checked as its own command line, one level deep.
+_SHELL_RE = re.compile(
+    _CMD_START + r"\\?(?:\S*/)?(?:(?:bash|sh|zsh|dash|ksh)\s+(?:-\S+\s+)*?-\w*c\w*|eval)(?=\s)",
     re.MULTILINE,
 )
+# Masking blanks the quote characters, so the raw body is found by skipping
+# whitespace from the end of the shell word.
+_QUOTED_RE = re.compile(r'\s*(?:"((?:[^"\\]|\\.)*)"|' + "'([^']*)')")
 # Only stash/reset/clean (see header); read-only `stash list|show` carved out.
 _DENY_SUBCMD_RE = re.compile(r"\A\s+(stash(?!\s+(list|show)\b)|reset|clean)\b")
 
 # Git global flags walked past before the subcommand check, so `git -C /repo
 # stash` / `git --no-pager clean` do not land the check on sub="-C".
-_GIT_VALUE_GLOBALS = ("-C", "-c", "--git-dir", "--work-tree", "--config-env")
+_GIT_VALUE_GLOBALS = ("-C", "-c", "--git-dir", "--work-tree", "--config-env", "--namespace", "--attr-source")
 
 def _skip_git_globals(tail):
     # tail starts right after the "git" anchor on the masked string. Returns the
@@ -185,7 +204,17 @@ def _violation(masked_cmd):
             return dm.group(1)
     return None
 
-hit = _violation(masked)
+def _violation_in_bodies(raw_cmd, masked_cmd):
+    for m in _SHELL_RE.finditer(masked_cmd):
+        q = _QUOTED_RE.match(raw_cmd, m.end())
+        if q:
+            body = q.group(1) if q.group(1) is not None else q.group(2)
+            hit = _violation(_mask_quotes(body))
+            if hit:
+                return hit
+    return None
+
+hit = _violation(masked) or _violation_in_bodies(cmd, masked)
 if hit:
     print(f"[mh:gate] BLOCKED: subagent ({agent_type}) may not run `git {hit}` "
           f"(command: {clip(cmd)!r}) -- no repo-wide git in a concurrent wave "
