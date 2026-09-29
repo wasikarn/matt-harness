@@ -1074,6 +1074,43 @@ for _c in \
   test_allow "$IRRECOVERABLE" "spelling-variant control still allowed: $_c" "$(bash_payload "$_c")"
 done
 
+# Round 2 of the same audit (whole-picture pass over the round-1 fix). (a) Regression the round-1
+# wrapper names introduced: a token that only STARTS with a wrapper word ("timeout=30", "exec-bot")
+# dead-ended the spawn anchor's regex, so `env timeout=30 claude -p x` stopped denying. (b) The spawn
+# anchor did not see loop keywords: `for i in 1; do claude -p x; done`. (c) shlex fuses glued
+# punctuation into ONE token (");", "&&(", ")|", ")|&") that is not in OPERATORS, so the command after
+# it stayed an argument and no rule dispatched on it: `(cd a && make); rm -rf build`.
+test_deny  "$IRRECOVERABLE" "subagent: env timeout=30 claude -p (wrapper-word prefix token must not defeat the spawn anchor)" \
+  "$(bash_agent_payload 'env timeout=30 claude -p "x"' fork)"
+test_deny  "$IRRECOVERABLE" "subagent: sudo -u exec-bot claude -p (same anchor dead end)" \
+  "$(bash_agent_payload 'sudo -u exec-bot claude -p "x"' fork)"
+test_deny  "$IRRECOVERABLE" "subagent: claude -p inside a for/do loop" \
+  "$(bash_agent_payload 'for i in 1; do claude -p "x"; done' fork)"
+test_deny  "$IRRECOVERABLE" "subagent: claude -p after then" \
+  "$(bash_agent_payload 'if true; then claude -p "x"; fi' fork)"
+test_deny  "$IRRECOVERABLE" "subagent: claude -p after !" \
+  "$(bash_agent_payload '! claude -p "x"' fork)"
+test_allow "$IRRECOVERABLE" "subagent control: env timeout=30 with a harmless command" \
+  "$(bash_agent_payload 'env timeout=30 echo hi' fork)"
+test_allow "$IRRECOVERABLE" "subagent control: a for/do loop with no spawn" \
+  "$(bash_agent_payload 'for i in 1; do echo "$i"; done' fork)"
+for _c in \
+  '(cd a && :); rm -rf x' \
+  'cd a&&(git push --force)' \
+  'true;(git commit -n -m x)' \
+  '(true)|rm -rf x' \
+  '(true)|&rm -rf x' \
+  'bash -c "(true);rm -rf x"' ; do
+  test_deny "$IRRECOVERABLE" "glued punctuation still separates commands: $_c" "$(bash_payload "$_c")"
+done
+for _c in \
+  '(cd sub && make); ls' \
+  '(echo a); echo b' \
+  'cd a&&(ls)' \
+  'env timeout=30 ls' ; do
+  test_allow "$IRRECOVERABLE" "glued-punctuation control still allowed: $_c" "$(bash_payload "$_c")"
+done
+
 echo ""
 echo "=== gh merge ask-tier gate (Phase B, 2026-09-28: local defense-in-depth for the PR-review flow) ==="
 test_ask   "$IRRECOVERABLE" "gh pr merge <number>"                "$(bash_payload 'gh pr merge 5')"

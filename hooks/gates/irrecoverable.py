@@ -221,10 +221,21 @@ FLAG_VALUE_WRAPPERS = {
     "gtimeout": ("-s", "-k", "--signal"),
 }
 PREFIX_WRAPPERS = ("env", "command", "nohup", "time", "sudo", "exec", "setsid") + tuple(FLAG_VALUE_WRAPPERS)
-_WRAPPER_ALT = r"(?:" + "|".join(PREFIX_WRAPPERS) + r")\b"
+# Reserved words that open a command position inside a compound statement
+# ("for x in a; do rm -rf y; done": the segment after ";" starts with "do"), so
+# the real argv0 comes right after them. Stripped at segment start only, never
+# scanned for inside arguments, so `echo do rm -rf x` stays an echo. The same
+# statement split over lines was already denied, only the ";" spelling leaked.
+# Shared by the token windows (below) and the spawn anchor.
+SHELL_KEYWORDS = ("!", "if", "elif", "then", "else", "do", "while", "until", "coproc")
+# A wrapper word must be followed by whitespace, in the lookahead too: with a bare
+# \b a token that only STARTS with one ("timeout=30", "exec-bot") is neither a
+# wrapper nor an ordinary token, the regex dead-ends and the anchor never fires.
+_WRAPPER_ALT = r"(?:" + "|".join(PREFIX_WRAPPERS) + r")(?=\s)"
 _WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"\s+(?:(?!" + _WRAPPER_ALT + r")\S+\s+)*)*"
+_KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in SHELL_KEYWORDS) + r")\s+)*"
 _SPAWN_ANCHOR_RE = re.compile(
-    r"(?:^|[|;&(]|&&|\|\|)\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX +
+    r"(?:^|[|;&(]|&&|\|\|)\s*" + _KEYWORD_PREFIX + r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX +
     r"\\?(?:\S*/)?claude(?![-\w./])",
     re.MULTILINE,
 )
@@ -890,7 +901,26 @@ def _blank_redirections(s):
 # surrounds them ("echo hi;rm -rf x" glued "hi;rm"); punctuation_chars=True
 # splits them out as their own tokens while respecting quotes. ( ) { } get the
 # same treatment so "(rm -rf x)" / "{ rm -rf x; }" do not leave "(" as argv0.
-OPERATORS = {";", "&&", "||", "|", "|&", "&", "(", ")", "{", "}"}
+OPERATORS = {";", "&&", "||", "|", "&", "(", ")", "{", "}"}
+_OPS_LONGEST_FIRST = sorted(OPERATORS, key=len, reverse=True)
+
+# shlex fuses a run of punctuation into ONE token: ");", "&&(", ")|", ")|&", ";;".
+# None of those is in OPERATORS, so the window never split and the next command
+# stayed an argument of the previous one. A token made only of operators is cut
+# back into them; anything with another character (a redirection) is left alone.
+def _split_ops(tok):
+    if tok in OPERATORS:
+        return [tok]
+    out, i = [], 0
+    while i < len(tok):
+        for op in _OPS_LONGEST_FIRST:
+            if tok.startswith(op, i):
+                out.append(op)
+                i += len(op)
+                break
+        else:
+            return [tok]
+    return out
 
 # shlex cost is superlinear in the longest SINGLE token (700k chars blows a 2s
 # timeout), so an oversized command denies on length ALONE before shlex runs.
@@ -929,7 +959,7 @@ if _DEPTH_BUDGET_BLOWN[0]:
     deny("command too long to safely tokenize (nested substitution exceeded depth-scan budget) - confirm with user first")
 
 windows, cur = [], []
-for tok in tokens:
+for tok in [p for t in tokens for p in _split_ops(t)]:
     if tok in OPERATORS:
         if cur:
             windows.append(cur)
@@ -988,7 +1018,7 @@ def _unwrap_shell(argv0, rest):
         lex.wordchars += PH + HASH_LIT + PSUB
         lex.whitespace_split = True
         cur = []
-        for tok in list(lex) + [";"]:
+        for tok in [p for t in list(lex) for p in _split_ops(t)] + [";"]:
             if tok in OPERATORS:
                 if cur:
                     windows.append(cur)
@@ -1007,13 +1037,6 @@ def _unwrap_shell(argv0, rest):
 # and git subcommands any check below dispatches on by exact string match.
 KNOWN_DANGEROUS = ("rm", "find", "git", "gh", "dd", "mysql", "psql", "sqlite3", "mariadb")
 KNOWN_GIT_SUBS = ("push", "reset", "clean", "restore", "checkout", "switch", "branch", "stash", "commit", "add")
-
-# Reserved words that open a command position inside a compound statement
-# ("for x in a; do rm -rf y; done": the segment after ";" starts with "do"), so
-# the real argv0 comes right after them. Stripped at segment start only, never
-# scanned for inside arguments, so `echo do rm -rf x` stays an echo. The same
-# statement split over lines was already denied, only the ";" spelling leaked.
-SHELL_KEYWORDS = ("!", "if", "elif", "then", "else", "do", "while", "until", "coproc")
 
 # Duplication also fires on a token still carrying raw substitution syntax
 # (belt-and-braces for any path that hands over an unblanked token). Narrow
