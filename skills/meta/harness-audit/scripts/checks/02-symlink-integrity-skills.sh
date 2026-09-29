@@ -25,7 +25,12 @@ f1_new_vs_base() {
   [ "$(cd -P "$CLAUDE_DIR" && pwd)" = "$(cd -P "$top" && pwd)" ] || return 1
   env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "$CLAUDE_DIR" rev-parse --verify -q "$base^{commit}" >/dev/null 2>&1 || return 1
   rel="${dir#"$CLAUDE_DIR"/}"
-  ! env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "$CLAUDE_DIR" cat-file -e "$base:$rel/SKILL.md" 2>/dev/null
+  # ls-tree exits 0 with empty output for an absent path but non-zero on a git error (missing
+  # object in a shallow or partial clone); cat-file -e and rev-parse --verify both exit non-zero
+  # for either, which would read an error as "absent" and fail open.
+  local hit
+  hit=$(env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "$CLAUDE_DIR" ls-tree --name-only "$base" -- "$rel/SKILL.md" 2>/dev/null) || return 1
+  [ -z "$hit" ]
 }
 if [ "${PLUGIN_ACTIVE:-0}" -eq 0 ] && [ ! -d "$HOME/.claude/skills" ]; then
   warn "no plugin cache and no ~/.claude/skills symlink farm present — skill loadability unverified in this environment (expected on a clean CI checkout; not a per-skill finding)"

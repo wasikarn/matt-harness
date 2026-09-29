@@ -317,6 +317,21 @@ F1_OLD="$CODEX_TMP/f1-old"; mk_f1_repo "$F1_OLD" 1 1
 HOME="$EMPTY_HOME" run_check 02 "$F1_OLD" --plugin-cache "$DECOY"
 if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 skill already on base ref stays CRIT"
 else bad "check-02 skill already on base ref did not fire CRIT (crit=$CRIT_FOUND)"; fi
+# Hook context: pre-commit/pre-push export GIT_DIR/GIT_INDEX_FILE for the outer repo; the check must ignore them.
+GIT_DIR="$(git rev-parse --absolute-git-dir)" GIT_INDEX_FILE="$CODEX_TMP/no-such-index" HOME="$EMPTY_HOME" run_check 02 "$F1_NEW" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$INFO_FOUND" -ge 1 ]; then ok "check-02 new-skill INFO survives exported GIT_DIR/GIT_INDEX_FILE"
+else bad "check-02 new-skill INFO broke under exported GIT_DIR (crit=$CRIT_FOUND info=$INFO_FOUND)"; fi
+# Toplevel guard: the same new skill audited from a subdirectory of a git repo gets no exemption.
+F1_SUB="$CODEX_TMP/f1-sub"; mk_f1_repo "$F1_SUB" 0 1; mkdir -p "$F1_SUB/sub" && mv "$F1_SUB/skills" "$F1_SUB/sub/skills"
+HOME="$EMPTY_HOME" run_check 02 "$F1_SUB/sub" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 toplevel guard: audited subdir gets no exemption"
+else bad "check-02 toplevel guard missing: subdir new skill did not fire CRIT (crit=$CRIT_FOUND)"; fi
+# Error is not absence: base commit resolves but its skills tree object is gone (shallow/partial clone).
+F1_BROKEN="$CODEX_TMP/f1-broken"; mk_f1_repo "$F1_BROKEN" 1 1
+_t=$(f1_git -C "$F1_BROKEN" rev-parse origin/develop:skills); mv "$F1_BROKEN/.git/objects/${_t:0:2}/${_t:2}" "$CODEX_TMP/f1-broken-tree"
+HOME="$EMPTY_HOME" run_check 02 "$F1_BROKEN" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 git error on the base tree fails closed (CRIT)"
+else bad "check-02 git error on the base tree read as absent (crit=$CRIT_FOUND)"; fi
 F1_NOREF="$CODEX_TMP/f1-noref"; mk_f1_repo "$F1_NOREF" 0 0
 HOME="$EMPTY_HOME" run_check 02 "$F1_NOREF" --plugin-cache "$DECOY"
 if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 no base ref fails closed (CRIT)"
