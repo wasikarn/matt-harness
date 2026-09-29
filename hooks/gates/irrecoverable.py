@@ -1083,31 +1083,87 @@ _WDEPTH = {}      # window index -> unwrap depth (absent = 0, an original window
 _XARGS_HANDOVERS = [0]  # windows appended for `xargs <wrapper> ...` (bounded, see the xargs branch)
 _cur_depth = 0
 
-def _unwrap_shell(argv0, rest):
-    body = None
-    if argv0 in _SHELLS:
-        for i in range(len(rest) - 1):
-            t = rest[i].replace(PH, "")
-            if t.startswith("-") and not t.startswith("--") and "c" in t:
-                # The shell keeps parsing options after -c (`bash -c -e 'body'`,
-                # `bash -c -o pipefail 'body'`); the body is the first non-option word,
-                # and `--` / a bare `-` ends the options.
-                # A short cluster ending in o/O (`-o`, `-eo`, `-ceo`) takes the next word as its value.
-                _vf = "o" if argv0 == "zsh" else "oO"  # zsh's -O is a plain flag; only -o takes a value there
-                j = i + (2 if t[-1] in _vf else 1)
-                while j < len(rest):
-                    u = rest[j].replace(PH, "")
-                    if u in ("--", "-"):
-                        j += 1
-                        break
-                    if len(u) > 1 and u[0] in "-+":
-                        j += 2 if (u[-1] in _vf and not u.startswith("--")) else 1
-                        continue
-                    break
-                body = rest[j] if j < len(rest) else None
+def _shell_body(argv0, rest, getopt):
+    """The `-c` command string of `argv0 rest`, or None. `getopt` picks how a value flag reads:
+    bash takes the next word for EVERY o/O in a cluster (`-oc pipefail`, `-coo a b`); zsh, ksh and
+    dash follow getopt, where an `o` followed by more letters has them as its attached value
+    (`-opipefail`) and only a cluster-final `o` takes the next word. zsh's -O takes none."""
+    vf = "o" if argv0 == "zsh" else "oO"
+
+    def cluster(letters, sign):  # -> (has -c, following words consumed)
+        c, extra = False, 0
+        for k, ch in enumerate(letters):
+            if ch == "c" and sign == "-":
+                c = True
+            if ch in vf:
+                if not getopt:
+                    extra += 1
+                    continue
+                extra += 1 if k == len(letters) - 1 else 0
                 break
-    elif argv0 == "eval" and rest:
-        body = " ".join(rest)
+        return c, extra
+
+    # The -c may sit anywhere in a `-` cluster (`-Oc`; `-exec` is the letters e,x,e,c), and the
+    # tokenizer splits `+e` / `+o name` into `+` and the letters. The body is the first word after
+    # the options; `--` / a bare `-` end them.
+    i, seen_c = 0, False
+    while i < len(rest):
+        u = rest[i].replace(PH, "")
+        if u in ("--", "-"):
+            i += 1
+            break
+        if u == "+" and i + 1 < len(rest) and rest[i + 1].replace(PH, "").isalpha():
+            i += 2 + cluster(rest[i + 1].replace(PH, ""), "+")[1]
+        elif len(u) > 1 and u[0] in "-+" and not u.startswith("--"):
+            c, extra = cluster(u[1:], u[0])
+            seen_c = seen_c or c
+            i += 1 + extra
+        elif u.startswith("--") and len(u) > 2:
+            i += 1
+        else:
+            break
+    if seen_c and i < len(rest):
+        return rest[i]
+    # Fallback (a script word before -c, `--rcfile FILE -c body`): the first `-c` cluster anywhere.
+    for i in range(len(rest) - 1):
+        t = rest[i].replace(PH, "")
+        if t.startswith("-") and not t.startswith("--") and "c" in t:
+            j = i + (2 if t[-1] in vf else 1)
+            while j < len(rest):
+                u = rest[j].replace(PH, "")
+                if u in ("--", "-"):
+                    j += 1
+                    break
+                if len(u) > 1 and u[0] in "-+":
+                    j += 2 if (u[-1] in vf and not u.startswith("--")) else 1
+                    continue
+                break
+            return rest[j] if j < len(rest) else None
+    return None
+
+
+# bash reads every o/O in a cluster as taking the next word; zsh, ksh and dash follow getopt; `sh`
+# is bash on macOS and dash on Linux, so both readings are scanned (a wrong reading only scans one
+# extra word).
+_SHELL_GETOPT = {"bash": (False,), "zsh": (True,), "ksh": (True,), "dash": (True,), "sh": (False, True)}
+
+
+def _unwrap_shell(argv0, rest):
+    if argv0 == "eval":
+        bodies = [" ".join(rest)] if rest else []
+    elif argv0 in _SHELLS:
+        bodies = []
+        for g in _SHELL_GETOPT[argv0]:
+            b = _shell_body(argv0, rest, g)
+            if b and b not in bodies:
+                bodies.append(b)
+    else:
+        return
+    for body in bodies:
+        _scan_body(body)
+
+
+def _scan_body(body):
     if not body:
         return
     if _cur_depth >= _MAX_SHELL_DEPTH:
@@ -1313,6 +1369,15 @@ for _wi, w in enumerate(windows):
             if sub:
                 _WDEPTH[len(windows)] = _cur_depth
                 windows.append(sub)
+        if len(acts) > 1:
+            # A later `-exec` may be a shell's option letters (`bash -c -exec 'body'`), not a find
+            # action: also scan everything after the first action as ONE command. Each such window
+            # can be a find again, so the chain is bounded like the xargs one below.
+            _XARGS_HANDOVERS[0] += 1
+            if _XARGS_HANDOVERS[0] > 50:
+                deny("more than 50 chained find/xargs wrappers - too complex to scan safely, confirm with user first")
+            _WDEPTH[len(windows)] = _cur_depth
+            windows.append(rest[acts[0] + 1:])
 
     if argv0 == "xargs":
         # xargs args are never free-text prose, so scanning for a dangerous

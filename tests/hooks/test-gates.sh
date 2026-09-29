@@ -1106,6 +1106,45 @@ test_deny  "$IRRECOVERABLE" "zsh -cO body: -O takes no value in zsh (audit of #2
   "$(bash_payload "zsh -cO 'rm -rf /tmp/x'")"
 test_deny  "$IRRECOVERABLE" "zsh -ceO body (audit of #227)" \
   "$(bash_payload "zsh -ceO 'rm -rf /tmp/x'")"
+# Remaining option gaps (bash getopt: every o/O in a cluster takes one following word, the -c may sit
+# anywhere in the cluster, and `+e` / `+o name` are option words too; the tokenizer splits `+` off).
+test_deny  "$IRRECOVERABLE" "bash -oc pipefail body: o before c (gap follow-up to #227)" \
+  "$(bash_payload "bash -oc pipefail 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "bash -Oc extglob body (gap follow-up to #227)" \
+  "$(bash_payload "bash -Oc extglob 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "bash -coo pipefail errexit body: two value flags (gap follow-up to #227)" \
+  "$(bash_payload "bash -coo pipefail errexit 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "bash -c -oo pipefail errexit body (gap follow-up to #227)" \
+  "$(bash_payload "bash -c -oo pipefail errexit 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "bash -c +e body (gap follow-up to #227)" \
+  "$(bash_payload "bash -c +e 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "bash -c +o pipefail body (gap follow-up to #227)" \
+  "$(bash_payload "bash -c +o pipefail 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "zsh -c +O body: -O takes no value in zsh (gap follow-up to #227)" \
+  "$(bash_payload "zsh -c +O 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "sh -c \"bash -oc pipefail body\" nested (gap follow-up to #227)" \
+  "$(bash_payload "sh -c \"bash -oc pipefail 'rm -rf /tmp/x'\"")"
+test_allow "$IRRECOVERABLE" "bash -oc pipefail, benign body (gap follow-up to #227)" \
+  "$(bash_payload "bash -oc pipefail 'git status'")"
+test_allow "$IRRECOVERABLE" "bash -c +e, benign body (gap follow-up to #227)" \
+  "$(bash_payload "bash -c +e 'git status'")"
+# zsh, ksh and dash follow getopt: an `o` followed by more letters has them as its attached value
+# (`-opipefail`), so the body is the next word; bash instead takes the next word for every `o`.
+test_deny  "$IRRECOVERABLE" "zsh -c -opipefail body: attached option value (gap follow-up to #227)" \
+  "$(bash_payload "zsh -c -opipefail 'rm -rf /tmp/x' ignored")"
+test_deny  "$IRRECOVERABLE" "ksh -c -oerrexit body: attached option value (gap follow-up to #227)" \
+  "$(bash_payload "ksh -c -oerrexit 'rm -rf /tmp/x' ignored")"
+test_deny  "$IRRECOVERABLE" "zsh -c +opipefail body: attached value after a split + (gap follow-up to #227)" \
+  "$(bash_payload "zsh -c +opipefail 'rm -rf /tmp/x'")"
+test_allow "$IRRECOVERABLE" "zsh -c +opipefail 'echo' then a dangerous-looking argument (gap follow-up to #227)" \
+  "$(bash_payload "zsh -c +opipefail 'echo hi' 'rm -rf /tmp/x'")"
+# Under find, `-exec` after `bash -c` is bash's option letters (e x e c), not a second find action.
+test_deny  "$IRRECOVERABLE" "find -exec bash -c -exec body: -exec is a shell cluster (gap follow-up to #227)" \
+  "$(bash_payload "find . -exec bash -c -exec 'rm -rf /tmp/x' \\;")"
+test_deny  "$IRRECOVERABLE" "find -exec env bash -c -exec body (gap follow-up to #227)" \
+  "$(bash_payload "find . -exec env bash -c -exec 'rm -rf /tmp/x' \\;")"
+test_allow "$IRRECOVERABLE" "find -exec bash -c -exec, benign body (gap follow-up to #227)" \
+  "$(bash_payload "find . -exec bash -c -exec 'git status' \\;")"
 # A `{} +` terminator splits the window, so a second -exec starts with `+`.
 test_deny  "$IRRECOVERABLE" "find -exec true {} + then a second -exec sh -c body (audit of #227)" \
   "$(bash_payload "find . -exec true {} + -exec sh -c 'rm -rf /x' sh {} +")"
