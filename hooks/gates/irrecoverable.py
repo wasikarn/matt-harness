@@ -785,7 +785,19 @@ def _blank_substitutions(s):
 # only paired, comma/range-shaped brace expansion is special, and only at a
 # word boundary). `git checkout HEAD >out{suffix <realfile>` bypassed the same
 # way the "#" case did before this line excluded them too.
-_REDIRECT_OP_RE = re.compile(r"\d{0,2}(>>|<<<|<<|>&|<&|&>>|&>|>|<)")
+# GH #188: bash 4+'s named-fd form "{var}>file" is a redirect too. Its "{var}"
+# prefix used to survive as text: the outer tokenizer split it into "{" "var"
+# "}" (window breaks), cutting `checkout HEAD {fd}>/dev/null <path>` off before
+# <path> (fail-open), and the bash -c/eval tokenizer (whitespace_split) kept
+# "{fd}" as one nonflag arg (over-deny on a plain branch switch). Only matched
+# at a word start (checked at the call site): "x{fd}>f" is the literal word
+# "x{fd}" followed by a plain ">f" redirect. Like an fd number, "{var}" never
+# prefixes "&>"/"&>>" ("{fd}&>x" is the word "{fd}" plus a redirect). ">|"
+# (noclobber) and "<>" are operators too: without ">|", "{fd}>|x <path>" left
+# "|x <path>" as a pipe that cut the window before <path> (#208 validator).
+_REDIRECT_OP_RE = re.compile(
+    r"\{[A-Za-z_][A-Za-z0-9_]*\}(?:>>|<<<|<<|>&|<&|>\||<>|>|<)"
+    r"|\d{0,2}(?:>>|<<<|<<|>&|<&|&>>|&>|>\||<>|>|<)")
 _REDIRECT_TARGET_STOP = set(" \t\n;|&()")
 def _blank_redirections(s):
     out = []
@@ -851,6 +863,11 @@ def _blank_redirections(s):
             last_escaped = False
             continue
         m = _REDIRECT_OP_RE.match(s, i)
+        # mid-word "{": literal text, not a named fd (GH #188). After an
+        # escaped char ("x\ {fd}>f") it is still read as a redirect: keeping
+        # "{" as text lets the outer tokenizer break the window at "{".
+        if m and c == "{" and out and out[-1] not in _REDIRECT_TARGET_STOP:
+            m = None
         if m:
             j = m.end()
             while j < n and s[j] in " \t":
@@ -889,6 +906,11 @@ def _blank_redirections(s):
                 if tc in _REDIRECT_TARGET_STOP:
                     break
                 k += 1
+            # Leave a space where the redirect was: deleting it outright can
+            # glue the punctuation on either side into one shlex token (")"
+            # + ";" -> ");", not in OPERATORS), hiding the window break before
+            # a dangerous tail (found by the GH #188 differential fuzz).
+            out.append(" ")
             i = k
             last_escaped = False
             continue
@@ -1376,7 +1398,15 @@ for _wi, w in enumerate(windows):
                                     any(_is_flag(t.split("=", 1)[0], "--pathspec-from-file") for t in scan) or
                                     any(not t.startswith("-") and traw != PSUB
                                         for t, traw in zip(scan, scan_raw)))
-                    targets_worktree = "--worktree" in scan or "--staged" not in scan
+                    # GH #189: -W (bundled too) and any --worktree
+                    # abbreviation ("--work") count; a short cluster stops at
+                    # "s" (-s takes a value: "-sW" is source "W"). After "--"
+                    # every token is a pathspec ("-- -Wfile").
+                    _opts = scan[:scan.index("--")] if "--" in scan else scan
+                    targets_worktree = "--staged" not in _opts or any(
+                        _is_flag(t, "--worktree")
+                        or (t.startswith("-") and not t.startswith("--") and "W" in t.split("s", 1)[0])
+                        for t in _opts)
                     if has_pathspec and targets_worktree:
                         deny("git restore discards working-tree changes — confirm with user first")
                 # Bundled short flags: "-qf" means -q -f. Stop scanning a cluster
