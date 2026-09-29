@@ -290,6 +290,41 @@ a launcher-layer wrapper or a third-party proxy remain, and there is no incident
 main session should be routed automatically, test `turn.step` on main first with the corrected probe,
 and build it in dotfiles, not in mh.
 
+## Correction 3 (2026-09-29, later same day): function-hooks `turn.step` effort rewrite works on the main session
+
+The scope fix above left one route untested: a `turn.step` hook rewriting `effort` on the main
+session. It has now been run. **Result: it works on Claude Code 2.1.284 with `claude-sonnet-5-5`.**
+
+**Probe.** A function-hooks plugin (`CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`, loaded with
+`--plugin-dir`) hooked `turn.step`. Each step it read a control file and, when the step had no
+`agentId` (the main loop) and the file named a level, called `next({...e, effort})`. It logged
+`effortIn`, target and `effortOut`. The operator ran the session and changed the control file between
+turns, with no restart and no `/effort`.
+
+| control file | `effortIn` | `effortOut` | effort recorded per assistant message in the transcript | output tokens |
+|---|---|---|---|---|
+| `off` | medium | medium | medium | 202, 213 |
+| `low` | medium | low | low | 75 to 254 |
+| `max` | medium | max | max | 2086 (then 336) |
+
+`turn.step` fired for the main loop (`agent: main`), the rewrite changed the effort the transcript
+records, and the `max` turn produced roughly 8 to 27 times the output of the `low` turns. That is
+behavioural evidence that the request effort changed, not only a displayed value.
+
+**What this does not prove.** n=1 per level, and the prompts differ (an `echo` against a five-step
+proof), so the token ratio is a strong signal, not a measurement. The transcript field may record the
+client's value rather than the request body; no logging proxy was used (a subscription session, and
+the terms question above is open). Prompt-cache cost of a per-request change was not measured. The
+10 s hook budget and the background-agent gap listed above still apply.
+
+**Effect on the verdict.** The feasibility of an automatic main-session effort change moves from
+"untested" to "works in a probe on 2.1.284, on an experimental API". The mh decision stays decline,
+now for this reason: the mechanism exists but is experimental and its surface is still changing, it
+belongs in a launcher or dotfiles layer or a separate mod rather than the mh plugin, and there is no
+incident that shows the static per-agent tiering choosing wrongly (Rule 2). Reopen for mh if function
+hooks reach a stable release and an incident or measured cost case appears; the probe above is the
+recheck, and the next step for a real build is a cache-cost measurement and a body-level check.
+
 ## Sources
 
 - `docs/research/auto-model-auto-effort-2026-09-26.md` (22 sources, this repo)
