@@ -435,13 +435,13 @@ def _newlines_to_seps(s):
             last_escaped = False
     return "".join(out)
 
-# Command-substitution placeholder pass. A backtick/$(...)/${...} span vanishes
-# in real bash once its output splices in ("gi`true`t" IS "git"), but shlex
-# keeps the punctuation literal, so a spliced argv0 evades exact-match dispatch.
-# Resolving the substitution would mean running a subshell, so instead the span
-# is blanked to one placeholder byte (PH): PH is a shlex wordchar so it fuses
-# into the surrounding text as ONE token, and any argv0/subcommand token still
-# containing PH is duplicate-classified across every KNOWN_DANGEROUS /
+# Command-substitution placeholder pass. A backtick/$(...)/${...}/<(...)/>(...)
+# span vanishes in real bash once its output splices in ("gi`true`t" IS "git"),
+# but shlex keeps the punctuation literal, so a spliced argv0 evades exact-match
+# dispatch. Resolving the substitution would mean running a subshell, so instead
+# the span is blanked to one placeholder byte (PH): PH is a shlex wordchar so it
+# fuses into the surrounding text as ONE token, and any argv0/subcommand token
+# still containing PH is duplicate-classified across every KNOWN_DANGEROUS /
 # KNOWN_GIT_SUBS candidate downstream.
 # Closer-search depth-counts same-type brackets so nested spans ("$(echo
 # $(date))", "$(f() { :; }; f)") resolve in one pass; the fixed-point loop stays
@@ -450,11 +450,14 @@ def _newlines_to_seps(s):
 # Each downstream flag comparison strips PH itself (full .replace, not a
 # leading-only strip: a mid-flag PH like --for<PH>ce is an exact-match bypass).
 # Blanking must not DISCARD the body ("$ (git push --force)" is a real deny), so
-# every backtick/$(...) body is re-appended as its own statement; ${...} bodies
-# are not (parameter expansion, not a command). Single-quoted spans are never
-# blanked; double-quoted $(...) IS live in bash -- telling them apart needs the
-# real quote-state scan below, not a regex. A span inside a "#" comment passes
-# through unchanged.
+# every backtick/$(...)/<(...)/>(...) body is re-appended as its own statement;
+# ${...} bodies are not (parameter expansion, not a command). Single-quoted
+# spans are never blanked; double-quoted $(...) IS live in bash -- telling them
+# apart needs the real quote-state scan below, not a regex. A span inside a "#"
+# comment passes through unchanged. <(...)/>(...) (GH #181) is never a real
+# "<"/">" redirect -- a redirect target can't start with an unescaped "(" -- so
+# blanking it here, before _blank_redirections runs, also stops that "<"/">"
+# from being misread as a redirect operator downstream.
 PH = "\x01"
 # shlex.shlex's own `commenters` (never overridden, stays its default "#") skips
 # to the next real "\n" the moment it sees an unquoted "#" ANYWHERE in a token,
@@ -470,6 +473,20 @@ PH = "\x01"
 # dangerous argv0/flag/subcommand this file matches on contains "#", so a
 # placeholder byte counts as one nonflag token exactly like a real "#" would.
 HASH_LIT = "\x02"
+# A process-substitution span ("<(cmd)"/">(cmd)", GH #181) blanks to ITS OWN
+# placeholder, never bare PH: unlike "$(...)"/backtick, whose expanded value
+# IS attacker-controlled to be an arbitrary string (so PH must be fully
+# .replace()d back out before any exact flag/subcommand match, everywhere PH
+# already is), a process substitution ALWAYS expands to a bash-synthesized
+# "/dev/fd/<n>" path -- it can never literally become "-f"/"--force"/"rm"/etc,
+# so PSUB never needs that same defensive stripping. The one place PSUB DOES
+# matter: a PURE PSUB token (`git checkout main <(true)`) is a real nonflag
+# argument to checkout, but not a real worktree pathspec checkout could
+# overwrite (a "/dev/fd/<n>" target), so it is excluded from checkout's
+# nonflag-arg count (see the "_co_nonflag" line) -- caught by an adversarial
+# pass as an over-deny regression on the naive "any extra nonflag arg denies"
+# version of this fix.
+PSUB = "\x03"
 # Work budget for the depth-counting closer-search, charged per character
 # walked and shared across one _scan_once call: without it, a flood of unclosed
 # "$(" starts is O(n^2) (65s on a 100,000-char payload under the length cap).
@@ -483,7 +500,21 @@ def _blank_substitutions(s):
 
     # One left-to-right pass with real quote/comment state; collects
     # backtick/$(...) bodies (never ${...}) into the shared `bodies` list.
-    def _scan_once(s):
+    # `depth_work_used`/`_depth`: only the <(...)/>(...) branch (GH #181)
+    # passes these, to recursively re-scan ITS OWN extracted body for a
+    # nested different-type substitution before splicing it back in verbatim
+    # (a backtick nested inside "<(...)" was found live/unscanned by an
+    # adversarial pass -- see the GH #181 comment on that branch). The
+    # top-level fixed-point loop below never passes them, so its own budget
+    # and depth are unchanged from before. Sharing one `depth_work_used`
+    # list across the whole recursion (never a fresh one per call) keeps the
+    # total work bounded by one _DEPTH_SCAN_BUDGET regardless of nesting
+    # depth; `_depth` caps the recursion itself, since a budget check alone
+    # does not stop Python's own RecursionError on ~1000 properly-closed,
+    # budget-cheap nested spans.
+    def _scan_once(s, depth_work_used=None, _depth=0):
+        if depth_work_used is None:
+            depth_work_used = [0]
         out = []
         in_squote = in_dquote = in_comment = False
         # See _newlines_to_seps's own comment: an escaped separator is still a
@@ -491,7 +522,6 @@ def _blank_substitutions(s):
         # is mid-word -- out[-1] alone can't tell the two apart.
         last_escaped = False
         i, n = 0, len(s)
-        depth_work_used = [0]
         while i < n:
             c = s[i]
             if in_comment:
@@ -584,6 +614,92 @@ def _blank_substitutions(s):
                     _DEPTH_BUDGET_BLOWN[0] = True
                 if not depth:
                     out.append(PH)
+                    i = j
+                    last_escaped = False
+                    continue
+            elif c in ("<", ">") and not in_dquote and s[i + 1:i + 2] == "(":
+                # Process substitution (GH #181): "<(cmd)"/">(cmd)" is a WORD,
+                # never a real redirect (a real "<"/">" redirect target can't
+                # start with "(" unescaped), so it must be blanked here, the
+                # same as "$(...)", BEFORE _blank_redirections ever sees the
+                # "<"/">" -- otherwise that bare "<"/">" is misread as an input/
+                # output redirect operator, and the body's own closing ")"
+                # (never a real word boundary here) reaches the "#"-boundary
+                # check as a bare character.
+                # "not in_dquote": unlike "$(...)"/backtick (live inside double
+                # quotes in real bash, correctly recognized either way by the
+                # sibling branches above), "<(...)"/">(...)" is INERT text
+                # inside double quotes -- "echo \"<(rm -rf x)\"" must stay a
+                # harmless literal string, not get its quoted body extracted
+                # and re-scanned as a real command (an adversarial pass caught
+                # this as an over-deny regression).
+                # Quote-aware, unlike the sibling "$(...)"/"${...}" closer-
+                # searches above: a ")" inside a quoted string in the body
+                # ("<(echo \")\"; rm -rf x)") is not a real closer, and the
+                # naive count-every-paren approach those siblings use closes
+                # the span early on it, leaving the real dangerous tail as
+                # unblanked literal text (a real regression, caught by an
+                # adversarial pass; the identical gap in "$(...)" itself is
+                # pre-existing and unrelated -- filed as GH #184, not fixed
+                # here).
+                depth, j = 1, i + 2
+                tsq = tdq = False
+                while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
+                    depth_work_used[0] += 1
+                    tc = s[j]
+                    if tsq:
+                        if tc == SQ:
+                            tsq = False
+                        j += 1
+                        continue
+                    if tdq:
+                        if tc == "\\" and j + 1 < n and s[j + 1] in (DQ, "\\", "$", "`"):
+                            j += 2
+                            continue
+                        if tc == DQ:
+                            tdq = False
+                        j += 1
+                        continue
+                    if tc == SQ:
+                        tsq = True; j += 1; continue
+                    if tc == DQ:
+                        tdq = True; j += 1; continue
+                    if tc == "\\" and j + 1 < n:
+                        j += 2
+                        continue
+                    if tc == "(":
+                        depth += 1
+                    elif tc == ")":
+                        depth -= 1
+                    j += 1
+                if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
+                    _DEPTH_BUDGET_BLOWN[0] = True
+                if not depth:
+                    # The extracted body is spliced back as its own top-level
+                    # statement ("\n; " + body) only once, after this whole
+                    # function returns -- never re-examined by this scan loop
+                    # again. A DIFFERENT-type substitution nested inside it
+                    # (a backtick inside "<(...)") would otherwise survive
+                    # unblanked all the way to shlex, still glued to its
+                    # neighbor characters and evading exact-match dispatch
+                    # (an adversarial pass caught this live: "<(echo `rm -rf
+                    # x`)" reached shlex as "`rm", never matching "rm").
+                    # Recursively re-scanning it here (this branch only --
+                    # the sibling "$(...)"/"${...}" branches above share the
+                    # identical gap, confirmed pre-existing, filed as GH
+                    # #185, not fixed here) closes that while a shared
+                    # depth_work_used bounds the total work across every
+                    # recursion level to one budget; _depth caps the
+                    # recursion itself, since a budget check alone doesn't
+                    # stop Python's own RecursionError on a deep chain of
+                    # cheap, properly-closed spans.
+                    body = s[i + 2:j - 1]
+                    if _depth < 50:
+                        body = _scan_once(body, depth_work_used, _depth + 1)
+                    else:
+                        _DEPTH_BUDGET_BLOWN[0] = True
+                    bodies.append(body)
+                    out.append(PSUB)
                     i = j
                     last_escaped = False
                     continue
@@ -771,7 +887,7 @@ if len(cmd) > _CMD_LEN_CAP:
 
 try:
     lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd)))), posix=True, punctuation_chars=True)
-    lex.wordchars += PH + HASH_LIT
+    lex.wordchars += PH + HASH_LIT + PSUB
     tokens = list(lex)
 except ValueError:
     # Two causes: (1) a genuinely unbalanced quote; (2) the closer-search above
@@ -856,7 +972,7 @@ def _unwrap_shell(argv0, rest):
              "-- only the main session dispatches")
     try:
         lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(body))), posix=True, punctuation_chars=True)
-        lex.wordchars += PH + HASH_LIT
+        lex.wordchars += PH + HASH_LIT + PSUB
         lex.whitespace_split = True
         cur = []
         for tok in list(lex) + [";"]:
@@ -1203,7 +1319,12 @@ for _wi, w in enumerate(windows):
                 # stays allowed: it may be a legit branch switch.
                 # -b/-B/--orphan consume one nonflag (the new branch name), so
                 # `checkout -b feat origin/develop` is a create, not tree+path.
-                _co_nonflag = len([t for t in scan if not t.startswith("-")]) - (
+                # A PURE PSUB token (GH #181: `checkout main <(true)`) is a real
+                # nonflag arg but never a real worktree pathspec (its expanded
+                # value is always a synthesized "/dev/fd/<n>" path, not
+                # attacker-controlled the way "$(...)" is), so it's excluded
+                # here rather than counted toward the tree-ish+path deny.
+                _co_nonflag = len([t for t in scan if not t.startswith("-") and t != PSUB]) - (
                     1 if any(t in ("-b", "-B", "--orphan") for t in scan) else 0)
                 if sub == "checkout" and ("--" in scan or "." in scan or
                                             _co_nonflag >= 2 or

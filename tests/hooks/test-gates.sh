@@ -729,6 +729,55 @@ test_allow "$IRRECOVERABLE" 'GH #178 round 2 control: an EVEN run of escaped bac
 test_deny "$IRRECOVERABLE" 'GH #178 round 2 control: a backslash-escaped # itself is never re-examined as a boundary/non-boundary case' \
   "$(bash_payload 'echo foo\#bar; rm -rf hooks/gates/irrecoverable.py')"
 
+# GH #181: a "#" right after a process substitution's closing ")" (<(...)/>(...)) has the same
+# word-boundary gap GH #178 fixed for a plain mid-word "#" -- unlike "$(...)"/backtick, this file
+# never recognized <(...)/>(...) at all, so its closing ")" reached the "#"-boundary check as a
+# bare character (")" is in _REDIRECT_TARGET_STOP, wrongly read as a real word break). Fixed by
+# blanking <(...)/>(...) to PH (same as "$(...)") before _blank_redirections or the "#"-boundary
+# check ever see it, with the body re-appended and re-scanned like a real $(...) body.
+test_deny "$IRRECOVERABLE" 'GH #181: # right after <(...) must not hide a real trailing rm -rf' \
+  "$(bash_payload 'echo <(true)#bar; rm -rf hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #181: same check with >(...) (output process substitution)' \
+  "$(bash_payload 'echo >(true)#bar; rm -rf hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #181: same check with a git subcommand after the ;' \
+  "$(bash_payload 'echo <(true)#bar; git reset --hard')"
+test_deny "$IRRECOVERABLE" 'GH #181 control: a dangerous command INSIDE <(...) is still denied (no # trick needed)' \
+  "$(bash_payload 'echo <(rm -rf hooks/gates/irrecoverable.py)')"
+test_allow "$IRRECOVERABLE" 'GH #181 control: an ordinary process-substitution idiom with nothing dangerous still allows' \
+  "$(bash_payload 'diff <(sort /etc/hosts) <(sort /etc/hosts)')"
+
+# GH #181 round 2 (adversarial Codex pass found these before ship): 3 bugs in the first <(...)/>(...)
+# recognition attempt.
+test_deny "$IRRECOVERABLE" 'GH #181 round 2 finding 1: a quoted ) inside the body must not prematurely close the span' \
+  "$(bash_payload 'echo <(echo ")"; rm -rf hooks/gates/irrecoverable.py)')"
+test_deny "$IRRECOVERABLE" 'GH #181 round 2 finding 1, >(...) variant' \
+  "$(bash_payload 'echo >(echo ")"; rm -rf hooks/gates/irrecoverable.py)')"
+test_allow "$IRRECOVERABLE" 'GH #181 round 2 finding 2: <(...) inside double quotes is inert text, must not get its body re-scanned' \
+  "$(bash_payload 'echo "<(rm -rf hooks/gates/irrecoverable.py)"')"
+test_allow "$IRRECOVERABLE" 'GH #181 round 2 finding 3: a pure <(...) arg to checkout is a real nonflag arg but never a real worktree pathspec' \
+  "$(bash_payload 'git checkout main <(true) 2>&1')"
+test_allow "$IRRECOVERABLE" 'GH #181 round 2 finding 3, two pure <(...) args, same reasoning' \
+  "$(bash_payload 'git checkout HEAD <(true) <(true) 2>&1')"
+test_deny "$IRRECOVERABLE" 'GH #181 round 2 control: a real 2-nonflag tree-ish+path checkout, no substitution, still denies' \
+  "$(bash_payload 'git checkout HEAD~1 hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #181 round 2 control: a $(...)-derived path arg (attacker-controlled value) still counts toward checkout tree-ish+path' \
+  "$(bash_payload 'git checkout main $(echo hooks/gates/irrecoverable.py) 2>&1')"
+
+# GH #181 round 3 (adversarial Codex pass found this before ship): a body extracted from <(...)/
+# >(...) is spliced back as its own statement only ONCE, after the whole scan finishes -- a
+# DIFFERENT-type substitution nested inside it (a backtick inside "<(...)") was never re-examined,
+# so it survived unblanked to shlex, still glued to its neighbor text and evading exact-match
+# dispatch. Fixed by recursively re-scanning the extracted body (this branch only; the sibling
+# "$(...)"/"${...}" branches share the identical gap, confirmed pre-existing, filed separately).
+test_deny "$IRRECOVERABLE" 'GH #181 round 3: a backtick nested inside <(...) must not survive unblanked to shlex' \
+  "$(bash_payload 'echo <(echo `rm -rf hooks/gates/irrecoverable.py`)')"
+test_deny "$IRRECOVERABLE" 'GH #181 round 3, >(...) variant' \
+  "$(bash_payload 'echo >(echo `rm -rf hooks/gates/irrecoverable.py`)')"
+test_deny "$IRRECOVERABLE" 'GH #181 round 3, a git subcommand nested inside the backtick' \
+  "$(bash_payload 'echo <(echo `git reset --hard`)')"
+test_deny "$IRRECOVERABLE" 'GH #181 round 3 control: 1000-deep nested <(...) with a real rm -rf innermost fails closed, no crash/traceback' \
+  "$(bash_payload "$(python3 -c "print('echo ' + '<(' * 1000 + 'rm -rf hooks/gates/irrecoverable.py' + ')' * 1000)")")"
+
 # The gate correctly denies each idiom below TODAY, but no test held the deny path, so a
 # mutation to the wrapper-unwrap / hooksPath / branch-delete / backstop logic survived the whole
 # suite (fail-open, undetected).
