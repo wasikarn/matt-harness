@@ -681,6 +681,54 @@ test_deny "$IRRECOVERABLE" 'git checkout HEAD >out{suffix file ({ glued mid-targ
 test_deny "$IRRECOVERABLE" 'git checkout HEAD >out}suffix file (} glued mid-target must not truncate the scan)' \
   "$(bash_payload 'git checkout HEAD >out}suffix hooks/gates/irrecoverable.py')"
 
+# GH #178: a bare "#" mid-word in an ORDINARY argument (not a redirect target) was mistaken for a
+# comment start ANYWHERE by shlex's own commenters="#" (never overridden -- it has no word-position
+# awareness), hiding a real trailing dangerous command. Fixed by swapping a non-boundary "#" for a
+# HASH_LIT placeholder (added to lex.wordchars) before shlex ever sees it, so only a genuine
+# word-boundary "#" still reaches shlex's own comment-stripping.
+test_deny "$IRRECOVERABLE" 'GH #178: bare # mid-word must not hide a real trailing rm -rf' \
+  "$(bash_payload 'echo foo#suffix; rm -rf hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #178: double ## mid-word, same check' \
+  "$(bash_payload 'echo foo##bar; rm -rf hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #178: # right after a blanked $(...) substitution must not hide the rest' \
+  "$(bash_payload 'echo $(true)#x; rm -rf hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #178: same check inside a bash -c body' \
+  "$(bash_payload 'bash -c "echo foo#bar; rm -rf hooks/gates/irrecoverable.py"')"
+test_deny "$IRRECOVERABLE" 'GH #178: # mid-word inside a $(...) body re-scanned on the fixed-point pass' \
+  "$(bash_payload 'echo "$(cat foo#bar)"; rm -rf hooks/gates/irrecoverable.py')"
+test_allow "$IRRECOVERABLE" 'GH #178 control: bare # mid-word with nothing dangerous after it still allows' \
+  "$(bash_payload 'echo foo#bar')"
+test_allow "$IRRECOVERABLE" 'GH #178 control: a genuine word-boundary "#" comment is still stripped' \
+  "$(bash_payload 'git checkout main # trailing comment')"
+
+# GH #178 round 2 (adversarial Codex pass found this before ship): an escaped separator
+# ("\ ", "\;", "\|", "\&", "\(") is still a LITERAL character in bash, not a real word break, so a
+# "#" right after it is mid-word too -- out[-1] alone can't tell an escaped separator from a real
+# one (both leave the same byte). Fixed with a `last_escaped` flag tracking whether the last
+# appended char came from an escaped pair, discounted from the "#" boundary check.
+test_deny "$IRRECOVERABLE" 'GH #178 round 2: escaped space before # must not hide a real trailing rm -rf' \
+  "$(bash_payload 'echo foo\ #bar; rm -rf hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #178 round 2: escaped semicolon before #, same check' \
+  "$(bash_payload 'echo foo\;#bar; rm -rf hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #178 round 2: escaped pipe before #, same check' \
+  "$(bash_payload 'echo foo\|#bar; rm -rf hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #178 round 2: escaped ampersand before #, same check' \
+  "$(bash_payload 'echo foo\&#bar; rm -rf hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #178 round 2: escaped open-paren before #, same check' \
+  "$(bash_payload 'echo foo\(#bar; rm -rf hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #178 round 2: escaped close-paren before #, same check' \
+  "$(bash_payload 'echo foo\)#bar; rm -rf hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #178 round 2: escaped space after a blanked $(...) placeholder before #, same check' \
+  "$(bash_payload 'echo $(true)\ #x; rm -rf hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #178 round 2: escaped space right after a closing double-quote before #, same check' \
+  "$(bash_payload 'echo "x"\ #bar; rm -rf hooks/gates/irrecoverable.py')"
+test_allow "$IRRECOVERABLE" 'GH #178 round 2 control: escaped space before # with nothing dangerous after still allows' \
+  "$(bash_payload 'echo foo\ #bar')"
+test_allow "$IRRECOVERABLE" 'GH #178 round 2 control: an EVEN run of escaped backslashes leaves the next separator real, so # is a genuine comment' \
+  "$(bash_payload 'echo foo\\\\ #realcomment; rm -rf hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #178 round 2 control: a backslash-escaped # itself is never re-examined as a boundary/non-boundary case' \
+  "$(bash_payload 'echo foo\#bar; rm -rf hooks/gates/irrecoverable.py')"
+
 # The gate correctly denies each idiom below TODAY, but no test held the deny path, so a
 # mutation to the wrapper-unwrap / hooksPath / branch-delete / backstop logic survived the whole
 # suite (fail-open, undetected).

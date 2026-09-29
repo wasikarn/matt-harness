@@ -359,6 +359,12 @@ DQ = chr(34)
 def _newlines_to_seps(s):
     out = []
     in_squote = in_dquote = in_comment = False
+    # An escaped separator ("\ ", "\;", "\|", ...) is still a LITERAL character
+    # in bash, not a real word break, so a "#" right after it is mid-word, not
+    # a comment start -- out[-1] alone can't tell the two apart (both leave the
+    # same separator byte in out). This tracks whether the last APPENDED char
+    # came from an escaped pair, so the "#" boundary check can discount it.
+    last_escaped = False
     i, n = 0, len(s)
     while i < n:
         c = s[i]
@@ -368,12 +374,14 @@ def _newlines_to_seps(s):
                 in_comment = False
             else:
                 out.append(c)
+            last_escaped = False
             i += 1
             continue
         if in_squote:
             out.append(c)
             if c == SQ:
                 in_squote = False
+            last_escaped = False
             i += 1
             continue
         if in_dquote:
@@ -383,20 +391,24 @@ def _newlines_to_seps(s):
                 continue
             if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`"):
                 out.append(c); out.append(s[i + 1])
+                last_escaped = False
                 i += 2
                 continue
             out.append(c)
             if c == DQ:
                 in_dquote = False
+            last_escaped = False
             i += 1
             continue
         # unquoted, not in a comment
         if c == SQ:
             in_squote = True
             out.append(c); i += 1
+            last_escaped = False
         elif c == DQ:
             in_dquote = True
             out.append(c); i += 1
+            last_escaped = False
         elif c == "\\" and i + 1 < n and s[i + 1] == "\n":
             # real line continuation: both chars removed, nothing appended
             i += 2
@@ -405,15 +417,22 @@ def _newlines_to_seps(s):
             # is never re-examined as a hash/quote marker
             out.append(c); out.append(s[i + 1])
             i += 2
-        elif c == "#":
+            last_escaped = True
+        elif c == "#" and not last_escaped and (not out or out[-1] in _REDIRECT_TARGET_STOP):
             in_comment = True
             out.append(c); i += 1
+            last_escaped = False
+        elif c == "#":
+            out.append(HASH_LIT); i += 1
+            last_escaped = False
         elif c == "\n":
             out.append(c); out.append(";"); out.append(" ")
             i += 1
+            last_escaped = False
         else:
             out.append(c)
             i += 1
+            last_escaped = False
     return "".join(out)
 
 # Command-substitution placeholder pass. A backtick/$(...)/${...} span vanishes
@@ -437,6 +456,20 @@ def _newlines_to_seps(s):
 # real quote-state scan below, not a regex. A span inside a "#" comment passes
 # through unchanged.
 PH = "\x01"
+# shlex.shlex's own `commenters` (never overridden, stays its default "#") skips
+# to the next real "\n" the moment it sees an unquoted "#" ANYWHERE in a token,
+# mid-word or not -- it has no word-position awareness, so a literal "foo#bar"
+# fed to it unchanged still loses everything from "#" onward, regardless of the
+# in_comment tracking below (that tracking only keeps quote-state correct while
+# copying comment text through -- see "A span inside a "#" comment passes
+# through unchanged" above -- it does not change what shlex itself treats as a
+# comment start). A mid-word "#" is swapped for this placeholder before shlex
+# ever sees it (a genuine word-boundary "#" is left alone, so shlex's own
+# comment-stripping still runs for a real comment); HASH_LIT is added to
+# lex.wordchars at both call sites. No downstream restore to "#" is needed: no
+# dangerous argv0/flag/subcommand this file matches on contains "#", so a
+# placeholder byte counts as one nonflag token exactly like a real "#" would.
+HASH_LIT = "\x02"
 # Work budget for the depth-counting closer-search, charged per character
 # walked and shared across one _scan_once call: without it, a flood of unclosed
 # "$(" starts is O(n^2) (65s on a 100,000-char payload under the length cap).
@@ -453,6 +486,10 @@ def _blank_substitutions(s):
     def _scan_once(s):
         out = []
         in_squote = in_dquote = in_comment = False
+        # See _newlines_to_seps's own comment: an escaped separator is still a
+        # literal char in bash, not a real word break, so a "#" right after it
+        # is mid-word -- out[-1] alone can't tell the two apart.
+        last_escaped = False
         i, n = 0, len(s)
         depth_work_used = [0]
         while i < n:
@@ -461,22 +498,26 @@ def _blank_substitutions(s):
                 if c == "\n":
                     in_comment = False
                 out.append(c)
+                last_escaped = False
                 i += 1
                 continue
             if in_squote:
                 out.append(c)
                 if c == SQ:
                     in_squote = False
+                last_escaped = False
                 i += 1
                 continue
             if in_dquote:
                 if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`"):
                     out.append(c); out.append(s[i + 1])
+                    last_escaped = False
                     i += 2
                     continue
                 if c == DQ:
                     out.append(c)
                     in_dquote = False
+                    last_escaped = False
                     i += 1
                     continue
                 # else: fall through -- substitutions ARE live inside double quotes
@@ -484,18 +525,26 @@ def _blank_substitutions(s):
                 if c == SQ:
                     in_squote = True
                     out.append(c); i += 1
+                    last_escaped = False
                     continue
                 if c == DQ:
                     in_dquote = True
                     out.append(c); i += 1
+                    last_escaped = False
                     continue
                 if c == "\\" and i + 1 < n:
                     out.append(c); out.append(s[i + 1])
                     i += 2
+                    last_escaped = True
                     continue
-                if c == "#":
+                if c == "#" and not last_escaped and (not out or out[-1] in _REDIRECT_TARGET_STOP):
                     in_comment = True
                     out.append(c); i += 1
+                    last_escaped = False
+                    continue
+                if c == "#":
+                    out.append(HASH_LIT); i += 1
+                    last_escaped = False
                     continue
             if c == "`":
                 j = s.find("`", i + 1)
@@ -503,6 +552,7 @@ def _blank_substitutions(s):
                     bodies.append(s[i + 1:j])
                     out.append(PH)
                     i = j + 1
+                    last_escaped = False
                     continue
             elif c == "$" and s[i + 1:i + 2] == "(":
                 depth, j = 1, i + 2
@@ -519,6 +569,7 @@ def _blank_substitutions(s):
                     bodies.append(s[i + 2:j - 1])
                     out.append(PH)
                     i = j
+                    last_escaped = False
                     continue
             elif c == "$" and s[i + 1:i + 2] == "{":
                 depth, j = 1, i + 2
@@ -534,9 +585,11 @@ def _blank_substitutions(s):
                 if not depth:
                     out.append(PH)
                     i = j
+                    last_escaped = False
                     continue
             out.append(c)
             i += 1
+            last_escaped = False
         return "".join(out)
 
     for _ in range(5):
@@ -597,6 +650,10 @@ _REDIRECT_TARGET_STOP = set(" \t\n;|&()")
 def _blank_redirections(s):
     out = []
     in_squote = in_dquote = in_comment = False
+    # See _newlines_to_seps's own comment: an escaped separator is still a
+    # literal char in bash, not a real word break, so a "#" right after it
+    # is mid-word -- out[-1] alone can't tell the two apart.
+    last_escaped = False
     i, n = 0, len(s)
     while i < n:
         c = s[i]
@@ -604,42 +661,54 @@ def _blank_redirections(s):
             out.append(c)
             if c == "\n":
                 in_comment = False
+            last_escaped = False
             i += 1
             continue
         if in_squote:
             out.append(c)
             if c == SQ:
                 in_squote = False
+            last_escaped = False
             i += 1
             continue
         if in_dquote:
             if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`"):
                 out.append(c); out.append(s[i + 1])
+                last_escaped = False
                 i += 2
                 continue
             out.append(c)
             if c == DQ:
                 in_dquote = False
+            last_escaped = False
             i += 1
             continue
         # unquoted, not in a comment
         if c == SQ:
             in_squote = True
             out.append(c); i += 1
+            last_escaped = False
             continue
         if c == DQ:
             in_dquote = True
             out.append(c); i += 1
+            last_escaped = False
             continue
         if c == "\\" and i + 1 < n:
             # an escaped char (including an escaped ">"/"<") is never a real
             # operator -- consumed together so it is not re-examined below.
             out.append(c); out.append(s[i + 1])
             i += 2
+            last_escaped = True
             continue
-        if c == "#":
+        if c == "#" and not last_escaped and (not out or out[-1] in _REDIRECT_TARGET_STOP):
             in_comment = True
             out.append(c); i += 1
+            last_escaped = False
+            continue
+        if c == "#":
+            out.append(HASH_LIT); i += 1
+            last_escaped = False
             continue
         m = _REDIRECT_OP_RE.match(s, i)
         if m:
@@ -681,9 +750,11 @@ def _blank_redirections(s):
                     break
                 k += 1
             i = k
+            last_escaped = False
             continue
         out.append(c)
         i += 1
+        last_escaped = False
     return "".join(out)
 
 # shlex.split() only recognizes ;/&&/||/|/& as separators when whitespace
@@ -700,7 +771,7 @@ if len(cmd) > _CMD_LEN_CAP:
 
 try:
     lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd)))), posix=True, punctuation_chars=True)
-    lex.wordchars += PH
+    lex.wordchars += PH + HASH_LIT
     tokens = list(lex)
 except ValueError:
     # Two causes: (1) a genuinely unbalanced quote; (2) the closer-search above
@@ -785,7 +856,7 @@ def _unwrap_shell(argv0, rest):
              "-- only the main session dispatches")
     try:
         lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(body))), posix=True, punctuation_chars=True)
-        lex.wordchars += PH
+        lex.wordchars += PH + HASH_LIT
         lex.whitespace_split = True
         cur = []
         for tok in list(lex) + [";"]:
