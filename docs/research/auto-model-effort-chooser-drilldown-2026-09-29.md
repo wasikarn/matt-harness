@@ -14,6 +14,12 @@ today changes it. Confidence: **high** (live version check, live Agent-tool sche
 session, fresh primary sources, git history showing every actionable prior candidate is shipped
 or moot).
 
+> **Added later the same day.** The verdict, Score and reopen text below were written before the live
+> tests. The decision (do not build in mh) stands, but two things in them changed: a runtime chooser is
+> not blocked by the platform (a `turn.step` hook can set effort on the main loop, Correction 3), and
+> the reopen conditions below are not the only ones. The map of what supersedes what is in
+> Correction 6 at the end.
+
 ## Method
 
 1. Read the newest prior round first: `docs/research/auto-model-auto-effort-2026-09-26.md` (3
@@ -434,6 +440,80 @@ does not change the mh decision: the mechanism is still experimental, mh already
 per agent in frontmatter, and there is no incident (Rule 2). No gap from Correction 4 remains open
 except the proxy terms question, which only Anthropic Support can answer.
 
+## Correction 6 (2026-09-29, later same day): deep-audit findings, claims narrowed
+
+Two independent checkers (a fresh Opus agent and Codex `gpt-6-sol`, read-only, given only the file list
+and commit range) reviewed this doc, its memory entry and the dotfiles changes. They agreed on the
+points below. Nothing here changes the mh decision; it narrows what the evidence supports.
+
+**What supersedes what.**
+
+| Earlier claim | Where | Status |
+|---|---|---|
+| "a genuine runtime auto-chooser is blocked by the platform"; feasibility 0/10 | Verdict, Score | Superseded by Correction 3: a `turn.step` hook set effort on the main loop (experimental API). The decline now rests on Rule 2 (no incident), the experimental status and mh's frontmatter tiering, not on impossibility |
+| Reopen only for an Agent-tool `effort` field or a plugin-honoured settings key | "What would change this verdict" | Additional, not replaced. Governing conditions today: function hooks reach a stable release **and** an incident or a measured cost case appears; the two original triggers still count |
+| "Two open upstream feature requests" (#43326, #60200) | Correction | Fixed in Correction 2 |
+| The settings-file side channel is "plausible, ~6/10" | Correction | Withdrawn in Correction 2; the modelSettings and top-level variants are both refuted by test (Corrections 2 and 5) |
+| "Hook overruns 10 s, fail-open"; "no `turn.step` for background agents" | Correction 2 | Both corrected in Correction 4 |
+| "A per-change cache miss" | Correction 4 | Narrowed by Correction 5, and again below |
+| "No gap from Correction 4 remains open except the proxy terms question" | Correction 5 | Wrong; see the open list below |
+
+**The cache result, restated.** The rows in Correction 5 are correct (they were recomputed from the raw
+transcript). What they support is narrower than "direct evidence that the hook's value reaches the API":
+- Only the first of three effort changes was followed by a cache miss. The other two were full hits,
+  which contradicts the prompt-caching doc's "always invalidates message blocks", so that row does not
+  explain the data by itself.
+- Between the last `medium` response and the first `low` response the transcript holds a shell exchange
+  (bash-input and bash-stdout lines, apparently the control-file write). Appended messages alone cannot make the earlier prefix miss
+  (the read fell back to the system and tools part), but the history did differ, and no request body
+  was captured.
+- Consistent reading: the server saw a changed request at that point. It does not show which field
+  changed, and the body-level check named in Correction 3 was never done. The other evidence that the
+  rewrite took effect is the transcript's recorded effort and the 8x to 27x change in output tokens.
+- The `perTurnEffort` remark in Correction 5 is withdrawn: the field is present before any hook edit
+  (turn 1 of that session) and in sessions with no function hook, and it is null for the whole
+  Sonnet 4.6 session, so it is a per-model field, not a marker of what happens after the first change.
+
+**Forks and per-spawn effort.** "A constant value costs no cache" holds for a loop that keeps one effort
+from its first request. It is untested for a per-spawn override on a fork: the fork's first request
+reused the parent's cached prefix (both read 55,225 tokens), so a fork whose effort differs from the
+parent's is the "change" case, which cost about 41.5k tokens once in the measured session. Correction
+5's Consequence paragraph should read "a per-spawn effort policy is untested for forks".
+
+**Still open** (Correction 5 said only the proxy terms question was): the request-body check of what
+was actually sent; whether compaction and the memory forks raise `turn.step` on a path the index-0 log
+does not see; the cache cost of a per-spawn effort on a fork; and the proxy terms question.
+
+**Wording fixes.** `effort-log` logs each turn's first step (`index === 0`), not each loop's first
+request. The `MH_EFFORT_BOOSTED` reader is `claude/hooks/effort-signal-report.sh` in the operator's
+dotfiles, at lines 118 and 121 (lines 93 to 94 are the boost branch that motivates the claim). In the
+top-level `effortLevel` test the model's own default is `high`, so the turn-1 `low` can only have come
+from the file. `effort-log` ignored `process.run`'s exit code (a failed append vanished); fixed in
+dotfiles commit `b21d0d9f`, which now logs the exit code and stderr.
+
+**The Correction 3 probe, quoted** (its source folder was deleted after the run, so the "recheck with the
+same probe" in Corrections 2 and 3 had nothing to run). A function-hooks plugin, loaded with
+`--plugin-dir` and `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`; a `control.txt` beside it holds `off`, `low`,
+`medium`, `high`, `xhigh` or `max`, changed between turns:
+
+```ts
+import type { Register } from 'claude-code'
+const DIR = '<absolute path of the plugin folder>'
+const LEVELS = new Set(['low', 'medium', 'high', 'xhigh', 'max'])
+export const register: Register = on => {
+  on('turn.step', async function* ($, e, next) {
+    let target = 'off'
+    try { target = (await $.fs.read(`${DIR}/control.txt`)).trim() } catch { /* log only */ }
+    const rewrite = e.agentId === undefined && LEVELS.has(target)
+    // ...append {turnId, index, model, agent, effortIn: e.effort, target} to a log here...
+    return yield* next(rewrite ? { ...e, effort: target as 'low' } : e)
+  })
+}
+```
+
+**Checker scope note.** Codex marked its scope check false only because the literal commit range also
+spans two gate files from other sessions' merged pull requests; neither belongs to this work.
+
 ## Sources
 
 - `docs/research/auto-model-auto-effort-2026-09-26.md` (22 sources, this repo)
@@ -452,3 +532,5 @@ except the proxy terms question, which only Anthropic Support can answer.
 - Function-hooks thread (2026-09-29): anthropics/claude-code#91870, all 224 comments searched (frsorrentino 2026-09-04, jdainsworthsnb 2026-09-05, Butanium 2026-09-15, Marat 2026-09-15), maintainer update 2026-09-09; built-in mods listing at `anthropics/claude-code/mods` (agents-md, diff, sec-default, telemetry, none about effort routing)
 - Correction 4 sources (2026-09-29): platform.claude.com prompt-caching and effort docs; code.claude.com llm-gateway, llm-gateway-protocol, legal-and-compliance, model-config, env-vars; anthropics/claude-code `mods/README.md`; the `plugin-authoring` bundle `reference.md` and `types/claude-code.d.ts` (HookBudget, turn.step); dotfiles `claude/bin/claude-shim` and `hooks/effort-signal-report.sh`; `mh:cost-report` output (2026-09-29)
 - Correction 5 sources (2026-09-29): operator-run tests on CC 2.1.284 (probe session transcript usage rows; scratch-project top-level `effortLevel` test with `effort-log` rows and transcript effort; background-agent and `/compact` test with `effort-log` rows and tool results); dotfiles `claude/mods/effort-log`
+- Correction 3 sources (2026-09-29): operator-run probe session, transcript of the session whose id starts `87a15847` (usage rows and per-message effort); the `plugin-authoring` bundle `types/claude-code.d.ts` (`TurnStepInput`)
+- Correction 6 sources (2026-09-29): `mh:deep-audit` checkers (Opus agent; Codex `gpt-6-sol`, effort medium, read-only) run against this doc as it stood before this correction (sha256 prefix `0282eaf626bf`); transcript sessions `87a15847` and `3da5bc7c`; dotfiles commit `b21d0d9f`
