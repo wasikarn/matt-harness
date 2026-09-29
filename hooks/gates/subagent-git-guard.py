@@ -151,8 +151,13 @@ masked = _mask_quotes(cmd)
 # stash; done"). A wrapper word must be followed by whitespace in the lookahead
 # too: with a bare \b a token that only STARTS with one ("timeout=30") is neither
 # a wrapper nor an ordinary token, and the regex dead-ends.
+# Deep-audit 4: eval (unquoted args are a command line), builtin and rtk joined.
+# rtk was already in irrecoverable.py's list when this file's copy was typed, so
+# `rtk proxy git stash` slipped through; tests/hooks/test-subagent-git-guard.sh
+# now fails when a PREFIX_WRAPPERS word is not a wrapper here.
 _WRAPPER_WORDS = ("env", "command", "nohup", "nice", "time", "sudo", "xargs",
-                  "exec", "setsid", "timeout", "gtimeout", "stdbuf", "ionice")
+                  "exec", "setsid", "timeout", "gtimeout", "stdbuf", "ionice",
+                  "eval", "builtin", "rtk")
 _KEYWORDS = ("!", "if", "elif", "then", "else", "do", "while", "until", "coproc")
 _WRAPPER_ALT = r"(?:" + "|".join(_WRAPPER_WORDS) + r")(?=\s)"
 _WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"\s+(?:(?!" + _WRAPPER_ALT + r")\S+\s+)*)*"
@@ -164,8 +169,11 @@ _ANCHOR_RE = re.compile(_CMD_START + r"\\?(?:\S*/)?git\b", re.MULTILINE)
 # text hides it. The shell word is matched on the masked string (a real command,
 # not text inside a message); the body is read from the raw command at the same
 # offset (masking is 1:1) and checked as its own command line, one level deep.
+# `rtk run [-c|--command] "<body>"` and `rtk err|test|summary "<body>"` run their
+# args through `sh -c` (irrecoverable.py, GH #216), so a quoted arg is a body too.
+_RTK_BODY = r"rtk\s+(?:-\S+\s+)*(?:run(?:\s+(?:-c|--command))?|err|test|summary)"
 _SHELL_RE = re.compile(
-    _CMD_START + r"\\?(?:\S*/)?(?:(?:bash|sh|zsh|dash|ksh)\s+(?:-\S+\s+)*?-\w*c\w*|eval)(?=\s)",
+    _CMD_START + r"\\?(?:\S*/)?(?:(?:bash|sh|zsh|dash|ksh)\s+(?:-\S+\s+)*?-\w*c\w*|eval|" + _RTK_BODY + r")(?=\s)",
     re.MULTILINE,
 )
 # Masking blanks the quote characters, so the raw body is found by skipping

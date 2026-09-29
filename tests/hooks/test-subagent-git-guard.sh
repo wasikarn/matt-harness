@@ -343,6 +343,69 @@ for _c in \
   check "spelling-variant control allowed for a subagent: $_c" "$ok"
 done
 
+# --- (13) deep-audit 4 (2026-09-29): unquoted eval / builtin, and the rtk wrapper that
+# irrecoverable.py's shared list gained (GH #216) while this file kept its own copy --- #
+for _c in \
+  'eval git stash' \
+  'eval git reset --hard' \
+  'eval git clean -fd' \
+  'eval eval git stash' \
+  'eval command git stash' \
+  'builtin command git stash' \
+  'builtin eval git stash' \
+  'eval "eval git stash"' \
+  "sh -c 'eval git stash'" \
+  'rtk git stash' \
+  'rtk proxy git stash' \
+  'rtk proxy git reset --hard' \
+  'rtk -v proxy git stash' \
+  'rtk err git stash' \
+  'rtk test git stash' \
+  'rtk summary git stash' \
+  "rtk run -c 'git stash'" \
+  'rtk run --command "git reset --hard"' \
+  'rtk run "git stash"' \
+  'rtk err "git clean -fd"' \
+  'rtk test "git stash"' \
+  'rtk summary "git reset --hard"' \
+  'env eval=1 git stash' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "eval/builtin/rtk spelling denied for a subagent: $_c" "$ok"
+done
+for _c in \
+  'eval git status' \
+  'eval git stash list' \
+  'eval echo "git stash"' \
+  'builtin echo hi' \
+  'rtk git status' \
+  'rtk proxy git stash list' \
+  "rtk run -c 'git status'" \
+  'rtk grep "git stash" docs' \
+  'eval=1 git status' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "eval/builtin/rtk control allowed for a subagent: $_c" "$ok"
+done
+
+# Drift guard: every wrapper word in irrecoverable.py's PREFIX_WRAPPERS must also be a wrapper
+# here (the two lists are typed by hand, GH #213). irrecoverable.py runs on import, so the two
+# tuples are read from its source. A parse failure yields no words and fails the count check.
+_wrappers=$(python3 - "$ROOT/hooks/gates/irrecoverable.py" <<'PY'
+import ast, sys
+env = {}
+for n in ast.parse(open(sys.argv[1]).read()).body:
+    if isinstance(n, ast.Assign) and getattr(n.targets[0], "id", "") in ("FLAG_VALUE_WRAPPERS", "PREFIX_WRAPPERS"):
+        exec(compile(ast.Module([n], []), "irrecoverable.py", "exec"), env)
+print(*env.get("PREFIX_WRAPPERS", ()))
+PY
+)
+_n=0; for _w in $_wrappers; do _n=$((_n + 1)); done
+ok=1; [ "$_n" -ge 8 ] && ok=0
+check "drift guard read $_n wrapper words from irrecoverable.py PREFIX_WRAPPERS (expect at least 8)" "$ok"
+for _w in $_wrappers; do
+  rc=$(sgg_rc "$_w git stash"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "irrecoverable wrapper word is a wrapper in the guard too: $_w git stash" "$ok"
+done
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

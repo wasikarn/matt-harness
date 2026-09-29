@@ -1300,6 +1300,29 @@ for _c in \
   test_allow "$IRRECOVERABLE" "glued-punctuation control still allowed: $_c" "$(bash_payload "$_c")"
 done
 
+# 2026-09-29 deep-audit 4: `builtin` runs the builtin after it, so `builtin eval rm -rf x` and
+# `builtin command git add -A` reached the real command with no wrapper unwrapped (the wrapper x verb
+# sweep of the third audit never listed it). `builtin=30` and a plain `builtin echo` are the controls
+# for the (?=\s) lookahead and for a harmless builtin.
+for _c in \
+  'builtin eval rm -rf x' \
+  'builtin command git add -A' \
+  'builtin eval git commit -n -m x' \
+  'builtin command git push --force origin main' ; do
+  test_deny "$IRRECOVERABLE" "builtin wrapper unwrapped: $_c" "$(bash_payload "$_c")"
+done
+test_deny  "$IRRECOVERABLE" "subagent: env builtin=30 claude -p (new wrapper word must not defeat the spawn anchor)" \
+  "$(bash_agent_payload 'env builtin=30 claude -p "x"' fork)"
+test_deny  "$IRRECOVERABLE" "subagent: builtin command claude -p (the shared list reaches the spawn anchor)" \
+  "$(bash_agent_payload 'builtin command claude -p "x"' fork)"
+for _c in \
+  'builtin echo hi' \
+  'builtin cd /tmp' \
+  'builtin eval echo hi' \
+  'env builtin=30 ls' ; do
+  test_allow "$IRRECOVERABLE" "builtin control still allowed: $_c" "$(bash_payload "$_c")"
+done
+
 echo ""
 echo "=== gh merge ask-tier gate (Phase B, 2026-09-28: local defense-in-depth for the PR-review flow) ==="
 test_ask   "$IRRECOVERABLE" "gh pr merge <number>"                "$(bash_payload 'gh pr merge 5')"

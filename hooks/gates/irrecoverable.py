@@ -222,7 +222,8 @@ FLAG_VALUE_WRAPPERS = {
     "gtimeout": ("-s", "-k", "--signal"),
     "exec": ("-a",),
 }
-PREFIX_WRAPPERS = ("env", "command", "nohup", "time", "sudo", "setsid", "rtk") + tuple(FLAG_VALUE_WRAPPERS)
+# `builtin` runs the builtin after it (`builtin eval rm -rf x`); it takes no flags.
+PREFIX_WRAPPERS = ("env", "command", "nohup", "time", "sudo", "setsid", "rtk", "builtin") + tuple(FLAG_VALUE_WRAPPERS)
 # GH #216: `rtk` runs the command after it. `rtk proxy <cmd...>` executes its args as an argv;
 # `rtk err|test|summary <args>` and `rtk run <args>` join the args and run them through `sh -c`
 # (so one quoted string, or a quoted `;`, is a shell command line: verified live with touch);
@@ -1221,7 +1222,7 @@ for _wi, w in enumerate(windows):
                 argv0, rest = basename(rest[j]), rest[j + 1:]
             else:  # an rtk verb that dispatches to the real tool of the same name
                 argv0, rest = basename(rest[i]), rest[i + 1:]
-        else:  # command, nohup, time, exec, setsid — bare flags then the wrapped command
+        else:  # command, nohup, time, setsid, builtin — bare flags then the wrapped command
             i = 0
             while i < len(rest) and rest[i].replace(PH, "").startswith("-"):
                 i += 1
