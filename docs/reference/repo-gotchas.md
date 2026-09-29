@@ -107,3 +107,11 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   pieces that pass is how #208 merged after PR #192 failed.
 - **When the shell is ambiguous, check both readings; any deny wins** (GH #219).
 - Attack strings live in files, never in Bash command text, and the gate only classifies them.
+- **A word list one gate types by hand drifts from its sibling.** `subagent-git-guard.py`'s
+  `_WRAPPER_WORDS` is a second copy of `irrecoverable.py`'s `PREFIX_WRAPPERS`; `rtk` reached the
+  first list only after the guard let `rtk proxy git stash` through (deep-audit 4), and a glued
+  `timeout=30` once broke the shared spawn regex. `tests/hooks/test-subagent-git-guard.sh` now fails
+  when a `PREFIX_WRAPPERS` word is not a wrapper in the guard. A new copy of a list needs its own
+  drift test, and a new word needs two awkward-shape cases per consumer: a glued `name=1`, and a
+  multi-statement decoy (`<word> x && git stash && git status`), because a wider wrapper list can
+  also hide the statements after it (the guard's walk ran across `;` to the last `git`).

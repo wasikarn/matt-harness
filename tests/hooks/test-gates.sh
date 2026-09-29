@@ -1420,6 +1420,32 @@ for _c in \
   test_allow "$IRRECOVERABLE" "glued-punctuation control still allowed: $_c" "$(bash_payload "$_c")"
 done
 
+# 2026-09-29 deep-audit 4: `builtin` runs the builtin after it, so `builtin eval rm -rf x` and
+# `builtin command git add -A` reached the real command with no wrapper unwrapped (the wrapper x verb
+# sweep of the third audit never listed it). It is unwrapped in the rule loop only and is NOT in
+# PREFIX_WRAPPERS: as a shared wrapper word it made the spawn anchor's greedy walk cross `&&` and land
+# on the last `claude`, so `builtin cd /tmp && claude -p x && claude --version` stopped denying.
+# The allow controls carry a candidate token (git/rm) so they reach irrecoverable.py, not the .sh prefilter.
+for _c in \
+  'builtin eval rm -rf x' \
+  'builtin command git add -A' \
+  'builtin eval git commit -n -m x' \
+  'builtin command git push --force origin main' ; do
+  test_deny "$IRRECOVERABLE" "builtin wrapper unwrapped: $_c" "$(bash_payload "$_c")"
+done
+test_deny  "$IRRECOVERABLE" "subagent: builtin cd && claude -p && claude --version (no greedy walk past the first spawn)" \
+  "$(bash_agent_payload 'builtin cd /tmp && claude -p "x" && claude --version' fork)"
+test_deny  "$IRRECOVERABLE" "subagent: env builtin=30 claude -p (glued word must not defeat the spawn anchor)" \
+  "$(bash_agent_payload 'env builtin=30 claude -p "x"' fork)"
+for _c in \
+  'builtin echo git status' \
+  'builtin cd /tmp && git status' \
+  'builtin command git status' \
+  'builtin eval echo rm x' \
+  'env builtin=30 git status' ; do
+  test_allow "$IRRECOVERABLE" "builtin control still allowed: $_c" "$(bash_payload "$_c")"
+done
+
 echo ""
 echo "=== gh merge ask-tier gate (Phase B, 2026-09-28: local defense-in-depth for the PR-review flow) ==="
 test_ask   "$IRRECOVERABLE" "gh pr merge <number>"                "$(bash_payload 'gh pr merge 5')"

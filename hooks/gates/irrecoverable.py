@@ -223,6 +223,11 @@ FLAG_VALUE_WRAPPERS = {
     "exec": ("-a",),
 }
 PREFIX_WRAPPERS = ("env", "command", "nohup", "time", "sudo", "setsid", "rtk") + tuple(FLAG_VALUE_WRAPPERS)
+# `builtin` runs the builtin after it (`builtin eval rm -rf x`) and takes no flags. It is unwrapped
+# in the rule loop only: as a member of PREFIX_WRAPPERS it also feeds _SPAWN_ANCHOR_RE, whose greedy
+# walk then crosses `&&` and lands on the LAST `claude` (`builtin cd /tmp && claude -p x && claude
+# --version` stopped denying).
+_UNWRAP_ONLY = ("builtin",)
 # GH #216: `rtk` runs the command after it. `rtk proxy <cmd...>` executes its args as an argv;
 # `rtk err|test|summary <args>` and `rtk run <args>` join the args and run them through `sh -c`
 # (so one quoted string, or a quoted `;`, is a shell command line: verified live with touch);
@@ -1242,7 +1247,7 @@ for _wi, w in enumerate(windows):
     # a fix landing in one and not the other is exactly how the agent_id
     # truthiness bug went unnoticed at 3 of 5 real call sites across two
     # separate GH issues (2026-09-20 audit).
-    while rest and argv0 in PREFIX_WRAPPERS:
+    while rest and (argv0 in PREFIX_WRAPPERS or argv0 in _UNWRAP_ONLY):
         if argv0 == "env":
             i = 0
             while i < len(rest):
@@ -1340,7 +1345,7 @@ for _wi, w in enumerate(windows):
                 argv0, rest = basename(rest[j]), rest[j + 1:]
             else:  # an rtk verb that dispatches to the real tool of the same name
                 argv0, rest = basename(rest[i]), rest[i + 1:]
-        else:  # command, nohup, time, exec, setsid — bare flags then the wrapped command
+        else:  # command, nohup, time, setsid, builtin — bare flags then the wrapped command
             i = 0
             while i < len(rest) and rest[i].replace(PH, "").startswith("-"):
                 i += 1
