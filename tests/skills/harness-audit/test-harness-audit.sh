@@ -250,12 +250,16 @@ expect_crit   74 check-74-bad-one-site-regressed
 expect_crit   75 check-75-bad-excluded-referenced
 expect_silent 75 check-75-good-clean
 expect_silent 75 check-75-good-flat
+expect_crit   75 check-75-bad-too-deep-referenced
 
 # Check 78: a skill no plugin.json skills entry covers never loads (GH #211).
 expect_crit   78 check-78-bad-unregistered
 expect_silent 78 check-78-good-registered
 expect_silent 78 check-78-good-allowlisted
 expect_silent 78 check-78-good-flat
+expect_crit   78 check-78-bad-bucket-skillmd
+expect_crit   78 check-78-bad-too-deep
+expect_crit   78 check-78-bad-under-skill-entry
 
 # Check 76: measurement coverage status freshness (harness gap-audit M14,
 # 2026-09-20). Shallow on purpose -- WARN, not CRIT -- for the retired

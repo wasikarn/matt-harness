@@ -47,6 +47,14 @@ except Exception:
 entries = manifest.get("skills")
 prefixes = [e.lstrip("./").rstrip("/") for e in entries if isinstance(e, str)] if isinstance(entries, list) else []
 
+def loads(rel):
+    """Mirrors Claude Code 2.1.284 (live probes, GH #230): the default scan loads skills/<name>; a
+    manifest entry loads itself when it holds a SKILL.md, else only its direct children."""
+    if rel.count("/") == 1:
+        return True
+    return any(rel == p or (os.path.dirname(rel) == p and not os.path.exists(os.path.join(claude_dir, p, "SKILL.md")))
+               for p in prefixes)
+
 for root, dirs, files in os.walk(os.path.join(claude_dir, "skills")):
     dirs[:] = [d for d in dirs if not d.startswith("_")]
     if "SKILL.md" not in files:
@@ -69,8 +77,7 @@ for root, dirs, files in os.walk(os.path.join(claude_dir, "skills")):
         continue
     if not name:
         continue
-    # A flat skills/<name> loads through the default scan (see check 78), so it counts as shipped.
-    shipped = rel.count("/") == 1 or any(rel == p or rel.startswith(p + "/") for p in prefixes)
+    shipped = loads(rel)
     print(f"{name}\t{'shipped' if shipped else 'excluded'}")
 PYEOF
 )
