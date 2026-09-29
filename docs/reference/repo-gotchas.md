@@ -86,3 +86,22 @@ Neither is bundled; skip straight to `WebSearch` when not configured.
 not verification. Three confidently wrong claims shipped and were caught only by a source check
 (2026-08-05): a two-pointer "O(n) 3-sum" (it is O(n^2)), Drizzle nested `with` as "one query per
 relation depth" (always one query), and a CWE-1333/CWE-400 pairing that contradicts MITRE's page.
+
+## Changing a deny heuristic in a gate
+
+Any change to how `hooks/gates/*.py` decides deny versus allow (a tokenizer step, a substitution
+or redirect strip, a shell-syntax rule) needs a differential fuzz against current `develop` before
+merge. Unit tests alone missed every bypass on the 2026-09-29 `irrecoverable.py` work (GH #184,
+#185, #188, #189): three plans failed, PR #192 was closed after 3 validator rounds, and a
+builder's self-check ("0 bypasses in 4032") was wrong each time.
+
+- **Acceptance:** 0 commands that `develop` denies and the branch allows, apart from a category
+  the PR names as intended. Over-denies are the safe direction and are reported, not blocking.
+- **Oracle:** run the real shells (the system `/bin/sh`, bash 3.2, a current bash, dash, zsh, ksh)
+  with argv-logging stubs, never one shell or argv0-based shell guessing: whether `{fd}>` is a
+  redirect depends on the binary and version (GH #219).
+- **Validator:** a fresh agent writes its own generator; the builder's generator is never reused.
+- **A failing piece is dropped, not patched.** Shipping only the pieces that pass is how PR #208
+  merged after PR #192 failed.
+- **When the shell is ambiguous, check both readings; any deny wins** (GH #219).
+- Attack strings live in files, never in Bash command text, and the gate only classifies them.
