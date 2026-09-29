@@ -1051,6 +1051,40 @@ test_allow "$IRRECOVERABLE" "find -exec sh -c, benign body (GH #227)" \
   "$(bash_payload "find . -exec sh -c 'ls {}' \\;")"
 test_allow "$IRRECOVERABLE" "exec -a NAME, benign command (GH #227)" \
   "$(bash_payload 'exec -a foo ls /tmp')"
+# 2026-09-29 deep-audit of #227: exec's -a takes an ATTACHED name too (`exec -alpha CMD` runs CMD
+# with argv0 "lpha"); only a cluster whose first `a` is its last char takes the next token.
+test_deny  "$IRRECOVERABLE" "exec -alpha CMD: attached name, command still runs (audit of #227)" \
+  "$(bash_payload 'exec -alpha rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "exec -aa CMD: attached name (audit of #227)" \
+  "$(bash_payload 'exec -aa rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "exec -afooa CMD: attached name ending in a (audit of #227)" \
+  "$(bash_payload 'exec -afooa git push --force origin main')"
+test_allow "$IRRECOVERABLE" "exec -alpha CMD, benign command (audit of #227)" \
+  "$(bash_payload 'exec -alpha ls /tmp')"
+# Options after -c: bash/sh keep parsing options and take the first non-option word as the body.
+test_deny  "$IRRECOVERABLE" "bash -c -e body (audit of #227)" \
+  "$(bash_payload "bash -c -e 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "sh -c -x body nested (audit of #227)" \
+  "$(bash_payload "sh -c \"sh -c -x 'rm -rf /tmp/x'\"")"
+test_deny  "$IRRECOVERABLE" "bash -c -o pipefail body: -o takes a value (audit of #227)" \
+  "$(bash_payload "bash -c -o pipefail 'rm -rf /tmp/x'")"
+test_allow "$IRRECOVERABLE" "bash -c -e, benign body (audit of #227)" \
+  "$(bash_payload "bash -c -e 'git status'")"
+# find -exec / xargs put a wrapper before the shell or runner.
+test_deny  "$IRRECOVERABLE" "find -exec env sh -c body (audit of #227)" \
+  "$(bash_payload "find . -exec env sh -c 'rm -rf {}' \\;")"
+test_deny  "$IRRECOVERABLE" "find -exec sudo git push --force (audit of #227)" \
+  "$(bash_payload 'find . -exec sudo git push --force origin main \;')"
+test_deny  "$IRRECOVERABLE" "find -exec rtk run -c body (audit of #227)" \
+  "$(bash_payload "find . -exec rtk run -c 'rm -rf {}' \\;")"
+test_deny  "$IRRECOVERABLE" "xargs rtk run -c body (audit of #227)" \
+  "$(bash_payload "echo a | xargs rtk run -c 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "xargs env sh -c body (audit of #227)" \
+  "$(bash_payload "echo a | xargs env sh -c 'rm -rf /tmp/x'")"
+test_allow "$IRRECOVERABLE" "find -exec env sh -c, benign body (audit of #227)" \
+  "$(bash_payload "find . -exec env sh -c 'git status' \\;")"
+test_allow "$IRRECOVERABLE" "xargs rtk run -c, benign body (audit of #227)" \
+  "$(bash_payload "echo a | xargs rtk run -c 'git status'")"
 # --- git -c core.hooksPath= : the --no-verify-equivalent hook bypass ---
 test_deny  "$IRRECOVERABLE" "git -c core.hooksPath= (hook bypass, space form)" \
   "$(bash_payload 'git -c core.hooksPath=/tmp/evil commit -m x')"
