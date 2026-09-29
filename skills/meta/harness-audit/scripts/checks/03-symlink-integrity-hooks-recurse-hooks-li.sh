@@ -17,7 +17,11 @@ for f in "$CLAUDE_DIR/agents"/*.md; do
   [ -f "$f" ] || continue
   name=$(basename "$f")
   if [ ! -L "$HOME/.claude/agents/$name" ] && ! is_plugin_delivered agents "${name%.md}"; then
-    crit "agent '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
+    if new_vs_base "$f"; then
+      info "agent '$name' is new vs ${NEW_VS_BASE:-base}; not in the plugin cache until a bumped version is merged and installed"
+    else
+      crit "agent '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
+    fi
   fi
 done
 fi

@@ -52,19 +52,14 @@ required status checks, so a red run blocks merge.
 - **Re-verifying a same-session edit.** Have the agent `Read` the repo path; `Skill(<name>)`,
   `subagent_type`, or a slash command silently tests the stale cached version (confirmed
   2026-07-27: a false "fix confirmed" via `Skill(mh:tech-humanize)`).
-- **A brand-new agent fails check 03 until the plugin cache has it.** Check 03 (agent
-  loadability) trusts only `~/.claude/plugins/cache/<marketplace>/mh/<version>/agents/`, and the
-  marketplace pulls from GitHub, so the cache cannot contain a file that has not been pushed.
-  Pre-commit needs 0 CRIT. Copy the new `agents/*.md` into the currently loaded cache dir by
-  hand before committing; the next `claude plugin update` loads a fresh versioned dir anyway
-  (the old dir and its hand copy stay behind, harmless), and the agent is usable after the
-  next restart without waiting for it (2026-09-06, v1.1.18). Check 02 (skill loadability) needs no
-  hand-copy for a brand-new `skills/<bucket>/<name>/`: a skill whose `SKILL.md` is absent from the
-  commit the loaded cache was built from (`gitCommitSha` in `installed_plugins.json`, else
-  `origin/develop`; override `HARNESS_AUDIT_BASE_REF`) reports INFO, including after its PR merges
-  and before the release is installed. CRIT returns only for a skill that is on that commit but
-  missing from the cache, and whenever the audited dir is not its own git toplevel or the base
-  does not resolve.
+- **A brand-new skill or agent no longer fails checks 02 and 03.** The plugin cache is built from
+  committed state, so a component added after the commit the cache was built from cannot be in it.
+  Checks 02 (skill loadability) and 03 (agent loadability) report such a component as INFO when its
+  file is absent from the base commit: `gitCommitSha` in `installed_plugins.json` for the audited
+  cache, else `origin/develop`; override `HARNESS_AUDIT_BASE_REF`. This holds after the PR merges
+  and until the release is installed. CRIT returns only for a component that is on that commit but
+  missing from the cache, and whenever the audited dir is not its own git toplevel or the base does
+  not resolve. No hand-copy into the cache dir, no `~/.claude` symlink.
 - **The plugin runs every hook machine-wide.** A gate crash locks out every session that has
   `mh@wasikarn` enabled, not just sessions in this repo. A missing sibling `.py` or lib module
   must fail open with a diagnostic, never exit non-zero.
