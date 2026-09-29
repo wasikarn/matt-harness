@@ -170,6 +170,55 @@ If this is ever built, it belongs in dotfiles (extending `claude-shim` or as a p
 operator's own installed Claude Code version before being trusted, rather than inheriting the
 community projects' claim untested.
 
+## Correction 2 (2026-09-29, later same day): live test and official docs say the side channel does not work
+
+The first correction above rated the side channel "plausible, corroborated but not self-verified".
+It has now been tested and checked against Claude Code's official docs. **That rating is
+withdrawn: writing effort into a settings file does not change a running session's effort on
+Claude Code 2.1.284.** Three things in the first correction also need fixing:
+- "Two open upstream feature requests" was wrong. #43326 is open (labels `area:model`,
+  `area:hooks`); #60200 was closed as stale and locked, with no maintainer reply.
+- The `ConfigChange` event and the `permissions.additionalDirectories` fix were offered as
+  corroboration of hot-reload. They prove that some keys reload live, not that effort keys do.
+- The claim that a community project's hot-reload "works" rests on its own README, which reports
+  one measurement (n=1, Claude Code 2.1.177, Windows) and warns that the set of live-reloaded keys
+  can change between versions.
+
+**Live test (operator-run, in the dotfiles repo, model `claude-sonnet-5-5`).** A `PreToolUse`,
+`PostToolUse` and `Stop` probe hook logged the `effort` field from hook input; `CLAUDE_CODE_EFFORT_LEVEL`
+was unset and `MH_EFFORT_SIGNAL=0`. The operator ran every settings edit (the Self-Modification
+classifier blocks the agent from editing `.claude/settings.local.json`). Three runs:
+1. First run: inconclusive (one log line, no turn attribution). The probe was upgraded to log the
+   command, session id and env, and to write marker lines.
+2. Second run: the session was already running when `modelSettings.claude-sonnet-5-5.effortLevel`
+   was set to `low`; it reported `medium` (Sonnet 5.5's default) before and after both edits, so
+   it never picked up either file change. Not clean, because that session never loaded `low` at launch.
+3. Clean run: a fresh session started after the file said `low` reported `low` at launch and on
+   turn 1 (so launch-time loading works). After the file was flipped to `high`, turn 2 still
+   reported `low` on both `PreToolUse` and `PostToolUse` lines. The hook kept firing after the
+   flip, so hooks reload live and only the effort value stays fixed.
+A same-time contrast agrees: on the same model and the same file, the session started before the
+edit stayed at `medium` while the session started after it read `low`.
+
+**Official docs (fetched 2026-09-29).** `settings.md`, "When edits take effect": Claude Code
+reloads most settings edits into a running session (`permissions`, `hooks`, credential helpers) but
+"reads some keys only once, at session start". Among the keys listed for mid-session change,
+`effortLevel` and `modelSettings` are given as "use `/effort` to change effort mid-session".
+That covers the top-level `effortLevel` variant the first correction left untested. `model-config.md`
+gives the effort resolution order: an explicit choice first (`CLAUDE_CODE_EFFORT_LEVEL`, `--effort`,
+`/effort` in the session), then saved settings, then the model default (`medium` for Opus 5.5 and
+Sonnet 5.5). An upstream comment on #43326 reports the same for `model`: a hook that rewrites the
+settings file affects only the next session.
+
+**Revised verdict.** Platform feasibility of a settings-file side channel: 0/10 on the current
+version (documented as read-once and confirmed by test). The decline for mh stands and is stronger
+than before, because feasibility is no longer in question. What still works for effort selection:
+`/effort`, `--effort` or `CLAUDE_CODE_EFFORT_LEVEL` at launch, agent frontmatter, and advisory
+context injected from a `UserPromptSubmit` hook (which the model may or may not follow). Nothing
+changes the effort of a running main session automatically. Reopen only if a changelog entry moves
+effort keys out of the read-once set; recheck with the probe method above, since the community
+README suggests this behaviour differed on 2.1.177.
+
 ## Sources
 
 - `docs/research/auto-model-auto-effort-2026-09-26.md` (22 sources, this repo)
@@ -183,3 +232,4 @@ community projects' claim untested.
 - This session's own Agent-tool input schema (system prompt), showing `model` enum with no `effort` field
 - `~/Codes/Personals/dotfiles/claude/bin/claude-shim` header (user-settings-layer "auto" effort boost — the mechanism the plugin layer cannot duplicate)
 - Correction sources (2026-09-29): https://github.com/blackreo123/claude-code-auto-effort, https://github.com/tzachbon/claude-model-router-hook, https://github.com/handpickedlab/effort-router, https://github.com/hodkovickybuh/claude-auto-model, https://github.com/moukrea/automodel, https://github.com/anthropics/claude-code/issues/43326, https://github.com/anthropics/claude-code/issues/60200, `code.claude.com/docs/en/hooks.md` (`ConfigChange` event, live-fetched), upstream CHANGELOG (`permissions.additionalDirectories` mid-session fix), this session's own blocked `Edit`/`Bash` attempts against `.claude/settings.local.json` (Claude Code auto-mode Self-Modification classifier)
+- Correction 2 sources (2026-09-29): operator-run live test on `claude --version` 2.1.284 (probe hook logs, model `claude-sonnet-5-5`); `code.claude.com/docs/en/settings.md` ("When edits take effect"), `.../settings-reference.md` (`effortLevel`, `modelSettings`), `.../model-config.md` (effort resolution order); `gh issue view` on anthropics/claude-code#43326 (open, comments) and #60200 (closed, stale, locked); the auto-effort project README's own "Cost & limitations" section (n=1 on 2.1.177)
