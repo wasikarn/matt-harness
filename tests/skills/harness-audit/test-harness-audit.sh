@@ -318,7 +318,8 @@ HOME="$EMPTY_HOME" run_check 02 "$F1_OLD" --plugin-cache "$DECOY"
 if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 skill already on base ref stays CRIT"
 else bad "check-02 skill already on base ref did not fire CRIT (crit=$CRIT_FOUND)"; fi
 # Hook context: pre-commit/pre-push export GIT_DIR/GIT_INDEX_FILE for the outer repo; the check must ignore them.
-GIT_DIR="$(git rev-parse --absolute-git-dir)" GIT_INDEX_FILE="$CODEX_TMP/no-such-index" HOME="$EMPTY_HOME" run_check 02 "$F1_NEW" --plugin-cache "$DECOY"
+# GIT_DIR names a repo whose base ref already holds the skill, so a check that honoured it would read CRIT.
+GIT_DIR="$F1_OLD/.git" GIT_INDEX_FILE="$CODEX_TMP/no-such-index" HOME="$EMPTY_HOME" run_check 02 "$F1_NEW" --plugin-cache "$DECOY"
 if [ "$CRIT_FOUND" -eq 0 ] && [ "$INFO_FOUND" -ge 1 ]; then ok "check-02 new-skill INFO survives exported GIT_DIR/GIT_INDEX_FILE"
 else bad "check-02 new-skill INFO broke under exported GIT_DIR (crit=$CRIT_FOUND info=$INFO_FOUND)"; fi
 # Toplevel guard: the same new skill audited from a subdirectory of a git repo gets no exemption.
@@ -336,6 +337,16 @@ F1_NOREF="$CODEX_TMP/f1-noref"; mk_f1_repo "$F1_NOREF" 0 0
 HOME="$EMPTY_HOME" run_check 02 "$F1_NOREF" --plugin-cache "$DECOY"
 if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 no base ref fails closed (CRIT)"
 else bad "check-02 no base ref did not fail closed (crit=$CRIT_FOUND)"; fi
+# Override: HARNESS_AUDIT_BASE_REF replaces origin/develop. A repo with no origin/develop but a branch
+# at the base commit passes only through the override; an unresolvable override fails closed even where
+# origin/develop would have passed.
+F1_ALT="$CODEX_TMP/f1-alt"; mk_f1_repo "$F1_ALT" 0 0; f1_git -C "$F1_ALT" branch f1base
+HARNESS_AUDIT_BASE_REF=f1base HOME="$EMPTY_HOME" run_check 02 "$F1_ALT" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -eq 0 ] && [ "$INFO_FOUND" -ge 1 ]; then ok "check-02 HARNESS_AUDIT_BASE_REF names the base ref (INFO without origin/develop)"
+else bad "check-02 HARNESS_AUDIT_BASE_REF override not honoured (crit=$CRIT_FOUND info=$INFO_FOUND)"; fi
+HARNESS_AUDIT_BASE_REF=refs/heads/no-such-ref HOME="$EMPTY_HOME" run_check 02 "$F1_NEW" --plugin-cache "$DECOY"
+if [ "$CRIT_FOUND" -ge 1 ]; then ok "check-02 unresolvable HARNESS_AUDIT_BASE_REF fails closed (CRIT)"
+else bad "check-02 unresolvable HARNESS_AUDIT_BASE_REF did not fail closed (crit=$CRIT_FOUND)"; fi
 for id in 07 08 09 11 17 18 19 23 32 33; do
   expect_crit   "$id" fleet-bad  --plugin-cache "$CACHE"
   expect_silent "$id" fleet-good --plugin-cache "$CACHE"

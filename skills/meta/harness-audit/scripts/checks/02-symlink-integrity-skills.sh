@@ -18,7 +18,10 @@
 # never be in it on its first commit, and this repo denies --no-verify and does not symlink plugin
 # skills. A skill whose SKILL.md is absent from the base ref (HARNESS_AUDIT_BASE_REF, default
 # origin/develop) is reported as INFO instead. Fails closed (CRIT stays) unless CLAUDE_DIR is its
-# own git toplevel and the base ref resolves, so fixtures and stale checkouts get no exemption.
+# own git toplevel and the base ref resolves, so fixtures and repos with no base ref get no
+# exemption. A base ref that resolves but is stale (not fetched) still exempts. Once the skill is
+# on the base ref, CRIT returns until a bumped version is merged and installed; a skill merged
+# without a bump blocks every commit, so set HARNESS_AUDIT_BASE_REF to the pre-merge commit.
 f1_new_vs_base() {
   local dir="${1%/}" base="${HARNESS_AUDIT_BASE_REF:-origin/develop}" top rel
   top=$(env -u GIT_DIR -u GIT_WORK_TREE -u GIT_INDEX_FILE git -C "$CLAUDE_DIR" rev-parse --show-toplevel 2>/dev/null) || return 1
@@ -56,7 +59,7 @@ for d in "$CLAUDE_DIR/skills"/*/ "$CLAUDE_DIR/skills"/*/*/; do
   done
   if [ ! -L "$HOME/.claude/skills/$name" ] && ! is_plugin_delivered skills "$name"; then
     if f1_new_vs_base "$d"; then
-      info "skill '$name' is new vs ${HARNESS_AUDIT_BASE_REF:-origin/develop}; loadability is deferred to the plugin update after merge"
+      info "skill '$name' is new vs ${HARNESS_AUDIT_BASE_REF:-origin/develop}; not in the plugin cache until a bumped version is merged and installed"
     else
       crit "skill '$name' not loadable by Claude Code (not in plugin cache and not symlinked)"
     fi
