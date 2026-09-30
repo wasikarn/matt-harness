@@ -1174,7 +1174,24 @@ def _unwrap_shell(argv0, rest):
             # ksh93 runs a first operand that is not a readable file as the command string and joins
             # the later words into it (`ksh 'echo a' --hard` runs `echo a --hard`; a later -c is part
             # of that string). A script name scans as harmless text, so it is read as a body too.
-            b = _shell_body(argv0, rest, True, need_c=False)
+            # -s (commands from stdin), -n (no execution) and -D (print strings) run no operand. Only the
+            # leading `-` clusters count, each up to an o/R (the rest, or the next word, is its value:
+            # `-onounset` sets no -n); a `+` option can turn one back off, so it keeps the scan.
+            lead, skip = "", False
+            for t in rest:
+                u = t.replace(PH, "")
+                if skip:
+                    skip = False
+                    continue
+                if u.startswith("+"):  # `-n +n` / `-n +o noexec` run the operand again
+                    lead = ""
+                    break
+                if u in ("--", "-") or len(u) < 2 or u[0] != "-" or u.startswith("--"):
+                    break
+                letters = re.split("[oR]", u[1:], maxsplit=1)
+                lead += letters[0]
+                skip = len(letters) > 1 and not letters[1]
+            b = None if any(ch in "snD" for ch in lead) else _shell_body(argv0, rest, True, need_c=False)
             if b and b not in bodies:
                 bodies.append(b)
     else:
