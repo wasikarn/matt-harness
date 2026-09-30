@@ -1183,6 +1183,28 @@ test_deny  "$IRRECOVERABLE" "ksh operands joined: 'git reset' --hard (audit 3 of
   "$(bash_payload "ksh 'git reset' --hard")"
 test_allow "$IRRECOVERABLE" "ksh benign operand then -c (audit 3 of #227)" \
   "$(bash_payload "ksh 'git status' -c true")"
+# -s reads commands from stdin (the operand is a positional parameter), -n and -D run nothing: the operand is not a command.
+test_allow "$IRRECOVERABLE" "ksh -s operand is a positional parameter (audit 5 of #227)" \
+  "$(bash_payload "ksh -s 'rm -rf /tmp/x'")"
+test_allow "$IRRECOVERABLE" "ksh -n operand is not run (audit 5 of #227)" \
+  "$(bash_payload "ksh -n 'rm -rf /tmp/x'")"
+test_allow "$IRRECOVERABLE" "ksh -xD operand is not run (audit 5 of #227)" \
+  "$(bash_payload "ksh -xD 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "ksh -sc body still runs (audit 5 of #227)" \
+  "$(bash_payload "ksh -sc 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "ksh -x operand still runs (audit 5 of #227)" \
+  "$(bash_payload "ksh -x 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "ksh -onounset: the n and s are the -o value (audit 5 of #227)" \
+  "$(bash_payload "ksh -onounset 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "ksh -o nounset: the value word is not a flag cluster (audit 5 of #227)" \
+  "$(bash_payload "ksh -o nounset 'rm -rf /tmp/x'")"
+# A later + option turns the flag back off (`-n +n` runs the operand), so any + option keeps the scan.
+test_deny  "$IRRECOVERABLE" "ksh -n +n operand runs (audit 5 whole-picture pass)" \
+  "$(bash_payload "ksh -n +n 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "ksh -n +o noexec operand runs (audit 5 whole-picture pass)" \
+  "$(bash_payload "ksh -n +o noexec 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "env ksh -s +s operand runs (audit 5 whole-picture pass)" \
+  "$(bash_payload "env ksh -s +s 'git reset --hard'")"
 # Under find, `-exec` after `bash -c` is bash's option letters (e x e c), not a second find action.
 test_deny  "$IRRECOVERABLE" "find -exec bash -c -exec body: -exec is a shell cluster (gap follow-up to #227)" \
   "$(bash_payload "find . -exec bash -c -exec 'rm -rf /tmp/x' \\;")"
