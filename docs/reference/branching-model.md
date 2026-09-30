@@ -7,7 +7,7 @@ review via the already-installed `mattpocock-skills:code-review` (verified insta
 rebuild that flow as its own skill (composer-not-creator,
 `docs/reference/composer-not-creator.md`). Merge method: merge-commit or rebase, never squash —
 a squashed feature branch is not merged by ancestry, so only `git branch -D` removes it locally
-(the gate allowed that only from 2026-09-30, and still denies it on main/master/develop).
+(the gate allowed that only from 2026-09-30, for a plain `git branch -D <names>` without main/master/develop).
 `delete_branch_on_merge: true` on the remote handles cleanup.
 
 Enforcement layers, weakest to strongest:
