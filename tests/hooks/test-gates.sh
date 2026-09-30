@@ -1356,11 +1356,12 @@ test_allow "$IRRECOVERABLE" "git -C path branch -D feature is allowed" \
   "$(bash_payload 'git -C /tmp/r branch -D feat/a')"
 test_allow "$IRRECOVERABLE" "git branch -rD origin/feature is allowed" \
   "$(bash_payload 'git branch -rD origin/feat-a')"
-# Deep-audit 2026-10-01: @ and # inside a name are valid refnames and literal to the shell there.
+# Deep-audit 2026-10-01: @ inside a name is a valid refname and literal to the shell there. # is not:
+# zsh extendedglob turns "ma#in" into a glob that can match a "main" entry in the cwd.
 test_allow "$IRRECOVERABLE" "git branch -D with @ inside a name is allowed" \
   "$(bash_payload 'git branch -D feature@v2')"
-test_allow "$IRRECOVERABLE" "git branch -D with # inside a name is allowed" \
-  "$(bash_payload 'git branch -D fix#123')"
+test_deny  "$IRRECOVERABLE" "git branch -D ma#in (a zsh extendedglob for main) keeps the deny" \
+  "$(bash_payload 'git branch -D ma#in')"
 test_deny  "$IRRECOVERABLE" "git branch -D name@{1} keeps the deny" \
   "$(bash_payload 'git branch -D feat@{1}')"
 test_deny  "$IRRECOVERABLE" "git branch -D f1 #main (a word-leading # is a comment) keeps the deny" \

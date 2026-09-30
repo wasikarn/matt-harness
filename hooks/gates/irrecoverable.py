@@ -988,8 +988,9 @@ OPERATORS = {";", "&&", "||", "|", "&", "(", ")", "{", "}"}
 # The only whole-command shape in which `git branch -D` is allowed (see the branch rule).
 _BRANCH_D_PLAIN_RE = re.compile(
     r"git(?:[ \t]+-C[ \t]+[\w./~-]+)?[ \t]+branch"
-    # "@" and "#" inside a name are literal to the shell; "{" stays out, so "x@{1}" never matches.
-    r"((?:[ \t]+(?:-[dDfrq]+|--(?:delete|force|remotes|quiet)?|\w[\w./+@#-]*))+)",
+    # "@" inside a name is literal to the shell; "{" stays out, so "x@{1}" never matches. "#" stays out
+    # too: under zsh extendedglob "ma#in" globs to a "main" entry in the cwd (deep-audit 2026-10-01).
+    r"((?:[ \t]+(?:-[dDfrq]+|--(?:delete|force|remotes|quiet)?|\w[\w./+@-]*))+)",
     # ASCII only: a Unicode \w lets "maſter" (U+017F) through, which a
     # case-insensitive filesystem folds onto refs/heads/master (validator round 2).
     re.ASCII)
