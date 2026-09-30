@@ -105,6 +105,10 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   Anchor regexes are quadratic (command starts x length): `subagent-git-guard.py` charges that
   bound to a shared budget and denies past it (GH #246: 30 KB of `env ; ` before a `git stash`
   timed out into allow). Only 3 of 2,581 replayed real commands (20-28 KB scripts) hit it.
+  GH #248 added a third, lazy-walk pass (`*?` finds the FIRST target after a wrapper, where the
+  greedy walk lands on the last), `{` + blank as a command start, and `xargs` in the spawn
+  anchor's wrapper list only. Each pass charges the budget, so the guard's rose to 60M; a padded
+  benign command of ~3,000 blank lines or `{ ` units is now refused where develop allowed it.
 - **Oracle:** run the real shells (the system `/bin/sh`, bash 3.2, a current bash, dash, zsh, ksh)
   with argv-logging stubs, never one shell or argv0-based shell guessing: whether `{fd}>` is a
   redirect depends on the binary and version (GH #219).

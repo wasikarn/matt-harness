@@ -246,8 +246,14 @@ SHELL_KEYWORDS = ("!", "if", "elif", "then", "else", "do", "while", "until", "co
 # A wrapper word must be followed by whitespace, in the lookahead too: with a bare
 # \b a token that only STARTS with one ("timeout=30", "exec-bot") is neither a
 # wrapper nor an ordinary token, the regex dead-ends and the anchor never fires.
-_WRAPPER_ALT = r"(?:" + "|".join(PREFIX_WRAPPERS) + r")(?=\s)"
+# GH #248: `xargs claude -p x` runs claude. xargs is a wrapper for the spawn anchor only: adding it
+# to PREFIX_WRAPPERS would change the unwrap loop and every other consumer of that list.
+_WRAPPER_ALT = r"(?:" + "|".join(PREFIX_WRAPPERS + ("xargs",)) + r")(?=\s)"
 _WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"\s+(?:(?!" + _WRAPPER_ALT + r")\S+\s+)*)*"
+# GH #248: the greedy walk lands on the LAST claude (`time claude -p x; claude --version` anchored
+# only the second). The lazy twin (`*?`) lands on the FIRST; it runs as one more last pass, so it
+# only adds anchors.
+_WRAPPER_PREFIX_LAZY = r"(?:" + _WRAPPER_ALT + r"\s+(?:(?!" + _WRAPPER_ALT + r")\S+\s+)*?)*"
 _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in SHELL_KEYWORDS) + r")\s+)*"
 # GH #245: an overlapping scan, `(?=(...))` read through m.end(1). The wrapper walk crosses
 # `;` / `&&` / newline to the LAST `claude` (`time ls; claude -p x; claude --version`), and a plain
@@ -256,10 +262,13 @@ _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in SHELL_KEYWORDS) + r
 # quadratic on long padded commands and a timed-out hook allows, so the plain scan (develop's exact
 # behaviour) runs where it always did and the overlapping one runs last, after every rule allowed:
 # a command develop denied is denied just as fast as before.
-_SPAWN_ANCHOR_BODY = (r"(?:^|[|;&(]|&&|\|\|)\s*" + _KEYWORD_PREFIX + r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" +
-                      _WRAPPER_PREFIX + r"\\?(?:\S*/)?claude(?![-\w./])")
-_SPAWN_ANCHOR_RES = (re.compile(r"(" + _SPAWN_ANCHOR_BODY + r")", re.MULTILINE),
-                     re.compile(r"(?=(" + _SPAWN_ANCHOR_BODY + r"))", re.MULTILINE))
+# GH #248: `{ claude -p x; }` -- a brace group opens a command position (`{` then a blank).
+def _spawn_anchor_body(wrapper_prefix):
+    return (r"(?:^|[|;&(]|&&|\|\||\{(?=\s))\s*" + _KEYWORD_PREFIX + r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" +
+            wrapper_prefix + r"\\?(?:\S*/)?claude(?![-\w./])")
+_SPAWN_ANCHOR_RES = (re.compile(r"(" + _spawn_anchor_body(_WRAPPER_PREFIX) + r")", re.MULTILINE),
+                     re.compile(r"(?=(" + _spawn_anchor_body(_WRAPPER_PREFIX) + r"))", re.MULTILINE),
+                     re.compile(r"(?=(" + _spawn_anchor_body(_WRAPPER_PREFIX_LAZY) + r"))", re.MULTILINE))
 _SPAWN_FLAG_RE = re.compile(r"-p\b|--print\b|--agent\b|--bg\b|--worktree\b")
 # GH #157: an ODD backslash run directly before a quote escapes that quote
 # in real bash (`claude \" ; othertool -p x` -- the `"` is a literal argument
@@ -299,7 +308,7 @@ _spawn_over_budget = False
 
 def _nested_spawn(c, overlap):
     global _spawn_anchor_work, _spawn_over_budget
-    _spawn_anchor_work += sum(c.count(ch) for ch in "\n;&|(") * len(c)
+    _spawn_anchor_work += sum(c.count(ch) for ch in "\n;&|({") * len(c)
     if _spawn_anchor_work > _SPAWN_ANCHOR_BUDGET:
         _spawn_over_budget = True
         return True
@@ -1282,7 +1291,7 @@ def _scan_body(body):
         deny("shell -c / eval body nested more than %d levels deep - confirm with user first" % _MAX_SHELL_DEPTH)
     # Plain scan only, as before GH #245: this runs inside the rule loop, where the quadratic
     # overlapping scan could push a later deny past the hook timeout.
-    if ("agent_id" in d) and _nested_spawn(body, False):
+    if ("agent_id" in d) and (_nested_spawn(body, False) or _nested_spawn(body, True) or _nested_spawn(body, 2)):
         deny("a subagent may not spawn a nested Claude Code session via Bash "
              "(claude -p/--print/--agent/--bg/--worktree), inside bash -c / eval either "
              "-- only the main session dispatches")
@@ -1863,6 +1872,6 @@ for _wi, w in enumerate(windows):
                 deny("destructive SQL (DROP TABLE/DATABASE/SCHEMA or TRUNCATE) detected — confirm with user first")
 
 # GH #245: the overlapping spawn scan, last (see _SPAWN_ANCHOR_RES).
-if ("agent_id" in d) and _nested_spawn(cmd, True):
+if ("agent_id" in d) and (_nested_spawn(cmd, True) or _nested_spawn(cmd, 2)):
     _deny_nested_spawn()
 sys.exit(0)
