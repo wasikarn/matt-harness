@@ -918,6 +918,12 @@ test_allow "$IRRECOVERABLE" 'GH #249 control: --source=HEAD --staged file (glued
   "$(bash_payload 'git restore --source=HEAD --staged file.txt')"
 test_allow "$IRRECOVERABLE" 'GH #249 control: -s HEAD --staged file (value is HEAD, real --staged) allows' \
   "$(bash_payload 'git restore -s HEAD --staged file.txt')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F3: git checkout -m . (checkout -m is --merge, no value)' \
+  "$(bash_payload 'git checkout -m .')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F3: git checkout -m -- file discards worktree changes' \
+  "$(bash_payload 'git checkout -m -- file.txt')"
+test_allow "$IRRECOVERABLE" 'audit-0930 F3 control: git checkout -m <branch> is a merge-switch' \
+  "$(bash_payload 'git checkout -m main')"
 test_allow "$IRRECOVERABLE" 'GH #249 control: git commit -m message still skips its value' \
   "$(bash_payload 'git commit -m "restore . later"')"
 
@@ -1183,6 +1189,28 @@ test_deny  "$IRRECOVERABLE" "ksh operands joined: 'git reset' --hard (audit 3 of
   "$(bash_payload "ksh 'git reset' --hard")"
 test_allow "$IRRECOVERABLE" "ksh benign operand then -c (audit 3 of #227)" \
   "$(bash_payload "ksh 'git status' -c true")"
+# -s reads commands from stdin (the operand is a positional parameter), -n and -D run nothing: the operand is not a command.
+test_allow "$IRRECOVERABLE" "ksh -s operand is a positional parameter (audit 5 of #227)" \
+  "$(bash_payload "ksh -s 'rm -rf /tmp/x'")"
+test_allow "$IRRECOVERABLE" "ksh -n operand is not run (audit 5 of #227)" \
+  "$(bash_payload "ksh -n 'rm -rf /tmp/x'")"
+test_allow "$IRRECOVERABLE" "ksh -xD operand is not run (audit 5 of #227)" \
+  "$(bash_payload "ksh -xD 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "ksh -sc body still runs (audit 5 of #227)" \
+  "$(bash_payload "ksh -sc 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "ksh -x operand still runs (audit 5 of #227)" \
+  "$(bash_payload "ksh -x 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "ksh -onounset: the n and s are the -o value (audit 5 of #227)" \
+  "$(bash_payload "ksh -onounset 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "ksh -o nounset: the value word is not a flag cluster (audit 5 of #227)" \
+  "$(bash_payload "ksh -o nounset 'rm -rf /tmp/x'")"
+# A later + option turns the flag back off (`-n +n` runs the operand), so any + option keeps the scan.
+test_deny  "$IRRECOVERABLE" "ksh -n +n operand runs (audit 5 whole-picture pass)" \
+  "$(bash_payload "ksh -n +n 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "ksh -n +o noexec operand runs (audit 5 whole-picture pass)" \
+  "$(bash_payload "ksh -n +o noexec 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "env ksh -s +s operand runs (audit 5 whole-picture pass)" \
+  "$(bash_payload "env ksh -s +s 'git reset --hard'")"
 # Under find, `-exec` after `bash -c` is bash's option letters (e x e c), not a second find action.
 test_deny  "$IRRECOVERABLE" "find -exec bash -c -exec body: -exec is a shell cluster (gap follow-up to #227)" \
   "$(bash_payload "find . -exec bash -c -exec 'rm -rf /tmp/x' \\;")"
@@ -2149,6 +2177,31 @@ test_allow "$IRRECOVERABLE" 'ambiguity control: a plain rm of one file, no ambig
   "$(bash_payload 'rm /tmp/nonexistent-x')"
 test_allow "$IRRECOVERABLE" 'ambiguity control: a branch switch with an ordinary $() argument' \
   "$(bash_payload 'git checkout "$(git branch --show-current)"')"
+# Deep-audit 2026-09-30 (F1): the verb check must see a git global flag before the sub, and a
+# path-qualified rm/git, or every ambiguous shape above is bypassed by respelling the verb.
+test_deny "$IRRECOVERABLE" 'audit-0930 F1: git -C . reset {--hard,}' \
+  "$(bash_payload 'git -C . reset {--hard,}')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F1: git --no-pager push origin HEAD@{0} --force' \
+  "$(bash_payload 'git --no-pager push origin HEAD@{0} --force')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F1: git -C "a b" -c x.y=z reset HEAD@{1} --hard' \
+  "$(bash_payload 'git -C "a b" -c x.y=z reset HEAD@{1} --hard')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F1: /usr/bin/git reset HEAD~{1} --hard' \
+  "$(bash_payload '/usr/bin/git reset HEAD~{1} --hard')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F1: /bin/rm {-rf,} X' \
+  "$(bash_payload '/bin/rm {-rf,} /nonexistent-x')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F1: case inside $() hiding /bin/rm -rf' \
+  "$(bash_payload 'echo $(case a in a) /bin/rm -rf /nonexistent-x;; esac)')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F1: eval of a $() that builds /bin/rm -rf' \
+  "$(bash_payload 'eval "$(echo /bin/rm -rf /nonexistent-x)"')"
+test_allow "$IRRECOVERABLE" 'audit-0930 F1 control: git -C . log HEAD@{1} has no destructive verb' \
+  "$(bash_payload 'git -C . log HEAD@{1}')"
+test_allow "$IRRECOVERABLE" 'audit-0930 F1 control: x.git and --git before a verb word are not git' \
+  "$(bash_payload 'echo {a,b} x.git reset --git push')"
+# Deep-audit 2026-09-30 (F2): one shape's narrow verb list must not hide another shape's broad one.
+test_deny "$IRRECOVERABLE" 'audit-0930 F2: an escaped backtick must not mask a brace-hidden rm flag' \
+  "$(bash_payload 'echo \` ; rm {-rf,} /nonexistent-x')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F2: a nested substitution must not mask a brace-hidden push flag' \
+  "$(bash_payload 'echo $(echo `date`); git push {-f,} origin main')"
 
 echo ""
 total=$((pass + fail))

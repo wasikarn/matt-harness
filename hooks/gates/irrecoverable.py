@@ -988,18 +988,30 @@ _AMBIG_BRACE_RE = re.compile(r"(?:^|[\s;|&(])\{[^{}\s\"'`$]{1,60}\}(?=[\s;|&)]|$
 _AMBIG_FLAG_RE = re.compile(r"--hard\b|--force\b|(?:^|\s)-[A-Za-z]*[fdDrR]\b")
 # A brace token can hide a flag ("rm {-rf,} X"), so its verb check is broad (any rm/dd/find/git sub);
 # the other shapes leave the flags visible, so their verb check is the destructive form itself.
+# A verb may be path-qualified ("/bin/rm", "/usr/bin/git"), so "/" may precede it, and git may carry
+# global flags before its sub ("git -C . push", "--no-pager"): _AMBIG_GIT walks up to 8 of them,
+# value-taking ones with one value (deep-audit 2026-09-30). Bounded repeats keep each anchor linear.
+_AMBIG_GIT = (r"(?<![\w.-])git(?:\s+(?:-[Cc]|--(?:git-dir|work-tree|namespace|config-env))\s+"
+              r"(?:\"[^\"\n]{0,200}\"|'[^'\n]{0,200}'|\S{1,200})|\s+-\S{1,200}){0,8}\s+")
 _AMBIG_BROAD_VERB_RE = re.compile(
-    r"(?<![\w./-])(?:rm\s|dd\s|find\s|git\s+(?:push|reset|clean|checkout|restore|switch|branch|stash)\b)")
+    r"(?<![\w.-])(?:rm\s|dd\s|find\s)|" + _AMBIG_GIT +
+    r"(?:push|reset|clean|checkout|restore|switch|branch|stash)\b")
 _AMBIG_NARROW_VERB_RE = re.compile(
-    r"(?<![\w./-])(?:rm\s+-[A-Za-z]*[rf]|git\s+push\b[^\n;|&]{0,200}(?:--force\b|\s-[A-Za-z]*f\b)"
-    r"|git\s+reset\b[^\n;|&]{0,200}--hard|git\s+clean\b"
-    r"|git\s+checkout\b[^\n;|&]{0,200}(?:\s--(?:\s|$)|\s-f\b|\s\.(?:\s|$))|git\s+restore\b"
-    r"|git\s+branch\b[^\n;|&]{0,200}\s-D\b|git\s+stash\s+(?:drop|clear)\b"
-    r"|find\s[^\n]{0,300}(?:-delete|-exec\w*\s+rm)|dd\s[^\n]{0,200}of=)")
+    r"(?<![\w.-])(?:rm\s+-[A-Za-z]*[rf]|find\s[^\n]{0,300}(?:-delete|-exec\w*\s+rm)|dd\s[^\n]{0,200}of=)|"
+    + _AMBIG_GIT + r"(?:push\b[^\n;|&]{0,200}(?:--force\b|\s-[A-Za-z]*f\b)"
+    r"|reset\b[^\n;|&]{0,200}--hard|clean\b"
+    r"|checkout\b[^\n;|&]{0,200}(?:\s--(?:\s|$)|\s-f\b|\s\.(?:\s|$))|restore\b"
+    r"|branch\b[^\n;|&]{0,200}\s-D\b|stash\s+(?:drop|clear)\b)")
 
 def _ambiguous(c):
     """(reason, verb_re) when c is syntactically ambiguous, else None."""
     subst = "$(" in c
+    # Broad-verb shapes first: every narrow verb match is also a broad one, so a narrow shape
+    # returning first would hide a brace-hidden flag in the same command (deep-audit 2026-09-30).
+    if _AMBIG_BRACE_RE.search(c):
+        return "a brace token", _AMBIG_BROAD_VERB_RE
+    if re.search(r"[@~^]\{", c) and _AMBIG_FLAG_RE.search(c):
+        return "a flag after a git @{...}/~{...}/^{...} revision", _AMBIG_BROAD_VERB_RE
     if "`" in c and subst:
         return "a backtick and a $() in one command (nested substitution)", _AMBIG_NARROW_VERB_RE
     if "\\`" in c:
@@ -1010,10 +1022,6 @@ def _ambiguous(c):
         return "a case statement inside a $()", _AMBIG_NARROW_VERB_RE
     if (subst or "`" in c) and re.search(r"\beval\b", c):
         return "eval of a substitution", _AMBIG_NARROW_VERB_RE
-    if _AMBIG_BRACE_RE.search(c):
-        return "a brace token", _AMBIG_BROAD_VERB_RE
-    if re.search(r"[@~^]\{", c) and _AMBIG_FLAG_RE.search(c):
-        return "a flag after a git @{...}/~{...}/^{...} revision", _AMBIG_BROAD_VERB_RE
     return None
 
 _ambig = _ambiguous(cmd)
@@ -1176,7 +1184,24 @@ def _unwrap_shell(argv0, rest):
             # ksh93 runs a first operand that is not a readable file as the command string and joins
             # the later words into it (`ksh 'echo a' --hard` runs `echo a --hard`; a later -c is part
             # of that string). A script name scans as harmless text, so it is read as a body too.
-            b = _shell_body(argv0, rest, True, need_c=False)
+            # -s (commands from stdin), -n (no execution) and -D (print strings) run no operand. Only the
+            # leading `-` clusters count, each up to an o/R (the rest, or the next word, is its value:
+            # `-onounset` sets no -n); a `+` option can turn one back off, so it keeps the scan.
+            lead, skip = "", False
+            for t in rest:
+                u = t.replace(PH, "")
+                if skip:
+                    skip = False
+                    continue
+                if u.startswith("+"):  # `-n +n` / `-n +o noexec` run the operand again
+                    lead = ""
+                    break
+                if u in ("--", "-") or len(u) < 2 or u[0] != "-" or u.startswith("--"):
+                    break
+                letters = re.split("[oR]", u[1:], maxsplit=1)
+                lead += letters[0]
+                skip = len(letters) > 1 and not letters[1]
+            b = None if any(ch in "snD" for ch in lead) else _shell_body(argv0, rest, True, need_c=False)
             if b and b not in bodies:
                 bodies.append(b)
     else:
@@ -1580,11 +1605,12 @@ for _wi, w in enumerate(windows):
                 if skip:
                     skip = False
                     continue
-                # restore's -m is --merge (no value); skipping the next token
-                # would eat its pathspec (GH #249). An unresolved sub (PH /
-                # raw substitution) may be restore, so it does not skip either.
+                # restore's and checkout's -m is --merge (no value); skipping the
+                # next token would eat the pathspec (GH #249, deep-audit
+                # 2026-09-30). An unresolved sub (PH / raw substitution) may be
+                # either, so it does not skip.
                 if t.replace(PH, "") in ("-m", "--message") and not (
-                        sub == "restore" or PH in sub or _has_raw_subst(sub)):
+                        sub in ("restore", "checkout") or PH in sub or _has_raw_subst(sub)):
                     skip = True
                     continue
                 scan_raw.append(t)
