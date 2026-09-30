@@ -1335,6 +1335,10 @@ test_allow "$IRRECOVERABLE" "git -C path branch -D feature is allowed" \
   "$(bash_payload 'git -C /tmp/r branch -D feat/a')"
 test_allow "$IRRECOVERABLE" "git branch -rD origin/feature is allowed" \
   "$(bash_payload 'git branch -rD origin/feat-a')"
+test_deny  "$IRRECOVERABLE" "git branch -D maſter (U+017F folds to master on APFS)" \
+  "$(bash_payload 'git branch -D maſter')"
+test_deny  "$IRRECOVERABLE" "git branch -D maﬆer (U+FB06 folds to st)" \
+  "$(bash_payload 'git branch -D maﬆer')"
 test_deny  "$IRRECOVERABLE" "git branch -D with no name" \
   "$(bash_payload 'git branch -D')"
 test_deny  "$IRRECOVERABLE" "git -C repo branch -D develop" \

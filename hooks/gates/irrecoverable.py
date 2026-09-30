@@ -942,7 +942,10 @@ OPERATORS = {";", "&&", "||", "|", "&", "(", ")", "{", "}"}
 # The only whole-command shape in which `git branch -D` is allowed (see the branch rule).
 _BRANCH_D_PLAIN_RE = re.compile(
     r"git(?:[ \t]+-C[ \t]+[\w./~-]+)?[ \t]+branch"
-    r"((?:[ \t]+(?:-[dDfrq]+|--(?:delete|force|remotes|quiet)?|\w[\w./+-]*))+)")
+    r"((?:[ \t]+(?:-[dDfrq]+|--(?:delete|force|remotes|quiet)?|\w[\w./+-]*))+)",
+    # ASCII only: a Unicode \w lets "maſter" (U+017F) through, which a
+    # case-insensitive filesystem folds onto refs/heads/master (validator round 2).
+    re.ASCII)
 _OPS_LONGEST_FIRST = sorted(OPERATORS, key=len, reverse=True)
 
 # shlex fuses a run of punctuation into ONE token: ");", "&&(", ")|", ")|&", ";;".
