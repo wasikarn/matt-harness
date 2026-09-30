@@ -210,26 +210,50 @@ _DENY_SUBCMD_RE = re.compile(r"\A\s+(stash(?!\s+(list|show)\b)|reset|clean)\b")
 # stash` / `git --no-pager clean` do not land the check on sub="-C".
 _GIT_VALUE_GLOBALS = ("-C", "-c", "--git-dir", "--work-tree", "--config-env", "--namespace", "--attr-source")
 
+_FLAG_TOKEN_RE = re.compile(r"\s+(\S+)")
+_FLAG_VALUE_RE = re.compile(r"\s+\S+")
+
 def _skip_git_globals(tail):
     # tail starts right after the "git" anchor on the masked string. Returns the
     # suffix from the first non-flag token, leading whitespace intact for \A\s+.
+    # GH #246: match at offset i, never re-slice the tail per flag (quadratic on a long flag run).
     i = 0
     while True:
-        m = re.match(r"\s+(\S+)", tail[i:])
+        m = _FLAG_TOKEN_RE.match(tail, i)
         if not m:
             return tail[i:]
         tok = m.group(1)
         if not tok.startswith("-"):
             return tail[i:]
         if tok in _GIT_VALUE_GLOBALS:
-            i += m.end()
-            m2 = re.match(r"\s+\S+", tail[i:])
+            i = m.end()
+            m2 = _FLAG_VALUE_RE.match(tail, i)
             if m2:
-                i += m2.end()
+                i = m2.end()
             continue
-        i += m.end()  # any other flag, bare or combined: --git-dir=X, --no-pager, -p, ...
+        i = m.end()  # any other flag, bare or combined: --git-dir=X, --no-pager, -p, ...
+
+# GH #246: every anchor scan tries each command start (a separator or line start) and walks the
+# rest of the string when a wrapper word or assignment follows, so the work grows like
+# starts x length. `env ; ` x 5000 (30 KB) or 6000 bare newlines run past the 8 s hook timeout,
+# and a timed-out hook allows: padding in front of a real `git stash` walked around the deny.
+# Each scan charges that upper bound to one shared budget (bodies and both passes add up) and a
+# command over budget is denied, never scanned. Real subagent commands charge far less; only a
+# rare huge script (28 KB, about 7e7 over four scans) is refused. Padded shapes stay near 3 s.
+_WORK_BUDGET = 40_000_000
+_work = 0
+
+class _TooCostly(Exception):
+    pass
+
+def _charge(s):
+    global _work
+    _work += sum(s.count(c) for c in "\n;&|(") * len(s)
+    if _work > _WORK_BUDGET:
+        raise _TooCostly
 
 def _violation(masked_cmd, overlap):
+    _charge(masked_cmd)
     for m in _ANCHOR_RES[overlap].finditer(masked_cmd):
         dm = _DENY_SUBCMD_RE.match(_skip_git_globals(masked_cmd[m.end(1):]))
         if dm:
@@ -237,6 +261,7 @@ def _violation(masked_cmd, overlap):
     return None
 
 def _violation_in_bodies(raw_cmd, masked_cmd, overlap):
+    _charge(masked_cmd)
     for m in _SHELL_RES[overlap].finditer(masked_cmd):
         q = _QUOTED_RE.match(raw_cmd, m.end(1))
         if q:
@@ -247,8 +272,15 @@ def _violation_in_bodies(raw_cmd, masked_cmd, overlap):
                 return hit
     return None
 
-hit = (_violation(masked, False) or _violation_in_bodies(cmd, masked, False)
-       or _violation(masked, True) or _violation_in_bodies(cmd, masked, True))
+try:
+    hit = (_violation(masked, False) or _violation_in_bodies(cmd, masked, False)
+           or _violation(masked, True) or _violation_in_bodies(cmd, masked, True))
+except _TooCostly:
+    print(f"[mh:gate] BLOCKED: subagent ({agent_type}) command is too long or too dense to check "
+          f"safely ({len(cmd)} bytes); write it to a file with the Write tool and run the file, "
+          f"or split it into smaller commands.", file=sys.stderr)
+    journal(GATE_ID, "Bash", "deny", d.get("session_id"))
+    sys.exit(2)
 if hit:
     print(f"[mh:gate] BLOCKED: subagent ({agent_type}) may not run `git {hit}` "
           f"(command: {clip(cmd)!r}) -- no repo-wide git in a concurrent wave "

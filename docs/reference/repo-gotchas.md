@@ -102,6 +102,9 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   padded shapes (thousands of statements, 20-150 KB) with the target early and late (GH #245: a
   new scan placed before the fast denies turned a 0.03 s deny into a timeout). Any exit other than
   0 or 2 from the `.py` is a finding too, even where the `.sh` wrapper fails it closed.
+  Anchor regexes are quadratic (command starts x length): `subagent-git-guard.py` charges that
+  bound to a shared budget and denies past it (GH #246: 30 KB of `env ; ` before a `git stash`
+  timed out into allow). Only 3 of 2,581 replayed real commands (20-28 KB scripts) hit it.
 - **Oracle:** run the real shells (the system `/bin/sh`, bash 3.2, a current bash, dash, zsh, ksh)
   with argv-logging stubs, never one shell or argv0-based shell guessing: whether `{fd}>` is a
   redirect depends on the binary and version (GH #219).
