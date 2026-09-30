@@ -1012,7 +1012,13 @@ _AMBIG_FLAG_RE = re.compile(r"--h(?:a(?:r(?:d)?)?)?\b|--fo(?:r(?:c(?:e)?)?)?\b|(
 # happens once an ambiguity shape has already matched, and is the safe direction.
 # GIT_VALUE_GLOBALS is the one list of value-taking git globals, used by the main parser below.
 GIT_VALUE_GLOBALS = ("-C", "-c", "--git-dir", "--work-tree", "--namespace", "--attr-source", "--config-env")
-_AMBIG_GIT = (r"(?<![\w.-])git(?=\s)(?:[^\n;|&'\"\\]|\"[^\"\n]{0,200}\"|'[^'\n]{0,200}'|\\.){0,400}?\s")
+_AMBIG_GIT_SKIP = (r"(?<![\w.-])git(?=\s)(?:[^\n;|&'\"\\$`]|\"[^\"\n]{0,200}\"|'[^'\n]{0,200}'|\\."
+                   r"|\$\([^)\n]{0,200}\)|\$(?!\()|`[^`\n]{0,200}`){0,400}?\s")
+# The skip cannot cross an unterminated backtick or $( ) value, so the previous 8-global walk stays as a
+# second alternative: the deny set is a superset of the walk's by construction (GH #255 round 3).
+_AMBIG_GIT_WALK = (r"(?<![\w.-])git(?:\s+(?:-[Cc]|--(?:git-dir|work-tree|namespace|config-env))\s+"
+                   r"(?:\"[^\"\n]{0,200}\"|'[^'\n]{0,200}'|\S{1,200})|\s+-\S{1,200}){0,8}\s+")
+_AMBIG_GIT = "(?:" + _AMBIG_GIT_SKIP + "|" + _AMBIG_GIT_WALK + ")"
 _AMBIG_BROAD_VERB_RE = re.compile(
     r"(?<![\w.-])(?:rm\s|dd\s|find\s)|" + _AMBIG_GIT +
     r"(?:push|reset|clean|checkout|restore|switch|branch|stash)\b")

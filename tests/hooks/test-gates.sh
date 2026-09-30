@@ -2339,6 +2339,10 @@ test_deny "$IRRECOVERABLE" 'GH #255: a substitution with && inside a quoted -C v
   "$(bash_payload 'git -C "$(cd /x && pwd)" push {--force,} origin main')"
 test_deny "$IRRECOVERABLE" 'GH #255: -xdf bundle after HEAD@{1}' \
   "$(bash_payload 'git reset HEAD@{1} -xdf')"
+test_deny "$IRRECOVERABLE" 'GH #255: an unquoted $( ) with && inside a --namespace value' \
+  "$(bash_payload 'git --namespace $(a && b) push {--force,} origin main')"
+test_deny "$IRRECOVERABLE" 'GH #255: an unquoted backtick span with ; inside a -C value' \
+  "$(bash_payload 'git -C `a;b` push {--force,} origin main')"
 test_allow "$IRRECOVERABLE" 'GH #255 control: a quoted ; -C value with a harmless status' \
   "$(bash_payload "git -C 'a;b' status {a,b}")"
 test_allow "$IRRECOVERABLE" 'GH #255 control: 40 repeated -C then a brace token runs in bounded time' \
