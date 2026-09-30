@@ -285,8 +285,24 @@ _SPAWN_TOKEN_RE = re.compile(
 # above; "return True" (deny) on exhaustion is this file's own documented
 # safe direction -- widening the scan can only over-deny, never under-deny.
 _SPAWN_SCAN_BUDGET = 2_000_000
+# GH #246 (found while fixing the same hole in subagent-git-guard.py): the token budget above
+# never sees the regex itself. Every anchor scan tries each command start (a separator or a
+# line start) and walks on past a wrapper word or assignment, so its cost is about starts x
+# length, and the #245 overlapping pass hits it at every start. `env ; ` x 8000 (48 KB) in front
+# of a hidden `claude -p` took 10 s, past the 8 s timeout, which allows. Every call charges that
+# bound to one counter shared by the plain, body and overlapping scans; over budget denies (the
+# same safe direction) with its own message. Real subagent commands stay far under it; only a
+# rare 20 KB+ script is refused.
+_SPAWN_ANCHOR_BUDGET = 26_000_000
+_spawn_anchor_work = 0
+_spawn_over_budget = False
 
 def _nested_spawn(c, overlap):
+    global _spawn_anchor_work, _spawn_over_budget
+    _spawn_anchor_work += sum(c.count(ch) for ch in "\n;&|(") * len(c)
+    if _spawn_anchor_work > _SPAWN_ANCHOR_BUDGET:
+        _spawn_over_budget = True
+        return True
     # Deep-audit 2026-09-07: a bare separator (&;|\n) inside a paren/backtick
     # group (command substitution, process substitution, a subshell) is NOT a
     # top-level statement separator for the outer command -- real bash parses
@@ -360,9 +376,14 @@ def _nested_spawn(c, overlap):
     return False
 
 def _deny_nested_spawn():
-    print("[mh:gate] BLOCKED: a subagent may not spawn a nested Claude Code session via Bash "
-          "(claude -p/--print/--agent/--bg/--worktree) -- only the main session dispatches",
-          file=sys.stderr)
+    if _spawn_over_budget:
+        print("[mh:gate] BLOCKED: subagent command is too long or too dense to check safely; write it "
+              "to a file with the Write tool and run the file, or split it into smaller commands",
+              file=sys.stderr)
+    else:
+        print("[mh:gate] BLOCKED: a subagent may not spawn a nested Claude Code session via Bash "
+              "(claude -p/--print/--agent/--bg/--worktree) -- only the main session dispatches",
+              file=sys.stderr)
     journal(GATE_ID, d.get("tool_name"), "deny", d.get("session_id"))
     sys.exit(2)
 
