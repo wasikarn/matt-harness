@@ -2177,6 +2177,28 @@ test_deny "$IRRECOVERABLE" 'audit-0930 F2: an escaped backtick must not mask a b
   "$(bash_payload 'echo \` ; rm {-rf,} /nonexistent-x')"
 test_deny "$IRRECOVERABLE" 'audit-0930 F2: a nested substitution must not mask a brace-hidden push flag' \
   "$(bash_payload 'echo $(echo `date`); git push {-f,} origin main')"
+# GH #254: a "{" or "}" inside a word is literal in bash, but the tokenizer split the word there and
+# started a new window, so the flag after it was never seen by its command's rule.
+test_deny "$IRRECOVERABLE" 'GH #254: git reset feat{1} --hard' \
+  "$(bash_payload 'git reset feat{1} --hard')"
+test_deny "$IRRECOVERABLE" 'GH #254: git branch old{1} -D' \
+  "$(bash_payload 'git branch old{1} -D')"
+test_deny "$IRRECOVERABLE" 'GH #254: git push origin x{1} -f' \
+  "$(bash_payload 'git push origin x{1} -f')"
+test_deny "$IRRECOVERABLE" 'GH #254: dd if=a{1} of=/dev/disk9' \
+  "$(bash_payload 'dd if=a{1} of=/dev/disk9')"
+test_deny "$IRRECOVERABLE" 'GH #254: find with a word ending in } before -delete' \
+  "$(bash_payload "find . -name '*.log' ! -name keep} -delete")"
+test_deny "$IRRECOVERABLE" 'GH #254/#255: a bundled -fu after HEAD@{0}' \
+  "$(bash_payload 'git push origin HEAD@{0} -fu')"
+test_deny "$IRRECOVERABLE" 'GH #254/#255: an abbreviated --har after HEAD@{1}' \
+  "$(bash_payload 'git reset HEAD@{1} --har')"
+test_allow "$IRRECOVERABLE" 'GH #254 control: git stash show stash@{1}' \
+  "$(bash_payload 'git stash show stash@{1}')"
+test_allow "$IRRECOVERABLE" 'GH #254 control: git checkout feat{1} is a branch switch' \
+  "$(bash_payload 'git checkout feat{1}')"
+test_allow "$IRRECOVERABLE" 'GH #254 control: a { } group with a harmless body' \
+  "$(bash_payload '{ echo a; echo b; } > /tmp/nonexistent-x')"
 
 echo ""
 total=$((pass + fail))
