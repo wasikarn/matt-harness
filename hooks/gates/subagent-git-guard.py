@@ -176,10 +176,14 @@ _CMD_START = (r"(?:^|[|;&(]|&&|\|\|)\s*" + _KEYWORD_PREFIX +
 # earlier statement was never checked. The zero-width scan tries every position, so each
 # separator inside a walked span still anchors. At any position where finditer matched, the
 # inner regex finds the same match, so this only adds checks, never drops one.
-def _overlapping(pattern):
-    return re.compile(r"(?=(" + pattern + r"))", re.MULTILINE)
+# The overlapping scan is quadratic on long padded commands, and a timed-out hook allows, so the
+# plain scans (develop's exact behaviour, fast) run first and the overlapping pass only after
+# both allowed: a command the plain scans deny is denied just as fast as before.
+def _plain_and_overlapping(pattern):
+    return (re.compile(r"(" + pattern + r")", re.MULTILINE),
+            re.compile(r"(?=(" + pattern + r"))", re.MULTILINE))
 
-_ANCHOR_RE = _overlapping(_CMD_START + r"\\?(?:\S*/)?git\b")
+_ANCHOR_RES = _plain_and_overlapping(_CMD_START + r"\\?(?:\S*/)?git\b")
 # `bash -c "<body>"` / `eval "<body>"`: the body is a quoted string, so the masked
 # text hides it. The shell word is matched on the masked string (a real command,
 # not text inside a message); the body is read from the raw command at the same
@@ -193,7 +197,7 @@ _ANCHOR_RE = _overlapping(_CMD_START + r"\\?(?:\S*/)?git\b")
 # with `\S` it would swallow the next statement's separator (`rtk run -n||timeout 5 bash -c '...'`)
 # so finditer resumed after it and never saw that statement's shell word.
 _RTK_BODY = r"rtk[ \t]+(?:-\S+[ \t]+)*(?:run|err|test|summary)(?:[ \t]+-[^\s;&|]*)*"
-_SHELL_RE = _overlapping(
+_SHELL_RES = _plain_and_overlapping(
     _CMD_START + r"\\?(?:\S*/)?(?:(?:bash|sh|zsh|dash|ksh)\s+(?:-\S+\s+)*?-\w*c\w*|eval|" + _RTK_BODY + r")(?=\s)"
 )
 # Masking blanks the quote characters, so the raw body is found by skipping
@@ -225,24 +229,26 @@ def _skip_git_globals(tail):
             continue
         i += m.end()  # any other flag, bare or combined: --git-dir=X, --no-pager, -p, ...
 
-def _violation(masked_cmd):
-    for m in _ANCHOR_RE.finditer(masked_cmd):
+def _violation(masked_cmd, overlap):
+    for m in _ANCHOR_RES[overlap].finditer(masked_cmd):
         dm = _DENY_SUBCMD_RE.match(_skip_git_globals(masked_cmd[m.end(1):]))
         if dm:
             return dm.group(1)
     return None
 
-def _violation_in_bodies(raw_cmd, masked_cmd):
-    for m in _SHELL_RE.finditer(masked_cmd):
+def _violation_in_bodies(raw_cmd, masked_cmd, overlap):
+    for m in _SHELL_RES[overlap].finditer(masked_cmd):
         q = _QUOTED_RE.match(raw_cmd, m.end(1))
         if q:
             body = q.group(1) if q.group(1) is not None else q.group(2)
-            hit = _violation(_mask_quotes(body))
+            mb = _mask_quotes(body)
+            hit = _violation(mb, False) or (overlap and _violation(mb, True))
             if hit:
                 return hit
     return None
 
-hit = _violation(masked) or _violation_in_bodies(cmd, masked)
+hit = (_violation(masked, False) or _violation_in_bodies(cmd, masked, False)
+       or _violation(masked, True) or _violation_in_bodies(cmd, masked, True))
 if hit:
     print(f"[mh:gate] BLOCKED: subagent ({agent_type}) may not run `git {hit}` "
           f"(command: {clip(cmd)!r}) -- no repo-wide git in a concurrent wave "

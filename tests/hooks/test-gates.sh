@@ -1454,6 +1454,20 @@ for _c in \
   test_deny "$IRRECOVERABLE" "subagent: spawn behind an old-wrapper statement still anchored: $_c" \
     "$(bash_agent_payload "$_c" fork)"
 done
+# The eval / sh -c body scan calls the same spawn check (_scan_body). A caller left on an old
+# signature raised TypeError, and irrecoverable.sh turned that exit 1 into a fail-closed deny, so
+# test_deny could not see the crash: these rows run the .py directly and require its own exit 2.
+for _c in \
+  'eval claude -p x' \
+  'ls; eval claude -p x' \
+  'bash -c "claude --bg x"' ; do
+  _rc=$(bash_agent_payload "$_c" fork | python3 "$ROOT/hooks/gates/irrecoverable.py" 2>/dev/null; echo $?)
+  if [[ "$_rc" == "2" ]]; then
+    echo "  ✅ DENY (.py, no crash): $_c"; pass=$((pass + 1))
+  else
+    echo "  ❌ .py exit $_rc, expected its own deny (2): $_c" >&2; fail=$((fail + 1))
+  fi
+done
 test_allow "$IRRECOVERABLE" "subagent: old-wrapper walk control, no spawn flag: time ls; claude --version; claude --help" \
   "$(bash_agent_payload 'time ls; claude --version; claude --help' fork)"
 
