@@ -364,11 +364,17 @@ def deny(reason):
     journal(GATE_ID, d.get("tool_name"), "deny", d.get("session_id"))
     sys.exit(2)
 
+_ASKED = []
 def ask(reason):
     # Unlike deny(), doesn't exit immediately -- a later, more severe check in
     # the same run can still escalate to deny() (which does exit right away),
     # same "ask now, a worse finding can still override" shape config-write-guard.py
-    # and codex-setup-guard.py's own emit_ask() already use.
+    # and codex-setup-guard.py's own emit_ask() already use. Emits at most once: a
+    # window can be checked in several copies (compacted, brace-joined), and two
+    # JSON objects on stdout are not valid JSON (GH #254 validator).
+    if _ASKED:
+        return
+    _ASKED.append(reason)
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
                                              "permissionDecision": "ask",
                                              "permissionDecisionReason": reason}}))

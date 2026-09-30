@@ -219,7 +219,8 @@ test_ask() {
   local gate="$1" desc="$2" payload="$3"
   local out rc
   out=$(echo "$payload" | bash "$gate" 2>/dev/null); rc=$?
-  if [[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"'; then
+  # stdout must be exactly ONE JSON object: two concatenated objects are not valid JSON (GH #254 validator).
+  if [[ "$rc" == "0" ]] && printf '%s' "$out" | python3 -c 'import json,sys; assert json.loads(sys.stdin.read())["hookSpecificOutput"]["permissionDecision"] == "ask"' 2>/dev/null; then
     echo "  ✅ ASK: $desc"
     pass=$((pass + 1))
   else
@@ -1523,7 +1524,9 @@ echo ""
 echo "=== gh merge ask-tier gate (Phase B, 2026-09-28: local defense-in-depth for the PR-review flow) ==="
 test_ask   "$IRRECOVERABLE" "gh pr merge <number>"                "$(bash_payload 'gh pr merge 5')"
 test_ask   "$IRRECOVERABLE" "gh pr merge with --squash flag"       "$(bash_payload 'gh pr merge --squash 5')"
-test_ask   "$IRRECOVERABLE" "gh api .../merge (PUT)"               "$(bash_payload 'gh api repos/wasikarn/matt-harness/pulls/5/merge -X PUT')"
+test_ask   "$IRRECOVERABLE" "gh pr merge with a brace word asks once (two window copies)" "$(bash_payload 'gh pr merge feat{1}')"
+test_ask   "$IRRECOVERABLE" "gh pr merge with a \$() argument asks once (compacted copy)" "$(bash_payload 'gh pr merge $(true) 12')"
+test_ask   "$IRRECOVERABLE" "gh api .../merge (PUT)"              "$(bash_payload 'gh api repos/wasikarn/matt-harness/pulls/5/merge -X PUT')"
 test_allow "$IRRECOVERABLE" "gh pr view (not a merge)"             "$(bash_payload 'gh pr view 5')"
 test_allow "$IRRECOVERABLE" "gh pr list (not a merge)"             "$(bash_payload 'gh pr list')"
 test_allow "$IRRECOVERABLE" "gh pr create (not a merge)"           "$(bash_payload 'gh pr create --title x --body y')"
