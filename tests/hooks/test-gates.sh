@@ -900,6 +900,27 @@ test_allow "$IRRECOVERABLE" 'GH #189 control: -sW is -s (source) with value W, n
 test_allow "$IRRECOVERABLE" 'GH #189 control: after -- every token is a pathspec, so --staged -- -Wfile allows' \
   "$(bash_payload 'git restore --staged -- -Wfile')"
 
+# GH #249: restore's -m is --merge (no value), not a commit message flag; the -m value-skip must not eat the pathspec.
+test_deny "$IRRECOVERABLE" 'GH #249: git restore -m . discards worktree changes' \
+  "$(bash_payload 'git restore -m .')"
+test_deny "$IRRECOVERABLE" 'GH #249: git restore -W -m file discards worktree changes' \
+  "$(bash_payload 'git restore -W -m file.txt')"
+test_deny "$IRRECOVERABLE" 'GH #249: git restore --conflict=merge -m . discards worktree changes' \
+  "$(bash_payload 'git restore --conflict=merge -m .')"
+# GH #249: -s/--source take a value, so "-s --staged" makes --staged the source and the restore still targets the worktree.
+test_deny "$IRRECOVERABLE" 'GH #249: -s --staged -sHEAD file (--staged is the source value)' \
+  "$(bash_payload 'git restore -s --staged -sHEAD file.txt')"
+test_deny "$IRRECOVERABLE" 'GH #249: --source --staged --source=HEAD . (--staged is the source value)' \
+  "$(bash_payload 'git restore --source --staged --source=HEAD .')"
+test_deny "$IRRECOVERABLE" 'GH #249: -qs --staged -sHEAD file (cluster ending in s takes the next token)' \
+  "$(bash_payload 'git restore -qs --staged -sHEAD file.txt')"
+test_allow "$IRRECOVERABLE" 'GH #249 control: --source=HEAD --staged file (glued value, real --staged) allows' \
+  "$(bash_payload 'git restore --source=HEAD --staged file.txt')"
+test_allow "$IRRECOVERABLE" 'GH #249 control: -s HEAD --staged file (value is HEAD, real --staged) allows' \
+  "$(bash_payload 'git restore -s HEAD --staged file.txt')"
+test_allow "$IRRECOVERABLE" 'GH #249 control: git commit -m message still skips its value' \
+  "$(bash_payload 'git commit -m "restore . later"')"
+
 # The gate correctly denies each idiom below TODAY, but no test held the deny path, so a
 # mutation to the wrapper-unwrap / hooksPath / branch-delete / backstop logic survived the whole
 # suite (fail-open, undetected).
@@ -1138,6 +1159,30 @@ test_deny  "$IRRECOVERABLE" "zsh -c +opipefail body: attached value after a spli
   "$(bash_payload "zsh -c +opipefail 'rm -rf /tmp/x'")"
 test_allow "$IRRECOVERABLE" "zsh -c +opipefail 'echo' then a dangerous-looking argument (gap follow-up to #227)" \
   "$(bash_payload "zsh -c +opipefail 'echo hi' 'rm -rf /tmp/x'")"
+# bash's --rcfile / --init-file take a file: the word after them is an option value, not the body.
+test_deny  "$IRRECOVERABLE" "bash --rcfile FILE -oc pipefail body: the file is not the body (audit 3 of #227)" \
+  "$(bash_payload "bash --rcfile /dev/null -oc pipefail 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "env bash --init-file FILE -Oc extglob body (audit 3 of #227)" \
+  "$(bash_payload "env bash --init-file /dev/null -Oc extglob 'rm -rf /tmp/x'")"
+test_allow "$IRRECOVERABLE" "bash --rcfile FILE -oc pipefail, benign body (audit 3 of #227)" \
+  "$(bash_payload "bash --rcfile /dev/null -oc pipefail 'git status'")"
+# ksh93 runs a first operand that is not a readable file as the command string, no -c needed.
+test_deny  "$IRRECOVERABLE" "ksh 'body' with no -c runs the string (audit 3 of #227)" \
+  "$(bash_payload "ksh 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "ksh -o pipefail 'body' with no -c (audit 3 of #227)" \
+  "$(bash_payload "ksh -o pipefail 'rm -rf /tmp/x'")"
+test_allow "$IRRECOVERABLE" "ksh with a script operand and a benign later word (audit 3 of #227)" \
+  "$(bash_payload "ksh deploy.sh 'git status'")"
+# ksh joins every operand word into the command string (`ksh 'echo a' --hard` runs `echo a --hard`), and a
+# -c after the operand is part of that string, not an option (blind-spot pass, audit 3 of #227).
+test_deny  "$IRRECOVERABLE" "ksh operand then -c: the operand is still the command (audit 3 of #227)" \
+  "$(bash_payload "ksh 'rm -rf /tmp/x' -c true")"
+test_deny  "$IRRECOVERABLE" "ksh -- operand then -c (audit 3 of #227)" \
+  "$(bash_payload "ksh -- 'rm -rf /tmp/x' -c true")"
+test_deny  "$IRRECOVERABLE" "ksh operands joined: 'git reset' --hard (audit 3 of #227)" \
+  "$(bash_payload "ksh 'git reset' --hard")"
+test_allow "$IRRECOVERABLE" "ksh benign operand then -c (audit 3 of #227)" \
+  "$(bash_payload "ksh 'git status' -c true")"
 # Under find, `-exec` after `bash -c` is bash's option letters (e x e c), not a second find action.
 test_deny  "$IRRECOVERABLE" "find -exec bash -c -exec body: -exec is a shell cluster (gap follow-up to #227)" \
   "$(bash_payload "find . -exec bash -c -exec 'rm -rf /tmp/x' \\;")"

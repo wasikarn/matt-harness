@@ -1093,7 +1093,7 @@ _WDEPTH = {}      # window index -> unwrap depth (absent = 0, an original window
 _XARGS_HANDOVERS = [0]  # windows appended for `xargs <wrapper> ...` (bounded, see the xargs branch)
 _cur_depth = 0
 
-def _shell_body(argv0, rest, getopt):
+def _shell_body(argv0, rest, getopt, need_c=True):
     """The `-c` command string of `argv0 rest`, or None. `getopt` picks how a value flag reads:
     bash takes the next word for EVERY o/O in a cluster (`-oc pipefail`, `-coo a b`); zsh, ksh and
     dash follow getopt, where an `o` followed by more letters has them as its attached value
@@ -1129,11 +1129,13 @@ def _shell_body(argv0, rest, getopt):
             seen_c = seen_c or c
             i += 1 + extra
         elif u.startswith("--") and len(u) > 2:
-            i += 1
+            i += 2 if u in _LONG_VALUE_OPTS else 1
         else:
             break
     if seen_c and i < len(rest):
         return rest[i]
+    if not need_c and i < len(rest):
+        return " ".join(rest[i:])  # ksh joins every operand word into the command string
     # Fallback (a script word before -c, `--rcfile FILE -c body`): the first `-c` cluster anywhere.
     for i in range(len(rest) - 1):
         t = rest[i].replace(PH, "")
@@ -1145,11 +1147,14 @@ def _shell_body(argv0, rest, getopt):
                     j += 1
                     break
                 if len(u) > 1 and u[0] in "-+":
-                    j += 2 if (u[-1] in vf and not u.startswith("--")) else 1
+                    j += 2 if ((u[-1] in vf and not u.startswith("--")) or u in _LONG_VALUE_OPTS) else 1
                     continue
                 break
             return rest[j] if j < len(rest) else None
     return None
+
+
+_LONG_VALUE_OPTS = ("--rcfile", "--init-file")  # bash long options that take a file: the next word is not the body
 
 
 # bash reads every o/O in a cluster as taking the next word; zsh, ksh and dash follow getopt; `sh`
@@ -1165,6 +1170,13 @@ def _unwrap_shell(argv0, rest):
         bodies = []
         for g in _SHELL_GETOPT[argv0]:
             b = _shell_body(argv0, rest, g)
+            if b and b not in bodies:
+                bodies.append(b)
+        if argv0 == "ksh":
+            # ksh93 runs a first operand that is not a readable file as the command string and joins
+            # the later words into it (`ksh 'echo a' --hard` runs `echo a --hard`; a later -c is part
+            # of that string). A script name scans as harmless text, so it is read as a body too.
+            b = _shell_body(argv0, rest, True, need_c=False)
             if b and b not in bodies:
                 bodies.append(b)
     else:
@@ -1568,7 +1580,11 @@ for _wi, w in enumerate(windows):
                 if skip:
                     skip = False
                     continue
-                if t.replace(PH, "") in ("-m", "--message"):
+                # restore's -m is --merge (no value); skipping the next token
+                # would eat its pathspec (GH #249). An unresolved sub (PH /
+                # raw substitution) may be restore, so it does not skip either.
+                if t.replace(PH, "") in ("-m", "--message") and not (
+                        sub == "restore" or PH in sub or _has_raw_subst(sub)):
                     skip = True
                     continue
                 scan_raw.append(t)
@@ -1640,7 +1656,16 @@ for _wi, w in enumerate(windows):
                     # abbreviation ("--work") count; a short cluster stops at
                     # "s" (-s takes a value: "-sW" is source "W"). After "--"
                     # every token is a pathspec ("-- -Wfile").
-                    _opts = scan[:scan.index("--")] if "--" in scan else scan
+                    _opts, _val = [], False
+                    for t in (scan[:scan.index("--")] if "--" in scan else scan):
+                        if _val:  # the value of -s/--source/--pathspec-from-file is not a flag (GH #249)
+                            _val = False
+                            continue
+                        _opts.append(t)
+                        if t.startswith("-") and not t.startswith("--"):
+                            _val = t.find("s") == len(t) - 1 and t != "-"
+                        else:
+                            _val = "=" not in t and (_is_flag(t, "--source") or _is_flag(t, "--pathspec-from-file"))
                     targets_worktree = "--staged" not in _opts or any(
                         _is_flag(t, "--worktree")
                         or (t.startswith("-") and not t.startswith("--") and "W" in t.split("s", 1)[0])
