@@ -501,7 +501,7 @@ _t0=$(date +%s)
 _c="git $(_pad '-c a ' 20000); git stash"  # the flag walk re-sliced the tail per flag (4.6 s at 1.25 MB; a Linux argv arg caps this row at 128 KB)
 rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
 check "long git flag run still reaches the deny (${#_c} bytes)" "$ok"
-_PAD_ENV=$(_pad 'env ; ' 5000)
+_PAD_ENV=$(_pad 'env ; ' 5000; printf x); _PAD_ENV=${_PAD_ENV%x}  # keep the trailing blank $(...) would strip
 _PAD_NL=$(_pad $'\n' 6000; printf x); _PAD_NL=${_PAD_NL%x}  # $(...) strips trailing newlines
 for _c in \
   "${_PAD_ENV}time ls; git stash; git status" \
