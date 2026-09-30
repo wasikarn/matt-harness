@@ -2299,6 +2299,32 @@ test_allow "$IRRECOVERABLE" 'GH #254 control: git checkout feat{1} is a branch s
 test_allow "$IRRECOVERABLE" 'GH #254 control: a { } group with a harmless body' \
   "$(bash_payload '{ echo a; echo b; } > /tmp/nonexistent-x')"
 
+# GH #246: the nested-spawn anchor scan is quadratic on padded input, and a hook past its 8 s timeout
+# allows. 48 KB of `env ; ` in front of a hidden `claude -p` took 10 s. A shared work budget now
+# denies a command too dense to scan, fast; a subagent only. Tails hold `claude`: irrecoverable.sh
+# skips python for a command with no candidate word, so a plain `ls` tail never reaches this scan.
+_pad() { python3 -c 'import sys; sys.stdout.write(sys.argv[1] * int(sys.argv[2]))' "$1" "$2"; }
+_PAD_ENV=$(_pad 'env ; ' 8000; printf x); _PAD_ENV=${_PAD_ENV%x}  # $(...) strips trailing blanks and newlines
+_PAD_NL=$(_pad $'\n' 6000; printf x); _PAD_NL=${_PAD_NL%x}
+_t0=$(date +%s)
+test_deny "$IRRECOVERABLE" 'GH #246: a spawn hidden behind 48 KB of padding is denied, not timed out into allow' \
+  "$(bash_agent_payload "${_PAD_ENV}time ls; claude -p a; claude --version" fork)"
+test_deny "$IRRECOVERABLE" 'GH #246: a padded benign command is refused by the work budget, fast' \
+  "$(bash_agent_payload "${_PAD_ENV}claude --version" fork)"
+test_deny "$IRRECOVERABLE" 'GH #246: 6000 bare newlines before a benign command is refused by the work budget' \
+  "$(bash_agent_payload "${_PAD_NL}claude --version" fork)"
+test_deny "$IRRECOVERABLE" 'GH #246: padding inside a bash -c body counts against the same budget' \
+  "$(bash_agent_payload "bash -c '${_PAD_ENV}claude --version'; bash -c '${_PAD_ENV}claude --version'" fork)"
+_el=$(( $(date +%s) - _t0 ))
+if [ "$_el" -lt 8 ]; then echo "  ✅ GH #246: every padded shape decided inside the 8 s hook timeout (${_el}s)"; pass=$((pass + 1))
+else echo "  ❌ GH #246: padded shapes took ${_el}s, past the hook timeout" >&2; fail=$((fail + 1)); fi
+test_allow "$IRRECOVERABLE" 'GH #246 control: the main session is never scanned, padding is allowed' \
+  "$(bash_agent_payload "${_PAD_ENV}claude --version" '')"
+test_allow "$IRRECOVERABLE" 'GH #246 control: a long ordinary subagent command (20 KB) is still allowed' \
+  "$(bash_agent_payload "echo $(_pad x 20000); claude --version" fork)"
+test_allow "$IRRECOVERABLE" 'GH #246 control: a 400-line ordinary subagent script is still allowed' \
+  "$(bash_agent_payload "$(_pad $'echo hello world\n' 400)claude --version" fork)"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
