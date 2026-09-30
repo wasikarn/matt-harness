@@ -1168,13 +1168,16 @@ def _unwrap_shell(argv0, rest):
             # of that string). A script name scans as harmless text, so it is read as a body too.
             # -s (commands from stdin), -n (no execution) and -D (print strings) run no operand. Only the
             # leading `-` clusters count, each up to an o/R (the rest, or the next word, is its value:
-            # `-onounset` sets no -n); a `+` option ends the walk, which keeps the scan (fail-closed).
+            # `-onounset` sets no -n); a `+` option can turn one back off, so it keeps the scan.
             lead, skip = "", False
             for t in rest:
                 u = t.replace(PH, "")
                 if skip:
                     skip = False
                     continue
+                if u.startswith("+"):  # `-n +n` / `-n +o noexec` run the operand again
+                    lead = ""
+                    break
                 if u in ("--", "-") or len(u) < 2 or u[0] != "-" or u.startswith("--"):
                     break
                 letters = re.split("[oR]", u[1:], maxsplit=1)

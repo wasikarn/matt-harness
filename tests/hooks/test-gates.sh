@@ -1198,6 +1198,13 @@ test_deny  "$IRRECOVERABLE" "ksh -onounset: the n and s are the -o value (audit 
   "$(bash_payload "ksh -onounset 'rm -rf /tmp/x'")"
 test_deny  "$IRRECOVERABLE" "ksh -o nounset: the value word is not a flag cluster (audit 5 of #227)" \
   "$(bash_payload "ksh -o nounset 'rm -rf /tmp/x'")"
+# A later + option turns the flag back off (`-n +n` runs the operand), so any + option keeps the scan.
+test_deny  "$IRRECOVERABLE" "ksh -n +n operand runs (audit 5 whole-picture pass)" \
+  "$(bash_payload "ksh -n +n 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "ksh -n +o noexec operand runs (audit 5 whole-picture pass)" \
+  "$(bash_payload "ksh -n +o noexec 'rm -rf /tmp/x'")"
+test_deny  "$IRRECOVERABLE" "env ksh -s +s operand runs (audit 5 whole-picture pass)" \
+  "$(bash_payload "env ksh -s +s 'git reset --hard'")"
 # Under find, `-exec` after `bash -c` is bash's option letters (e x e c), not a second find action.
 test_deny  "$IRRECOVERABLE" "find -exec bash -c -exec body: -exec is a shell cluster (gap follow-up to #227)" \
   "$(bash_payload "find . -exec bash -c -exec 'rm -rf /tmp/x' \\;")"
