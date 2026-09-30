@@ -1288,11 +1288,62 @@ test_allow "$IRRECOVERABLE" "FOO=bar ls (assignment prefix on a benign command)"
   "$(bash_payload 'FOO=bar ls')"
 # --- git branch force-delete: discards unmerged commits ---
 test_deny  "$IRRECOVERABLE" "git branch -D (force-delete short flag)" \
-  "$(bash_payload 'git branch -D featurex')"
+  "$(bash_payload 'git branch -D main')"
 test_deny  "$IRRECOVERABLE" "git branch --delete --force (long-flag force-delete)" \
-  "$(bash_payload 'git branch --delete --force featurex')"
+  "$(bash_payload 'git branch --delete --force develop')"
 test_deny  "$IRRECOVERABLE" "git branch -fD (bundled force-delete flags)" \
-  "$(bash_payload 'git branch -fD featurex')"
+  "$(bash_payload 'git branch -fD master')"
+# Operator policy 2026-09-30: a force-delete is allowed unless it may hit main/master/develop.
+test_allow "$IRRECOVERABLE" "git branch -D on a feature branch is allowed" \
+  "$(bash_payload 'git branch -D claude/gate-restore-S-197-2026-09-29')"
+test_allow "$IRRECOVERABLE" "git branch -D on several feature branches is allowed" \
+  "$(bash_payload 'git branch -D feat/a fix-b')"
+test_allow "$IRRECOVERABLE" "git branch --delete --force on a feature branch is allowed" \
+  "$(bash_payload 'git branch --delete --force featurex')"
+test_allow "$IRRECOVERABLE" "a name that only contains main is not protected" \
+  "$(bash_payload 'git branch -D maintenance feat/main-fix')"
+test_deny  "$IRRECOVERABLE" "git branch -D with a protected name among others" \
+  "$(bash_payload 'git branch -D feat/a develop')"
+test_deny  "$IRRECOVERABLE" "git branch -D Main (case-insensitive filesystem)" \
+  "$(bash_payload 'git branch -D Main')"
+test_deny  "$IRRECOVERABLE" "git branch -D refs/heads/master" \
+  "$(bash_payload 'git branch -D refs/heads/master')"
+test_deny  "$IRRECOVERABLE" "git branch -D with a quoted protected name" \
+  "$(bash_payload 'git branch -D "ma"in')"
+test_deny  "$IRRECOVERABLE" "git branch -D -- main (name after --)" \
+  "$(bash_payload 'git branch -D -- main')"
+test_deny  "$IRRECOVERABLE" "git branch -D with a substituted name" \
+  "$(bash_payload 'git branch -D $(git branch --show-current)')"
+test_deny  "$IRRECOVERABLE" "git branch -D with a variable name" \
+  "$(bash_payload 'git branch -D $b')"
+test_deny  "$IRRECOVERABLE" "git branch -D with a glob" \
+  "$(bash_payload 'git branch -D ma*')"
+test_deny  "$IRRECOVERABLE" "git branch -D @{-1} (the previous branch, may be main)" \
+  "$(bash_payload 'git branch -D @{-1}')"
+test_deny  "$IRRECOVERABLE" "git branch -D with a quoted ; before main (splits the window)" \
+  "$(bash_payload "git branch -D f1 ';' main")"
+test_deny  "$IRRECOVERABLE" "git branch -D with an escaped & before develop" \
+  "$(bash_payload 'git branch -D f1 \& develop')"
+test_deny  "$IRRECOVERABLE" "git branch -D ma{i,}n (mid-word brace expansion)" \
+  "$(bash_payload 'git branch -D ma{i,}n')"
+test_deny  "$IRRECOVERABLE" "xargs appends main to git branch -D" \
+  "$(bash_payload 'echo main | xargs git branch -D f1')"
+test_deny  "$IRRECOVERABLE" "xargs -I replaces the name with main" \
+  "$(bash_payload 'echo main | xargs -I X git branch -D X')"
+test_deny  "$IRRECOVERABLE" "git branch -D chained after another command keeps the deny" \
+  "$(bash_payload 'git fetch && git branch -D f1')"
+test_allow "$IRRECOVERABLE" "git -C path branch -D feature is allowed" \
+  "$(bash_payload 'git -C /tmp/r branch -D feat/a')"
+test_allow "$IRRECOVERABLE" "git branch -rD origin/feature is allowed" \
+  "$(bash_payload 'git branch -rD origin/feat-a')"
+test_deny  "$IRRECOVERABLE" "git branch -D maſter (U+017F folds to master on APFS)" \
+  "$(bash_payload 'git branch -D maſter')"
+test_deny  "$IRRECOVERABLE" "git branch -D maﬆer (U+FB06 folds to st)" \
+  "$(bash_payload 'git branch -D maﬆer')"
+test_deny  "$IRRECOVERABLE" "git branch -D with no name" \
+  "$(bash_payload 'git branch -D')"
+test_deny  "$IRRECOVERABLE" "git -C repo branch -D develop" \
+  "$(bash_payload 'git -C /tmp/r branch -D develop')"
 test_allow "$IRRECOVERABLE" "git branch newbranch (create, must not over-block)" \
   "$(bash_payload 'git branch newbranch')"
 test_allow "$IRRECOVERABLE" "git branch featureD (name containing D, must not over-block)" \
@@ -1312,7 +1363,7 @@ test_deny  "$IRRECOVERABLE" "git commit --amen (abbreviated --amend, was silentl
 test_deny  "$IRRECOVERABLE" "git clean --forc (abbreviated --force, was silently ALLOWed)" \
   "$(bash_payload 'git clean --forc')"
 test_deny  "$IRRECOVERABLE" "git branch --del --forc (abbreviated delete+force, was silently ALLOWed)" \
-  "$(bash_payload 'git branch --del --forc featurex')"
+  "$(bash_payload 'git branch --del --forc main')"
 test_deny  "$IRRECOVERABLE" "git switch --discard-ch (abbreviated --discard-changes, was silently ALLOWed)" \
   "$(bash_payload 'git switch --discard-ch main')"
 test_deny  "$IRRECOVERABLE" "git add --al (abbreviated --all, was silently ALLOWed)" \
@@ -1405,12 +1456,12 @@ for _c in \
   'git commit -nm x' \
   'git commit -anm x' \
   'git commit -m x -n' \
-  'git branch -d -f x' \
-  'git branch -df x' \
-  'git branch -fd x' \
-  'git branch -d --force x' \
-  'git branch --delete -f x' \
-  'git branch -r -d -f origin/x' \
+  'git branch -d -f main' \
+  'git branch -df develop' \
+  'git branch -fd master' \
+  'git branch -d --force main' \
+  'git branch --delete -f develop' \
+  'git branch -r -d -f origin/main' \
   'git add -Af' \
   'git add -fA' \
   'git add -vA' ; do

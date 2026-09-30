@@ -6,7 +6,8 @@ review via the already-installed `mattpocock-skills:code-review` (verified insta
 `skills/engineering/code-review` in the `mattpocock-skills` plugin cache) — this repo does not
 rebuild that flow as its own skill (composer-not-creator,
 `docs/reference/composer-not-creator.md`). Merge method: merge-commit or rebase, never squash —
-squash collides with the existing `git branch -D` deny gate on an already-merged feature branch.
+a squashed feature branch is not merged by ancestry, so only `git branch -D` removes it locally
+(the gate allowed that only from 2026-09-30, for a plain `git branch -D <names>` without main/master/develop).
 `delete_branch_on_merge: true` on the remote handles cleanup.
 
 Enforcement layers, weakest to strongest:

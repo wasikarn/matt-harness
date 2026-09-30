@@ -13,7 +13,7 @@ tool call — see its own row below for what that means in practice:
 
 | gate | denies or asks |
 |---|---|
-| `gate:bash:irrecoverable` | `rm -rf`, `find -delete`, `--no-verify`, `hooksPath` edits, `push --force`, `reset --hard`, `clean -f`, discarding `restore`/`checkout`, `branch -D`, `stash drop/clear`, `commit --amend`, `dd`, SQL `DROP`, `git add -A` outside a merge, nested `claude` spawns from a subagent |
+| `gate:bash:irrecoverable` | `rm -rf`, `find -delete`, `--no-verify`, `hooksPath` edits, `push --force`, `reset --hard`, `clean -f`, discarding `restore`/`checkout`, `branch -D` (a plain `git branch -D <names>` without main/master/develop is allowed), `stash drop/clear`, `commit --amend`, `dd`, SQL `DROP`, `git add -A` outside a merge, nested `claude` spawns from a subagent |
 | `gate:bash:subagent-git-guard` | `git stash`/`reset`/`clean` from a dispatched subagent |
 | `gate:agent:subagent-spawn-guard` | a subagent calling the Agent tool to spawn its own reviewer/validator |
 | `gate:task:complete-separation` | a subagent marking its own task complete |
