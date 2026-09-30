@@ -2148,8 +2148,8 @@ test_deny "$IRRECOVERABLE" 'audit-0930 F1: eval of a $() that builds /bin/rm -rf
   "$(bash_payload 'eval "$(echo /bin/rm -rf /nonexistent-x)"')"
 test_allow "$IRRECOVERABLE" 'audit-0930 F1 control: git -C . log HEAD@{1} has no destructive verb' \
   "$(bash_payload 'git -C . log HEAD@{1}')"
-test_allow "$IRRECOVERABLE" 'audit-0930 F1 control: a .git path and --git-dir are not a git verb' \
-  "$(bash_payload 'ls .git/refs/{heads,tags} --git-dir-reset')"
+test_allow "$IRRECOVERABLE" 'audit-0930 F1 control: x.git and --git before a verb word are not git' \
+  "$(bash_payload 'echo {a,b} x.git reset --git push')"
 # Deep-audit 2026-09-30 (F2): one shape's narrow verb list must not hide another shape's broad one.
 test_deny "$IRRECOVERABLE" 'audit-0930 F2: an escaped backtick must not mask a brace-hidden rm flag' \
   "$(bash_payload 'echo \` ; rm {-rf,} /nonexistent-x')"

@@ -978,14 +978,20 @@ _AMBIG_BRACE_RE = re.compile(r"(?:^|[\s;|&(])\{[^{}\s\"'`$]{1,60}\}(?=[\s;|&)]|$
 _AMBIG_FLAG_RE = re.compile(r"--hard\b|--force\b|(?:^|\s)-[A-Za-z]*[fdDrR]\b")
 # A brace token can hide a flag ("rm {-rf,} X"), so its verb check is broad (any rm/dd/find/git sub);
 # the other shapes leave the flags visible, so their verb check is the destructive form itself.
+# A verb may be path-qualified ("/bin/rm", "/usr/bin/git"), so "/" may precede it, and git may carry
+# global flags before its sub ("git -C . push", "--no-pager"): _AMBIG_GIT walks up to 8 of them,
+# value-taking ones with one value (deep-audit 2026-09-30). Bounded repeats keep each anchor linear.
+_AMBIG_GIT = (r"(?<![\w.-])git(?:\s+(?:-[Cc]|--(?:git-dir|work-tree|namespace|config-env))\s+"
+              r"(?:\"[^\"\n]{0,200}\"|'[^'\n]{0,200}'|\S{1,200})|\s+-\S{1,200}){0,8}\s+")
 _AMBIG_BROAD_VERB_RE = re.compile(
-    r"(?<![\w./-])(?:rm\s|dd\s|find\s|git\s+(?:push|reset|clean|checkout|restore|switch|branch|stash)\b)")
+    r"(?<![\w.-])(?:rm\s|dd\s|find\s)|" + _AMBIG_GIT +
+    r"(?:push|reset|clean|checkout|restore|switch|branch|stash)\b")
 _AMBIG_NARROW_VERB_RE = re.compile(
-    r"(?<![\w./-])(?:rm\s+-[A-Za-z]*[rf]|git\s+push\b[^\n;|&]{0,200}(?:--force\b|\s-[A-Za-z]*f\b)"
-    r"|git\s+reset\b[^\n;|&]{0,200}--hard|git\s+clean\b"
-    r"|git\s+checkout\b[^\n;|&]{0,200}(?:\s--(?:\s|$)|\s-f\b|\s\.(?:\s|$))|git\s+restore\b"
-    r"|git\s+branch\b[^\n;|&]{0,200}\s-D\b|git\s+stash\s+(?:drop|clear)\b"
-    r"|find\s[^\n]{0,300}(?:-delete|-exec\w*\s+rm)|dd\s[^\n]{0,200}of=)")
+    r"(?<![\w.-])(?:rm\s+-[A-Za-z]*[rf]|find\s[^\n]{0,300}(?:-delete|-exec\w*\s+rm)|dd\s[^\n]{0,200}of=)|"
+    + _AMBIG_GIT + r"(?:push\b[^\n;|&]{0,200}(?:--force\b|\s-[A-Za-z]*f\b)"
+    r"|reset\b[^\n;|&]{0,200}--hard|clean\b"
+    r"|checkout\b[^\n;|&]{0,200}(?:\s--(?:\s|$)|\s-f\b|\s\.(?:\s|$))|restore\b"
+    r"|branch\b[^\n;|&]{0,200}\s-D\b|stash\s+(?:drop|clear)\b)")
 
 def _ambiguous(c):
     """(reason, verb_re) when c is syntactically ambiguous, else None."""
