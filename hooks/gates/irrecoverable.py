@@ -954,6 +954,14 @@ def _blank_redirections(s):
 # splits them out as their own tokens while respecting quotes. ( ) { } get the
 # same treatment so "(rm -rf x)" / "{ rm -rf x; }" do not leave "(" as argv0.
 OPERATORS = {";", "&&", "||", "|", "&", "(", ")", "{", "}"}
+
+# The only whole-command shape in which `git branch -D` is allowed (see the branch rule).
+_BRANCH_D_PLAIN_RE = re.compile(
+    r"git(?:[ \t]+-C[ \t]+[\w./~-]+)?[ \t]+branch"
+    r"((?:[ \t]+(?:-[dDfrq]+|--(?:delete|force|remotes|quiet)?|\w[\w./+-]*))+)",
+    # ASCII only: a Unicode \w lets "maſter" (U+017F) through, which a
+    # case-insensitive filesystem folds onto refs/heads/master (validator round 2).
+    re.ASCII)
 _OPS_LONGEST_FIRST = sorted(OPERATORS, key=len, reverse=True)
 
 # shlex fuses a run of punctuation into ONE token: ");", "&&(", ")|", ")|&", ";;".
@@ -1760,13 +1768,23 @@ for _wi, w in enumerate(windows):
                     deny("git checkout -- / git checkout . / git checkout -f / git checkout <tree> <file> discards working-tree changes — confirm with user first")
                 if sub == "switch" and any(t == "-f" or _is_flag(t, "--force", "--discard-changes") or _bundled_flag(t, ("c", "C")) for t in scan):
                     deny("git switch --force discards working-tree changes — confirm with user first")
+                # A force-delete is allowed only for a whole command of the plain shape
+                # "git [-C <path>] branch <flags and names>" in which no name's last path part
+                # is main/master/develop in any case ("origin/main", "Main" on a case-
+                # insensitive filesystem). Anything else keeps the deny (operator policy,
+                # 2026-09-30): the per-window token view cannot prove what git receives
+                # (a quoted ";" or a mid-word "{" splits the window, xargs appends names,
+                # "@{-1}" is the previous branch), so a whitelist on the raw text decides.
                 if sub == "branch" and (
                     any(t == "-D" or (t.startswith("-") and not t.startswith("--") and "D" in t) for t in scan)
                     # -d -f, -df, -fd, -d --force and --delete -f are -D by another spelling.
                     or (any(_is_flag(t, "--delete") or _bundled_flag(t, "", "d") for t in scan)
                         and any(_is_flag(t, "--force") or _bundled_flag(t, "", "f") for t in scan))
                 ):
-                    deny("git branch -D / --delete --force force-deletes a branch, discarding unmerged commits — confirm with user first")
+                    _m = _BRANCH_D_PLAIN_RE.fullmatch(cmd.strip())
+                    _names = [t for t in (_m.group(1).split() if _m else []) if not t.startswith("-")]
+                    if not _names or any(t.rstrip("/").rsplit("/", 1)[-1].lower() in ("main", "master", "develop") for t in _names):
+                        deny("git branch -D is allowed only as a plain `git branch -D <names>` without main/master/develop — confirm with user first")
                 if sub == "stash" and args and args[0].replace(PH, "") in ("drop", "clear"):
                     deny("git stash drop/clear discards stashed changes — confirm with user first")
                 if sub == "commit" and any(_is_flag(t, "--amend") for t in scan):
