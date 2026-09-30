@@ -52,6 +52,11 @@ required status checks, so a red run blocks merge.
 - **Re-verifying a same-session edit.** Have the agent `Read` the repo path; `Skill(<name>)`,
   `subagent_type`, or a slash command silently tests the stale cached version (confirmed
   2026-07-27: a false "fix confirmed" via `Skill(mh:tech-humanize)`).
+- **Which mh copy runs after a restart.** `$MH_PLUGIN_ROOT` is a SessionStart snapshot, not proof.
+  Read `mh_version` in this session's last row of `~/.local/share/kbg/metrics/costs.jsonl`, or see
+  the version in the path of a gate's own deny message. `~/.claude/metrics/costs.jsonl` is a stale
+  file with no `mh_version`. A wrong probe gave a wrong answer twice: the env var (2026-09-21) and the
+  stale file (2026-09-30).
 - **A brand-new skill or agent no longer fails checks 02 and 03.** The plugin cache is built from
   committed state, so a component added after the commit the cache was built from cannot be in it.
   Checks 02 (skill loadability) and 03 (agent loadability) report such a component as INFO when its

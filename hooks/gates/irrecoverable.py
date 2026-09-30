@@ -988,7 +988,8 @@ OPERATORS = {";", "&&", "||", "|", "&", "(", ")", "{", "}"}
 # The only whole-command shape in which `git branch -D` is allowed (see the branch rule).
 _BRANCH_D_PLAIN_RE = re.compile(
     r"git(?:[ \t]+-C[ \t]+[\w./~-]+)?[ \t]+branch"
-    r"((?:[ \t]+(?:-[dDfrq]+|--(?:delete|force|remotes|quiet)?|\w[\w./+-]*))+)",
+    # "@" and "#" inside a name are literal to the shell; "{" stays out, so "x@{1}" never matches.
+    r"((?:[ \t]+(?:-[dDfrq]+|--(?:delete|force|remotes|quiet)?|\w[\w./+@#-]*))+)",
     # ASCII only: a Unicode \w lets "maſter" (U+017F) through, which a
     # case-insensitive filesystem folds onto refs/heads/master (validator round 2).
     re.ASCII)
@@ -1671,6 +1672,11 @@ for _wi, w in enumerate(windows):
             if i >= len(rest):
                 continue  # only global flags, no subcommand — safe no-op
             sub, args = rest[i], rest[i + 1:]
+            # The ambiguity verb regex stops after ~400 chars of globals; the sub resolved here has no
+            # such bound, so a brace-hidden flag after 100 "-C ." is still caught (deep-audit 2026-10-01).
+            if _ambig and _ambig[1] is _AMBIG_BROAD_VERB_RE and sub.replace(PH, "") in (
+                    "push", "reset", "clean", "checkout", "restore", "switch", "branch", "stash"):
+                deny("ambiguous shell syntax (" + _ambig[0] + ") next to an irrecoverable verb - confirm with user first")
             # drop the value token after a free-text flag so message content
             # (e.g. "commit -m ...rm -rf...") is never pattern-matched.
             scan_raw, skip = [], False
