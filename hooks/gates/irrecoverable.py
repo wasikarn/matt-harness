@@ -990,6 +990,12 @@ _AMBIG_NARROW_VERB_RE = re.compile(
 def _ambiguous(c):
     """(reason, verb_re) when c is syntactically ambiguous, else None."""
     subst = "$(" in c
+    # Broad-verb shapes first: every narrow verb match is also a broad one, so a narrow shape
+    # returning first would hide a brace-hidden flag in the same command (deep-audit 2026-09-30).
+    if _AMBIG_BRACE_RE.search(c):
+        return "a brace token", _AMBIG_BROAD_VERB_RE
+    if re.search(r"[@~^]\{", c) and _AMBIG_FLAG_RE.search(c):
+        return "a flag after a git @{...}/~{...}/^{...} revision", _AMBIG_BROAD_VERB_RE
     if "`" in c and subst:
         return "a backtick and a $() in one command (nested substitution)", _AMBIG_NARROW_VERB_RE
     if "\\`" in c:
@@ -1000,10 +1006,6 @@ def _ambiguous(c):
         return "a case statement inside a $()", _AMBIG_NARROW_VERB_RE
     if (subst or "`" in c) and re.search(r"\beval\b", c):
         return "eval of a substitution", _AMBIG_NARROW_VERB_RE
-    if _AMBIG_BRACE_RE.search(c):
-        return "a brace token", _AMBIG_BROAD_VERB_RE
-    if re.search(r"[@~^]\{", c) and _AMBIG_FLAG_RE.search(c):
-        return "a flag after a git @{...}/~{...}/^{...} revision", _AMBIG_BROAD_VERB_RE
     return None
 
 _ambig = _ambiguous(cmd)
