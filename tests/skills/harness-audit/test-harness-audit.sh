@@ -239,7 +239,7 @@ expect_crit   74 check-74-bad-truthiness-regression
 expect_crit   74 check-74-bad-missing-file
 # (2026-09-21 deep-audit) the check used to strip only # comments, so the idiom
 # inside a docstring passed, and it accepted one match for irrecoverable.py,
-# which has two _nested_spawn call sites to keep in step.
+# which has three _nested_spawn call sites to keep in step (the third since GH #245).
 expect_crit   74 check-74-bad-docstring-only
 expect_crit   74 check-74-bad-one-site-regressed
 
