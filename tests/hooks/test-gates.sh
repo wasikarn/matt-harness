@@ -1356,6 +1356,16 @@ test_allow "$IRRECOVERABLE" "git -C path branch -D feature is allowed" \
   "$(bash_payload 'git -C /tmp/r branch -D feat/a')"
 test_allow "$IRRECOVERABLE" "git branch -rD origin/feature is allowed" \
   "$(bash_payload 'git branch -rD origin/feat-a')"
+# Deep-audit 2026-10-01: @ inside a name is a valid refname and literal to the shell there. # is not:
+# zsh extendedglob turns "ma#in" into a glob that can match a "main" entry in the cwd.
+test_allow "$IRRECOVERABLE" "git branch -D with @ inside a name is allowed" \
+  "$(bash_payload 'git branch -D feature@v2')"
+test_deny  "$IRRECOVERABLE" "git branch -D ma#in (a zsh extendedglob for main) keeps the deny" \
+  "$(bash_payload 'git branch -D ma#in')"
+test_deny  "$IRRECOVERABLE" "git branch -D name@{1} keeps the deny" \
+  "$(bash_payload 'git branch -D feat@{1}')"
+test_deny  "$IRRECOVERABLE" "git branch -D f1 #main (a word-leading # is a comment) keeps the deny" \
+  "$(bash_payload 'git branch -D f1 #main')"
 test_deny  "$IRRECOVERABLE" "git branch -D maſter (U+017F folds to master on APFS)" \
   "$(bash_payload 'git branch -D maſter')"
 test_deny  "$IRRECOVERABLE" "git branch -D maﬆer (U+FB06 folds to st)" \
@@ -2317,6 +2327,16 @@ test_deny "$IRRECOVERABLE" 'GH #255: a line continuation between -C value and re
   "$(bash_payload $'git -C /repo \\\n  reset HEAD@{1} --hard')"
 test_deny "$IRRECOVERABLE" 'GH #255: an abbreviated --forc after HEAD@{0}' \
   "$(bash_payload 'git push origin HEAD@{0} --forc')"
+# Deep-audit 2026-10-01: the ambiguity verb regex is length-bounded (~400 chars of globals), so the
+# parser, which resolves the git sub at any length, also denies a destructive sub next to a brace token.
+_many_c=$(printf -- '-C . %.0s' $(seq 100))
+_many_cfg=$(printf -- '-c a=b %.0s' $(seq 70))
+test_deny "$IRRECOVERABLE" 'deep-audit 2026-10-01: 100 -C globals before a brace-hidden push flag' \
+  "$(bash_payload "git ${_many_c}push {--force,} origin main")"
+test_deny "$IRRECOVERABLE" 'deep-audit 2026-10-01: 70 -c globals before a brace-hidden reset flag' \
+  "$(bash_payload "git ${_many_cfg}reset {--hard,}")"
+test_allow "$IRRECOVERABLE" 'deep-audit 2026-10-01 control: 100 -C globals, a brace, a read-only sub' \
+  "$(bash_payload "git ${_many_c}log {a,b}")"
 test_deny "$IRRECOVERABLE" 'GH #255: a double-quoted git verb before a brace-hidden flag' \
   "$(bash_payload '"git" push {--force,} origin main')"
 test_deny "$IRRECOVERABLE" 'GH #255: a single-quoted git verb before a brace-hidden flag' \
