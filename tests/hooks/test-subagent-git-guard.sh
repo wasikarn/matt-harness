@@ -493,6 +493,39 @@ for _c in \
   check "old-wrapper multi-statement control allowed: $_c" "$ok"
 done
 
+# --- (16) GH #246: every anchor scan is quadratic on padded input, and a hook past its 8 s timeout
+# allows. Padding in front of a real `git stash` (5000 x `env ; `, 30 KB) walked around the deny.
+# A shared work budget now denies a command too dense to scan, fast, and never scans it. --- #
+_pad() { python3 -c 'import sys; sys.stdout.write(sys.argv[1] * int(sys.argv[2]))' "$1" "$2"; }
+_t0=$(date +%s)
+_c="git $(_pad '-c a ' 90000); git stash"  # the flag walk re-sliced the tail per flag (4.6 s at 1.25 MB; argv caps this row lower)
+rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+check "long git flag run still reaches the deny (${#_c} bytes)" "$ok"
+_PAD_ENV=$(_pad 'env ; ' 5000)
+_PAD_NL=$(_pad $'\n' 6000; printf x); _PAD_NL=${_PAD_NL%x}  # $(...) strips trailing newlines
+for _c in \
+  "${_PAD_ENV}time ls; git stash; git status" \
+  "${_PAD_ENV}git status" \
+  "${_PAD_NL}git status" \
+  "bash -c \"${_PAD_ENV}git status\"" \
+  "eval '${_PAD_NL}git status'" ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "padded command denied, not timed out into allow (${#_c} bytes): ${_c:0:30}" "$ok"
+done
+_out=$(payload "${_PAD_ENV}git status" fork | bash "$GATE" 2>&1 >/dev/null)
+case "$_out" in *"too long or too dense"*) ok=0 ;; *) ok=1 ;; esac
+check "over-budget deny names the reason and the way out" "$ok"
+_el=$(( $(date +%s) - _t0 ))
+ok=1; [ "$_el" -lt 8 ] && ok=0
+check "all padded shapes decided well inside the 8 s hook timeout (${_el}s for the section)" "$ok"
+for _c in \
+  "echo $(_pad x 20000)" \
+  "$(_pad $'echo hello world\n' 400)git status" \
+  "$(_pad 'ls -la; ' 200)git log -1" ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "long but ordinary command still allowed (${#_c} bytes): ${_c:0:30}" "$ok"
+done
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]
