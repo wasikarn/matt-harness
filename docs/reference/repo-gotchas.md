@@ -97,6 +97,11 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
 
 - **Acceptance:** 0 commands that `develop` denies and the branch allows, apart from a category
   the PR names as intended. Over-denies are the safe direction and are reported, not blocking.
+  A timeout counts as allow: a hook past its `hooks.json` timeout (8 s) lets the call through, so
+  a command `develop` denies in time and the branch does not finish in time is a regression. Time
+  padded shapes (thousands of statements, 20-150 KB) with the target early and late (GH #245: a
+  new scan placed before the fast denies turned a 0.03 s deny into a timeout). Any exit other than
+  0 or 2 from the `.py` is a finding too, even where the `.sh` wrapper fails it closed.
 - **Oracle:** run the real shells (the system `/bin/sh`, bash 3.2, a current bash, dash, zsh, ksh)
   with argv-logging stubs, never one shell or argv0-based shell guessing: whether `{fd}>` is a
   redirect depends on the binary and version (GH #219).
