@@ -185,13 +185,28 @@ def _cmd_start(wrapper_prefix):
 # The overlapping scan is quadratic on long padded commands, and a timed-out hook allows, so the
 # plain scans (develop's exact behaviour, fast) run first and the overlapping pass only after
 # both allowed: a command the plain scans deny is denied just as fast as before.
-def _plain_and_overlapping(tail):
+def _plain_and_overlapping(tail, lazy_tail=None):
     pattern = _cmd_start(_WRAPPER_PREFIX) + tail
     return (re.compile(r"(" + pattern + r")", re.MULTILINE),
             re.compile(r"(?=(" + pattern + r"))", re.MULTILINE),
-            re.compile(r"(?=(" + _cmd_start(_WRAPPER_PREFIX_LAZY) + tail + r"))", re.MULTILINE))
+            re.compile(r"(?=(" + _cmd_start(_WRAPPER_PREFIX_LAZY) + (lazy_tail or tail) + r"))", re.MULTILINE))
 
-_ANCHOR_RES = _plain_and_overlapping(r"\\?(?:\S*/)?git\b")
+# Only stash/reset/clean (see header); read-only `stash list|show` carved out.
+_DENY_SUBCMD = r"(stash(?!\s+(?:list|show)\b)|reset|clean)\b"
+_DENY_SUBCMD_RE = re.compile(r"\A\s+" + _DENY_SUBCMD)
+
+# Git global flags walked past before the subcommand check, so `git -C /repo
+# stash` / `git --no-pager clean` do not land the check on sub="-C".
+_GIT_VALUE_GLOBALS = ("-C", "-c", "--git-dir", "--work-tree", "--config-env", "--namespace", "--attr-source")
+
+# Deep-audit 5: the lazy pass anchored the FIRST `git` word after a wrapper and stopped, so a wrapper
+# argument spelled `git` (`sudo -u git git stash; git status`) hid the real statement from both walks.
+# Its target now only matches a `git` that _skip_git_globals + _DENY_SUBCMD_RE would deny, so the walk
+# moves on to the next one. The two flag branches exclude each other, so a flag run parses one way.
+_VALUE_GLOBAL_ALT = r"(?:" + "|".join(re.escape(g) for g in _GIT_VALUE_GLOBALS) + r")(?!\S)"
+_GIT_GLOBALS = r"(?:\s+(?:" + _VALUE_GLOBAL_ALT + r"\s+\S+|(?!" + _VALUE_GLOBAL_ALT + r")-\S*))*"
+_ANCHOR_RES = _plain_and_overlapping(r"\\?(?:\S*/)?git\b",
+                                     r"\\?(?:\S*/)?git\b(?=" + _GIT_GLOBALS + r"\s+" + _DENY_SUBCMD + r")")
 # `bash -c "<body>"` / `eval "<body>"`: the body is a quoted string, so the masked
 # text hides it. The shell word is matched on the masked string (a real command,
 # not text inside a message); the body is read from the raw command at the same
@@ -211,12 +226,6 @@ _SHELL_RES = _plain_and_overlapping(
 # Masking blanks the quote characters, so the raw body is found by skipping
 # whitespace from the end of the shell word.
 _QUOTED_RE = re.compile(r'\s*(?:"((?:[^"\\]|\\.)*)"|' + "'([^']*)')")
-# Only stash/reset/clean (see header); read-only `stash list|show` carved out.
-_DENY_SUBCMD_RE = re.compile(r"\A\s+(stash(?!\s+(list|show)\b)|reset|clean)\b")
-
-# Git global flags walked past before the subcommand check, so `git -C /repo
-# stash` / `git --no-pager clean` do not land the check on sub="-C".
-_GIT_VALUE_GLOBALS = ("-C", "-c", "--git-dir", "--work-tree", "--config-env", "--namespace", "--attr-source")
 
 _FLAG_TOKEN_RE = re.compile(r"\s+(\S+)")
 _FLAG_VALUE_RE = re.compile(r"\s+\S+")
@@ -245,18 +254,25 @@ def _skip_git_globals(tail):
 # rest of the string when a wrapper word or assignment follows, so the work grows like
 # starts x length. `env ; ` x 5000 (30 KB) or 6000 bare newlines run past the 8 s hook timeout,
 # and a timed-out hook allows: padding in front of a real `git stash` walked around the deny.
-# Each scan charges that upper bound to one shared budget (bodies and both passes add up) and a
+# Each scan charges that upper bound to one shared budget (bodies and all three passes add up) and a
 # command over budget is denied, never scanned. Real subagent commands charge far less; only a
-# rare huge script (28 KB, about 7e7 over four scans) is refused. Padded shapes stay near 3 s.
+# rare huge script (20-28 KB, about 7e7 over six scans) is refused.
+# Deep-audit 5: a run of chain words (_CHAIN_PREFIX: eval/builtin/command/exec/rtk) after a wrapper
+# is re-read from every walk position, so it costs about run x run per command start even with a
+# single start (`true; ` + `command ` x 8000 before a `git stash` took 9 s). Each maximal run charges
+# its length squared per start, plus one for the line start.
 _WORK_BUDGET = 60_000_000
 _work = 0
+_CHAIN_RUN_RE = re.compile(r"(?<!\S)(?:" + _SHELL_PASS + r"|" + _RTK_PREFIX + r")+")
 
 class _TooCostly(Exception):
     pass
 
 def _charge(s):
     global _work
-    _work += sum(s.count(c) for c in "\n;&|({") * len(s)
+    starts = sum(s.count(c) for c in "\n;&|({")
+    runs = sum((m.end() - m.start()) ** 2 for m in _CHAIN_RUN_RE.finditer(s))
+    _work += starts * len(s) + (starts + 1) * runs
     if _work > _WORK_BUDGET:
         raise _TooCostly
 
