@@ -219,7 +219,8 @@ test_ask() {
   local gate="$1" desc="$2" payload="$3"
   local out rc
   out=$(echo "$payload" | bash "$gate" 2>/dev/null); rc=$?
-  if [[ "$rc" == "0" ]] && echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"'; then
+  # stdout must be exactly ONE JSON object: two concatenated objects are not valid JSON (GH #254 validator).
+  if [[ "$rc" == "0" ]] && printf '%s' "$out" | python3 -c 'import json,sys; assert json.loads(sys.stdin.read())["hookSpecificOutput"]["permissionDecision"] == "ask"' 2>/dev/null; then
     echo "  ✅ ASK: $desc"
     pass=$((pass + 1))
   else
@@ -1548,7 +1549,9 @@ echo ""
 echo "=== gh merge ask-tier gate (Phase B, 2026-09-28: local defense-in-depth for the PR-review flow) ==="
 test_ask   "$IRRECOVERABLE" "gh pr merge <number>"                "$(bash_payload 'gh pr merge 5')"
 test_ask   "$IRRECOVERABLE" "gh pr merge with --squash flag"       "$(bash_payload 'gh pr merge --squash 5')"
-test_ask   "$IRRECOVERABLE" "gh api .../merge (PUT)"               "$(bash_payload 'gh api repos/wasikarn/matt-harness/pulls/5/merge -X PUT')"
+test_ask   "$IRRECOVERABLE" "gh pr merge with a brace word asks once (two window copies)" "$(bash_payload 'gh pr merge feat{1}')"
+test_ask   "$IRRECOVERABLE" "gh pr merge with a \$() argument asks once (compacted copy)" "$(bash_payload 'gh pr merge $(true) 12')"
+test_ask   "$IRRECOVERABLE" "gh api .../merge (PUT)"              "$(bash_payload 'gh api repos/wasikarn/matt-harness/pulls/5/merge -X PUT')"
 test_allow "$IRRECOVERABLE" "gh pr view (not a merge)"             "$(bash_payload 'gh pr view 5')"
 test_allow "$IRRECOVERABLE" "gh pr list (not a merge)"             "$(bash_payload 'gh pr list')"
 test_allow "$IRRECOVERABLE" "gh pr create (not a merge)"           "$(bash_payload 'gh pr create --title x --body y')"
@@ -2202,6 +2205,28 @@ test_deny "$IRRECOVERABLE" 'audit-0930 F2: an escaped backtick must not mask a b
   "$(bash_payload 'echo \` ; rm {-rf,} /nonexistent-x')"
 test_deny "$IRRECOVERABLE" 'audit-0930 F2: a nested substitution must not mask a brace-hidden push flag' \
   "$(bash_payload 'echo $(echo `date`); git push {-f,} origin main')"
+# GH #254: a "{" or "}" inside a word is literal in bash, but the tokenizer split the word there and
+# started a new window, so the flag after it was never seen by its command's rule.
+test_deny "$IRRECOVERABLE" 'GH #254: git reset feat{1} --hard' \
+  "$(bash_payload 'git reset feat{1} --hard')"
+test_deny "$IRRECOVERABLE" 'GH #254: git branch old{1} -D' \
+  "$(bash_payload 'git branch old{1} -D')"
+test_deny "$IRRECOVERABLE" 'GH #254: git push origin x{1} -f' \
+  "$(bash_payload 'git push origin x{1} -f')"
+test_deny "$IRRECOVERABLE" 'GH #254: dd if=a{1} of=/dev/disk9' \
+  "$(bash_payload 'dd if=a{1} of=/dev/disk9')"
+test_deny "$IRRECOVERABLE" 'GH #254: find with a word ending in } before -delete' \
+  "$(bash_payload "find . -name '*.log' ! -name keep} -delete")"
+test_deny "$IRRECOVERABLE" 'GH #254/#255: a bundled -fu after HEAD@{0}' \
+  "$(bash_payload 'git push origin HEAD@{0} -fu')"
+test_deny "$IRRECOVERABLE" 'GH #254/#255: an abbreviated --har after HEAD@{1}' \
+  "$(bash_payload 'git reset HEAD@{1} --har')"
+test_allow "$IRRECOVERABLE" 'GH #254 control: git stash show stash@{1}' \
+  "$(bash_payload 'git stash show stash@{1}')"
+test_allow "$IRRECOVERABLE" 'GH #254 control: git checkout feat{1} is a branch switch' \
+  "$(bash_payload 'git checkout feat{1}')"
+test_allow "$IRRECOVERABLE" 'GH #254 control: a { } group with a harmless body' \
+  "$(bash_payload '{ echo a; echo b; } > /tmp/nonexistent-x')"
 
 echo ""
 total=$((pass + fail))
