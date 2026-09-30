@@ -1291,8 +1291,8 @@ def _scan_body(body):
         return
     if _cur_depth >= _MAX_SHELL_DEPTH:
         deny("shell -c / eval body nested more than %d levels deep - confirm with user first" % _MAX_SHELL_DEPTH)
-    # Plain scan only, as before GH #245: this runs inside the rule loop, where the quadratic
-    # overlapping scan could push a later deny past the hook timeout.
+    # All three passes (GH #248). This runs inside the rule loop, so the quadratic passes could push
+    # a later deny past the hook timeout; _SPAWN_ANCHOR_BUDGET bounds them and denies when over.
     if ("agent_id" in d) and (_nested_spawn(body, False) or _nested_spawn(body, True) or _nested_spawn(body, 2)):
         deny("a subagent may not spawn a nested Claude Code session via Bash "
              "(claude -p/--print/--agent/--bg/--worktree), inside bash -c / eval either "
