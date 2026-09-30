@@ -1000,18 +1000,19 @@ if len(cmd) > _CMD_LEN_CAP:
 _AMBIG_QUOTED_CLOSE_RE = re.compile(r"\$\([^)\n]{0,80}[\"'][^\"'\n$(]{0,20}\)[^\"'\n$(]{0,20}[\"']")
 _AMBIG_BRACE_RE = re.compile(r"(?:^|[\s;|&(])\{[^{}\s\"'`$]{1,60}\}(?=[\s;|&)]|$)")
 # Git accepts unique long-option prefixes ("--har", "--forc"), so both spellings are flags here.
-_AMBIG_FLAG_RE = re.compile(r"--h(?:a(?:r(?:d)?)?)?\b|--fo(?:r(?:c(?:e)?)?)?\b|(?:^|\s)-[uvnqfdDrR]*[fdDrR][uvnqfdDrR]*\b")
+_AMBIG_FLAG_RE = re.compile(r"--h(?:a(?:r(?:d)?)?)?\b|--fo(?:r(?:c(?:e)?)?)?\b|(?:^|\s)-[uvnqxfdDrR]*[fdDrR][uvnqxfdDrR]*\b")
 # A brace token can hide a flag ("rm {-rf,} X"), so its verb check is broad (any rm/dd/find/git sub);
 # the other shapes leave the flags visible, so their verb check is the destructive form itself.
 # A verb may be path-qualified ("/bin/rm", "/usr/bin/git"), so "/" may precede it, and git may carry
 # global flags before its sub ("git -C . push", "--no-pager", "-c user.name='A B'"). _AMBIG_GIT does not
-# parse them: it skips up to 400 characters of the same simple command (no ; | & or newline) lazily to
-# the first sub word. A walk that parsed the globals backtracked exponentially on repeated "-C -C -C"
-# (GH #255 validator); this one is linear per anchor. Over-denial (a sub word used as an argument) only
+# parse them: it skips up to 400 units of the same simple command (no bare ; | & or newline; a quoted or
+# escaped span, which may hold those characters, is one unit) lazily to the first sub word.
+# A walk that parsed the globals backtracked exponentially on repeated "-C -C -C" (GH #255 validator);
+# the unit alternatives here start with disjoint characters, so this one is linear per anchor. Over-denial (a sub word used as an argument) only
 # happens once an ambiguity shape has already matched, and is the safe direction.
 # GIT_VALUE_GLOBALS is the one list of value-taking git globals, used by the main parser below.
 GIT_VALUE_GLOBALS = ("-C", "-c", "--git-dir", "--work-tree", "--namespace", "--attr-source", "--config-env")
-_AMBIG_GIT = r"(?<![\w.-])git(?=\s)[^\n;|&]{0,400}?\s"
+_AMBIG_GIT = (r"(?<![\w.-])git(?=\s)(?:[^\n;|&'\"\\]|\"[^\"\n]{0,200}\"|'[^'\n]{0,200}'|\\.){0,400}?\s")
 _AMBIG_BROAD_VERB_RE = re.compile(
     r"(?<![\w.-])(?:rm\s|dd\s|find\s)|" + _AMBIG_GIT +
     r"(?:push|reset|clean|checkout|restore|switch|branch|stash)\b")

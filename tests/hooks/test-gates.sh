@@ -2329,6 +2329,18 @@ test_deny "$IRRECOVERABLE" 'GH #255: -c user.name with a quoted space before a b
   "$(bash_payload "git -c user.name='A B' push {--force,} origin main")"
 test_deny "$IRRECOVERABLE" 'GH #255: 40 -C globals before a brace-hidden push flag' \
   "$(bash_payload "git $(printf '%.0s-C . ' $(seq 40))push {--force,} origin main")"
+test_deny "$IRRECOVERABLE" 'GH #255: a quoted ; inside a -C value before a brace-hidden push flag' \
+  "$(bash_payload "git -C 'a;b' push {--force,} origin main")"
+test_deny "$IRRECOVERABLE" 'GH #255: a quoted | inside a --namespace value before a brace-hidden flag' \
+  "$(bash_payload 'git --namespace "a|b" push {--force,} origin main')"
+test_deny "$IRRECOVERABLE" 'GH #255: an escaped ; inside a -C value before a brace-hidden flag' \
+  "$(bash_payload 'git -C a\;b push {--force,} origin main')"
+test_deny "$IRRECOVERABLE" 'GH #255: a substitution with && inside a quoted -C value' \
+  "$(bash_payload 'git -C "$(cd /x && pwd)" push {--force,} origin main')"
+test_deny "$IRRECOVERABLE" 'GH #255: -xdf bundle after HEAD@{1}' \
+  "$(bash_payload 'git reset HEAD@{1} -xdf')"
+test_allow "$IRRECOVERABLE" 'GH #255 control: a quoted ; -C value with a harmless status' \
+  "$(bash_payload "git -C 'a;b' status {a,b}")"
 test_allow "$IRRECOVERABLE" 'GH #255 control: 40 repeated -C then a brace token runs in bounded time' \
   "$(bash_payload "git $(printf '%.0s-C ' $(seq 40))foo {a,b}")"
 test_allow "$IRRECOVERABLE" 'GH #255 control: ls -lrt after HEAD@{1} with a find substitution' \
