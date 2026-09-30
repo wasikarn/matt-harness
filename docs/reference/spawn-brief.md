@@ -41,7 +41,8 @@ Constraints: stage by explicit path only, never stash/reset/checkout/add -A; del
 return `NEEDS-DECISION <question>` instead of guessing; a ruling made within your own authority
 (not escalated) states it inline in your final message as `Ruling: <what>—<why>—<cost if wrong>`
 (no separate log — the orchestrator reads it from your return value); cite one checkable fact per
-claim — illegible evidence is unverified, not absent.
+claim — illegible evidence is unverified, not absent; before returning, stop every background
+job or wait loop you started (a finished validator once left an `until ... sleep` loop running).
 ```
 
 When the brief goes to Codex (`/codex:rescue`), name the reasoning effort as an invocation flag,

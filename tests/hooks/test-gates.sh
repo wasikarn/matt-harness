@@ -182,16 +182,36 @@ routine_trigger_payload() {
   fi
 }
 
-# Expect the gate to BLOCK (exit 2).
+# Expect the gate to BLOCK (exit 2) by its own decision. A fail-closed wrapper (irrecoverable.sh) turns
+# a Python crash into exit 2 too, which once hid a TypeError from every deny row (GH #245), so a
+# Traceback or "internal error" on stderr fails the row.
+_ERRF="$_JOURNAL_TMP/stderr"  # cleaned by the EXIT trap above
 test_deny() {
   local gate="$1" desc="$2" payload="$3"
   local rc
-  rc=$(echo "$payload" | bash "$gate" 2>/dev/null; echo $?)
-  if [[ "$rc" == "2" ]]; then
+  rc=$(echo "$payload" | bash "$gate" 2>"$_ERRF"; echo $?)
+  if /usr/bin/grep -qE 'Traceback|internal error' "$_ERRF"; then
+    echo "  ❌ DENY came from a crash, not the gate's own rule: $desc ($(tail -1 "$_ERRF"))" >&2
+    fail=$((fail + 1))
+  elif [[ "$rc" == "2" ]]; then
     echo "  ✅ DENY: $desc"
     pass=$((pass + 1))
   else
     echo "  ❌ DENY EXPECTED but got exit $rc: $desc" >&2
+    fail=$((fail + 1))
+  fi
+}
+
+# Expect exit 2 FROM the fail-closed wrapper after an internal error: the one case test_deny rejects.
+test_deny_failclosed() {
+  local gate="$1" desc="$2" payload="$3"
+  local rc
+  rc=$(echo "$payload" | bash "$gate" 2>"$_ERRF"; echo $?)
+  if [[ "$rc" == "2" ]] && /usr/bin/grep -q 'internal error' "$_ERRF"; then
+    echo "  ✅ DENY (fail-closed): $desc"
+    pass=$((pass + 1))
+  else
+    echo "  ❌ FAIL-CLOSED DENY EXPECTED but got exit $rc: $desc" >&2
     fail=$((fail + 1))
   fi
 }
@@ -1335,7 +1355,7 @@ test_allow "$IRRECOVERABLE" "git diff --find-renames still allowed (unrelated lo
   "$(bash_payload 'git diff --find-renames')"
 # --- fail-closed internal-error backstop: a payload that makes the
 # Python raise (command is a JSON array, not a string) must still exit 2, never fall open.
-test_deny  "$IRRECOVERABLE" "non-string command payload triggers the fail-closed backstop (exit 2, not fail-open)" \
+test_deny_failclosed "$IRRECOVERABLE" "non-string command payload triggers the fail-closed backstop (exit 2, not fail-open)" \
   '{"tool_name":"Bash","tool_input":{"command":["rm","-rf","/x"]}}'
 
 # --- GH #140: unbounded shlex tokenize cost on an oversized raw command string.
