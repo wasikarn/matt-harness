@@ -1319,6 +1319,22 @@ test_deny  "$IRRECOVERABLE" "git branch -D with a glob" \
   "$(bash_payload 'git branch -D ma*')"
 test_deny  "$IRRECOVERABLE" "git branch -D @{-1} (the previous branch, may be main)" \
   "$(bash_payload 'git branch -D @{-1}')"
+test_deny  "$IRRECOVERABLE" "git branch -D with a quoted ; before main (splits the window)" \
+  "$(bash_payload "git branch -D f1 ';' main")"
+test_deny  "$IRRECOVERABLE" "git branch -D with an escaped & before develop" \
+  "$(bash_payload 'git branch -D f1 \& develop')"
+test_deny  "$IRRECOVERABLE" "git branch -D ma{i,}n (mid-word brace expansion)" \
+  "$(bash_payload 'git branch -D ma{i,}n')"
+test_deny  "$IRRECOVERABLE" "xargs appends main to git branch -D" \
+  "$(bash_payload 'echo main | xargs git branch -D f1')"
+test_deny  "$IRRECOVERABLE" "xargs -I replaces the name with main" \
+  "$(bash_payload 'echo main | xargs -I X git branch -D X')"
+test_deny  "$IRRECOVERABLE" "git branch -D chained after another command keeps the deny" \
+  "$(bash_payload 'git fetch && git branch -D f1')"
+test_allow "$IRRECOVERABLE" "git -C path branch -D feature is allowed" \
+  "$(bash_payload 'git -C /tmp/r branch -D feat/a')"
+test_allow "$IRRECOVERABLE" "git branch -rD origin/feature is allowed" \
+  "$(bash_payload 'git branch -rD origin/feat-a')"
 test_deny  "$IRRECOVERABLE" "git branch -D with no name" \
   "$(bash_payload 'git branch -D')"
 test_deny  "$IRRECOVERABLE" "git -C repo branch -D develop" \
