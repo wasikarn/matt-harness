@@ -39,7 +39,7 @@
     "PreToolUse": [
       {
         "id": "gate:bash:irrecoverable",
-        "description": "Deny irrecoverable Bash patterns (rm -rf, find -delete, --no-verify, hooksPath, push --force, reset --hard, clean -f, checkout/restore discards, switch --force, branch -D, stash drop/clear, commit --amend, git add -A/. outside a merge, dd to a device, SQL DROP/TRUNCATE) and a subagent spawning a nested claude -p/--print/--agent/--bg/--worktree session.",
+        "description": "Deny irrecoverable Bash patterns (rm -rf, find -delete, --no-verify, hooksPath, push --force, reset --hard, clean -f, checkout/restore discards, switch --force, branch -D on main/master/develop, stash drop/clear, commit --amend, git add -A/. outside a merge, dd to a device, SQL DROP/TRUNCATE) and a subagent spawning a nested claude -p/--print/--agent/--bg/--worktree session.",
         "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/gates/irrecoverable.sh\""
       },
       {

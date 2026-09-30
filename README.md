@@ -44,7 +44,7 @@ The plugin ships `defaultEnabled: false`; add `"mh@wasikarn": true` to `settings
 
 | gate | effect |
 |---|---|
-| `gate:bash:irrecoverable` | denies `rm -rf`, `find -delete`, `--no-verify`, `core.hooksPath` edits, `push --force`, `reset --hard`, `clean -f`, discarding `restore`/`checkout`, `branch -D`, `stash drop/clear`, `commit --amend`, `dd`, SQL `DROP`, `git add -A` outside a merge, nested `claude` spawns from a subagent |
+| `gate:bash:irrecoverable` | denies `rm -rf`, `find -delete`, `--no-verify`, `core.hooksPath` edits, `push --force`, `reset --hard`, `clean -f`, discarding `restore`/`checkout`, `branch -D` on main/master/develop, `stash drop/clear`, `commit --amend`, `dd`, SQL `DROP`, `git add -A` outside a merge, nested `claude` spawns from a subagent |
 | `gate:bash:subagent-git-guard` | denies `git stash`/`reset`/`clean` from a dispatched subagent |
 | `gate:agent:subagent-spawn-guard` | denies a subagent calling the Agent tool to spawn its own reviewer/validator |
 | `gate:task:complete-separation` | denies a subagent marking its own task complete |

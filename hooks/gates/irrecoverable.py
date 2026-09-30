@@ -1727,13 +1727,25 @@ for _wi, w in enumerate(windows):
                     deny("git checkout -- / git checkout . / git checkout -f / git checkout <tree> <file> discards working-tree changes — confirm with user first")
                 if sub == "switch" and any(t == "-f" or _is_flag(t, "--force", "--discard-changes") or _bundled_flag(t, ("c", "C")) for t in scan):
                     deny("git switch --force discards working-tree changes — confirm with user first")
+                # A force-delete is allowed unless it may hit a protected branch (operator
+                # policy, 2026-09-30). Every nonflag counts as a name (a flag's value too:
+                # over-deny only); after "--" every token is a name. Denied when there is no
+                # name, a name the gate cannot see (substitution, glob), or one whose last
+                # path part is main/master/develop in any case ("origin/main", and "Main" on
+                # a case-insensitive filesystem).
                 if sub == "branch" and (
                     any(t == "-D" or (t.startswith("-") and not t.startswith("--") and "D" in t) for t in scan)
                     # -d -f, -df, -fd, -d --force and --delete -f are -D by another spelling.
                     or (any(_is_flag(t, "--delete") or _bundled_flag(t, "", "d") for t in scan)
                         and any(_is_flag(t, "--force") or _bundled_flag(t, "", "f") for t in scan))
                 ):
-                    deny("git branch -D / --delete --force force-deletes a branch, discarding unmerged commits — confirm with user first")
+                    _dd = scan_raw.index("--") if "--" in scan_raw else len(scan_raw)
+                    _names = [t for i, t in enumerate(scan_raw) if i > _dd or (i < _dd and not t.replace(PH, "").startswith("-"))]
+                    if not _names or any(
+                            PH in t or PSUB in t or _has_raw_subst(t) or re.search(r"[*?\[$`\\]", t)
+                            or t.rstrip("/").rsplit("/", 1)[-1].lower() in ("main", "master", "develop")
+                            for t in _names):
+                        deny("git branch -D on main/master/develop (or a name the gate cannot read) force-deletes a protected branch — confirm with user first")
                 if sub == "stash" and args and args[0].replace(PH, "") in ("drop", "clear"):
                     deny("git stash drop/clear discards stashed changes — confirm with user first")
                 if sub == "commit" and any(_is_flag(t, "--amend") for t in scan):
