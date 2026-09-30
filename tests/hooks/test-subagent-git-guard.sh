@@ -498,7 +498,7 @@ done
 # A shared work budget now denies a command too dense to scan, fast, and never scans it. --- #
 _pad() { python3 -c 'import sys; sys.stdout.write(sys.argv[1] * int(sys.argv[2]))' "$1" "$2"; }
 _t0=$(date +%s)
-_c="git $(_pad '-c a ' 90000); git stash"  # the flag walk re-sliced the tail per flag (4.6 s at 1.25 MB; argv caps this row lower)
+_c="git $(_pad '-c a ' 20000); git stash"  # the flag walk re-sliced the tail per flag (4.6 s at 1.25 MB; a Linux argv arg caps this row at 128 KB)
 rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
 check "long git flag run still reaches the deny (${#_c} bytes)" "$ok"
 _PAD_ENV=$(_pad 'env ; ' 5000)
