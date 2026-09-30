@@ -900,6 +900,27 @@ test_allow "$IRRECOVERABLE" 'GH #189 control: -sW is -s (source) with value W, n
 test_allow "$IRRECOVERABLE" 'GH #189 control: after -- every token is a pathspec, so --staged -- -Wfile allows' \
   "$(bash_payload 'git restore --staged -- -Wfile')"
 
+# GH #249: restore's -m is --merge (no value), not a commit message flag; the -m value-skip must not eat the pathspec.
+test_deny "$IRRECOVERABLE" 'GH #249: git restore -m . discards worktree changes' \
+  "$(bash_payload 'git restore -m .')"
+test_deny "$IRRECOVERABLE" 'GH #249: git restore -W -m file discards worktree changes' \
+  "$(bash_payload 'git restore -W -m file.txt')"
+test_deny "$IRRECOVERABLE" 'GH #249: git restore --conflict=merge -m . discards worktree changes' \
+  "$(bash_payload 'git restore --conflict=merge -m .')"
+# GH #249: -s/--source take a value, so "-s --staged" makes --staged the source and the restore still targets the worktree.
+test_deny "$IRRECOVERABLE" 'GH #249: -s --staged -sHEAD file (--staged is the source value)' \
+  "$(bash_payload 'git restore -s --staged -sHEAD file.txt')"
+test_deny "$IRRECOVERABLE" 'GH #249: --source --staged --source=HEAD . (--staged is the source value)' \
+  "$(bash_payload 'git restore --source --staged --source=HEAD .')"
+test_deny "$IRRECOVERABLE" 'GH #249: -qs --staged -sHEAD file (cluster ending in s takes the next token)' \
+  "$(bash_payload 'git restore -qs --staged -sHEAD file.txt')"
+test_allow "$IRRECOVERABLE" 'GH #249 control: --source=HEAD --staged file (glued value, real --staged) allows' \
+  "$(bash_payload 'git restore --source=HEAD --staged file.txt')"
+test_allow "$IRRECOVERABLE" 'GH #249 control: -s HEAD --staged file (value is HEAD, real --staged) allows' \
+  "$(bash_payload 'git restore -s HEAD --staged file.txt')"
+test_allow "$IRRECOVERABLE" 'GH #249 control: git commit -m message still skips its value' \
+  "$(bash_payload 'git commit -m "restore . later"')"
+
 # The gate correctly denies each idiom below TODAY, but no test held the deny path, so a
 # mutation to the wrapper-unwrap / hooksPath / branch-delete / backstop logic survived the whole
 # suite (fail-open, undetected).

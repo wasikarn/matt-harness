@@ -1568,7 +1568,11 @@ for _wi, w in enumerate(windows):
                 if skip:
                     skip = False
                     continue
-                if t.replace(PH, "") in ("-m", "--message"):
+                # restore's -m is --merge (no value); skipping the next token
+                # would eat its pathspec (GH #249). An unresolved sub (PH /
+                # raw substitution) may be restore, so it does not skip either.
+                if t.replace(PH, "") in ("-m", "--message") and not (
+                        sub == "restore" or PH in sub or _has_raw_subst(sub)):
                     skip = True
                     continue
                 scan_raw.append(t)
@@ -1640,7 +1644,16 @@ for _wi, w in enumerate(windows):
                     # abbreviation ("--work") count; a short cluster stops at
                     # "s" (-s takes a value: "-sW" is source "W"). After "--"
                     # every token is a pathspec ("-- -Wfile").
-                    _opts = scan[:scan.index("--")] if "--" in scan else scan
+                    _opts, _val = [], False
+                    for t in (scan[:scan.index("--")] if "--" in scan else scan):
+                        if _val:  # the value of -s/--source/--pathspec-from-file is not a flag (GH #249)
+                            _val = False
+                            continue
+                        _opts.append(t)
+                        if t.startswith("-") and not t.startswith("--"):
+                            _val = t.find("s") == len(t) - 1 and t != "-"
+                        else:
+                            _val = "=" not in t and (_is_flag(t, "--source") or _is_flag(t, "--pathspec-from-file"))
                     targets_worktree = "--staged" not in _opts or any(
                         _is_flag(t, "--worktree")
                         or (t.startswith("-") and not t.startswith("--") and "W" in t.split("s", 1)[0])
