@@ -2382,6 +2382,37 @@ test_allow "$IRRECOVERABLE" 'GH #246 control: a long ordinary subagent command (
 test_allow "$IRRECOVERABLE" 'GH #246 control: a 400-line ordinary subagent script is still allowed' \
   "$(bash_agent_payload "$(_pad $'echo hello world\n' 400)claude --version" fork)"
 
+# GH #248: three shapes that reached their target on develop too: a wrapped FIRST statement (the
+# greedy walk lands on the last claude), a brace group, and `xargs claude` (xargs was no wrapper here).
+for _c in \
+  'time claude -p x; claude --version' \
+  'env A=1 claude --bg x; claude --help' \
+  'timeout 5 claude --agent x && claude --version' \
+  '{ claude -p x; }' \
+  '{ claude --bg x; } 2>&1' \
+  'true; { claude -p x; }' \
+  'xargs claude -p x' \
+  'xargs -n1 claude --print x' \
+  'echo a | xargs -I{} claude -p {}' \
+  'nice -n 5 xargs claude -p x' \
+  'bash -c "{ claude -p x; }"' \
+  'bash -c "time claude -p x; claude --version"' ; do
+  test_deny "$IRRECOVERABLE" "GH #248: spawn reached through a wrapped first statement, brace group or xargs: $_c" \
+    "$(bash_agent_payload "$_c" fork)"
+done
+for _c in \
+  'time claude --version; claude --help' \
+  '{ claude --version; }' \
+  'xargs claude --version' \
+  'xargs ls' \
+  'echo {a,b} claude' \
+  'git commit -m "mention claude in docs"' ; do
+  test_allow "$IRRECOVERABLE" "GH #248 control: benign claude use still allowed: $_c" \
+    "$(bash_agent_payload "$_c" fork)"
+done
+test_allow "$IRRECOVERABLE" 'GH #248 control: the main session is never scanned' \
+  "$(bash_agent_payload '{ claude -p x; }' '')"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="

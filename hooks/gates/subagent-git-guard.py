@@ -156,6 +156,10 @@ _WRAPPER_WORDS = ("env", "command", "nohup", "nice", "time", "sudo", "xargs",
 _KEYWORDS = ("!", "if", "elif", "then", "else", "do", "while", "until", "coproc")
 _WRAPPER_ALT = r"(?:" + "|".join(_WRAPPER_WORDS) + r")(?=\s)"
 _WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"\s+(?:(?!" + _WRAPPER_ALT + r")\S+\s+)*)*"
+# GH #248: the greedy walk above lands on the LAST target, so `time git stash; git status` anchored
+# only the second `git`. The lazy twin (`*?`) lands on the FIRST target after the wrappers. It only
+# runs as a last, extra pass, so it can only add anchors.
+_WRAPPER_PREFIX_LAZY = r"(?:" + _WRAPPER_ALT + r"\s+(?:(?!" + _WRAPPER_ALT + r")\S+\s+)*?)*"
 _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in _KEYWORDS) + r")\s+)*"
 # Deep-audit 4: eval (its unquoted args are a command line), builtin and rtk run the command
 # after them, but they are NOT in _WRAPPER_WORDS. That list drives the greedy argument walk
@@ -168,8 +172,10 @@ _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in _KEYWORDS) + r")\s+
 _SHELL_PASS = r"(?:(?:eval|builtin|command|exec)[ \t]+(?:--[ \t]+)?)"
 _RTK_PREFIX = r"(?:rtk[ \t]+(?:-\S+[ \t]+)*(?:(?:proxy|run|err|test|summary)[ \t]+(?:-\S+[ \t]+)*)?)"
 _CHAIN_PREFIX = r"(?:" + _SHELL_PASS + r"|" + _RTK_PREFIX + r")*"
-_CMD_START = (r"(?:^|[|;&(]|&&|\|\|)\s*" + _KEYWORD_PREFIX +
-              r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX + _CHAIN_PREFIX)
+# GH #248: `{ git stash; }` -- a brace group opens a command position (`{` then blank).
+def _cmd_start(wrapper_prefix):
+    return (r"(?:^|[|;&(]|&&|\|\||\{(?=\s))\s*" + _KEYWORD_PREFIX +
+            r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + wrapper_prefix + _CHAIN_PREFIX)
 # GH #245: every anchor regex is scanned with overlapping matches, `(?=(...))`, read through
 # m.end(1). The old wrappers' greedy argument walk (`time ls; git stash; git status`) crosses
 # `;` / `&&` / newline to the LAST `git`, and a plain finditer resumed after that match, so the
@@ -179,11 +185,13 @@ _CMD_START = (r"(?:^|[|;&(]|&&|\|\|)\s*" + _KEYWORD_PREFIX +
 # The overlapping scan is quadratic on long padded commands, and a timed-out hook allows, so the
 # plain scans (develop's exact behaviour, fast) run first and the overlapping pass only after
 # both allowed: a command the plain scans deny is denied just as fast as before.
-def _plain_and_overlapping(pattern):
+def _plain_and_overlapping(tail):
+    pattern = _cmd_start(_WRAPPER_PREFIX) + tail
     return (re.compile(r"(" + pattern + r")", re.MULTILINE),
-            re.compile(r"(?=(" + pattern + r"))", re.MULTILINE))
+            re.compile(r"(?=(" + pattern + r"))", re.MULTILINE),
+            re.compile(r"(?=(" + _cmd_start(_WRAPPER_PREFIX_LAZY) + tail + r"))", re.MULTILINE))
 
-_ANCHOR_RES = _plain_and_overlapping(_CMD_START + r"\\?(?:\S*/)?git\b")
+_ANCHOR_RES = _plain_and_overlapping(r"\\?(?:\S*/)?git\b")
 # `bash -c "<body>"` / `eval "<body>"`: the body is a quoted string, so the masked
 # text hides it. The shell word is matched on the masked string (a real command,
 # not text inside a message); the body is read from the raw command at the same
@@ -198,7 +206,7 @@ _ANCHOR_RES = _plain_and_overlapping(_CMD_START + r"\\?(?:\S*/)?git\b")
 # so finditer resumed after it and never saw that statement's shell word.
 _RTK_BODY = r"rtk[ \t]+(?:-\S+[ \t]+)*(?:run|err|test|summary)(?:[ \t]+-[^\s;&|]*)*"
 _SHELL_RES = _plain_and_overlapping(
-    _CMD_START + r"\\?(?:\S*/)?(?:(?:bash|sh|zsh|dash|ksh)\s+(?:-\S+\s+)*?-\w*c\w*|eval|" + _RTK_BODY + r")(?=\s)"
+    r"\\?(?:\S*/)?(?:(?:bash|sh|zsh|dash|ksh)\s+(?:-\S+\s+)*?-\w*c\w*|eval|" + _RTK_BODY + r")(?=\s)"
 )
 # Masking blanks the quote characters, so the raw body is found by skipping
 # whitespace from the end of the shell word.
@@ -240,7 +248,7 @@ def _skip_git_globals(tail):
 # Each scan charges that upper bound to one shared budget (bodies and both passes add up) and a
 # command over budget is denied, never scanned. Real subagent commands charge far less; only a
 # rare huge script (28 KB, about 7e7 over four scans) is refused. Padded shapes stay near 3 s.
-_WORK_BUDGET = 40_000_000
+_WORK_BUDGET = 60_000_000
 _work = 0
 
 class _TooCostly(Exception):
@@ -248,7 +256,7 @@ class _TooCostly(Exception):
 
 def _charge(s):
     global _work
-    _work += sum(s.count(c) for c in "\n;&|(") * len(s)
+    _work += sum(s.count(c) for c in "\n;&|({") * len(s)
     if _work > _WORK_BUDGET:
         raise _TooCostly
 
@@ -267,14 +275,15 @@ def _violation_in_bodies(raw_cmd, masked_cmd, overlap):
         if q:
             body = q.group(1) if q.group(1) is not None else q.group(2)
             mb = _mask_quotes(body)
-            hit = _violation(mb, False) or (overlap and _violation(mb, True))
+            hit = _violation(mb, False) or (overlap and _violation(mb, overlap))
             if hit:
                 return hit
     return None
 
 try:
     hit = (_violation(masked, False) or _violation_in_bodies(cmd, masked, False)
-           or _violation(masked, True) or _violation_in_bodies(cmd, masked, True))
+           or _violation(masked, True) or _violation_in_bodies(cmd, masked, True)
+           or _violation(masked, 2) or _violation_in_bodies(cmd, masked, 2))
 except _TooCostly:
     print(f"[mh:gate] BLOCKED: subagent ({agent_type}) command is too long or too dense to check "
           f"safely ({len(cmd)} bytes); write it to a file with the Write tool and run the file, "

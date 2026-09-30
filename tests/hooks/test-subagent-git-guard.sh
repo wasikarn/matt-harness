@@ -526,6 +526,29 @@ for _c in \
   check "long but ordinary command still allowed (${#_c} bytes): ${_c:0:30}" "$ok"
 done
 
+# GH #248: a wrapped FIRST statement (the greedy walk lands on the last git) and a brace group.
+for _c in \
+  'time git stash; git status' \
+  'env A=1 git reset --hard; git status' \
+  'timeout 5 git clean -fd && git status' \
+  'xargs git stash; git status' \
+  '{ git stash; }' \
+  'true; { git reset --hard; }' \
+  '{ git clean -fd; } 2>&1' \
+  'bash -c "{ git stash; }"' \
+  'bash -c "time git stash; git status"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #248 denied: $_c" "$ok"
+done
+for _c in \
+  'time git status; git log -1' \
+  '{ git status; }' \
+  'echo {a,b} git stash' \
+  'git commit -m "{ git stash; }"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "GH #248 control still allowed: $_c" "$ok"
+done
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]
