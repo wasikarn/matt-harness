@@ -374,11 +374,17 @@ def deny(reason):
     journal(GATE_ID, d.get("tool_name"), "deny", d.get("session_id"))
     sys.exit(2)
 
+_ASKED = []
 def ask(reason):
     # Unlike deny(), doesn't exit immediately -- a later, more severe check in
     # the same run can still escalate to deny() (which does exit right away),
     # same "ask now, a worse finding can still override" shape config-write-guard.py
-    # and codex-setup-guard.py's own emit_ask() already use.
+    # and codex-setup-guard.py's own emit_ask() already use. Emits at most once: a
+    # window can be checked in several copies (compacted, brace-joined), and two
+    # JSON objects on stdout are not valid JSON (GH #254 validator).
+    if _ASKED:
+        return
+    _ASKED.append(reason)
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
                                              "permissionDecision": "ask",
                                              "permissionDecisionReason": reason}}))
@@ -1066,16 +1072,31 @@ except ValueError:
 if _DEPTH_BUDGET_BLOWN[0]:
     deny("command too long to safely tokenize (nested substitution exceeded depth-scan budget) - confirm with user first")
 
-windows, cur = [], []
-for tok in [p for t in tokens for p in _split_ops(t)]:
-    if tok in OPERATORS:
-        if cur:
-            windows.append(cur)
-        cur = []
-    else:
-        cur.append(tok)
-if cur:
-    windows.append(cur)
+# GH #254: a "{" or "}" inside a word is literal in bash ("feat{1}"), but shlex splits the word there
+# and the split opens a new window, so "git reset feat{1} --hard" left "--hard" in a window of its own.
+# A second tokenization keeps braces inside words (a whole-token "{"/"}" still splits, as bash
+# grouping needs), and its windows are checked too: a deny from either copy wins, so this only adds.
+_token_lists = [tokens]
+if "{" in cmd or "}" in cmd:
+    try:
+        _lex2 = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd)))), posix=True, punctuation_chars=True)
+        _lex2.wordchars += PH + HASH_LIT + PSUB + "{}"
+        _token_lists.append(list(_lex2))
+    except ValueError:
+        pass  # the first copy already handled an unparsable command
+
+windows = []
+for _toks in _token_lists:
+    cur = []
+    for tok in [p for t in _toks for p in _split_ops(t)]:
+        if tok in OPERATORS:
+            if cur:
+                windows.append(cur)
+            cur = []
+        else:
+            cur.append(tok)
+    if cur:
+        windows.append(cur)
 
 # A standalone substitution resolving to empty ($(true)) vanishes as a token in
 # bash, shifting later tokens left, but leaves a PH-only token here, so every
