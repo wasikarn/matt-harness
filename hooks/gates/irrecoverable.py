@@ -226,7 +226,8 @@ PREFIX_WRAPPERS = ("env", "command", "nohup", "time", "sudo", "setsid", "rtk") +
 # `builtin` runs the builtin after it (`builtin eval rm -rf x`) and takes no flags. It is unwrapped
 # in the rule loop only: as a member of PREFIX_WRAPPERS it also feeds _SPAWN_ANCHOR_RE, whose greedy
 # walk then crosses `&&` and lands on the LAST `claude` (`builtin cd /tmp && claude -p x && claude
-# --version` stopped denying).
+# --version` stopped denying; GH #245's overlapping scan now covers that shape too, and a
+# wider PREFIX_WRAPPERS still changes the walk for every other consumer).
 _UNWRAP_ONLY = ("builtin",)
 # GH #216: `rtk` runs the command after it. `rtk proxy <cmd...>` executes its args as an argv;
 # `rtk err|test|summary <args>` and `rtk run <args>` join the args and run them through `sh -c`
@@ -248,11 +249,17 @@ SHELL_KEYWORDS = ("!", "if", "elif", "then", "else", "do", "while", "until", "co
 _WRAPPER_ALT = r"(?:" + "|".join(PREFIX_WRAPPERS) + r")(?=\s)"
 _WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"\s+(?:(?!" + _WRAPPER_ALT + r")\S+\s+)*)*"
 _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in SHELL_KEYWORDS) + r")\s+)*"
-_SPAWN_ANCHOR_RE = re.compile(
-    r"(?:^|[|;&(]|&&|\|\|)\s*" + _KEYWORD_PREFIX + r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _WRAPPER_PREFIX +
-    r"\\?(?:\S*/)?claude(?![-\w./])",
-    re.MULTILINE,
-)
+# GH #245: an overlapping scan, `(?=(...))` read through m.end(1). The wrapper walk crosses
+# `;` / `&&` / newline to the LAST `claude` (`time ls; claude -p x; claude --version`), and a plain
+# finditer resumed after that match, so the earlier spawn was never scanned. Where finditer
+# matched, the inner regex finds the same match, so this only adds anchors. The overlapping scan is
+# quadratic on long padded commands and a timed-out hook allows, so the plain scan (develop's exact
+# behaviour) runs where it always did and the overlapping one runs last, after every rule allowed:
+# a command develop denied is denied just as fast as before.
+_SPAWN_ANCHOR_BODY = (r"(?:^|[|;&(]|&&|\|\|)\s*" + _KEYWORD_PREFIX + r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" +
+                      _WRAPPER_PREFIX + r"\\?(?:\S*/)?claude(?![-\w./])")
+_SPAWN_ANCHOR_RES = (re.compile(r"(" + _SPAWN_ANCHOR_BODY + r")", re.MULTILINE),
+                     re.compile(r"(?=(" + _SPAWN_ANCHOR_BODY + r"))", re.MULTILINE))
 _SPAWN_FLAG_RE = re.compile(r"-p\b|--print\b|--agent\b|--bg\b|--worktree\b")
 # GH #157: an ODD backslash run directly before a quote escapes that quote
 # in real bash (`claude \" ; othertool -p x` -- the `"` is a literal argument
@@ -279,7 +286,7 @@ _SPAWN_TOKEN_RE = re.compile(
 # safe direction -- widening the scan can only over-deny, never under-deny.
 _SPAWN_SCAN_BUDGET = 2_000_000
 
-def _nested_spawn(c):
+def _nested_spawn(c, overlap):
     # Deep-audit 2026-09-07: a bare separator (&;|\n) inside a paren/backtick
     # group (command substitution, process substitution, a subshell) is NOT a
     # top-level statement separator for the outer command -- real bash parses
@@ -310,11 +317,11 @@ def _nested_spawn(c):
     # escaped there was a false ALLOW, a real bypass, not just an
     # over-cautious false DENY. Parity tracking fixes both directions.
     work = 0  # shared across every anchor's scan, never reset per-anchor -- see _SPAWN_SCAN_BUDGET above
-    for m in _SPAWN_ANCHOR_RE.finditer(c):
+    for m in _SPAWN_ANCHOR_RES[overlap].finditer(c):
         buf, depth, in_backtick = [], 0, False
         escape_next = False    # trailing backslash of an odd-length run
         after_backslash = False  # any backslash run, odd or even, just seen
-        for tok in _SPAWN_TOKEN_RE.finditer(c[m.end():]):
+        for tok in _SPAWN_TOKEN_RE.finditer(c[m.end(1):]):
             work += 1
             if work > _SPAWN_SCAN_BUDGET:
                 return True
@@ -352,12 +359,15 @@ def _nested_spawn(c):
             return True
     return False
 
-if ("agent_id" in d) and _nested_spawn(cmd):
+def _deny_nested_spawn():
     print("[mh:gate] BLOCKED: a subagent may not spawn a nested Claude Code session via Bash "
           "(claude -p/--print/--agent/--bg/--worktree) -- only the main session dispatches",
           file=sys.stderr)
     journal(GATE_ID, d.get("tool_name"), "deny", d.get("session_id"))
     sys.exit(2)
+
+if ("agent_id" in d) and _nested_spawn(cmd, False):
+    _deny_nested_spawn()
 
 def deny(reason):
     print("[mh:gate] BLOCKED: " + reason, file=sys.stderr)
@@ -1213,7 +1223,9 @@ def _scan_body(body):
         return
     if _cur_depth >= _MAX_SHELL_DEPTH:
         deny("shell -c / eval body nested more than %d levels deep - confirm with user first" % _MAX_SHELL_DEPTH)
-    if ("agent_id" in d) and _nested_spawn(body):
+    # Plain scan only, as before GH #245: this runs inside the rule loop, where the quadratic
+    # overlapping scan could push a later deny past the hook timeout.
+    if ("agent_id" in d) and _nested_spawn(body, False):
         deny("a subagent may not spawn a nested Claude Code session via Bash "
              "(claude -p/--print/--agent/--bg/--worktree), inside bash -c / eval either "
              "-- only the main session dispatches")
@@ -1794,4 +1806,7 @@ for _wi, w in enumerate(windows):
                          " ".join(rest).replace(PH, ""), re.IGNORECASE):
                 deny("destructive SQL (DROP TABLE/DATABASE/SCHEMA or TRUNCATE) detected — confirm with user first")
 
+# GH #245: the overlapping spawn scan, last (see _SPAWN_ANCHOR_RES).
+if ("agent_id" in d) and _nested_spawn(cmd, True):
+    _deny_nested_spawn()
 sys.exit(0)

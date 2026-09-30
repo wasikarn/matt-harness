@@ -57,10 +57,11 @@ PYEOF
     _code=$(sed 's/#.*$//' "$_path" 2>/dev/null)
   fi
   _n=$(printf '%s\n' "$_code" | /usr/bin/grep -oE '"agent_id"[[:space:]]+(not[[:space:]]+)?in[[:space:]]+d\b' 2>/dev/null | wc -l | tr -d ' ') || _n=0  # grep exits 1 on zero matches; pipefail + set -e would abort the audit
-  # irrecoverable.py has two _nested_spawn call sites (b561758c); both must
-  # carry the idiom, so one match there means one site regressed.
+  # irrecoverable.py has three _nested_spawn call sites (b561758c, plus the
+  # overlapping scan run last, GH #245); all must carry the idiom, so fewer
+  # matches there means a site regressed.
   _need=1
-  [ "$_f" = "irrecoverable.py" ] && _need=2
+  [ "$_f" = "irrecoverable.py" ] && _need=3
   if [ "${_n:-0}" -lt "$_need" ]; then
     crit "hooks/gates/$_f has $_n \"agent_id\" (not )in d presence-check(s) in code, need $_need -- may have regressed to a truthiness gate that skips an empty-string/null agent_id (see docs/reference/operating-model.md)"
   fi

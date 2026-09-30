@@ -431,8 +431,8 @@ done
 # --- (14) eval / builtin / rtk must not hide the statements after them (deep-audit 4, whole-picture
 # pass). Putting them in the wrapper list made the greedy argument walk run across `;` / `&&` /
 # newlines to the last `git`, so these went from denied to allowed. They now take a bounded prefix
-# that never walks arguments. (time, timeout and env still leak the same way on develop:
-# `time ls; git stash; git status` is allowed, tracked in the PR, not covered here.) --- #
+# that never walks arguments. (The same leak after time, timeout, env and the other old wrappers
+# is closed by the overlapping scan in section 15, GH #245.) --- #
 for _c in \
   'eval "$(ssh-agent -s)" && git stash && git status' \
   'eval true; git stash; git status' \
@@ -465,6 +465,32 @@ for _c in \
   'nohup >/dev/null 2>&1 git status' ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
   check "walk-boundary control allowed for a subagent: $_c" "$ok"
+done
+
+# --- (15) GH #245: after an old wrapper (time, timeout, env, sudo, ...) the greedy argument walk
+# crosses `;` / `&&` / `||` / `|` / newline to the LAST `git` (or shell word), and finditer resumed
+# after that match, so an earlier statement was never checked. Anchors are now found by an
+# overlapping scan, so every separator inside a walked span gets its own attempt. --- #
+for _c in \
+  'time ls; git stash; git status' \
+  'timeout 5 ls && git reset --hard && git status' \
+  'env FOO=1 make || git clean -fd; git status' \
+  'sudo ls | git stash; git log -1' \
+  'nice make; git -C /r stash; git status' \
+  $'time ls\ngit stash\ngit status' \
+  'time ls; bash -c "git stash"; bash -c "git status"' \
+  'env A=1 ls && sh -c "git reset --hard" && sh -c "git log"' \
+  'time ls; eval "git stash"; eval "git status"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "earlier statement behind an old wrapper still checked: $_c" "$ok"
+done
+for _c in \
+  'time ls; git status; git log' \
+  'timeout 5 make && git diff && git status' \
+  'time ls; bash -c "git status"; bash -c "git log"' \
+  'env FOO=1 make; git stash list; git status' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "old-wrapper multi-statement control allowed: $_c" "$ok"
 done
 
 echo ""
