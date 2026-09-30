@@ -1568,11 +1568,12 @@ for _wi, w in enumerate(windows):
                 if skip:
                     skip = False
                     continue
-                # restore's -m is --merge (no value); skipping the next token
-                # would eat its pathspec (GH #249). An unresolved sub (PH /
-                # raw substitution) may be restore, so it does not skip either.
+                # restore's and checkout's -m is --merge (no value); skipping the
+                # next token would eat the pathspec (GH #249, deep-audit
+                # 2026-09-30). An unresolved sub (PH / raw substitution) may be
+                # either, so it does not skip.
                 if t.replace(PH, "") in ("-m", "--message") and not (
-                        sub == "restore" or PH in sub or _has_raw_subst(sub)):
+                        sub in ("restore", "checkout") or PH in sub or _has_raw_subst(sub)):
                     skip = True
                     continue
                 scan_raw.append(t)

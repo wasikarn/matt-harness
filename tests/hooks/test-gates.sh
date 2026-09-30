@@ -918,6 +918,12 @@ test_allow "$IRRECOVERABLE" 'GH #249 control: --source=HEAD --staged file (glued
   "$(bash_payload 'git restore --source=HEAD --staged file.txt')"
 test_allow "$IRRECOVERABLE" 'GH #249 control: -s HEAD --staged file (value is HEAD, real --staged) allows' \
   "$(bash_payload 'git restore -s HEAD --staged file.txt')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F3: git checkout -m . (checkout -m is --merge, no value)' \
+  "$(bash_payload 'git checkout -m .')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F3: git checkout -m -- file discards worktree changes' \
+  "$(bash_payload 'git checkout -m -- file.txt')"
+test_allow "$IRRECOVERABLE" 'audit-0930 F3 control: git checkout -m <branch> is a merge-switch' \
+  "$(bash_payload 'git checkout -m main')"
 test_allow "$IRRECOVERABLE" 'GH #249 control: git commit -m message still skips its value' \
   "$(bash_payload 'git commit -m "restore . later"')"
 
@@ -2124,6 +2130,31 @@ test_allow "$IRRECOVERABLE" 'ambiguity control: a plain rm of one file, no ambig
   "$(bash_payload 'rm /tmp/nonexistent-x')"
 test_allow "$IRRECOVERABLE" 'ambiguity control: a branch switch with an ordinary $() argument' \
   "$(bash_payload 'git checkout "$(git branch --show-current)"')"
+# Deep-audit 2026-09-30 (F1): the verb check must see a git global flag before the sub, and a
+# path-qualified rm/git, or every ambiguous shape above is bypassed by respelling the verb.
+test_deny "$IRRECOVERABLE" 'audit-0930 F1: git -C . reset {--hard,}' \
+  "$(bash_payload 'git -C . reset {--hard,}')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F1: git --no-pager push origin HEAD@{0} --force' \
+  "$(bash_payload 'git --no-pager push origin HEAD@{0} --force')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F1: git -C "a b" -c x.y=z reset HEAD@{1} --hard' \
+  "$(bash_payload 'git -C "a b" -c x.y=z reset HEAD@{1} --hard')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F1: /usr/bin/git reset HEAD~{1} --hard' \
+  "$(bash_payload '/usr/bin/git reset HEAD~{1} --hard')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F1: /bin/rm {-rf,} X' \
+  "$(bash_payload '/bin/rm {-rf,} /nonexistent-x')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F1: case inside $() hiding /bin/rm -rf' \
+  "$(bash_payload 'echo $(case a in a) /bin/rm -rf /nonexistent-x;; esac)')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F1: eval of a $() that builds /bin/rm -rf' \
+  "$(bash_payload 'eval "$(echo /bin/rm -rf /nonexistent-x)"')"
+test_allow "$IRRECOVERABLE" 'audit-0930 F1 control: git -C . log HEAD@{1} has no destructive verb' \
+  "$(bash_payload 'git -C . log HEAD@{1}')"
+test_allow "$IRRECOVERABLE" 'audit-0930 F1 control: a .git path and --git-dir are not a git verb' \
+  "$(bash_payload 'ls .git/refs/{heads,tags} --git-dir-reset')"
+# Deep-audit 2026-09-30 (F2): one shape's narrow verb list must not hide another shape's broad one.
+test_deny "$IRRECOVERABLE" 'audit-0930 F2: an escaped backtick must not mask a brace-hidden rm flag' \
+  "$(bash_payload 'echo \` ; rm {-rf,} /nonexistent-x')"
+test_deny "$IRRECOVERABLE" 'audit-0930 F2: a nested substitution must not mask a brace-hidden push flag' \
+  "$(bash_payload 'echo $(echo `date`); git push {-f,} origin main')"
 
 echo ""
 total=$((pass + fail))
