@@ -1317,6 +1317,8 @@ test_deny  "$IRRECOVERABLE" "git branch -D with a variable name" \
   "$(bash_payload 'git branch -D $b')"
 test_deny  "$IRRECOVERABLE" "git branch -D with a glob" \
   "$(bash_payload 'git branch -D ma*')"
+test_deny  "$IRRECOVERABLE" "git branch -D @{-1} (the previous branch, may be main)" \
+  "$(bash_payload 'git branch -D @{-1}')"
 test_deny  "$IRRECOVERABLE" "git branch -D with no name" \
   "$(bash_payload 'git branch -D')"
 test_deny  "$IRRECOVERABLE" "git -C repo branch -D develop" \

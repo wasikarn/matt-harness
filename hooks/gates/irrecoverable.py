@@ -1732,7 +1732,8 @@ for _wi, w in enumerate(windows):
                 # over-deny only); after "--" every token is a name. Denied when there is no
                 # name, a name the gate cannot see (substitution, glob), or one whose last
                 # path part is main/master/develop in any case ("origin/main", and "Main" on
-                # a case-insensitive filesystem).
+                # a case-insensitive filesystem). "@"/"{" are refused too: "@{-1}" is the
+                # previous branch, which git deletes (verified live).
                 if sub == "branch" and (
                     any(t == "-D" or (t.startswith("-") and not t.startswith("--") and "D" in t) for t in scan)
                     # -d -f, -df, -fd, -d --force and --delete -f are -D by another spelling.
@@ -1742,7 +1743,7 @@ for _wi, w in enumerate(windows):
                     _dd = scan_raw.index("--") if "--" in scan_raw else len(scan_raw)
                     _names = [t for i, t in enumerate(scan_raw) if i > _dd or (i < _dd and not t.replace(PH, "").startswith("-"))]
                     if not _names or any(
-                            PH in t or PSUB in t or _has_raw_subst(t) or re.search(r"[*?\[$`\\]", t)
+                            PH in t or PSUB in t or _has_raw_subst(t) or re.search(r"[*?\[$`\\@{]", t)
                             or t.rstrip("/").rsplit("/", 1)[-1].lower() in ("main", "master", "develop")
                             for t in _names):
                         deny("git branch -D on main/master/develop (or a name the gate cannot read) force-deletes a protected branch — confirm with user first")
