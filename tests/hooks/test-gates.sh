@@ -2298,6 +2298,37 @@ test_allow "$IRRECOVERABLE" 'GH #254 control: git checkout feat{1} is a branch s
   "$(bash_payload 'git checkout feat{1}')"
 test_allow "$IRRECOVERABLE" 'GH #254 control: a { } group with a harmless body' \
   "$(bash_payload '{ echo a; echo b; } > /tmp/nonexistent-x')"
+# GH #255: the value-taking git globals are one list (GIT_VALUE_GLOBALS) shared by the parser and the
+# ambiguity verb walk; the walk takes escaped values, line continuations and 32 globals; the verb is
+# also looked for with quotes and backslashes dropped.
+test_deny "$IRRECOVERABLE" 'GH #255: git --namespace x reset --hard' \
+  "$(bash_payload 'git --namespace x reset --hard')"
+test_deny "$IRRECOVERABLE" 'GH #255: git --namespace x clean -fd' \
+  "$(bash_payload 'git --namespace x clean -fd')"
+test_deny "$IRRECOVERABLE" 'GH #255: git --attr-source HEAD push --force' \
+  "$(bash_payload 'git --attr-source HEAD push --force origin main')"
+test_deny "$IRRECOVERABLE" 'GH #255: git --namespace=x reset --hard' \
+  "$(bash_payload 'git --namespace=x reset --hard')"
+test_deny "$IRRECOVERABLE" 'GH #255: nine -C globals before a brace-hidden push flag' \
+  "$(bash_payload 'git -C . -C . -C . -C . -C . -C . -C . -C . -C . push {--force,} origin main')"
+test_deny "$IRRECOVERABLE" 'GH #255: an escaped-space -C value before reset --hard after @{1}' \
+  "$(bash_payload 'git -C My\ Project reset HEAD@{1} --hard')"
+test_deny "$IRRECOVERABLE" 'GH #255: a line continuation between -C value and reset' \
+  "$(bash_payload $'git -C /repo \\\n  reset HEAD@{1} --hard')"
+test_deny "$IRRECOVERABLE" 'GH #255: an abbreviated --forc after HEAD@{0}' \
+  "$(bash_payload 'git push origin HEAD@{0} --forc')"
+test_deny "$IRRECOVERABLE" 'GH #255: a double-quoted git verb before a brace-hidden flag' \
+  "$(bash_payload '"git" push {--force,} origin main')"
+test_deny "$IRRECOVERABLE" 'GH #255: a single-quoted git verb before a brace-hidden flag' \
+  "$(bash_payload "'git' push {--force,} origin main")"
+test_deny "$IRRECOVERABLE" 'GH #255: a backslash inside rm before a brace-hidden flag' \
+  "$(bash_payload 'r\m {-rf,} X')"
+test_allow "$IRRECOVERABLE" 'GH #255 control: git --namespace x status' \
+  "$(bash_payload 'git --namespace x status')"
+test_allow "$IRRECOVERABLE" 'GH #255 control: git push origin HEAD@{0} has no flag' \
+  "$(bash_payload 'git push origin HEAD@{0}')"
+test_allow "$IRRECOVERABLE" 'GH #255 control: echo "git" hello' \
+  "$(bash_payload 'echo "git" hello')"
 
 echo ""
 total=$((pass + fail))
