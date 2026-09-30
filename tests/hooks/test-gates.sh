@@ -2323,6 +2323,16 @@ test_deny "$IRRECOVERABLE" 'GH #255: a single-quoted git verb before a brace-hid
   "$(bash_payload "'git' push {--force,} origin main")"
 test_deny "$IRRECOVERABLE" 'GH #255: a backslash inside rm before a brace-hidden flag' \
   "$(bash_payload 'r\m {-rf,} X')"
+test_deny "$IRRECOVERABLE" 'GH #255: a quoted verb with a quoted spaced -C value' \
+  "$(bash_payload '"git" -C "a b" reset {--hard,} HEAD')"
+test_deny "$IRRECOVERABLE" 'GH #255: -c user.name with a quoted space before a brace-hidden flag' \
+  "$(bash_payload "git -c user.name='A B' push {--force,} origin main")"
+test_deny "$IRRECOVERABLE" 'GH #255: 40 -C globals before a brace-hidden push flag' \
+  "$(bash_payload "git $(printf '%.0s-C . ' $(seq 40))push {--force,} origin main")"
+test_allow "$IRRECOVERABLE" 'GH #255 control: 40 repeated -C then a brace token runs in bounded time' \
+  "$(bash_payload "git $(printf '%.0s-C ' $(seq 40))foo {a,b}")"
+test_allow "$IRRECOVERABLE" 'GH #255 control: ls -lrt after HEAD@{1} with a find substitution' \
+  "$(bash_payload 'ls -lrt HEAD@{1} $(find . -name x)')"
 test_allow "$IRRECOVERABLE" 'GH #255 control: git --namespace x status' \
   "$(bash_payload 'git --namespace x status')"
 test_allow "$IRRECOVERABLE" 'GH #255 control: git push origin HEAD@{0} has no flag' \

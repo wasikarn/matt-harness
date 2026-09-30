@@ -1000,17 +1000,18 @@ if len(cmd) > _CMD_LEN_CAP:
 _AMBIG_QUOTED_CLOSE_RE = re.compile(r"\$\([^)\n]{0,80}[\"'][^\"'\n$(]{0,20}\)[^\"'\n$(]{0,20}[\"']")
 _AMBIG_BRACE_RE = re.compile(r"(?:^|[\s;|&(])\{[^{}\s\"'`$]{1,60}\}(?=[\s;|&)]|$)")
 # Git accepts unique long-option prefixes ("--har", "--forc"), so both spellings are flags here.
-_AMBIG_FLAG_RE = re.compile(r"--h(?:a(?:r(?:d)?)?)?\b|--fo(?:r(?:c(?:e)?)?)?\b|(?:^|\s)-[A-Za-z]*[fdDrR][A-Za-z]*\b")
+_AMBIG_FLAG_RE = re.compile(r"--h(?:a(?:r(?:d)?)?)?\b|--fo(?:r(?:c(?:e)?)?)?\b|(?:^|\s)-[uvnqfdDrR]*[fdDrR][uvnqfdDrR]*\b")
 # A brace token can hide a flag ("rm {-rf,} X"), so its verb check is broad (any rm/dd/find/git sub);
 # the other shapes leave the flags visible, so their verb check is the destructive form itself.
 # A verb may be path-qualified ("/bin/rm", "/usr/bin/git"), so "/" may precede it, and git may carry
-# global flags before its sub ("git -C . push", "--no-pager"): _AMBIG_GIT walks up to 8 of them,
-# value-taking ones with one value (deep-audit 2026-09-30). Bounded repeats keep each anchor linear.
-# GIT_VALUE_GLOBALS is the one list of value-taking git globals; the main parser and this walk both use it
-# (GH #255). A value may hold an escaped char ("My\ Project"); the walk takes up to 32 globals.
+# global flags before its sub ("git -C . push", "--no-pager", "-c user.name='A B'"). _AMBIG_GIT does not
+# parse them: it skips up to 400 characters of the same simple command (no ; | & or newline) lazily to
+# the first sub word. A walk that parsed the globals backtracked exponentially on repeated "-C -C -C"
+# (GH #255 validator); this one is linear per anchor. Over-denial (a sub word used as an argument) only
+# happens once an ambiguity shape has already matched, and is the safe direction.
+# GIT_VALUE_GLOBALS is the one list of value-taking git globals, used by the main parser below.
 GIT_VALUE_GLOBALS = ("-C", "-c", "--git-dir", "--work-tree", "--namespace", "--attr-source", "--config-env")
-_AMBIG_GIT = (r"(?<![\w.-])git(?:\s+(?:" + "|".join(re.escape(g) for g in GIT_VALUE_GLOBALS) + r")\s+"
-              r"(?:\"[^\"\n]{0,200}\"|'[^'\n]{0,200}'|(?:\\.|[^\s\\]){1,200})|\s+-\S{1,200}){0,32}\s+")
+_AMBIG_GIT = r"(?<![\w.-])git(?=\s)[^\n;|&]{0,400}?\s"
 _AMBIG_BROAD_VERB_RE = re.compile(
     r"(?<![\w.-])(?:rm\s|dd\s|find\s)|" + _AMBIG_GIT +
     r"(?:push|reset|clean|checkout|restore|switch|branch|stash)\b")
@@ -1045,7 +1046,7 @@ def _ambiguous(c):
 _ambig = _ambiguous(cmd)
 # The verb is looked for in three views: the raw text, the text with line continuations joined, and the
 # text with quotes and backslashes dropped, so '"git" push' and 'r\m' cannot hide it (GH #255).
-_joined = cmd.replace("\\\n", " ")
+_joined = cmd.replace("\\\n", "")
 if _ambig and any(_ambig[1].search(v) for v in (cmd, _joined, re.sub(r"[\"'\\]", "", _joined))):
     deny("ambiguous shell syntax (" + _ambig[0] + ") next to an irrecoverable verb - confirm with user first")
 
