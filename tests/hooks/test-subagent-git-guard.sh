@@ -404,6 +404,40 @@ for _c in \
   check "eval/builtin/rtk control allowed for a subagent: $_c" "$ok"
 done
 
+# --- (14) GH #273: a chain word (eval, rtk, rtk proxy) before a wrapper word --- #
+for _c in \
+  'eval sudo git stash' \
+  'eval time git stash' \
+  'eval env A=1 git clean -fd' \
+  'eval nice -n 5 git stash' \
+  'eval doas git stash' \
+  'rtk proxy sudo git stash' \
+  'rtk proxy time git stash' \
+  'rtk proxy env A=1 git reset --hard' \
+  'builtin eval sudo git stash' \
+  'eval -- sudo git stash' \
+  'true; eval sudo git stash; git status' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "chain word before a wrapper denied for a subagent: $_c" "$ok"
+done
+for _c in \
+  'eval sudo git status' \
+  'eval time git stash list' \
+  'eval env A=1 git diff' \
+  'rtk proxy sudo git log' \
+  'eval sudo echo "git stash"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "chain word before a wrapper control allowed for a subagent: $_c" "$ok"
+done
+# Worst case stays fast: long runs of chain words and wrappers, in both orders.
+_lc1=$(python3 -c 'print("true; " + "eval sudo " * 3000 + "git stash")')
+_lc2=$(python3 -c 'print("rtk proxy time " * 3000 + "git status")')
+_t0=$(date +%s)
+rc=$(sgg_rc "$_lc1"); check "long eval-sudo run still denied (rc=$rc)" "$([ "$rc" = "2" ] && echo 0 || echo 1)"
+rc=$(sgg_rc "$_lc2"); check "long rtk-proxy-time run allowed (rc=$rc)" "$([ "$rc" = "0" ] && echo 0 || echo 1)"
+_dt=$(( $(date +%s) - _t0 ))
+check "long chain-before-wrapper runs took ${_dt}s (<6s)" "$([ "$_dt" -lt 6 ] && echo 0 || echo 1)"
+
 # Drift guard: every wrapper word in irrecoverable.py's PREFIX_WRAPPERS must also be a wrapper
 # here (the two lists are typed by hand, GH #213). irrecoverable.py runs on import, so the two
 # tuples are read from its source. A parse failure yields no words and fails the count check.
@@ -660,6 +694,77 @@ for _c in 'bash -c "git stash"' 'bash -xc "git stash"' 'bash -x -ec "git reset -
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
   check "GH #275 control still denied: $_c" "$ok"
 done
+
+# --- (18) GH #273: a chain word before a wrapper (eval/rtk, then sudo/time/env/nice) still anchors git. --- #
+for _c in \
+  'eval sudo git stash' \
+  'eval time git stash' \
+  'eval env A=1 git clean -fd' \
+  'eval nice -n 5 git stash' \
+  'rtk proxy sudo git stash' \
+  'rtk proxy time git stash' \
+  'eval sudo eval time git reset --hard' \
+  'true; eval sudo git stash; git status' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "chain word before a wrapper denied: $_c" "$ok"
+done
+for _c in \
+  'eval sudo git status' \
+  'rtk proxy time git stash list' \
+  'eval env A=1 git log -1' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "chain word before a wrapper, read-only git allowed: $_c" "$ok"
+done
+for _c in \
+  "true; $(_pad 'eval sudo ' 4000)git stash; git status" \
+  "$(_pad "eval sudo $(_pad 's ' 300);" 40)git stash; git status" \
+  "$(_pad 'command ' 1000)eval \"git stash\"" \
+  "$(_pad 'command ' 700)eval \"git stash\"" \
+  "true; $(_pad 'exec ' 700)eval \"git stash\"" ; do
+  rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "interleaved padded command decided inside 8 s as deny (rc $rc, ${#_c} bytes): ${_c:0:30}" "$ok"
+done
+# The slowest shape is the allowed one: many `eval sudo` starts, each walking to the end, no target.
+# Allowed or budget-refused both finish; only a timeout (rc 124) is the failure.
+_c="$(_pad "eval sudo $(_pad 's ' 1000);" 70)ls"
+rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" != "124" ] && ok=0
+check "many-start allow shape finishes inside 8 s (rc $rc, ${#_c} bytes): ${_c:0:30}" "$ok"
+# Bodies reached only by the greedy passes: a lead word that took exec or command lost the anchor
+# develop gave these (deep-audit whole-picture pass).
+for _c in \
+  "time eval x bash -c 'rtk exec git stash; git status'" \
+  "time eval x bash -c 'eval command git stash; git status'" \
+  "sudo eval x eval 'builtin exec git reset --hard; git status'" \
+  "bash -c 'rtk exec git stash; git status'" ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "chain-word body still denied, as on develop: $_c" "$ok"
+done
+
+# --- (19) GH #273 follow-ups: eval takes assignments (it joins its args into a command line, so
+# `eval A=1 env git stash` runs git), and doas is a wrapper. --- #
+for _c in \
+  'eval A=1 env git stash' \
+  'eval A=1 git stash' \
+  'eval -- A=1 B=2 git reset --hard' \
+  'true; eval A=1 B=2 sudo git clean -fd; git status' \
+  "bash -c 'eval A=1 env git stash; git status'" \
+  'eval doas git stash' \
+  'doas -u x git clean -fd' \
+  'rtk proxy doas git stash' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "eval assignment / doas wrapper denied: $_c" "$ok"
+done
+for _c in \
+  'eval A=1 git status' \
+  'eval A=1 sudo git stash list' \
+  'doas git status' \
+  'doas -u x git stash show' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "eval assignment / doas wrapper, read-only git allowed: $_c" "$ok"
+done
+_c="eval $(_pad 'A=1 ' 6000)git status"
+rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" != "124" ] && ok=0
+check "long eval assignment run finishes inside 8 s (rc $rc, ${#_c} bytes)" "$ok"
 
 echo ""
 echo "=== $pass passed, $fail failed ==="
