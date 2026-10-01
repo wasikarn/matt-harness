@@ -185,28 +185,13 @@ def _cmd_start(wrapper_prefix):
 # The overlapping scan is quadratic on long padded commands, and a timed-out hook allows, so the
 # plain scans (develop's exact behaviour, fast) run first and the overlapping pass only after
 # both allowed: a command the plain scans deny is denied just as fast as before.
-def _plain_and_overlapping(tail, lazy_tail=None):
+def _plain_and_overlapping(tail):
     pattern = _cmd_start(_WRAPPER_PREFIX) + tail
     return (re.compile(r"(" + pattern + r")", re.MULTILINE),
             re.compile(r"(?=(" + pattern + r"))", re.MULTILINE),
-            re.compile(r"(?=(" + _cmd_start(_WRAPPER_PREFIX_LAZY) + (lazy_tail or tail) + r"))", re.MULTILINE))
+            re.compile(r"(?=(" + _cmd_start(_WRAPPER_PREFIX_LAZY) + tail + r"))", re.MULTILINE))
 
-# Only stash/reset/clean (see header); read-only `stash list|show` carved out.
-_DENY_SUBCMD = r"(stash(?!\s+(?:list|show)\b)|reset|clean)\b"
-_DENY_SUBCMD_RE = re.compile(r"\A\s+" + _DENY_SUBCMD)
-
-# Git global flags walked past before the subcommand check, so `git -C /repo
-# stash` / `git --no-pager clean` do not land the check on sub="-C".
-_GIT_VALUE_GLOBALS = ("-C", "-c", "--git-dir", "--work-tree", "--config-env", "--namespace", "--attr-source")
-
-# Deep-audit 5: the lazy pass anchored the FIRST `git` word after a wrapper and stopped, so a wrapper
-# argument spelled `git` (`sudo -u git git stash; git status`) hid the real statement from both walks.
-# Its target now only matches a `git` that _skip_git_globals + _DENY_SUBCMD_RE would deny, so the walk
-# moves on to the next one. The two flag branches exclude each other, so a flag run parses one way.
-_VALUE_GLOBAL_ALT = r"(?:" + "|".join(re.escape(g) for g in _GIT_VALUE_GLOBALS) + r")(?!\S)"
-_GIT_GLOBALS = r"(?:\s+(?:" + _VALUE_GLOBAL_ALT + r"\s+\S+|(?!" + _VALUE_GLOBAL_ALT + r")-\S*))*"
-_ANCHOR_RES = _plain_and_overlapping(r"\\?(?:\S*/)?git\b",
-                                     r"\\?(?:\S*/)?git\b(?=" + _GIT_GLOBALS + r"\s+" + _DENY_SUBCMD + r")")
+_ANCHOR_RES = _plain_and_overlapping(r"\\?(?:\S*/)?git\b")
 # `bash -c "<body>"` / `eval "<body>"`: the body is a quoted string, so the masked
 # text hides it. The shell word is matched on the masked string (a real command,
 # not text inside a message); the body is read from the raw command at the same
@@ -226,6 +211,12 @@ _SHELL_RES = _plain_and_overlapping(
 # Masking blanks the quote characters, so the raw body is found by skipping
 # whitespace from the end of the shell word.
 _QUOTED_RE = re.compile(r'\s*(?:"((?:[^"\\]|\\.)*)"|' + "'([^']*)')")
+# Only stash/reset/clean (see header); read-only `stash list|show` carved out.
+_DENY_SUBCMD_RE = re.compile(r"\A\s+(stash(?!\s+(list|show)\b)|reset|clean)\b")
+
+# Git global flags walked past before the subcommand check, so `git -C /repo
+# stash` / `git --no-pager clean` do not land the check on sub="-C".
+_GIT_VALUE_GLOBALS = ("-C", "-c", "--git-dir", "--work-tree", "--config-env", "--namespace", "--attr-source")
 
 _FLAG_TOKEN_RE = re.compile(r"\s+(\S+)")
 _FLAG_VALUE_RE = re.compile(r"\s+\S+")
