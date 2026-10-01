@@ -174,12 +174,15 @@ _RTK_PREFIX = r"(?:rtk[ \t]+(?:-\S+[ \t]+)*(?:(?:proxy|run|err|test|summary)[ \t
 _CHAIN_PREFIX = r"(?:" + _SHELL_PASS + r"|" + _RTK_PREFIX + r")*"
 # GH #248: `{ git stash; }` -- a brace group opens a command position (`{` then blank).
 # GH #273: a chain word may come BEFORE a wrapper (eval sudo git stash, rtk proxy time git stash).
-# One optional chain run in front of the wrapper walk covers it. Chain words after a wrapper were
-# already reachable (the walk takes them as arguments), so a chain/wrapper loop is not needed, and
-# it would be exponential: a walked eval is also a chain word (sudo eval x 250 never finished).
+# One optional leading run of the chain words that are NOT wrapper words (eval, builtin, rtk), taken
+# only when a wrapper word follows it, covers it. command and exec are wrapper words, so the walk
+# already takes them and what follows. Letting the leading run take them too made every split of a
+# run a second parse (command x 700 before eval "git stash" took 8 s), and a chain/wrapper loop was
+# exponential (sudo eval x 250 never finished). The lookahead makes the end of the run unique.
+_LEAD_CHAIN = (r"(?:(?:(?:eval|builtin)[ \t]+(?:--[ \t]+)?|" + _RTK_PREFIX + r")+(?=" + _WRAPPER_ALT + r"))?")
 def _cmd_start(wrapper_prefix):
     return (r"(?:^|[|;&(]|&&|\|\||\{(?=\s))\s*" + _KEYWORD_PREFIX +
-            r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _CHAIN_PREFIX + wrapper_prefix + _CHAIN_PREFIX)
+            r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _LEAD_CHAIN + wrapper_prefix + _CHAIN_PREFIX)
 # GH #245: every anchor regex is scanned with overlapping matches, `(?=(...))`, read through
 # m.end(1). The old wrappers' greedy argument walk (`time ls; git stash; git status`) crosses
 # `;` / `&&` / newline to the LAST `git`, and a plain finditer resumed after that match, so the

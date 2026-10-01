@@ -684,7 +684,10 @@ done
 for _c in \
   "true; $(_pad 'eval sudo ' 4000)git stash; git status" \
   "true; $(_pad 'time eval ' 4000)git stash; git status" \
-  "$(_pad 'eval sudo ; ' 2000)git stash" ; do
+  "$(_pad 'eval sudo ; ' 2000)git stash" \
+  "$(_pad 'command ' 700)eval \"git stash\"" \
+  "$(_pad 'command ' 500)eval \"git stash\"" \
+  "true; $(_pad 'exec ' 700)eval \"git stash\"" ; do
   rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
   check "interleaved padded command decided inside 8 s as deny (rc $rc, ${#_c} bytes): ${_c:0:30}" "$ok"
 done

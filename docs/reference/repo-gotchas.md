@@ -122,7 +122,9 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   re-reads a chain run from every walk position, so each run also charges its length squared per
   start (deep-audit 5: `command ` x 8000 after one `;` took 9 s). GH #273 added one chain run in front of the wrapper walk too (`eval sudo git stash`); the same
   per-run charge covers it, measured 0.08 s at 9000 `eval sudo ` pairs. A chain/wrapper loop was
-  exponential (`sudo eval ` x 250 never finished), so keep it to one leading run. A new regex piece needs its own
+  exponential (`sudo eval ` x 250 never finished), so keep it to one leading run, limited to the non-wrapper words (eval, builtin, rtk) and ended by a
+  lookahead for a wrapper word: a run that also took `command`/`exec` doubled every split (deep-audit
+  checker, `command ` x 700 + `eval "git stash"` took 8 s). A new regex piece needs its own
   worst case measured, not assumed to fit the existing charge.
 - **Oracle:** run the real shells (the system `/bin/sh`, bash 3.2, a current bash, dash, zsh, ksh)
   with argv-logging stubs, never one shell or argv0-based shell guessing: whether `{fd}>` is a
