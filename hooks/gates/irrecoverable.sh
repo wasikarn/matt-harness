@@ -9,7 +9,10 @@ set -uo pipefail
 # zero-width splice (gi$(true)t) so it defers to python on its own. False
 # positives just spawn python (safe direction). GH #134: CC never \u-escapes $.
 _input="$(cat)"
-_norm="$(printf '%s' "$_input" | sed 's/\\[nt]/ /g' | tr -s '[:space:]' ' ' | tr -d "\"'\\")"
+# A JSON-escaped backslash (two backslashes) is a literal backslash, not the start of a \n or \t
+# escape, so mark the pair first; the shell reads backslash-t as a plain t (fuzz sweep 2026-10-01).
+_bs="$(printf '\001')"
+_norm="$(printf '%s' "$_input" | sed "s/\\\\\\\\/$_bs/g; s/\\\\[nt]/ /g" | tr -s '[:space:]' ' ' | tr -d "\"'$_bs\\")"
 _norm_nows="$(printf '%s' "$_norm" | tr -d '[:space:]')"
 _has_subst=0
 case "$_input" in *'`'*|*'$'*) _has_subst=1 ;; esac

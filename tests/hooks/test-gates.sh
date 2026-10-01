@@ -2187,6 +2187,17 @@ test_deny  "$IRRECOVERABLE" "gi + backslash-newline + t (argv0 split, was a fast
   "$(bash_payload $'gi\\\nt push --force origin develop')"
 test_deny  "$IRRECOVERABLE" "r + backslash-newline + m (argv0 split, was a fast-path bypass)" \
   "$(bash_payload $'r\\\nm -rf /tmp/x')"
+# The fast path's sed turns a JSON \n or \t escape into a space. A command holding a literal
+# backslash then t (JSON: two backslashes then t) was misread as that escape, so the argv0 lost
+# its letter and python3 never ran. The shell reads backslash-t as a plain t (fuzz sweep 2026-10-01).
+test_deny  "$IRRECOVERABLE" "gi + literal backslash-t (argv0 split, was a fast-path bypass)" \
+  "$(bash_payload 'gi\t push --force origin develop')"
+test_deny  "$IRRECOVERABLE" "fi + literal backslash-n + d (find argv0 split, was a fast-path bypass)" \
+  "$(bash_payload 'fi\nd /tmp/x -delete')"
+test_deny  "$IRRECOVERABLE" "control: a real tab between git and its argument still denies" \
+  "$(bash_payload $'git\tpush --force origin develop')"
+test_allow "$IRRECOVERABLE" "control: literal backslash-t in an unrelated command stays allowed" \
+  "$(bash_payload 'printf "a\tb"')"
 # "gh" was added to the fast-path candidate list alongside the ask-tier gh
 # merge rule (Phase B) -- without this, "gh pr merge" would fast-path
 # straight to allow, never reaching python3's ask() at all.
