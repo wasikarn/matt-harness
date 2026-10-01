@@ -193,9 +193,15 @@ _CHAIN_PREFIX = r"(?:" + _SHELL_PASS + r"|" + _RTK_PREFIX + r")*"
 # run a second parse (command x 700 before eval "git stash" took 8 s), and a chain/wrapper loop was
 # exponential (sudo eval x 250 never finished). The lookahead makes the end of the run unique.
 # The lookahead names the wrapper words minus command/exec: with them, `rtk exec git stash; git status`
-# lost the anchor develop gave it through _CHAIN_PREFIX (deep-audit whole-picture pass).
+# lost the anchor develop gave it through _CHAIN_PREFIX (deep-audit whole-picture pass). GH #307:
+# command/exec are only stepped over (_LEAD_STEP) on the way to a real lead wrapper.
 _LEAD_WRAPPER_ALT = r"(?:" + "|".join(w for w in _WRAPPER_WORDS if w not in ("command", "exec")) + r")(?=\s)"
-_LEAD_CHAIN = (r"(?:(?:" + _EVAL_PASS + r"|builtin[ \t]+(?:--[ \t]+)?|" + _RTK_PREFIX + r")+(?=" + _LEAD_WRAPPER_ALT + r"))?")
+# GH #307: the lookahead may step over command/exec (with their flags) to reach a lead wrapper
+# (`eval command env git stash`). Only the lookahead does: the run still ends at the same chain word, and
+# the walk takes command/exec itself, so no second parse of any run appears. The stepped words are fixed
+# words and `-flags`, disjoint from each other, so the scan is linear in the stepped span.
+_LEAD_STEP = r"(?:(?:command|exec)[ \t]+(?:-\S*[ \t]+)*)*"
+_LEAD_CHAIN = (r"(?:(?:" + _EVAL_PASS + r"|builtin[ \t]+(?:--[ \t]+)?|" + _RTK_PREFIX + r")+(?=" + _LEAD_STEP + _LEAD_WRAPPER_ALT + r"))?")
 # GH #285: a redirection (operator + its word) may sit before the command word and hid it
 # (`</dev/null git stash`, `<<EOF git stash`); skipped like a VAR=val, in any mix with them.
 _REDIR = r"(?:(?:\d+|\{\w+\})?(?:<<<?-?|&>>?|[<>]&|<>|>\||[<>]>?)[ \t]*[^\s;&|()<>]+[ \t]+)"

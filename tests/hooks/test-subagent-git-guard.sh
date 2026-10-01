@@ -944,6 +944,55 @@ for _c in \
   check "GH #286 control allowed (real comment): ${_c//$'\n'/<nl>}" "$ok"
 done
 
+# --- (22) GH #307: chain word (eval/builtin/rtk), then command|exec, then a wrapper, then git. --- #
+# The lead-chain lookahead excluded command/exec, so the run never started and the walk began at the chain word.
+_w22=(env sudo time nohup nice setsid xargs doas)
+for _ch in eval builtin rtk; do
+  for _ce in command exec; do
+    for _w in "${_w22[@]}"; do
+      _c="$_ch $_ce $_w git stash"
+      rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+      check "GH #307 chain+$_ce+wrapper denied: $_c" "$ok"
+    done
+  done
+done
+for _c in \
+  'eval command -p env git reset --hard' \
+  'eval command -- sudo git clean -fd' \
+  'eval command exec env git stash' \
+  'eval A=1 command env git stash' \
+  'rtk proxy command time git stash' \
+  'true; eval command env git stash; git status' \
+  "bash -c 'eval exec sudo git stash; git status'" ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #307 variant denied: $_c" "$ok"
+done
+for _c in \
+  'eval command ls' \
+  'eval command env ls' \
+  'eval exec sudo ls' \
+  'builtin command time git status' \
+  'rtk exec env git stash list' \
+  'eval command env git log -1' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "GH #307 control allowed: $_c" "$ok"
+done
+for _c in \
+  "true; $(_pad 'eval command env ' 4000)git stash; git status" \
+  "$(_pad "eval command sudo $(_pad 's ' 300);" 40)git stash; git status" \
+  "eval $(_pad 'command ' 5000)env git stash" \
+  "$(_pad 'eval command ' 3000)env git stash" ; do
+  rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #307 padded command decided inside 8 s as deny (rc $rc, ${#_c} bytes): ${_c:0:30}" "$ok"
+done
+for _c in \
+  "$(_pad "eval command sudo $(_pad 's ' 1000);" 70)ls" \
+  "$(_pad 'eval command ' 6000)ls" \
+  "eval $(_pad 'command ' 8000)ls" ; do
+  rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" != "124" ] && ok=0
+  check "GH #307 allow shape finishes inside 8 s (rc $rc, ${#_c} bytes): ${_c:0:30}" "$ok"
+done
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]
