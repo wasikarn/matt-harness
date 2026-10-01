@@ -206,8 +206,10 @@ _ANCHOR_RES = _plain_and_overlapping(r"\\?(?:\S*/)?git\b")
 # so finditer resumed after it and never saw that statement's shell word.
 _RTK_BODY = r"rtk[ \t]+(?:-\S+[ \t]+)*(?:run|err|test|summary)(?:[ \t]+-[^\s;&|]*)*"
 _SHELL_RES = _plain_and_overlapping(
-    r"\\?(?:\S*/)?(?:(?:bash|sh|zsh|dash|ksh)\s+(?:-\S+\s+)*?-\w*c\w*|eval|" + _RTK_BODY + r")(?=\s)"
+    r"\\?(?:\S*/)?(?:(?:bash|sh|zsh|dash|ksh)\s+(?:-\S+\s+)*?-[^\Wc]*c\w*|eval|" + _RTK_BODY + r")(?=\s)"
 )
+# GH #275: `-[^\Wc]*c\w*` is the same language as `-\w*c\w*` but splits at the FIRST `c` only; the old
+# form retried every split of a long `-ccc...` token (quadratic, 60 KB ran past 20 s, a timeout allows).
 # Masking blanks the quote characters, so the raw body is found by skipping
 # whitespace from the end of the shell word.
 _QUOTED_RE = re.compile(r'\s*(?:"((?:[^"\\]|\\.)*)"|' + "'([^']*)')")
