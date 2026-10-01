@@ -222,7 +222,7 @@ FLAG_VALUE_WRAPPERS = {
     "gtimeout": ("-s", "-k", "--signal"),
     "exec": ("-a",),
 }
-PREFIX_WRAPPERS = ("env", "command", "nohup", "time", "sudo", "setsid", "rtk") + tuple(FLAG_VALUE_WRAPPERS)
+PREFIX_WRAPPERS = ("env", "command", "nohup", "time", "sudo", "doas", "setsid", "rtk") + tuple(FLAG_VALUE_WRAPPERS)
 # `builtin` runs the builtin after it (`builtin eval rm -rf x`) and takes no flags. It is unwrapped
 # in the rule loop only: as a member of PREFIX_WRAPPERS it also feeds _SPAWN_ANCHOR_RE, whose greedy
 # walk then crosses `&&` and lands on the LAST `claude` (`builtin cd /tmp && claude -p x && claude
@@ -1057,10 +1057,10 @@ _AMBIG_BROAD_VERB_RE = re.compile(
     r"(?<![\w.-])(?:rm\s|dd\s|find\s)|" + _AMBIG_GIT +
     r"(?:push|reset|clean|checkout|restore|switch|branch|stash)\b")
 # GH #275 follow-up: the push flag scan is capped at 200 letters (a longer run counts as a hit, an
-# over-deny); `[A-Za-z]*f\b` backed off across the whole token from every git/push anchor in reach.
+# over-deny; a bundle like -fu counts, GH #284); `[A-Za-z]*f\b` backed off across the whole token from every git/push anchor in reach.
 _AMBIG_NARROW_VERB_RE = re.compile(
     r"(?<![\w.-])(?:rm\s+-[A-Za-z]*[rf]|find\s[^\n]{0,300}(?:-delete|-exec\w*\s+rm)|dd\s[^\n]{0,200}of=)|"
-    + _AMBIG_GIT + r"(?:push\b[^\n;|&]{0,200}(?:--force\b|\s-(?:[A-Za-z]{0,200}f\b|[A-Za-z]{201}))"
+    + _AMBIG_GIT + r"(?:push\b[^\n;|&]{0,200}(?:--force\b|\s-(?:[A-Za-z]{0,200}f[A-Za-z]{0,200}\b|[A-Za-z]{201}))"
     r"|reset\b[^\n;|&]{0,200}--hard|clean\b"
     r"|checkout\b[^\n;|&]{0,200}(?:\s--(?:\s|$)|\s-f\b|\s\.(?:\s|$))|restore\b"
     r"|branch\b[^\n;|&]{0,200}\s-D\b|stash\s+(?:drop|clear)\b)")
@@ -1326,6 +1326,10 @@ def _scan_body(body):
 # Candidate names for placeholder-splice duplication: the exact argv0 basenames
 # and git subcommands any check below dispatches on by exact string match.
 KNOWN_DANGEROUS = ("rm", "find", "git", "gh", "dd", "mysql", "psql", "sqlite3", "mariadb")
+# A pathspec that names the whole tree (GH #289): optional ":/" or ":(magic)" prefix, then
+# nothing, "./", "*" or "**". A non-empty remainder ("foo.txt", "*.md") names a path.
+# The lexer hands ":/" over as ":" then "/", so the add rule also tests a token joined to its next.
+_WHOLE_TREE_PATHSPEC_RE = re.compile(r"(?=.)(?::(?:/|\([^)]*\)))?(?:\./?|\*{1,2}|)")
 KNOWN_GIT_SUBS = ("push", "reset", "clean", "restore", "checkout", "switch", "branch", "stash", "commit", "add")
 
 # Duplication also fires on a token still carrying raw substitution syntax
@@ -1408,12 +1412,13 @@ for _wi, w in enumerate(windows):
             if i >= len(rest):
                 break
             argv0, rest = basename(rest[i]), rest[i + 1:]
-        elif argv0 == "sudo":
+        elif argv0 in ("sudo", "doas"):  # GH #290: doas takes -u/-C values and has no long options
             # sudo -u/-g take a value: space-joined, "="-joined, attached ("-ualice"),
             # or bundled with getopt semantics ("-nu alice": alice is the value;
             # "-un alice": "n" is the value, alice is the command). -p -C -R -T -U
             # are a non-goal.
-            LONG_VALUE_FLAGS = {"--user", "--group"}
+            LONG_VALUE_FLAGS = {"--user", "--group"} if argv0 == "sudo" else set()
+            _VALUE_LETTERS = "ug" if argv0 == "sudo" else "uC"
             i = 0
             while i < len(rest):
                 t = rest[i].replace(PH, "")
@@ -1423,7 +1428,7 @@ for _wi, w in enumerate(windows):
                 elif t.startswith("--"):
                     i += 1
                 elif t.startswith("-") and len(t) > 1:
-                    m = re.search(r"[ug]", t[1:])
+                    m = re.search("[" + _VALUE_LETTERS + "]", t[1:])
                     if m:
                         attached = m.end() < len(t[1:])
                         i += 1 if attached else min(2, len(rest) - i)
@@ -1852,9 +1857,9 @@ for _wi, w in enumerate(windows):
                 # -A also arrives bundled (-Af, -fA, -vA); add has no value-taking short flag.
                 # --pathspec-from-file's value is a pathspec list the gate cannot read
                 # (GH #200), so any use denies, as in restore/checkout above.
-                if sub == "add" and any(t == "." or _bundled_flag(t, "", "A") or _is_flag(t, "--all")
+                if sub == "add" and any(t == "." or _WHOLE_TREE_PATHSPEC_RE.fullmatch(t) or _WHOLE_TREE_PATHSPEC_RE.fullmatch(t + nxt) or _bundled_flag(t, "", "A") or _is_flag(t, "--all")
                                         or _is_flag(t.split("=", 1)[0], "--pathspec-from-file")
-                                        for t in scan) and not _mid_merge():
+                                        for t, nxt in zip(scan, scan[1:] + [""])) and not _mid_merge():
                     deny("git add -A/. stages everything — stage files by name instead "
                          "(allowed only while a merge is in progress, i.e. MERGE_HEAD exists)")
 
