@@ -631,6 +631,28 @@ for _c in \
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
   check "prose around a substitution allowed: ${_c:0:40}" "$ok"
 done
+# Second fuzz round (real-shell differential): `${y:-)}`, shell bodies, backslash escapes inside
+# backticks, a backtick inside quotes inside backticks (zsh nests it), heredoc shapes.
+_nl() { local IFS=$'\n'; echo "$*"; }
+for _c in \
+  'echo "$(echo ${y:-)}; git stash)"' \
+  "bash -c 'echo \"\$(git stash)\"'" \
+  'echo `"\$(git clean -fd)"`' \
+  'echo `"`git stash`"`' \
+  "$(_nl 'echo "$(cat <<A <<B' x A '$(git stash)' B ')"')" \
+  "$(_nl 'echo "$(cat <<EOF' "it's \`git stash\`" EOF ')"')" \
+  "$(_nl 'echo "$(echo "<<A"' 'git stash' A ')"')" \
+  "$(_nl 'git commit -m "$(cat <<EOF' 'an unquoted heredoc runs `git stash` here' EOF ')"')" ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "second-round shape denied: ${_c:0:50}" "$ok"
+done
+for _c in \
+  "$(_nl 'git commit -m "$(cat <<'"'EOF'" 'fix: handle `git stash` and $(git clean -fd) in prose' '' EOF ')"')" \
+  "$(_nl 'echo "$(cat <<A <<B' 'git stash is data' A 'git reset is data' B ')"')" \
+  'echo "$(echo $((1<<2)); git status)"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "heredoc prose and safe shapes allowed: ${_c:0:50}" "$ok"
+done
 _c='echo "$(cat <<EOF
 x
 $(git stash)

@@ -107,6 +107,14 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   padded shapes (thousands of statements, 20-150 KB) with the target early and late (GH #245: a
   new scan placed before the fast denies turned a 0.03 s deny into a timeout). Any exit other than
   0 or 2 from the `.py` is a finding too, even where the `.sh` wrapper fails it closed.
+  GH #274: `subagent-git-guard.py` also scans the raw command for `$(...)` / backtick bodies
+  (`_substitution_bodies`, one linear pass) because the quote mask hides them. That pass reads a
+  case pattern's `)`, `#` comments, `${x:-)}`, backslash escapes in backticks, and heredocs. Every
+  body copy and heredoc lookup charges the same budget. Verify it with a real-shell differential
+  (sh/bash/zsh against a shim `git`), not by reading the code: 3 hand-written rounds each missed
+  shapes the generator found. Known residue: an `eval`/`sh -c` of a command's OUTPUT (data flow,
+  undecidable), `bash -c 'sh -c ...'` (two shell levels, never covered), and a quoted heredoc
+  nested under a wrapper inside a quoted substitution (denied, a false positive).
   Anchor regexes are quadratic (command starts x length): `subagent-git-guard.py` charges that
   bound to a shared budget and denies past it (GH #246: 30 KB of `env ; ` before a `git stash`
   timed out into allow). Only 3 of 2,581 replayed real commands (20-28 KB scripts) hit it.

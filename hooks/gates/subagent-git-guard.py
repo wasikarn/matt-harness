@@ -291,19 +291,53 @@ def _violation_in_bodies(raw_cmd, masked_cmd, overlap):
 # hid a real command. One linear pass over the raw command collects every $(...) / `...` body at
 # any depth (a frame stack, so nesting costs no rescans); each body is then checked as its own
 # command line. Single-quoted text is literal and skipped; an unterminated body runs to the end.
+# The pass also knows what a naive bracket count gets wrong: a case pattern's `)`, a `#` comment,
+# `${x:-)}`, escaped backticks nested in backticks, and heredoc bodies (a quoted-delimiter body is
+# data and is skipped whole; an unquoted one is data too, except for the substitutions in it).
+# Every body copy and every scan is charged to the shared work budget, so a pathological nest is
+# denied as too costly instead of being scanned (a timed-out hook allows).
 _WORD_RE = re.compile(r"\w+")
 _CMD_KEYWORDS = ("then", "do", "else", "elif", "if", "while", "until", "time", "!")
 _BT_ESCAPE_RE = re.compile(r"\\([`\\$])")
+_HD_START_RE = re.compile(r"<<-?[ \t]*(['\"]?)([A-Za-z_]\w*)\1")
+
+def _scan_cost(k):
+    global _work
+    _work += k
+    if _work > _WORK_BUDGET:
+        raise _TooCostly
+
+def _heredoc_at(s, i, after=None):
+    # A heredoc operator at s[i]: (trigger, body start, body end, terminator end, quoted delimiter),
+    # or None. The trigger is the newline where the body begins. A second heredoc on the same line
+    # passes `after`, the first one's terminator end: its body starts on the next line and its
+    # trigger is that terminator end. The terminator match is lenient (spaces allowed), so it can
+    # only end the body sooner than the shell does, never later: a lenient miss scans more, not less.
+    m = _HD_START_RE.match(s, i)
+    eol = s.find("\n", m.end()) if m else -1
+    if eol < 0:
+        return None
+    trigger = eol if after is None else after
+    _scan_cost(len(s) - i)
+    t = re.compile(r"^[ \t]*" + re.escape(m.group(2)) + r"[ \t]*$", re.MULTILINE).search(s, trigger + 1)
+    return (trigger, trigger + 1, t.start(), t.end(), bool(m.group(1))) if t else None
 
 def _substitution_bodies(s):
     bodies, n, i = [], len(s), 0
-    frames = [["top", 0, None, 0, 0, False, True]]  # kind, body start, open quote, paren depth, open `case` count, saw case, at command position
+    # frame: kind, body start, open quote, paren depth, open `case` count, saw case, at command
+    # position, open ${ count
+    frames = [["top", 0, None, 0, 0, False, True, 0]]
+    pend = []  # heredocs whose bodies start after the current line, in order
+    hd_end = hd_depth = -1
+    _scan_cost(n * 4)
 
     def done(f, end):
         body = s[f[1]:end]
-        if f[0] == "bt" and "\\`" in body:
-            # Inside backticks \` is a nested substitution; read one escape level off and rescan.
-            # Each level doubles the backslashes, so this recursion is log-deep.
+        _scan_cost(len(body))
+        if f[0] == "bt" and _BT_ESCAPE_RE.search(body):
+            # Inside backticks \` \$ and \\ are escapes the shell reads off before it runs the body
+            # (`"\$(git stash)"` runs it); read one level off and rescan. Each level of backticks
+            # doubles the backslashes, so this recursion is log-deep.
             body = _BT_ESCAPE_RE.sub(r"\1", body)
             bodies.extend(_substitution_bodies(body))
         if f[5]:  # a case pattern's `)` opens a command; make it a separator (same length, offsets hold)
@@ -311,7 +345,16 @@ def _substitution_bodies(s):
         bodies.append(body)
 
     while i < n:
+        if pend and i == pend[0][0]:
+            _, bs, be, te, quoted = pend.pop(0)
+            if quoted:
+                i = te
+                continue
+            hd_end, hd_depth = be, len(frames)
         f, c = frames[-1], s[i]
+        if i < hd_end and len(frames) == hd_depth and c not in "\\`$":
+            i += 1  # heredoc text: quotes, parens and # are literal there
+            continue
         if f[2] == "'":
             if c == "'":
                 f[2] = None
@@ -321,22 +364,36 @@ def _substitution_bodies(s):
             f[2] = "'"
         elif c == '"':
             f[2] = None if f[2] == '"' else '"'
+        elif c == "<" and f[2] is None and s.startswith("<<", i) \
+                and s[i + 2:i + 3] != "<" and s[i - 1:i] != "<":
+            h = _heredoc_at(s, i, pend[-1][3] if pend else None)
+            if h:
+                pend.append(h)
+            i += 1
         elif c == "`":
-            if f[0] == "bt":
+            if f[0] == "bt" and f[2] is None:
                 done(f, i); frames.pop()
+            # zsh reads a backtick inside quotes inside backticks as a nested open, bash as the
+            # close; scanning it as nested catches what zsh runs.
             else:
-                frames.append(["bt", i + 1, None, 0, 0, False, True])
+                frames.append(["bt", i + 1, None, 0, 0, False, True, 0])
         elif c == "$" and s[i + 1:i + 2] == "(":
-            frames.append(["paren", i + 2, None, 0, 0, False, True]); i += 1
+            frames.append(["paren", i + 2, None, 0, 0, False, True, 0]); i += 1
+        elif c == "$" and s[i + 1:i + 2] == "{":
+            f[7] += 1; i += 1
         elif f[0] == "paren" and f[2] is None:
             # f[6]: at a command position, so only a `case` there opens a case (`echo case` does not)
             if c in " \t":
                 pass
+            elif c == "}" and f[7]:
+                f[7] -= 1
             elif c == "(":
                 f[3] += 1; f[6] = True
             elif c == ")":
                 f[6] = bool(f[4])
-                if f[3]:
+                if f[7]:
+                    pass  # `${y:-)}`: a literal paren
+                elif f[3]:
                     f[3] -= 1
                 elif not f[4]:  # a `)` that ends a case pattern is not the end of the body
                     done(f, i); frames.pop()
@@ -360,21 +417,48 @@ def _substitution_bodies(s):
     return bodies
 
 # A heredoc body is data (`git commit -m "$(cat <<'EOF' ... EOF)"`), so blank it before the check.
-# A $(...) nested in it is its own entry in _substitution_bodies and is still checked.
-_HEREDOC_RE = re.compile(r"<<-?[ \t]*(['\"]?)(\w+)\1[^\n]*\n")
+# A $(...) nested in it is its own entry in _substitution_bodies and is still checked. The operator
+# is looked for on the quote-masked text, so a `<<A` inside quotes cannot blank a real command.
+_HD_OP_RE = re.compile(r"(?<!<)<<(?!<)")
 
 def _blank_heredocs(s):
-    out, i = [], 0
-    for m in _HEREDOC_RE.finditer(s):
-        if m.start() < i:
+    spans, line_end, last = [], -1, None
+    for m in _HD_OP_RE.finditer(_mask_quotes(s)):
+        p = m.start()
+        _scan_cost(len(spans))
+        if any(a <= p < b for a, b in spans):  # inside a body already blanked
             continue
-        end = re.compile(r"^[ \t]*" + re.escape(m.group(2)) + r"[ \t]*$", re.MULTILINE).search(s, m.end())
-        stop = end.start() if end else len(s)
-        out.append(s[i:m.end()]); out.append(re.sub(r"[^\n]", "Q", s[m.end():stop])); i = stop
+        chained = p < line_end  # a second heredoc on the same line as the previous one
+        h = _heredoc_at(s, p, last[3] if chained else None)
+        if h:
+            if not chained:
+                line_end = s.find("\n", p)
+            last = h
+            spans.append((h[1], h[2]))
+    out, i = [], 0
+    for a, b in sorted(spans):
+        out.append(s[i:a]); out.append(re.sub(r"[^\n]", "Q", s[a:b])); i = b
     return "".join(out) + s[i:]
 
+# The bodies of `bash -c '<body>'` / `eval "<body>"` in a text (one level, like _violation_in_bodies).
+def _shell_bodies(raw):
+    mt = _mask_quotes(raw)
+    out = []
+    for overlap in (False, True, 2):
+        _charge(mt)
+        for m in _SHELL_RES[overlap].finditer(mt):
+            q = _QUOTED_RE.match(raw, m.end(1))
+            if q:
+                out.append(q.group(1) if q.group(1) is not None else q.group(2))
+    return out
+
 def _violation_in_substitutions(raw_cmd):
-    for body in _substitution_bodies(raw_cmd):
+    subs = _substitution_bodies(raw_cmd)
+    texts = list(subs)
+    for t in [raw_cmd] + subs:  # `bash -c 'echo "$(git stash)"'`: the shell body has substitutions too
+        for sb in _shell_bodies(t):
+            texts.extend(_substitution_bodies(sb))
+    for body in texts:
         body = _blank_heredocs(body)
         mb = _mask_quotes(body)
         for overlap in (False, True, 2):
