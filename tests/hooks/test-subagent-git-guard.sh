@@ -595,7 +595,8 @@ for _c in \
   'echo "a $(true; git stash) b"' \
   'echo "$(echo "$(git reset --hard)")"' \
   'echo "x `git stash`"' \
-  'echo "$(bash -c "git stash")"' ; do
+  'echo "$(bash -c "git stash")"' \
+  'echo '"'"'\'"'"'"$(git clean -fd)"' ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
   check "git inside a quoted substitution or backticks denied: $_c" "$ok"
 done

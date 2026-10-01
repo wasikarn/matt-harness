@@ -298,7 +298,7 @@ def _substitution_bodies(s):
     top = ["", 0, "", 0]
     while i < n:
         c, f = s[i], (frames[-1] if frames else top)
-        if c == "\\":
+        if c == "\\" and f[2] != "'":  # a backslash is literal inside single quotes
             i += 2
             continue
         if c == "`" and f[0] == "`":
