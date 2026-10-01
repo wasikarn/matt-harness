@@ -665,6 +665,31 @@ test_deny "$IRRECOVERABLE" "GH #233 quoted ; then branch -D" \
   "$(bash_payload 'git branch ";" -D')"
 test_deny "$IRRECOVERABLE" "GH #233 real ; after quoted ; still splits" \
   "$(bash_payload 'git commit -m ";" ; git commit -n -m x')"
+# GH #310: a backslash-escaped operator-only token is a literal word, not a separator.
+test_deny "$IRRECOVERABLE" "GH #310 escaped ; then push -f" \
+  "$(bash_payload 'git push \; -f')"
+test_deny "$IRRECOVERABLE" "GH #310 escaped | then push -f" \
+  "$(bash_payload 'git push \| -f')"
+test_deny "$IRRECOVERABLE" "GH #310 escaped & then commit -n" \
+  "$(bash_payload 'git commit -m x \& -n')"
+test_deny "$IRRECOVERABLE" "GH #310 escaped && then branch -D" \
+  "$(bash_payload 'git branch \&\& -D x')"
+test_deny "$IRRECOVERABLE" "GH #310 escaped ( then commit -n" \
+  "$(bash_payload 'git commit -m x \( -n')"
+test_deny "$IRRECOVERABLE" "GH #310 escaped ) then push -f" \
+  "$(bash_payload 'git push \) -f')"
+test_deny "$IRRECOVERABLE" "GH #310 escaped ; inside double quotes then push -f" \
+  "$(bash_payload 'git push "a\;" -f')"
+test_deny "$IRRECOVERABLE" "GH #310 doubled backslash before ; is a real separator" \
+  "$(bash_payload 'git commit -m x \\; git commit -n -m y')"
+test_deny "$IRRECOVERABLE" "GH #310 real ; after escaped ; still splits" \
+  "$(bash_payload 'git commit -m x \; ; git commit -n -m y')"
+test_allow "$IRRECOVERABLE" "GH #310 control: escaped ; as commit message arg" \
+  "$(bash_payload 'git commit -m \;')"
+test_allow "$IRRECOVERABLE" "GH #310 control: find -exec escaped ; terminator" \
+  "$(bash_payload 'find . -name x -exec echo {} \;')"
+test_allow "$IRRECOVERABLE" "GH #310 control: real ; separates, later -f is not git's" \
+  "$(bash_payload 'git status ; ls -f')"
 test_allow "$IRRECOVERABLE" "GH #233 control: commit message is a quoted ;" \
   "$(bash_payload 'git commit -m ";"')"
 test_allow "$IRRECOVERABLE" "GH #233 control: quoted ; argument to printf then rm word" \

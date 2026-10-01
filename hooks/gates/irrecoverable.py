@@ -448,6 +448,12 @@ def _mask_quoted_ops(out, qstart):
     body = out[qstart:-1]
     if body and all(ch in _OP_CHARS for ch in body):
         out[qstart:-1] = [HASH_LIT]
+def _escaped_op_word_end(s, i):
+    # End index of a run of escaped-operator pairs starting at s[i] that is a whole word, else 0.
+    j, n = i, len(s)
+    while j + 1 < n and s[j] == "\\" and s[j + 1] in ";&|()":
+        j += 2
+    return j if j > i and (j == n or s[j].isspace() or s[j] in ";&|)") else 0
 def _newlines_to_seps(s):
     out = []
     qstart = 0
@@ -507,6 +513,11 @@ def _newlines_to_seps(s):
         elif c == "\\" and i + 1 < n and s[i + 1] == "\n":
             # real line continuation: both chars removed, nothing appended
             i += 2
+        elif c == "\\" and i + 1 < n and s[i + 1] in ";&|()" and not last_escaped and (not out or out[-1].isspace()) and _escaped_op_word_end(s, i) > 0:
+            # GH #310: a word made only of escaped operators (\; \&\& \|) is one literal argument
+            out.append(HASH_LIT)
+            i = _escaped_op_word_end(s, i)
+            last_escaped = False
         elif c == "\\" and i + 1 < n:
             # any other escaped pair is consumed together so the escaped char
             # is never re-examined as a hash/quote marker
