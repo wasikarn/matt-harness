@@ -650,6 +650,25 @@ test_deny "$IRRECOVERABLE" "--no-verify on earlier line (multiline bypass)" \
   "$(bash_payload $'echo staging\ngit commit --no-verify -m msg')"
 test_allow "$IRRECOVERABLE" "echo --no-verify (git-specific, no false positive)" \
   "$(bash_payload 'echo --no-verify is a git flag')"
+# GH #233: a quoted operator-only argument must not split the command and hide a later flag.
+test_deny "$IRRECOVERABLE" "GH #233 quoted ; then --no-verify" \
+  "$(bash_payload 'git commit -m ";" --no-verify')"
+test_deny "$IRRECOVERABLE" "GH #233 quoted ; then commit -n" \
+  "$(bash_payload 'git commit -m ";" -n')"
+test_deny "$IRRECOVERABLE" "GH #233 quoted && then commit -n" \
+  "$(bash_payload 'git commit -m "&&" -n')"
+test_deny "$IRRECOVERABLE" "GH #233 quoted | then commit -n" \
+  "$(bash_payload 'git commit -m "|" -n')"
+test_deny "$IRRECOVERABLE" "GH #233 single-quoted ; then push -f" \
+  "$(bash_payload "git push origin ';' -f")"
+test_deny "$IRRECOVERABLE" "GH #233 quoted ; then branch -D" \
+  "$(bash_payload 'git branch ";" -D')"
+test_deny "$IRRECOVERABLE" "GH #233 real ; after quoted ; still splits" \
+  "$(bash_payload 'git commit -m ";" ; git commit -n -m x')"
+test_allow "$IRRECOVERABLE" "GH #233 control: commit message is a quoted ;" \
+  "$(bash_payload 'git commit -m ";"')"
+test_allow "$IRRECOVERABLE" "GH #233 control: quoted ; argument to printf then rm word" \
+  "$(bash_payload 'printf "%s\n" ";" rm -rf x')"
 test_deny "$IRRECOVERABLE" "git restore . (discards worktree)" \
   "$(bash_payload 'git restore .')"
 test_deny "$IRRECOVERABLE" "git restore -- file (discards worktree)" \
