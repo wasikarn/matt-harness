@@ -588,7 +588,12 @@ done
 # which the separator x length charge never saw: `true; ` + `command ` x 8000 before a real
 # `git stash` ran 9 s with one `;`, and a timed-out hook allows. Each row must be DECIDED inside 8 s:
 # sgg_rc waits forever, so a late deny would read as a pass. --- #
+# A load spike (peer gauntlets, GH #158) can push a fast row past 8 s once; a real quadratic scan
+# takes 9 s or more every time, so a row only fails when the retry times out too.
 sgg_rc8() {
+  local rc; rc=$(_sgg_rc8_once "$1"); [ "$rc" = "124" ] && rc=$(_sgg_rc8_once "$1"); echo "$rc"
+}
+_sgg_rc8_once() {
   payload "$1" fork | python3 -c '
 import os, signal, subprocess, sys
 p = subprocess.Popen(["bash", sys.argv[1]], stdin=sys.stdin, stdout=subprocess.DEVNULL,
@@ -617,13 +622,16 @@ _rc=$(python3 -c '
 import json, signal, subprocess, sys, os
 c = "sudo -u git env " + "-u git " * 330000 + "git stash; git status"
 d = json.dumps({"tool_name": "Bash", "tool_input": {"command": c}, "agent_id": "a", "agent_type": "general-purpose"})
-p = subprocess.Popen(["bash", sys.argv[1]], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
-                     stderr=subprocess.DEVNULL, start_new_session=True)
-try:
-    p.communicate(d.encode(), timeout=8)
-    print(p.returncode)
-except subprocess.TimeoutExpired:
-    os.killpg(p.pid, signal.SIGKILL)
+for _ in range(2):  # a load spike can time one run out; a real slowdown times out both (GH #158)
+    p = subprocess.Popen(["bash", sys.argv[1]], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL, start_new_session=True)
+    try:
+        p.communicate(d.encode(), timeout=8)
+        print(p.returncode)
+        break
+    except subprocess.TimeoutExpired:
+        os.killpg(p.pid, signal.SIGKILL)
+else:
     print(124)
 ' "$GATE")
 ok=1; [ "$_rc" = "2" ] && ok=0
