@@ -683,13 +683,27 @@ for _c in \
 done
 for _c in \
   "true; $(_pad 'eval sudo ' 4000)git stash; git status" \
-  "true; $(_pad 'time eval ' 4000)git stash; git status" \
-  "$(_pad 'eval sudo ; ' 2000)git stash" \
+  "$(_pad "eval sudo $(_pad 's ' 300);" 40)git stash; git status" \
+  "$(_pad 'command ' 1000)eval \"git stash\"" \
   "$(_pad 'command ' 700)eval \"git stash\"" \
-  "$(_pad 'command ' 500)eval \"git stash\"" \
   "true; $(_pad 'exec ' 700)eval \"git stash\"" ; do
   rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
   check "interleaved padded command decided inside 8 s as deny (rc $rc, ${#_c} bytes): ${_c:0:30}" "$ok"
+done
+# The slowest shape is the allowed one: many `eval sudo` starts, each walking to the end, no target.
+# Allowed or budget-refused both finish; only a timeout (rc 124) is the failure.
+_c="$(_pad "eval sudo $(_pad 's ' 1000);" 70)ls"
+rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" != "124" ] && ok=0
+check "many-start allow shape finishes inside 8 s (rc $rc, ${#_c} bytes): ${_c:0:30}" "$ok"
+# Bodies reached only by the greedy passes: a lead word that took exec or command lost the anchor
+# develop gave these (deep-audit whole-picture pass).
+for _c in \
+  "time eval x bash -c 'rtk exec git stash; git status'" \
+  "time eval x bash -c 'eval command git stash; git status'" \
+  "sudo eval x eval 'builtin exec git reset --hard; git status'" \
+  "bash -c 'rtk exec git stash; git status'" ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "chain-word body still denied, as on develop: $_c" "$ok"
 done
 
 echo ""

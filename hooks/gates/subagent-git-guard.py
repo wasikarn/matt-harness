@@ -179,7 +179,10 @@ _CHAIN_PREFIX = r"(?:" + _SHELL_PASS + r"|" + _RTK_PREFIX + r")*"
 # already takes them and what follows. Letting the leading run take them too made every split of a
 # run a second parse (command x 700 before eval "git stash" took 8 s), and a chain/wrapper loop was
 # exponential (sudo eval x 250 never finished). The lookahead makes the end of the run unique.
-_LEAD_CHAIN = (r"(?:(?:(?:eval|builtin)[ \t]+(?:--[ \t]+)?|" + _RTK_PREFIX + r")+(?=" + _WRAPPER_ALT + r"))?")
+# The lookahead names the wrapper words minus command/exec: with them, `rtk exec git stash; git status`
+# lost the anchor develop gave it through _CHAIN_PREFIX (deep-audit whole-picture pass).
+_LEAD_WRAPPER_ALT = r"(?:" + "|".join(w for w in _WRAPPER_WORDS if w not in ("command", "exec")) + r")(?=\s)"
+_LEAD_CHAIN = (r"(?:(?:(?:eval|builtin)[ \t]+(?:--[ \t]+)?|" + _RTK_PREFIX + r")+(?=" + _LEAD_WRAPPER_ALT + r"))?")
 def _cmd_start(wrapper_prefix):
     return (r"(?:^|[|;&(]|&&|\|\||\{(?=\s))\s*" + _KEYWORD_PREFIX +
             r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _LEAD_CHAIN + wrapper_prefix + _CHAIN_PREFIX)
