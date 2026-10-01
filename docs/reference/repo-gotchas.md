@@ -122,9 +122,9 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   flow, undecidable), `bash -c 'sh -c ...'` (two shell levels, never covered), a quoted heredoc
   nested under a wrapper inside a quoted substitution (denied, a false positive), and a
   redirection before `git` (`<f git stash`, `$(<<a git stash)`), which `develop` also allows.
-  Differential against `develop` (2026-10-01, #274/#280): a replay of 109,198 distinct Bash
+  Differential against `develop` (2026-10-01, #274/#280): a replay of 109,500 distinct Bash
   commands from local transcripts gave 0 newly denied, 0 exits other than 0/2 and a worst case of
-  1.0 s. 17 commands were denied by `develop` and allowed by the branch: all are heredoc body text
+  1.0 s. 20 commands were denied by `develop` and allowed by the branch: all are heredoc body text
   (commit messages, PR bodies, scripts) that `develop` denied for lack of heredoc parsing; with
   the bodies stripped `develop` allows every one. That is the named intended category. One shape
   inside it is a real change: `eval "$(cat <<'EOF' ... EOF)"` runs the body, so `develop` denied it
