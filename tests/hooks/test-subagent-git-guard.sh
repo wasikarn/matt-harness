@@ -602,10 +602,23 @@ for _c in \
   "echo '\$(git clean -fd)'" \
   'echo "$(git status)"' \
   'echo "git clean is denied"' \
-  'echo "\$(git clean -fd)"' ; do
+  'echo "\$(git clean -fd)"' \
+  'git commit -m "$(cat <<'"'EOF'"'
+fix
+
+git stash was the cause
+EOF
+)"' ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
-  check "literal or safe substitution allowed: $_c" "$ok"
+  check "literal or safe substitution allowed: ${_c:0:40}" "$ok"
 done
+_c='echo "$(cat <<EOF
+x
+$(git stash)
+EOF
+)"'
+rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+check "substitution nested in a heredoc body still denied" "$ok"
 
 echo ""
 echo "=== $pass passed, $fail failed ==="

@@ -324,8 +324,23 @@ def _substitution_bodies(s):
     bodies.extend(s[f[1]:] for f in frames[1:])
     return bodies
 
+# A heredoc body is data (`git commit -m "$(cat <<'EOF' ... EOF)"`), so blank it before the check.
+# A $(...) nested in it is its own entry in _substitution_bodies and is still checked.
+_HEREDOC_RE = re.compile(r"<<-?[ \t]*(['\"]?)(\w+)\1[^\n]*\n")
+
+def _blank_heredocs(s):
+    out, i = [], 0
+    for m in _HEREDOC_RE.finditer(s):
+        if m.start() < i:
+            continue
+        end = re.compile(r"^[ \t]*" + re.escape(m.group(2)) + r"[ \t]*$", re.MULTILINE).search(s, m.end())
+        stop = end.start() if end else len(s)
+        out.append(s[i:m.end()]); out.append(re.sub(r"[^\n]", "Q", s[m.end():stop])); i = stop
+    return "".join(out) + s[i:]
+
 def _violation_in_substitutions(raw_cmd):
     for body in _substitution_bodies(raw_cmd):
+        body = _blank_heredocs(body)
         mb = _mask_quotes(body)
         for overlap in (False, True, 2):
             hit = _violation(mb, overlap) or _violation_in_bodies(body, mb, overlap)
