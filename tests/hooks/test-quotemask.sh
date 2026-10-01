@@ -128,14 +128,37 @@ OUT=$(mask "echo \"\$'\" ; git stash")
 ok=1; [[ "$OUT" == *"; git stash" ]] && ok=0
 check "\$' inside a double-quoted span stays inside it: 'git stash' after the span survives" "$ok"
 
-# Backslash-newline outside a span stays a LINE BOUNDARY on purpose: masking
-# the pair to "\Q" hid `\<nl>git stash` (a real stash) from the callers' git
-# anchor, a bypass. The masker cannot tell "git as argument" from "git as
-# command"; that is the anchor's job, so `echo \<nl>git stash` stays a
-# conservative false deny (2026-09-21 validator round 2).
+# Backslash-newline (odd run) is a line continuation (GH #286). Masked as
+# blanks at a word start so `\<nl>git stash` still shows git to the callers'
+# anchor (2026-09-21 validator round 2 bypass); masked as Q's mid-word so a
+# "#" after it is not a comment.
 OUT=$(mask $'echo \\\ngit stash')
-ok=1; [[ "$OUT" == *$'\n'"git stash" ]] && ok=0
-check "backslash-newline outside a span is kept as a line boundary (conservative: false deny over bypass)" "$ok"
+ok=1; [ "$OUT" = 'echo   git stash' ] && ok=0
+check "backslash-newline at a word start is blanks, git stays visible" "$ok"
+
+OUT=$(mask $'echo x\\\n#y; git stash')
+ok=1; [ "$OUT" = 'echo xQQ#y; git stash' ] && ok=0
+check "GH #286: hash after a mid-word line continuation is not a comment" "$ok"
+
+OUT=$(mask $'echo x \\\n#y; git stash')
+ok=1; [[ "$OUT" != *"stash"* && "$OUT" == "echo x "* ]] && ok=0
+check "GH #286 control: continuation then hash at a word start is still a comment" "$ok"
+
+OUT=$(mask $'echo x\n#y; git stash')
+ok=1; [[ "$OUT" != *"stash"* && "$OUT" == "echo x"$'\n'* ]] && ok=0
+check "GH #286 control: hash after a plain newline is still a comment" "$ok"
+
+OUT=$(mask $'echo x\\\\\n#y; git stash')
+ok=1; [[ "$OUT" == "echo x"* && "$OUT" != *"stash"* && "$OUT" != *QQ* ]] && ok=0
+check "GH #286 control: even backslash run before newline is not a continuation" "$ok"
+
+OUT=$(mask $'echo x\\\\\\\n#y; git stash')
+ok=1; [ "$OUT" = $'echo x\\\\QQ#y; git stash' ] && ok=0
+check "GH #286: odd run of 3 is escaped backslash plus continuation" "$ok"
+
+OUT=$(mask $'git\\\nstash')
+ok=1; [ "$OUT" = 'gitQQstash' ] && ok=0
+check "GH #286: continuation inside a word glues it" "$ok"
 
 # Round 2: a "$" is only an ANSI-C opener when it is itself live. An odd
 # backslash run before it makes it literal ("\$'a\'" is a plain single-quoted
@@ -162,6 +185,10 @@ check "subagent-git-guard.py imports mask_quotes from _quotemask" "$ok"
 
 ok=1; command grep -q "from _quotemask import mask_quotes" "$ROOT/hooks/gates/test-integrity.py" && ok=0
 check "test-integrity.py imports mask_quotes from _quotemask" "$ok"
+
+DRIFT_OUT=$(python3 "$ROOT/tests/hooks/quotemask_drift.py" 2>&1)
+ok=1; [ "$DRIFT_OUT" = "OK" ] && ok=0
+check "inline fallback copies agree with the shared mask on the corpus${DRIFT_OUT:+ ($DRIFT_OUT)}" "$ok"
 
 echo ""
 echo "=== fallback: gates keep working if _quotemask.py is ever unavailable ==="
