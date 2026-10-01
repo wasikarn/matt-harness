@@ -944,6 +944,46 @@ for _c in \
   check "GH #286 control allowed (real comment): ${_c//$'\n'/<nl>}" "$ok"
 done
 
+# GH #306: the shell deletes a backslash-newline. After a word char it was masked as QQ glued to
+# that word, so the next word hid even when a blank followed, and a mid-word split hid git/stash.
+# Each row runs git stash/reset/clean in bash 3.2, bash 5, dash and zsh (logging git stub).
+for _c in \
+  $'git\\\n stash' \
+  $'g\\\nit stash' \
+  $'git s\\\ntash' \
+  $'git re\\\nset' \
+  $'git clean\\\n -fd' \
+  $'env\\\n git stash' \
+  $'time\\\n git stash' \
+  $'sudo\\\n git stash' \
+  $'command\\\n git stash' \
+  $'eval\\\n git stash' \
+  $'{\\\n git stash; }' \
+  $'if true; then\\\n git stash; fi' \
+  $'for i in 1; do\\\n git stash; done' \
+  $'git stash\\\n' \
+  $'g\\\ni\\\nt st\\\nash' \
+  $'\'\'\\\ngit stash' \
+  $'bash -c "git \\\nstash"' \
+  $'bash -c \'g\\\nit stash\'' \
+  $'eval \'g\\\nit stash\'' \
+  $'eval "git\\\n stash"' \
+  $'bash -c\\\n \'git stash\'' \
+  $'bash -c \\\n"git reset"' \
+  $'e\\\nval \\\n\'git stash\'' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #306 denied (line continuation hid a word): ${_c//$'\n'/<nl>}" "$ok"
+done
+# Controls: a real glue (git + continuation + stash is the one word gitstash) and git as an argument.
+for _c in \
+  $'git\\\nstash' \
+  $'echo git\\\n stash' \
+  $'echo g\\\nit stash' \
+  $'git st\\\natus' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "GH #306 control allowed: ${_c//$'\n'/<nl>}" "$ok"
+done
+
 # --- (22) GH #307: chain word (eval/builtin/rtk), then command|exec, then a wrapper, then git. --- #
 # The lead-chain lookahead excluded command/exec, so the run never started and the walk began at the chain word.
 _w22=(env sudo time nohup nice setsid xargs doas)

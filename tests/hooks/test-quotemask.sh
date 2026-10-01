@@ -137,7 +137,7 @@ ok=1; [ "$OUT" = 'echo   git stash' ] && ok=0
 check "backslash-newline at a word start is blanks, git stays visible" "$ok"
 
 OUT=$(mask $'echo x\\\n#y; git stash')
-ok=1; [ "$OUT" = 'echo xQQ#y; git stash' ] && ok=0
+ok=1; [ "$OUT" = 'echo   x#y; git stash' ] && ok=0
 check "GH #286: hash after a mid-word line continuation is not a comment" "$ok"
 
 OUT=$(mask $'echo x \\\n#y; git stash')
@@ -153,12 +153,44 @@ ok=1; [[ "$OUT" == "echo x"* && "$OUT" != *"stash"* && "$OUT" != *QQ* ]] && ok=0
 check "GH #286 control: even backslash run before newline is not a continuation" "$ok"
 
 OUT=$(mask $'echo x\\\\\\\n#y; git stash')
-ok=1; [ "$OUT" = $'echo x\\\\QQ#y; git stash' ] && ok=0
+ok=1; [ "$OUT" = $'echo   x\\\\#y; git stash' ] && ok=0
 check "GH #286: odd run of 3 is escaped backslash plus continuation" "$ok"
 
 OUT=$(mask $'git\\\nstash')
-ok=1; [ "$OUT" = 'gitQQstash' ] && ok=0
+ok=1; [ "$OUT" = '  gitstash' ] && ok=0
 check "GH #286: continuation inside a word glues it" "$ok"
+
+# GH #306: the shell deletes the pair. When a blank, separator or the end follows, nothing glues:
+# the pair is blanks in place. When a word char follows, the two halves join into one word: the
+# blanks go to the front of that word, so the joined word reads whole and every char after the
+# pair keeps its offset.
+OUT=$(mask $'git\\\n stash')
+ok=1; [ "$OUT" = 'git   stash' ] && ok=0
+check "GH #306: continuation then a blank does not glue the next word" "$ok"
+
+OUT=$(mask $'git stash\\\n')
+ok=1; [ "$OUT" = 'git stash  ' ] && ok=0
+check "GH #306: trailing continuation is blanks" "$ok"
+
+OUT=$(mask $'git\\\n;x')
+ok=1; [ "$OUT" = 'git  ;x' ] && ok=0
+check "GH #306: continuation then a separator is blanks" "$ok"
+
+OUT=$(mask $'g\\\nit stash')
+ok=1; [ "$OUT" = '  git stash' ] && ok=0
+check "GH #306: mid-word continuation joins the word (git readable)" "$ok"
+
+OUT=$(mask $'echo g\\\ni\\\nt st\\\nash')
+ok=1; [ "$OUT" = 'echo     git   stash' ] && ok=0
+check "GH #306: several continuations in a word all pad its front" "$ok"
+
+OUT=$(mask $'\'\'\\\ngit stash')
+ok=1; [ "$OUT" = '    git stash' ] && ok=0
+check "GH #306: continuation after a quoted word char joins it" "$ok"
+
+OUT=$(mask $'bash -\\\nc "x"')
+ok=1; [ "$OUT" = 'bash   -c  Q ' ] && ok=0
+check "GH #306: chars after a joined pair keep their offsets (c at 8, quote at 10, as in the raw text)" "$ok"
 
 # Round 2: a "$" is only an ANSI-C opener when it is itself live. An odd
 # backslash run before it makes it literal ("\$'a\'" is a plain single-quoted
