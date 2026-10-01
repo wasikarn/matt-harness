@@ -2495,6 +2495,28 @@ fi
 test_deny  "$IRRECOVERABLE" 'GH #275 control: a short push -f next to an escaped backtick still denies' \
   "$(bash_payload 'echo \` ; git push origin main -f')"
 
+# GH #284: the narrow push piece needed `f` to be the LAST letter of the flag, so a bundle like -fu missed it
+# (defense-in-depth: the main parser already denies these). Check the regex itself, since the hook never reaches it.
+_narrow_rc=$(python3 - "$ROOT/hooks/gates/irrecoverable.py" <<'PY'
+import re, sys
+# The module runs the gate at import, so exec only the regex definitions (from _AMBIG_GIT_SKIP to the blank line after the narrow regex).
+src = open(sys.argv[1]).read()
+block = src[src.index("_AMBIG_GIT_SKIP = "):src.index("\n\n", src.index("_AMBIG_NARROW_VERB_RE = "))]
+ns = {"re": re}; exec(block, ns)
+r = ns["_AMBIG_NARROW_VERB_RE"]
+hit = all(r.search(c) for c in ("git push origin main -fu", "git push -uf origin main", "git push origin main -f"))
+miss = not any(r.search(c) for c in ("git push -u origin main", "git push origin main -u"))
+print(0 if hit and miss else 1)
+PY
+)
+if [[ "$_narrow_rc" == "0" ]]; then
+  echo "  ✅ GH #284: narrow push piece matches bundled -fu/-uf, ignores -u"
+  pass=$((pass + 1))
+else
+  echo "  ❌ GH #284: narrow push piece misses a bundled force flag or over-matches -u" >&2
+  fail=$((fail + 1))
+fi
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
