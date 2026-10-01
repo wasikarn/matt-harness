@@ -172,10 +172,14 @@ _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in _KEYWORDS) + r")\s+
 _SHELL_PASS = r"(?:(?:eval|builtin|command|exec)[ \t]+(?:--[ \t]+)?)"
 _RTK_PREFIX = r"(?:rtk[ \t]+(?:-\S+[ \t]+)*(?:(?:proxy|run|err|test|summary)[ \t]+(?:-\S+[ \t]+)*)?)"
 _CHAIN_PREFIX = r"(?:" + _SHELL_PASS + r"|" + _RTK_PREFIX + r")*"
+# GH #273: the chain words may also come BEFORE a wrapper (`eval sudo git stash`, `rtk proxy time git
+# stash`). Only the words that are not wrappers go in front: `command`/`exec` are in _WRAPPER_WORDS, so
+# letting them lead too would give the regex two ways to read each one (quadratic splits, the #272 shape).
+_LEAD_CHAIN = r"(?:(?:eval|builtin)[ \t]+(?:--[ \t]+)?|" + _RTK_PREFIX + r")*"
 # GH #248: `{ git stash; }` -- a brace group opens a command position (`{` then blank).
 def _cmd_start(wrapper_prefix):
     return (r"(?:^|[|;&(]|&&|\|\||\{(?=\s))\s*" + _KEYWORD_PREFIX +
-            r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + wrapper_prefix + _CHAIN_PREFIX)
+            r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _LEAD_CHAIN + wrapper_prefix + _CHAIN_PREFIX)
 # GH #245: every anchor regex is scanned with overlapping matches, `(?=(...))`, read through
 # m.end(1). The old wrappers' greedy argument walk (`time ls; git stash; git status`) crosses
 # `;` / `&&` / newline to the LAST `git`, and a plain finditer resumed after that match, so the

@@ -404,6 +404,40 @@ for _c in \
   check "eval/builtin/rtk control allowed for a subagent: $_c" "$ok"
 done
 
+# --- (14) GH #273: a chain word (eval, rtk, rtk proxy) before a wrapper word --- #
+for _c in \
+  'eval sudo git stash' \
+  'eval time git stash' \
+  'eval env A=1 git clean -fd' \
+  'eval nice -n 5 git stash' \
+  'eval doas git stash' \
+  'rtk proxy sudo git stash' \
+  'rtk proxy time git stash' \
+  'rtk proxy env A=1 git reset --hard' \
+  'builtin eval sudo git stash' \
+  'eval -- sudo git stash' \
+  'true; eval sudo git stash; git status' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "chain word before a wrapper denied for a subagent: $_c" "$ok"
+done
+for _c in \
+  'eval sudo git status' \
+  'eval time git stash list' \
+  'eval env A=1 git diff' \
+  'rtk proxy sudo git log' \
+  'eval sudo echo "git stash"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "chain word before a wrapper control allowed for a subagent: $_c" "$ok"
+done
+# Worst case stays fast: long runs of chain words and wrappers, in both orders.
+_lc1=$(python3 -c 'print("true; " + "eval sudo " * 3000 + "git stash")')
+_lc2=$(python3 -c 'print("rtk proxy time " * 3000 + "git status")')
+_t0=$(date +%s)
+rc=$(sgg_rc "$_lc1"); check "long eval-sudo run still denied (rc=$rc)" "$([ "$rc" = "2" ] && echo 0 || echo 1)"
+rc=$(sgg_rc "$_lc2"); check "long rtk-proxy-time run allowed (rc=$rc)" "$([ "$rc" = "0" ] && echo 0 || echo 1)"
+_dt=$(( $(date +%s) - _t0 ))
+check "long chain-before-wrapper runs took ${_dt}s (<6s)" "$([ "$_dt" -lt 6 ] && echo 0 || echo 1)"
+
 # Drift guard: every wrapper word in irrecoverable.py's PREFIX_WRAPPERS must also be a wrapper
 # here (the two lists are typed by hand, GH #213). irrecoverable.py runs on import, so the two
 # tuples are read from its source. A parse failure yields no words and fails the count check.
