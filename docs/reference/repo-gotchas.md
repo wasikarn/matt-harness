@@ -123,8 +123,10 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   start (deep-audit 5: `command ` x 8000 after one `;` took 9 s). GH #273 added one leading chain run (eval/builtin/rtk, only when a wrapper word follows), so a
   start such as `eval sudo ` now walks to the end of the string like a bare `sudo ` start does; the starts x length
   charge covers that, not the per-run one. Slowest allowed shape (`eval sudo ` + 1000 args + `;` x 70, then `ls`):
-  5.1 s on the branch, 0.09 s on `develop` (M3 Pro), so the margin to the 8 s timeout is about 1.6x; lower
-  `_WORK_BUDGET` if a slower runner flakes `test-subagent-git-guard.sh`. A chain/wrapper loop was
+  5.1 s on the branch at the old 60M budget, 0.09 s on `develop` (M3 Pro). The guard's budget is now 45M
+  (worst measured 4.2 s, about 1.9x under the 8 s timeout; a padded benign command over roughly 16-23 KB is
+  refused); lower it again if a slower runner flakes `test-subagent-git-guard.sh`. `eval` takes
+  assignments (`eval A=1 env git stash` runs git) and `doas` is a wrapper word, both GH #273 follow-ups. A chain/wrapper loop was
   exponential (`sudo eval ` x 250 never finished), so keep it to one leading run, limited to the non-wrapper words (eval, builtin, rtk) and ended by a
   lookahead for a wrapper word: a run that also took `command`/`exec` doubled every split (deep-audit
   checker, `command ` x 700 + `eval "git stash"` took 8 s). A new regex piece needs its own

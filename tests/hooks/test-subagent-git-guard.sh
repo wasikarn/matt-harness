@@ -706,6 +706,32 @@ for _c in \
   check "chain-word body still denied, as on develop: $_c" "$ok"
 done
 
+# --- (19) GH #273 follow-ups: eval takes assignments (it joins its args into a command line, so
+# `eval A=1 env git stash` runs git), and doas is a wrapper. --- #
+for _c in \
+  'eval A=1 env git stash' \
+  'eval A=1 git stash' \
+  'eval -- A=1 B=2 git reset --hard' \
+  'true; eval A=1 B=2 sudo git clean -fd; git status' \
+  "bash -c 'eval A=1 env git stash; git status'" \
+  'eval doas git stash' \
+  'doas -u x git clean -fd' \
+  'rtk proxy doas git stash' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "eval assignment / doas wrapper denied: $_c" "$ok"
+done
+for _c in \
+  'eval A=1 git status' \
+  'eval A=1 sudo git stash list' \
+  'doas git status' \
+  'doas -u x git stash show' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "eval assignment / doas wrapper, read-only git allowed: $_c" "$ok"
+done
+_c="eval $(_pad 'A=1 ' 6000)git status"
+rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" != "124" ] && ok=0
+check "long eval assignment run finishes inside 8 s (rc $rc, ${#_c} bytes)" "$ok"
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]
