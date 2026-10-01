@@ -21,7 +21,7 @@ cat <<'X' \
 && echo "$(git stash)"
 X
 %%
-DENY C07 bash X) terminator in comsub
+DENY-HEREDOC C07 bash X) terminator in comsub
 echo "$(cat <<'X'
 hi
 X)" ; echo "$(git stash)"
@@ -33,7 +33,7 @@ don't
 X
 echo "$(git stash)"
 %%
-DENY C09 E"O"F scanned as code, body apostrophe
+DENY-HEREDOC C09 E"O"F scanned as code, body apostrophe
 cat <<E"O"F
 don't
 EOF
@@ -100,7 +100,7 @@ don't
 X
 ;; esac; echo "$(git stash)"
 %%
-DENY C25 concatenated delimiter 'X'Y scanned as code
+DENY-HEREDOC C25 concatenated delimiter 'X'Y scanned as code
 cat <<'X'Y
 don't
 XY
@@ -130,3 +130,17 @@ X
 %%
 ALLOW C30 false-deny direction: literal single-quoted sub after dq apostrophe
 echo "don't"; echo 'see $(git stash)'
+%%
+DENY C40 esac as an argument does not close the case
+echo "$(case x in a) echo esac;; x) git stash;; esac)"
+%%
+ALLOW C42 indented EOF line inside a valid quoted heredoc is data, git text in it runs nothing
+git commit -m "$(cat <<'EOF'
+  EOF
+message git stash
+EOF
+)" --allow-empty
+%%
+DENY C43 real comment after a space still hides its text
+echo "$(echo x # it's
+git stash)"

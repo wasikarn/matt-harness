@@ -659,18 +659,31 @@ for _c in \
   check "heredoc prose and safe shapes allowed: ${_c:0:50}" "$ok"
 done
 # Real-shell corpus (deep-audit 2026-10-01): each case was run through sh, bash and zsh against a shim
-# git; DENY = some shell ran stash/reset/clean, ALLOW = none did. Blocks split on a %% line.
+# git. DENY = some shell ran stash/reset/clean and the gate says so by name; DENY-HEREDOC = the same
+# but the gate refuses it as an unreadable heredoc (a different deny, so it cannot hide a missing git
+# check); ALLOW = no shell ran one. Blocks split on a %% line. A corpus that replays fewer cases than
+# the fixture holds, or fails to load, fails the run.
 _corpus="$ROOT/tests/hooks/fixtures/subagent-git-guard-substitution-cases.txt"
-while IFS= read -r -d $'\x1e' _blk; do
-  _head="${_blk%%$'\n'*}"; _c="${_blk#*$'\n'}"
-  rc=$(sgg_rc "$_c"); want=0; [[ "$_head" == DENY* ]] && want=2
-  ok=1; [ "$rc" = "$want" ] && ok=0
-  check "corpus ${_head} (rc $rc)" "$ok"
-done < <(python3 -c '
+_corpus_rs="$_JOURNAL_TMP/corpus.rs"
+python3 -c '
 import sys
 for b in open(sys.argv[1]).read().split("\n%%\n"):
     if b.strip(): sys.stdout.write(b.rstrip("\n") + chr(30))
-' "$_corpus")
+' "$_corpus" > "$_corpus_rs"; _prod=$?
+_want_n=$(/usr/bin/grep -cE '^(DENY|DENY-HEREDOC|ALLOW) ' "$_corpus"); _got_n=0
+while IFS= read -r -d $'\x1e' _blk; do
+  _head="${_blk%%$'\n'*}"; _c="${_blk#*$'\n'}"; _got_n=$((_got_n + 1))
+  _err=$(payload "$_c" fork | bash "$GATE" 2>&1 >/dev/null); rc=$?
+  ok=1
+  case "$_head" in
+    DENY-HEREDOC\ *) [ "$rc" = 2 ] && [[ "$_err" == *"cannot read"* ]] && ok=0 ;;
+    DENY\ *) [ "$rc" = 2 ] && [[ "$_err" == *"may not run"* ]] && ok=0 ;;
+    *) [ "$rc" = 0 ] && ok=0 ;;
+  esac
+  check "corpus ${_head} (rc $rc)" "$ok"
+done < "$_corpus_rs"
+ok=1; [ "$_prod" = 0 ] && [ "$_want_n" -ge 25 ] && [ "$_got_n" = "$_want_n" ] && ok=0
+check "corpus replayed every case (loaded $_got_n of $_want_n, loader exit $_prod)" "$ok"
 _c='echo "$(cat <<EOF
 x
 $(git stash)

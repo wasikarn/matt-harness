@@ -355,8 +355,9 @@ def _heredoc_at(s, i, after=None):
     trigger = eol if after is None else after
     _scan_cost(len(s) - i)
     d = re.escape(word.lstrip("\\"))
-    strict = re.compile(("^\t*" if s[i + 2:i + 3] == "-" else "^") + d + "$", re.MULTILINE).search(s, trigger + 1)
-    lenient = re.compile(r"^[ \t]*" + d + r"(?!\w)", re.MULTILINE).search(s, trigger + 1)
+    lead = "^\t*" if s[i + 2:i + 3] == "-" else "^"  # no shell accepts a space-indented terminator
+    strict = re.compile(lead + d + "$", re.MULTILINE).search(s, trigger + 1)
+    lenient = re.compile(lead + d + r"(?!\w)", re.MULTILINE).search(s, trigger + 1)
     if not strict or not lenient or strict.start() != lenient.start():
         raise _Unparsed
     return (trigger, trigger + 1, strict.start(), strict.end(), m.group(3) is None or word.startswith("\\"))
@@ -411,7 +412,8 @@ def _substitution_bodies(s):
             f[2] = "$"; i += 1
         elif c == '"':
             f[2] = None if f[2] == '"' else '"'
-        elif c == "#" and f[2] is None and (i == f[1] or s[i - 1] in " \t\n;&|("):
+        elif c == "#" and f[2] is None and (i == f[1] or s[i - 1] in " \t;&|(" or (
+                s[i - 1] == "\n" and _line_end(s, i - 1) == i - 1)):  # not after a backslash-newline
             # a comment (any frame): its quotes, parens and `<<` mean nothing; in backticks the
             # closing backtick still ends it
             j = s.find("\n", i)
@@ -456,7 +458,7 @@ def _substitution_bodies(s):
                 w = m.group() if m else c
                 if w == "case" and f[6]:
                     f[4] += 1; f[5] = True
-                elif w == "esac" and f[4]:
+                elif w == "esac" and f[4] and f[6]:  # `echo esac` does not close a case
                     f[4] -= 1
                 f[6] = w in _CMD_KEYWORDS
                 i += len(w) - 1
