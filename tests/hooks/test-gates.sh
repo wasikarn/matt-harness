@@ -305,6 +305,14 @@ test_deny  "$IRRECOVERABLE" "GH #200: git add --pathspec-from-file=<file> can st
   "$(bash_payload 'git add --pathspec-from-file=paths.txt')"
 test_deny  "$IRRECOVERABLE" "GH #200: git add --pathspec-from-file=- reads stdin pathspecs" \
   "$(bash_payload 'git add --pathspec-from-file=-')"
+# GH #289: whole-tree pathspec spellings stage everything like a bare `.`; named paths stay allowed.
+for _c in "git add :/" "git add ':/'" "git add '*'" "git add '**'" "git add ./" "git add ':(top)'" \
+          "git add ':/*'" "git add ':(top,glob)**'" "git add -f '*'"; do
+  test_deny  "$IRRECOVERABLE" "GH #289: $_c stages the whole tree" "$(bash_payload "$_c")"
+done
+for _c in "git add :/foo.txt" "git add ':(top)foo.txt'" "git add src/*.py" "git add ./foo.txt" "git add '*.md'"; do
+  test_allow "$IRRECOVERABLE" "GH #289 control: $_c names a path, must not over-block" "$(bash_payload "$_c")"
+done
 test_allow "$IRRECOVERABLE" "git checkout branch (must not over-block)" \
   "$(bash_payload 'git checkout main')"
 test_allow "$IRRECOVERABLE" "git checkout -b new branch (must not over-block)" \

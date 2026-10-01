@@ -1326,6 +1326,10 @@ def _scan_body(body):
 # Candidate names for placeholder-splice duplication: the exact argv0 basenames
 # and git subcommands any check below dispatches on by exact string match.
 KNOWN_DANGEROUS = ("rm", "find", "git", "gh", "dd", "mysql", "psql", "sqlite3", "mariadb")
+# A pathspec that names the whole tree (GH #289): optional ":/" or ":(magic)" prefix, then
+# nothing, "./", "*" or "**". A non-empty remainder ("foo.txt", "*.md") names a path.
+# The lexer hands ":/" over as ":" then "/", so the add rule also tests a token joined to its next.
+_WHOLE_TREE_PATHSPEC_RE = re.compile(r"(?=.)(?::(?:/|\([^)]*\)))?(?:\./?|\*{1,2}|)")
 KNOWN_GIT_SUBS = ("push", "reset", "clean", "restore", "checkout", "switch", "branch", "stash", "commit", "add")
 
 # Duplication also fires on a token still carrying raw substitution syntax
@@ -1852,9 +1856,9 @@ for _wi, w in enumerate(windows):
                 # -A also arrives bundled (-Af, -fA, -vA); add has no value-taking short flag.
                 # --pathspec-from-file's value is a pathspec list the gate cannot read
                 # (GH #200), so any use denies, as in restore/checkout above.
-                if sub == "add" and any(t == "." or _bundled_flag(t, "", "A") or _is_flag(t, "--all")
+                if sub == "add" and any(t == "." or _WHOLE_TREE_PATHSPEC_RE.fullmatch(t) or _WHOLE_TREE_PATHSPEC_RE.fullmatch(t + nxt) or _bundled_flag(t, "", "A") or _is_flag(t, "--all")
                                         or _is_flag(t.split("=", 1)[0], "--pathspec-from-file")
-                                        for t in scan) and not _mid_merge():
+                                        for t, nxt in zip(scan, scan[1:] + [""])) and not _mid_merge():
                     deny("git add -A/. stages everything — stage files by name instead "
                          "(allowed only while a merge is in progress, i.e. MERGE_HEAD exists)")
 
