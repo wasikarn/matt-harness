@@ -695,7 +695,7 @@ for _c in 'bash -c "git stash"' 'bash -xc "git stash"' 'bash -x -ec "git reset -
   check "GH #275 control still denied: $_c" "$ok"
 done
 
-# --- (18) GH #273: a chain word before a wrapper (eval/rtk, then sudo/time/env/nice) still anchors git. --- #
+# --- (19) GH #273: a chain word before a wrapper (eval/rtk, then sudo/time/env/nice) still anchors git. --- #
 for _c in \
   'eval sudo git stash' \
   'eval time git stash' \
@@ -740,7 +740,7 @@ for _c in \
   check "chain-word body still denied, as on develop: $_c" "$ok"
 done
 
-# --- (19) GH #273 follow-ups: eval takes assignments (it joins its args into a command line, so
+# --- (20) GH #273 follow-ups: eval takes assignments (it joins its args into a command line, so
 # `eval A=1 env git stash` runs git), and doas is a wrapper. --- #
 for _c in \
   'eval A=1 env git stash' \
@@ -766,7 +766,7 @@ _c="eval $(_pad 'A=1 ' 6000)git status"
 rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" != "124" ] && ok=0
 check "long eval assignment run finishes inside 8 s (rc $rc, ${#_c} bytes)" "$ok"
 
-# --- (19) GH #285: a redirection before the command word hid `git` from the anchor. --- #
+# --- (21) GH #285: a redirection before the command word hid `git` from the anchor. --- #
 for _c in \
   '</dev/null git stash' \
   '< /dev/null git stash' \

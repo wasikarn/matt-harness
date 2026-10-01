@@ -176,10 +176,6 @@ _EVAL_PASS = r"eval[ \t]+(?:--[ \t]+)?" + _ASSIGN_RUN
 _SHELL_PASS = r"(?:" + _EVAL_PASS + r"|(?:builtin|command|exec)[ \t]+(?:--[ \t]+)?)"
 _RTK_PREFIX = r"(?:rtk[ \t]+(?:-\S+[ \t]+)*(?:(?:proxy|run|err|test|summary)[ \t]+(?:-\S+[ \t]+)*)?)"
 _CHAIN_PREFIX = r"(?:" + _SHELL_PASS + r"|" + _RTK_PREFIX + r")*"
-# GH #273: the chain words may also come BEFORE a wrapper (`eval sudo git stash`, `rtk proxy time git
-# stash`). Only the words that are not wrappers go in front: `command`/`exec` are in _WRAPPER_WORDS, so
-# letting them lead too would give the regex two ways to read each one (quadratic splits, the #272 shape).
-_LEAD_CHAIN = r"(?:(?:eval|builtin)[ \t]+(?:--[ \t]+)?|" + _RTK_PREFIX + r")*"
 # GH #248: `{ git stash; }` -- a brace group opens a command position (`{` then blank).
 # GH #273: a chain word may come BEFORE a wrapper (eval sudo git stash, rtk proxy time git stash).
 # One optional leading run of the chain words that are NOT wrapper words (eval, builtin, rtk), taken
