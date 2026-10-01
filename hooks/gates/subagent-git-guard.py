@@ -169,13 +169,27 @@ _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in _KEYWORDS) + r")\s+
 # their own bounded prefix instead: the word itself, `rtk`'s global flags and one runner verb
 # with its flags, never an argument walk. It sits AFTER the wrapper walk, so the walk still
 # behaves exactly as before for every old wrapper, and it can only add anchors.
-_SHELL_PASS = r"(?:(?:eval|builtin|command|exec)[ \t]+(?:--[ \t]+)?)"
+# GH #273: eval joins its arguments into a command line, so `eval A=1 env git stash` runs git; the
+# other three treat `A=1` as a command name. Only eval takes assignments.
+_ASSIGN_RUN = r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*[ \t]+)*"
+_EVAL_PASS = r"eval[ \t]+(?:--[ \t]+)?" + _ASSIGN_RUN
+_SHELL_PASS = r"(?:" + _EVAL_PASS + r"|(?:builtin|command|exec)[ \t]+(?:--[ \t]+)?)"
 _RTK_PREFIX = r"(?:rtk[ \t]+(?:-\S+[ \t]+)*(?:(?:proxy|run|err|test|summary)[ \t]+(?:-\S+[ \t]+)*)?)"
 _CHAIN_PREFIX = r"(?:" + _SHELL_PASS + r"|" + _RTK_PREFIX + r")*"
 # GH #248: `{ git stash; }` -- a brace group opens a command position (`{` then blank).
+# GH #273: a chain word may come BEFORE a wrapper (eval sudo git stash, rtk proxy time git stash).
+# One optional leading run of the chain words that are NOT wrapper words (eval, builtin, rtk), taken
+# only when a wrapper word follows it, covers it. command and exec are wrapper words, so the walk
+# already takes them and what follows. Letting the leading run take them too made every split of a
+# run a second parse (command x 700 before eval "git stash" took 8 s), and a chain/wrapper loop was
+# exponential (sudo eval x 250 never finished). The lookahead makes the end of the run unique.
+# The lookahead names the wrapper words minus command/exec: with them, `rtk exec git stash; git status`
+# lost the anchor develop gave it through _CHAIN_PREFIX (deep-audit whole-picture pass).
+_LEAD_WRAPPER_ALT = r"(?:" + "|".join(w for w in _WRAPPER_WORDS if w not in ("command", "exec")) + r")(?=\s)"
+_LEAD_CHAIN = (r"(?:(?:" + _EVAL_PASS + r"|builtin[ \t]+(?:--[ \t]+)?|" + _RTK_PREFIX + r")+(?=" + _LEAD_WRAPPER_ALT + r"))?")
 def _cmd_start(wrapper_prefix):
     return (r"(?:^|[|;&(]|&&|\|\||\{(?=\s))\s*" + _KEYWORD_PREFIX +
-            r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + wrapper_prefix + _CHAIN_PREFIX)
+            r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _LEAD_CHAIN + wrapper_prefix + _CHAIN_PREFIX)
 # GH #245: every anchor regex is scanned with overlapping matches, `(?=(...))`, read through
 # m.end(1). The old wrappers' greedy argument walk (`time ls; git stash; git status`) crosses
 # `;` / `&&` / newline to the LAST `git`, and a plain finditer resumed after that match, so the
@@ -253,12 +267,12 @@ def _skip_git_globals(s, i):
 # and a timed-out hook allows: padding in front of a real `git stash` walked around the deny.
 # Each scan charges that upper bound to one shared budget (bodies and all three passes add up) and a
 # command over budget is denied, never scanned. Real subagent commands charge far less; only a
-# rare huge script (20-28 KB, about 7e7 over six scans) is refused.
+# rare huge script (about 16-23 KB, ~5e7 over six scans) is refused.
 # Deep-audit 5: a run of chain words (_CHAIN_PREFIX: eval/builtin/command/exec/rtk) after a wrapper
 # is re-read from every walk position, so it costs about run x run per command start even with a
 # single start (`true; ` + `command ` x 8000 before a `git stash` took 9 s). Each maximal run charges
 # its length squared per start, plus one for the line start.
-_WORK_BUDGET = 60_000_000
+_WORK_BUDGET = 45_000_000  # was 60M; the slowest allowed shape (GH #273) took 5.1 s of the 8 s hook timeout
 _work = 0
 _CHAIN_RUN_RE = re.compile(r"(?<!\S)(?:" + _SHELL_PASS + r"|" + _RTK_PREFIX + r")+")
 
