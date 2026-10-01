@@ -215,11 +215,11 @@ def _mid_merge():
 # Open-ended by nature: a wrapper missing here (watch, flock, strace, ...) still
 # hides its command, the list covers the ones an everyday one-liner uses.
 FLAG_VALUE_WRAPPERS = {
-    "nice": ("-n",),
-    "ionice": ("-c", "-n"),
-    "stdbuf": ("-i", "-o", "-e"),
-    "timeout": ("-s", "-k", "--signal"),
-    "gtimeout": ("-s", "-k", "--signal"),
+    "nice": ("-n", "--adjustment"),
+    "ionice": ("-c", "-n", "--class", "--classdata"),
+    "stdbuf": ("-i", "-o", "-e", "--input", "--output", "--error"),
+    "timeout": ("-s", "-k", "--signal", "--kill-after"),
+    "gtimeout": ("-s", "-k", "--signal", "--kill-after"),
     "exec": ("-a",),
 }
 PREFIX_WRAPPERS = ("env", "command", "nohup", "time", "sudo", "doas", "setsid", "rtk") + tuple(FLAG_VALUE_WRAPPERS)
@@ -264,7 +264,7 @@ _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in SHELL_KEYWORDS) + r
 # a command develop denied is denied just as fast as before.
 # GH #248: `{ claude -p x; }` -- a brace group opens a command position (`{` then a blank).
 def _spawn_anchor_body(wrapper_prefix):
-    return (r"(?:^|[|;&(]|&&|\|\||\{(?=\s))\s*" + _KEYWORD_PREFIX + r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" +
+    return (r"(?:^|[|;&()]|&&|\|\||\{(?=\s))\s*" + _KEYWORD_PREFIX + r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" +
             wrapper_prefix + r"\\?(?:\S*/)?claude(?![-\w./])")
 _SPAWN_ANCHOR_RES = (re.compile(r"(" + _spawn_anchor_body(_WRAPPER_PREFIX) + r")", re.MULTILINE),
                      re.compile(r"(?=(" + _spawn_anchor_body(_WRAPPER_PREFIX) + r"))", re.MULTILINE),
@@ -1423,8 +1423,10 @@ for _wi, w in enumerate(windows):
     # a fix landing in one and not the other is exactly how the agent_id
     # truthiness bug went unnoticed at 3 of 5 real call sites across two
     # separate GH issues (2026-09-20 audit).
-    while rest and (argv0 in PREFIX_WRAPPERS or argv0 in _UNWRAP_ONLY):
-        if argv0 == "env":
+    while rest and (argv0 in PREFIX_WRAPPERS or argv0 in _UNWRAP_ONLY or argv0 in SHELL_KEYWORDS):
+        if argv0 in SHELL_KEYWORDS:  # GH #213: `time ! rm -rf x`; the segment-start strip ran once
+            argv0, rest = basename(rest[0]), rest[1:]
+        elif argv0 == "env":
             i = 0
             while i < len(rest):
                 t = rest[i].replace(PH, "")

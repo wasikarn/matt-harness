@@ -1131,6 +1131,27 @@ test_deny  "$IRRECOVERABLE" "exec -a NAME then the command (GH #227)" \
   "$(bash_payload 'exec -a foo rm -rf /tmp/x')"
 test_deny  "$IRRECOVERABLE" "sudo exec -a NAME then the command (GH #227)" \
   "$(bash_payload 'sudo exec -a foo rm -rf /tmp/x')"
+# GH #213: spaced long options on wrappers, keywords after `time`, `)` before a spawn.
+test_deny  "$IRRECOVERABLE" "timeout --kill-after N DUR cmd (GH #213)" \
+  "$(bash_payload 'timeout --kill-after 5 10 rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "nice --adjustment N cmd (GH #213)" \
+  "$(bash_payload 'nice --adjustment 5 rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "stdbuf --output L cmd (GH #213)" \
+  "$(bash_payload 'stdbuf --output L rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "ionice --class 3 cmd (GH #213)" \
+  "$(bash_payload 'ionice --class 3 rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "time ! cmd keyword after a wrapper (GH #213)" \
+  "$(bash_payload 'time ! rm -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "nested spawn after a case-arm ) (GH #213)" \
+  "$(bash_agent_payload 'case x in x) claude -p x ;; esac' fork)"
+test_allow "$IRRECOVERABLE" "timeout --kill-after N DUR benign (GH #213)" \
+  "$(bash_payload 'timeout --kill-after 5 10 ls /tmp/x')"
+test_allow "$IRRECOVERABLE" "nice --adjustment N benign (GH #213)" \
+  "$(bash_payload 'nice --adjustment 5 ls /tmp/x')"
+test_allow "$IRRECOVERABLE" "time ! benign (GH #213)" \
+  "$(bash_payload 'time ! ls /tmp/x')"
+test_allow "$IRRECOVERABLE" "case arm with a non-spawn command (GH #213)" \
+  "$(bash_agent_payload 'case x in x) claude --version ;; esac' fork)"
 test_deny  "$IRRECOVERABLE" "shell nested past the depth cap (GH #227)" \
   "$(python3 -c 'import json,shlex;b="git status"
 for _ in range(8): b="sh -c "+shlex.quote(b)
