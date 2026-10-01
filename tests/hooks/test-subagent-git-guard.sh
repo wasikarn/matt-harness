@@ -766,6 +766,46 @@ _c="eval $(_pad 'A=1 ' 6000)git status"
 rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" != "124" ] && ok=0
 check "long eval assignment run finishes inside 8 s (rc $rc, ${#_c} bytes)" "$ok"
 
+# --- (19) GH #285: a redirection before the command word hid `git` from the anchor. --- #
+for _c in \
+  '</dev/null git stash' \
+  '< /dev/null git stash' \
+  '>/dev/null git stash' \
+  '2>&1 git reset --hard' \
+  '&>/dev/null git clean -fd' \
+  '2>/dev/null </dev/null git stash' \
+  'FOO=1 </dev/null git stash' \
+  '</dev/null FOO=1 git stash' \
+  'true; </dev/null git stash' \
+  '</dev/null sudo git stash' \
+  '</dev/null env git stash' \
+  '<<<x git stash' \
+  '<<EOF git stash
+EOF' \
+  'x=$(<<EOF git stash
+EOF
+)' \
+  'echo $(</dev/null git stash)' \
+  '</dev/null /usr/bin/git stash' \
+  '</dev/null git -C /r stash' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #285 redirect before git denied: ${_c%%$'\n'*}" "$ok"
+done
+for _c in \
+  '</dev/null git status' \
+  '2>&1 git log' \
+  '>/dev/null git stash list' \
+  '</dev/null git diff' \
+  'echo a >f; git status' \
+  'cat </dev/null' \
+  'echo "</dev/null git stash"' \
+  'git commit -m "x </dev/null git stash"' \
+  'ls 2>&1 | grep git' \
+  'x=$(</dev/null git log)' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "GH #285 control still allowed: $_c" "$ok"
+done
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

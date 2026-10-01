@@ -191,9 +191,12 @@ _LEAD_CHAIN = r"(?:(?:eval|builtin)[ \t]+(?:--[ \t]+)?|" + _RTK_PREFIX + r")*"
 # lost the anchor develop gave it through _CHAIN_PREFIX (deep-audit whole-picture pass).
 _LEAD_WRAPPER_ALT = r"(?:" + "|".join(w for w in _WRAPPER_WORDS if w not in ("command", "exec")) + r")(?=\s)"
 _LEAD_CHAIN = (r"(?:(?:" + _EVAL_PASS + r"|builtin[ \t]+(?:--[ \t]+)?|" + _RTK_PREFIX + r")+(?=" + _LEAD_WRAPPER_ALT + r"))?")
+# GH #285: a redirection (operator + its word) may sit before the command word and hid it
+# (`</dev/null git stash`, `<<EOF git stash`); skipped like a VAR=val, in any mix with them.
+_REDIR = r"(?:(?:\d+|\{\w+\})?(?:<<<?-?|&>>?|[<>]&|<>|>\||[<>]>?)[ \t]*[^\s;&|()<>]+[ \t]+)"
 def _cmd_start(wrapper_prefix):
     return (r"(?:^|[|;&(]|&&|\|\||\{(?=\s))\s*" + _KEYWORD_PREFIX +
-            r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" + _LEAD_CHAIN + wrapper_prefix + _CHAIN_PREFIX)
+            r"(?:(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)|" + _REDIR + r")*" + _LEAD_CHAIN + wrapper_prefix + _CHAIN_PREFIX)
 # GH #245: every anchor regex is scanned with overlapping matches, `(?=(...))`, read through
 # m.end(1). The old wrappers' greedy argument walk (`time ls; git stash; git status`) crosses
 # `;` / `&&` / newline to the LAST `git`, and a plain finditer resumed after that match, so the
