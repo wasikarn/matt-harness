@@ -305,12 +305,16 @@ _BT_ESCAPE_RE = re.compile(r"\\([`\\$])")
 _HD_START_RE = re.compile(
     r"<<-?[ \t]*(?:'([^'\n]+)'|\"([^\"\n]+)\"|(\\?[^\s;&|<>()'\"`$\\]+))(?=[\s;&|<>()]|$)")
 
+class _Unparsed(Exception):
+    pass
+
 def _in_arith(s, i):
-    # `$((1<<EOF))` and `((x<<EOF))` shift; they open no heredoc. Looks back on the same line for a
-    # `((` that no `))` has closed. Anything unsure is read as arithmetic, so the body is scanned.
+    # `$((1<<EOF))` and `((x<<EOF))` shift; they open no heredoc. Looks back on the same line, with
+    # quoted text masked (`echo "((" ; cat <<X` is no arithmetic), for a `((` no `))` has closed.
     ls = s.rfind("\n", 0, i) + 1
     _scan_cost(i - ls)
-    return s.rfind("((", ls, i) > s.rfind("))", ls, i)
+    line = _mask_quotes(s[ls:i])
+    return line.rfind("((") > line.rfind("))")
 
 def _scan_cost(k):
     global _work
@@ -318,21 +322,44 @@ def _scan_cost(k):
     if _work > _WORK_BUDGET:
         raise _TooCostly
 
+def _line_end(s, pos):
+    # The newline that ends the logical line from pos: a backslash-newline continues it. -1 if none.
+    while True:
+        e = s.find("\n", pos)
+        if e < 0:
+            return -1
+        k = e
+        while k > 0 and s[k - 1] == "\\":
+            k -= 1
+        if (e - k) % 2 == 0:
+            return e
+        pos = e + 1
+
 def _heredoc_at(s, i, after=None):
     # A heredoc operator at s[i]: (trigger, body start, body end, terminator end, quoted delimiter),
-    # or None. The trigger is the newline where the body begins. A second heredoc on the same line
-    # passes `after`, the first one's terminator end: its body starts on the next line and its
-    # trigger is that terminator end. The terminator match is lenient (spaces allowed), so it can
-    # only end the body sooner than the shell does, never later: a lenient miss scans more, not less.
+    # or None when it opens no body (arithmetic shift, or no newline follows). The trigger is the
+    # newline where the body begins. A second heredoc on the same line passes `after`, the first
+    # one's terminator end: its body starts on the next line and its trigger is that terminator end.
+    # Reading an operator wrongly feeds prose to the quote tracker as code, and one apostrophe in it
+    # hides every later substitution, so "scan it as code" is NOT the safe direction. Anything not
+    # understood (a delimiter that is not one plain or quoted word, no terminator, or a terminator
+    # that bash/sh and a lenient reading place differently, like `X)` inside `$(...)`) raises
+    # _Unparsed, and the command is denied.
     m = _HD_START_RE.match(s, i)
-    eol = s.find("\n", m.end()) if m else -1
+    eol = _line_end(s, m.end() if m else i)
     if eol < 0 or _in_arith(s, i):
         return None
+    if not m:
+        raise _Unparsed
     word = m.group(1) or m.group(2) or m.group(3)
     trigger = eol if after is None else after
     _scan_cost(len(s) - i)
-    t = re.compile(r"^[ \t]*" + re.escape(word.lstrip("\\")) + r"[ \t]*$", re.MULTILINE).search(s, trigger + 1)
-    return (trigger, trigger + 1, t.start(), t.end(), m.group(3) is None or word.startswith("\\")) if t else None
+    d = re.escape(word.lstrip("\\"))
+    strict = re.compile(("^\t*" if s[i + 2:i + 3] == "-" else "^") + d + "$", re.MULTILINE).search(s, trigger + 1)
+    lenient = re.compile(r"^[ \t]*" + d + r"(?!\w)", re.MULTILINE).search(s, trigger + 1)
+    if not strict or not lenient or strict.start() != lenient.start():
+        raise _Unparsed
+    return (trigger, trigger + 1, strict.start(), strict.end(), m.group(3) is None or word.startswith("\\"))
 
 def _substitution_bodies(s):
     bodies, n, i = [], len(s), 0
@@ -364,18 +391,33 @@ def _substitution_bodies(s):
                 continue
             hd_end, hd_depth = be, len(frames)
         f, c = frames[-1], s[i]
-        if i < hd_end and len(frames) == hd_depth and c not in "\\`$":
-            i += 1  # heredoc text: quotes, parens and # are literal there
+        if i < hd_end and len(frames) == hd_depth and c not in "\\`" \
+                and not (c == "$" and s[i + 1:i + 2] in ("(", "{")):
+            i += 1  # heredoc text: quotes, parens, # and $' are literal there; only expansions count
             continue
         if f[2] == "'":
             if c == "'":
                 f[2] = None
+        elif f[2] == "$":  # $'...': a backslash escapes the next character, so \' does not close it
+            if c == "\\":
+                i += 1
+            elif c == "'":
+                f[2] = None
         elif c == "\\":
             i += 1
-        elif c == "'" and f[0] != "bt":
+        elif c == "'" and f[2] is None and f[0] != "bt":  # inside "..." an apostrophe is a letter
             f[2] = "'"
+        elif c == "$" and s[i + 1:i + 2] == "'" and f[2] is None and f[0] != "bt":
+            f[2] = "$"; i += 1
         elif c == '"':
             f[2] = None if f[2] == '"' else '"'
+        elif c == "#" and f[2] is None and (i == f[1] or s[i - 1] in " \t\n;&|("):
+            # a comment (any frame): its quotes, parens and `<<` mean nothing; in backticks the
+            # closing backtick still ends it
+            j = s.find("\n", i)
+            k = s.find("`", i) if f[0] == "bt" else -1
+            ends = [x for x in (j, k) if x >= 0]
+            i = (min(ends) if ends else n) - 1
         elif c == "<" and f[2] is None and s.startswith("<<", i) \
                 and s[i + 2:i + 3] != "<" and s[i - 1:i] != "<":
             h = _heredoc_at(s, i, pend[-1][3] if pend else None)
@@ -409,9 +451,6 @@ def _substitution_bodies(s):
                     f[3] -= 1
                 elif not f[4]:  # a `)` that ends a case pattern is not the end of the body
                     done(f, i); frames.pop()
-            elif c == "#" and (i == f[1] or s[i - 1] in " \t\n;&|("):  # a comment: its `)` closes nothing
-                j = s.find("\n", i)
-                i = n if j < 0 else j
             elif c.isalpha() and not (s[i - 1].isalnum() or s[i - 1] in "_$"):
                 m = _WORD_RE.match(s, i)
                 w = m.group() if m else c
@@ -440,7 +479,7 @@ def _blank_heredocs(s):
         _scan_cost(len(spans))
         if any(a <= p < b for a, b in spans):  # inside a body already blanked
             continue
-        chained = p < line_end  # a second heredoc on the same line as the previous one
+        chained = last is not None and p < line_end  # a second heredoc on the same line as the previous one
         h = _heredoc_at(s, p, last[3] if chained else None)
         if h:
             if not chained:
@@ -488,6 +527,12 @@ except _TooCostly:
     print(f"[mh:gate] BLOCKED: subagent ({agent_type}) command is too long or too dense to check "
           f"safely ({len(cmd)} bytes); write it to a file with the Write tool and run the file, "
           f"or split it into smaller commands.", file=sys.stderr)
+    journal(GATE_ID, "Bash", "deny", d.get("session_id"))
+    sys.exit(2)
+except _Unparsed:
+    print(f"[mh:gate] BLOCKED: subagent ({agent_type}) command has a heredoc the guard cannot read "
+          f"safely (an odd delimiter, a missing terminator, or a terminator shells disagree on); "
+          f"write the text to a file with the Write tool, or use a plain `<<'EOF'` heredoc.", file=sys.stderr)
     journal(GATE_ID, "Bash", "deny", d.get("session_id"))
     sys.exit(2)
 if hit:

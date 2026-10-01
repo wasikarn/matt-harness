@@ -1,0 +1,132 @@
+DENY C01 control
+echo "$(git stash)"
+%%
+DENY C02 top comment apostrophe
+# don't
+echo "$(git stash)"
+%%
+DENY C03 apostrophe inside double quotes
+echo "it's"; echo "$(git stash)"
+%%
+DENY C04 ansi-c escaped quote
+echo $'it\'s'; echo "$(git stash)"
+%%
+DENY C05 heredoc op inside top comment
+# <<'true'
+echo "$(git stash)"
+true
+%%
+DENY C06 line continuation after quoted heredoc op
+cat <<'X' \
+&& echo "$(git stash)"
+X
+%%
+DENY C07 bash X) terminator in comsub
+echo "$(cat <<'X'
+hi
+X)" ; echo "$(git stash)"
+X
+%%
+DENY C08 arith false negative then body apostrophe
+echo "((" ; cat <<'X'
+don't
+X
+echo "$(git stash)"
+%%
+DENY C09 E"O"F scanned as code, body apostrophe
+cat <<E"O"F
+don't
+EOF
+echo "$(git stash)"
+%%
+DENY C10 lenient indented terminator then body apostrophe
+cat <<'X'
+  X
+don't
+X
+echo "$(git stash)"
+%%
+DENY C11 here-string control
+cat <<<'X'
+echo "$(git stash)"
+X
+%%
+DENY C12 heredoc op in comment in backtick frame
+echo "`: # <<'X'
+`"; echo "$(git stash)"
+X
+%%
+DENY C13 heredoc op inside ansi-c string
+echo $'a\' <<"X" b'
+echo "$(git stash)"
+X
+%%
+DENY C14 continuation in paren frame, blank_heredocs hides plain cmd
+echo "$(cat <<X \
+; git stash
+X
+)"
+%%
+DENY C15 apostrophe in dq inside the frame, nested sub
+echo "$(echo "it's" "$(git stash)")"
+%%
+DENY C16 minimal pair of C03 without apostrophe
+echo "it"; echo "$(git stash)"
+%%
+DENY C17 C03 with backticks
+echo "it's"; echo "`git stash`"
+%%
+DENY C19 control unquoted heredoc body apostrophe
+cat <<X
+don't
+X
+echo "$(git stash)"
+%%
+DENY C20 control quoted heredoc body apostrophe
+cat <<'X'
+don't
+X
+echo "$(git stash)"
+%%
+DENY C22 control function body heredoc
+f() { cat <<'X'
+don't
+X
+}; f; echo "$(git stash)"
+%%
+DENY C23 control case arm heredoc
+case a in a) cat <<'X'
+don't
+X
+;; esac; echo "$(git stash)"
+%%
+DENY C25 concatenated delimiter 'X'Y scanned as code
+cat <<'X'Y
+don't
+XY
+echo "$(git stash)"
+%%
+DENY C26 minimal pair of C02 without apostrophe
+# dont
+echo "$(git stash)"
+%%
+DENY C27 realistic commit then status echo
+git commit -m "fix: don't drop the lock" && echo "stashed: $(git stash)"
+%%
+DENY C28 continuation strands pend, later quoted heredoc scanned as code
+cat <<'A' \
+&& true
+A
+cat <<'X'
+don't
+X
+echo "$(git stash)"
+%%
+ALLOW C29 minimal pair of C14 without continuation (body is data, nothing runs)
+echo "$(cat <<X
+; git stash
+X
+)"
+%%
+ALLOW C30 false-deny direction: literal single-quoted sub after dq apostrophe
+echo "don't"; echo 'see $(git stash)'

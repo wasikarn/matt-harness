@@ -658,6 +658,19 @@ for _c in \
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
   check "heredoc prose and safe shapes allowed: ${_c:0:50}" "$ok"
 done
+# Real-shell corpus (deep-audit 2026-10-01): each case was run through sh, bash and zsh against a shim
+# git; DENY = some shell ran stash/reset/clean, ALLOW = none did. Blocks split on a %% line.
+_corpus="$ROOT/tests/hooks/fixtures/subagent-git-guard-substitution-cases.txt"
+while IFS= read -r -d $'\x1e' _blk; do
+  _head="${_blk%%$'\n'*}"; _c="${_blk#*$'\n'}"
+  rc=$(sgg_rc "$_c"); want=0; [[ "$_head" == DENY* ]] && want=2
+  ok=1; [ "$rc" = "$want" ] && ok=0
+  check "corpus ${_head} (rc $rc)" "$ok"
+done < <(python3 -c '
+import sys
+for b in open(sys.argv[1]).read().split("\n%%\n"):
+    if b.strip(): sys.stdout.write(b.rstrip("\n") + chr(30))
+' "$_corpus")
 _c='echo "$(cat <<EOF
 x
 $(git stash)

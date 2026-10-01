@@ -109,12 +109,19 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   0 or 2 from the `.py` is a finding too, even where the `.sh` wrapper fails it closed.
   GH #274: `subagent-git-guard.py` also scans the raw command for `$(...)` / backtick bodies
   (`_substitution_bodies`, one linear pass) because the quote mask hides them. That pass reads a
-  case pattern's `)`, `#` comments, `${x:-)}`, backslash escapes in backticks, and heredocs. Every
-  body copy and heredoc lookup charges the same budget. Verify it with a real-shell differential
-  (sh/bash/zsh against a shim `git`), not by reading the code: 3 hand-written rounds each missed
-  shapes the generator found. Known residue: an `eval`/`sh -c` of a command's OUTPUT (data flow,
-  undecidable), `bash -c 'sh -c ...'` (two shell levels, never covered), and a quoted heredoc
-  nested under a wrapper inside a quoted substitution (denied, a false positive).
+  case pattern's `)`, `#` comments, `${x:-)}`, backslash escapes in backticks, `$'..'`, an
+  apostrophe inside `"..."`, and heredocs. Every body copy and heredoc lookup charges the same
+  budget. Its quote tracker must follow the shell's rules exactly: it once let an apostrophe inside
+  `"..."` open a fake single-quote span that hid every later substitution. A heredoc it cannot
+  read (odd delimiter, no terminator, `X)` where bash and a lenient reading disagree) is DENIED
+  (`_Unparsed`), never scanned as code, because prose fed to the tracker as code desyncs it.
+  Verify with a real-shell differential (sh/bash/zsh against a shim `git`), not by reading the
+  code: 5 rounds each missed shapes the next found. The 27 real-shell cases that survived are
+  committed (`tests/hooks/fixtures/subagent-git-guard-substitution-cases.txt`, replayed by
+  `test-subagent-git-guard.sh`). Known residue: an `eval`/`sh -c` of a command's OUTPUT (data
+  flow, undecidable), `bash -c 'sh -c ...'` (two shell levels, never covered), a quoted heredoc
+  nested under a wrapper inside a quoted substitution (denied, a false positive), and a
+  redirection before `git` (`<f git stash`, `$(<<a git stash)`), which `develop` also allows.
   Anchor regexes are quadratic (command starts x length): `subagent-git-guard.py` charges that
   bound to a shared budget and denies past it (GH #246: 30 KB of `env ; ` before a `git stash`
   timed out into allow). Only 3 of 2,581 replayed real commands (20-28 KB scripts) hit it.
