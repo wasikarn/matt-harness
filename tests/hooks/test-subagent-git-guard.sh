@@ -661,6 +661,34 @@ for _c in 'bash -c "git stash"' 'bash -xc "git stash"' 'bash -x -ec "git reset -
   check "GH #275 control still denied: $_c" "$ok"
 done
 
+# --- (18) GH #273: a chain word before a wrapper (eval/rtk, then sudo/time/env/nice) still anchors git. --- #
+for _c in \
+  'eval sudo git stash' \
+  'eval time git stash' \
+  'eval env A=1 git clean -fd' \
+  'eval nice -n 5 git stash' \
+  'rtk proxy sudo git stash' \
+  'rtk proxy time git stash' \
+  'eval sudo eval time git reset --hard' \
+  'true; eval sudo git stash; git status' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "chain word before a wrapper denied: $_c" "$ok"
+done
+for _c in \
+  'eval sudo git status' \
+  'rtk proxy time git stash list' \
+  'eval env A=1 git log -1' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "chain word before a wrapper, read-only git allowed: $_c" "$ok"
+done
+for _c in \
+  "true; $(_pad 'eval sudo ' 4000)git stash; git status" \
+  "true; $(_pad 'time eval ' 4000)git stash; git status" \
+  "$(_pad 'eval sudo ; ' 2000)git stash" ; do
+  rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "interleaved padded command decided inside 8 s as deny (rc $rc, ${#_c} bytes): ${_c:0:30}" "$ok"
+done
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]
