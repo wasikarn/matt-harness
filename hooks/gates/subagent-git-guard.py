@@ -380,7 +380,7 @@ def _heredoc_at(s, i, after=None):
         raise _Unparsed
     return (trigger, trigger + 1, strict.start(), strict.end(), m.group(3) is None or word.startswith("\\"))
 
-def _substitution_bodies(s):
+def _substitution_bodies(s, depth=0):
     bodies, n, i = [], len(s), 0
     # frame: kind, body start, open quote, paren depth, open `case` count, saw case, at command
     # position, open ${ count
@@ -448,8 +448,14 @@ def _substitution_bodies(s):
             if f[0] == "bt" and f[2] is None:
                 done(f, i); frames.pop()
             # zsh reads a backtick inside quotes inside backticks as a nested open, bash as the
-            # close; scanning it as nested catches what zsh runs.
+            # close. Both are scanned: the nested frame below is zsh's reading, and the tail added
+            # here is bash's (the outer body ends at this backtick, the rest runs one level up).
             else:
+                if f[0] == "bt":
+                    _scan_cost(n - i)
+                    bodies.append(s[i + 1:])
+                    if depth < 2:  # the tail may open backticks of its own; two levels, budget-charged
+                        bodies.extend(_substitution_bodies(s[i + 1:], depth + 1))
                 frames.append(["bt", i + 1, None, 0, 0, False, True, 0])
         elif c == "$" and s[i + 1:i + 2] == "(":
             frames.append(["paren", i + 2, None, 0, 0, False, True, 0]); i += 1
