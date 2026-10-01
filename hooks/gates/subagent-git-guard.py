@@ -287,10 +287,57 @@ def _violation_in_bodies(raw_cmd, masked_cmd, overlap):
                 return hit
     return None
 
+# GH #274: the quote mask hides a double-quoted `$(...)` body and a backtick body, so git run
+# there was never checked. One linear pass over the raw command pulls every `$(...)` / backtick
+# body out (nested ones too, each as its own entry); each body is then checked as a command
+# line, same as a `bash -c` body. Single-quoted text and a backslash-escaped `$(` / backtick are
+# literal and skipped. An unterminated body runs to the end (over-deny is the safe side).
+def _substitution_bodies(s):
+    bodies, frames, n, i = [], [], len(s), 0
+    # frame: [kind "$"|"`", body start, open quote char or "", paren depth]
+    top = ["", 0, "", 0]
+    while i < n:
+        c, f = s[i], (frames[-1] if frames else top)
+        if c == "\\":
+            i += 2
+            continue
+        if c == "`" and f[0] == "`":
+            bodies.append(s[f[1]:i]); frames.pop()
+        elif f[2] == "'":
+            if c == "'":
+                f[2] = ""
+        elif c == "`":
+            frames.append(["`", i + 1, "", 0])
+        elif c == "'" and not f[2]:
+            f[2] = "'"
+        elif c == '"':
+            f[2] = "" if f[2] else '"'
+        elif c == "$" and s[i + 1:i + 2] == "(":
+            frames.append(["$", i + 2, "", 0]); i += 1
+        elif f[0] == "$" and not f[2] and c in "()":
+            if c == "(":
+                f[3] += 1
+            elif f[3]:
+                f[3] -= 1
+            else:
+                bodies.append(s[f[1]:i]); frames.pop()
+        i += 1
+    bodies.extend(s[f[1]:] for f in frames)
+    return bodies
+
+def _violation_everywhere(overlap):
+    hit = _violation(masked, overlap) or _violation_in_bodies(cmd, masked, overlap)
+    if hit:
+        return hit
+    for body in _substitution_bodies(cmd):
+        mb = _mask_quotes(body)
+        hit = _violation(mb, overlap) or _violation_in_bodies(body, mb, overlap)
+        if hit:
+            return hit
+    return None
+
 try:
-    hit = (_violation(masked, False) or _violation_in_bodies(cmd, masked, False)
-           or _violation(masked, True) or _violation_in_bodies(cmd, masked, True)
-           or _violation(masked, 2) or _violation_in_bodies(cmd, masked, 2))
+    hit = _violation_everywhere(False) or _violation_everywhere(True) or _violation_everywhere(2)
 except _TooCostly:
     print(f"[mh:gate] BLOCKED: subagent ({agent_type}) command is too long or too dense to check "
           f"safely ({len(cmd)} bytes); write it to a file with the Write tool and run the file, "

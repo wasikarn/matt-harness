@@ -588,6 +588,28 @@ for _c in \
   check "chain and wrapper-argument control still allowed: $_c" "$ok"
 done
 
+# GH #274: git inside a double-quoted $(...) or inside backticks ran unchecked (the quote mask hid it).
+for _c in \
+  'echo "$(git clean -fd)"' \
+  'echo `sudo -u git git clean -fd`' \
+  'echo "a $(true; git stash) b"' \
+  'echo "$(echo "$(git reset --hard)")"' \
+  'echo "x `git stash`"' \
+  'echo "$(bash -c "git stash")"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "git inside a quoted substitution or backticks denied: $_c" "$ok"
+done
+for _c in \
+  'echo "$(git status)"' \
+  'echo "$(git stash list)"' \
+  "echo '\$(git stash)'" \
+  "echo '\`git stash\`'" \
+  'echo "\$(git stash)"' \
+  'echo "$(echo hi) git stash"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "substitution scan has no false deny: $_c" "$ok"
+done
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]
