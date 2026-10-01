@@ -930,6 +930,21 @@ test_deny "$IRRECOVERABLE" 'escaped-space word before {fd}>: rm -r x\ {fd}>/dev/
 test_deny "$IRRECOVERABLE" 'GH #188 control: an escaped \{fd}>x is the literal word {fd}, a second nonflag' \
   "$(bash_payload 'git checkout main \{fd}>x')"
 
+# GH #197: -S is --staged (index only), also bundled and as a --stage abbreviation; -W still wins.
+test_allow "$IRRECOVERABLE" 'GH #197: git restore -S <path> is index-only' \
+  "$(bash_payload 'git restore -S hooks/gates/irrecoverable.py')"
+test_allow "$IRRECOVERABLE" 'GH #197: git restore -qS <path> (bundled) is index-only' \
+  "$(bash_payload 'git restore -qS hooks/gates/irrecoverable.py')"
+test_allow "$IRRECOVERABLE" 'GH #197: git restore --stage <path> (abbreviation) is index-only' \
+  "$(bash_payload 'git restore --stage hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #197: git restore -S -W <path> still discards worktree changes' \
+  "$(bash_payload 'git restore -S -W hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #197: git restore -SW <path> (bundled) still discards worktree changes' \
+  "$(bash_payload 'git restore -SW hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #197: git restore -S --worktree <path> still discards worktree changes' \
+  "$(bash_payload 'git restore -S --worktree hooks/gates/irrecoverable.py')"
+test_deny "$IRRECOVERABLE" 'GH #197 control: git restore <path> with neither flag still denies' \
+  "$(bash_payload 'git restore hooks/gates/irrecoverable.py')"
 # GH #189: `git restore --staged` plus -W or a --worktree abbreviation still targets the worktree.
 test_deny "$IRRECOVERABLE" 'GH #189: git restore --staged -W <path> discards worktree changes' \
   "$(bash_payload 'git restore --staged -W hooks/gates/irrecoverable.py')"
