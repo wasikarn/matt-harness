@@ -571,13 +571,44 @@ for _c in \
   "time git stash; time $(_pad 'rtk -a ' 8000)ls" \
   "time git stash; git status; $(_pad 'time ; ' 50)$(_pad 'command ' 1000)ls" \
   "bash -c 'true; $(_pad 'command ' 8000)git stash; git status'" \
-  "sudo $(_pad 'git -C ' 10000)x; time git stash; git status" ; do
+  "sudo $(_pad 'git -C ' 10000)x; time git stash; git status" \
+  "sudo -u git $(_pad 'git ' 20000)stash; git status" \
+  "sudo -u git $(_pad 'git -u ' 10000)env git stash; git status" ; do
   rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
   check "padded command denied inside 8 s, not timed out into allow (rc $rc, ${#_c} bytes): ${_c:0:30}" "$ok"
 done
+# GH #276 deep-audit: the scan after a wrapper-argument git re-sliced the tail per hit (quadratic
+# copying, 8 s at ~2 MB). A payload that size never fits an argv, so it is built and piped here.
+_rc=$(python3 -c '
+import json, signal, subprocess, sys, os
+c = "sudo -u git env " + "-u git " * 330000 + "git stash; git status"
+d = json.dumps({"tool_name": "Bash", "tool_input": {"command": c}, "agent_id": "a", "agent_type": "general-purpose"})
+p = subprocess.Popen(["bash", sys.argv[1]], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True)
+try:
+    p.communicate(d.encode(), timeout=8)
+    print(p.returncode)
+except subprocess.TimeoutExpired:
+    os.killpg(p.pid, signal.SIGKILL)
+    print(124)
+' "$GATE")
+ok=1; [ "$_rc" = "2" ] && ok=0
+check "2 MB run of wrapper-argument git words denied inside 8 s, not timed out into allow (rc $_rc)" "$ok"
 # The last row guards a dropped fix: a lazy target that looked ahead for the denied subcommand
-# re-read a `git -C` run from every `git` (11 s at 70 KB). `sudo -u git git stash; git status` is
-# still allowed, a known residual.
+# re-read a `git -C` run from every `git` (11 s at 70 KB).
+# GH #276: a wrapper argument spelled git stopped the lazy target; the guard now re-checks from a
+# git word that directly follows the anchored one (one forward walk, so the row above stays fast).
+for _c in \
+  'sudo -u git git stash; git status' \
+  'xargs -I git git stash; git status' \
+  'sudo -u git git -C /r reset --hard; git log -1' \
+  'sudo -g git -u root git stash; git status' \
+  'sudo -u git env git stash; git status' \
+  'sudo -u git sudo git stash; git status' \
+  'sudo -u git git -C /r -u root git stash; git status' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "wrapper argument spelled git no longer hides a denied statement: $_c" "$ok"
+done
 for _c in \
   'command -v git && git status' \
   'eval "$(ssh-agent -s)"; git status' \
