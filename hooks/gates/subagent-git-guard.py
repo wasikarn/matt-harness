@@ -220,6 +220,7 @@ _DENY_SUBCMD_RE = re.compile(r"\A\s+(stash(?!\s+(list|show)\b)|reset|clean)\b")
 # stash` / `git --no-pager clean` do not land the check on sub="-C".
 _GIT_VALUE_GLOBALS = ("-C", "-c", "--git-dir", "--work-tree", "--config-env", "--namespace", "--attr-source")
 
+_GIT_WORD_RE = re.compile(r"\s+\\?(?:\S*/)?git\b")
 _FLAG_TOKEN_RE = re.compile(r"\s+(\S+)")
 _FLAG_VALUE_RE = re.compile(r"\s+\S+")
 
@@ -272,9 +273,18 @@ def _charge(s):
 def _violation(masked_cmd, overlap):
     _charge(masked_cmd)
     for m in _ANCHOR_RES[overlap].finditer(masked_cmd):
-        dm = _DENY_SUBCMD_RE.match(_skip_git_globals(masked_cmd[m.end(1):]))
-        if dm:
-            return dm.group(1)
+        tail = masked_cmd[m.end(1):]
+        while True:
+            rest = _skip_git_globals(tail)
+            dm = _DENY_SUBCMD_RE.match(rest)
+            if dm:
+                return dm.group(1)
+            # GH #276: the lazy pass lands on the first git word, which can be a wrapper's argument
+            # (sudo -u git git stash); the real one follows it directly. One forward walk, no re-read.
+            nxt = _GIT_WORD_RE.match(rest) if overlap == 2 else None
+            if not nxt:
+                break
+            tail = rest[nxt.end():]
     return None
 
 def _violation_in_bodies(raw_cmd, masked_cmd, overlap):

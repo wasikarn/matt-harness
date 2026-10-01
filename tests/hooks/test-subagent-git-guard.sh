@@ -576,8 +576,16 @@ for _c in \
   check "padded command denied inside 8 s, not timed out into allow (rc $rc, ${#_c} bytes): ${_c:0:30}" "$ok"
 done
 # The last row guards a dropped fix: a lazy target that looked ahead for the denied subcommand
-# re-read a `git -C` run from every `git` (11 s at 70 KB). `sudo -u git git stash; git status` is
-# still allowed, a known residual.
+# re-read a `git -C` run from every `git` (11 s at 70 KB).
+# GH #276: a wrapper argument spelled git stopped the lazy target; the guard now re-checks from a
+# git word that directly follows the anchored one (one forward walk, so the row above stays fast).
+for _c in \
+  'sudo -u git git stash; git status' \
+  'xargs -I git git stash; git status' \
+  'sudo -u git git -C /r reset --hard; git log -1' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "wrapper argument spelled git no longer hides a denied statement: $_c" "$ok"
+done
 for _c in \
   'command -v git && git status' \
   'eval "$(ssh-agent -s)"; git status' \
