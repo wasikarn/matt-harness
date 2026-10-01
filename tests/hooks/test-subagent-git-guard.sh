@@ -104,13 +104,13 @@ check "subagent denied: echo \$'\\'' ; git stash (ANSI-C span before a real stas
 run_gate "echo \$'a ; git stash'" "agent1"; rc=$?
 ok=1; [ "$rc" -eq 0 ] && ok=0
 check "subagent allowed: stash inside an ANSI-C \$'...' span" "$ok"
-# Backslash-newline stays a boundary (validator round 2): masking the pair
-# hid `\<nl>git stash`, a real stash, from _ANCHOR_RE -- a bypass. So
-# `echo \<nl>git stash` (really `echo git stash`) is a deliberate
-# conservative false deny, and the three real-stash shapes must deny.
+# Backslash-newline at a word start is masked as blanks (GH #286, was a
+# boundary since validator round 2), so `\<nl>git stash`, a real stash, still
+# reaches _ANCHOR_RE and the three real-stash shapes must deny. `echo
+# \<nl>git stash` is really `echo git stash`, so it is now allowed.
 run_gate $'echo \\\ngit stash' "agent1"; rc=$?
-ok=1; [ "$rc" -eq 2 ] && ok=0
-check "subagent denied (conservative false deny, by design): echo \\<nl>git stash" "$ok"
+ok=1; [ "$rc" -eq 0 ] && ok=0
+check "subagent allowed (git is echo's argument): echo \\<nl>git stash" "$ok"
 for cmd in $'\\\ngit stash' $'echo; \\\ngit stash' $'env \\\ngit stash'; do
   run_gate "$cmd" "agent1"; rc=$?
   ok=1; [ "$rc" -eq 2 ] && ok=0
@@ -917,6 +917,23 @@ for _c in \
   'x=$(</dev/null git log)' ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
   check "GH #285 control still allowed: $_c" "$ok"
+done
+
+# GH #286: backslash-newline joins lines, so a "#" after it is mid-word and
+# the rest of the line runs (verified sh/bash/zsh with a fake git function).
+for _c in \
+  $'echo x\\\n#y; git stash' \
+  $'echo x\\\n#y\\\n#z; git stash' \
+  $'echo "a"\\\n#y; git stash' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #286 denied (hash after line continuation is not a comment): ${_c//$'\n'/<nl>}" "$ok"
+done
+for _c in \
+  $'echo x\n# y; git stash' \
+  $'echo x \\\n#y; git stash' \
+  $'echo x \\\\\n#y; git stash' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "GH #286 control allowed (real comment): ${_c//$'\n'/<nl>}" "$ok"
 done
 
 echo ""

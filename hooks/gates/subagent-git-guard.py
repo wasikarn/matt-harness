@@ -108,7 +108,16 @@ except Exception:
             elif c == "\\":  # GH #157 sibling: an odd backslash run escapes a following quote (literal, not a span)
                 j = i
                 while j < n and s[j] == "\\":
-                    out.append("\\"); j += 1
+                    j += 1
+                if (j - i) % 2 == 1 and j < n and s[j] == "\n":  # GH #286: odd run + newline = line continuation
+                    out.append("\\" * (j - i - 1))
+                    if j - i == 1 and at_word_start:
+                        out.append("  ")  # blanks: a following git / # stays visible at a word start
+                    else:
+                        out.append("QQ"); at_word_start = False  # glues to the previous word
+                    i = j + 1
+                    continue
+                out.append("\\" * (j - i))
                 if (j - i) % 2 == 1 and j < n and s[j] in "'\"$":  # an escaped "$" is literal too, never an ANSI-C opener
                     out.append("Q"); j += 1
                 i = j
