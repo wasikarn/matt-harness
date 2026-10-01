@@ -122,6 +122,15 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   flow, undecidable), `bash -c 'sh -c ...'` (two shell levels, never covered), a quoted heredoc
   nested under a wrapper inside a quoted substitution (denied, a false positive), and a
   redirection before `git` (`<f git stash`, `$(<<a git stash)`), which `develop` also allows.
+  Differential against `develop` (2026-10-01, #274/#280): a replay of 109,198 distinct Bash
+  commands from local transcripts gave 0 newly denied, 0 exits other than 0/2 and a worst case of
+  1.0 s. 17 commands were denied by `develop` and allowed by the branch: all are heredoc body text
+  (commit messages, PR bodies, scripts) that `develop` denied for lack of heredoc parsing; with
+  the bodies stripped `develop` allows every one. That is the named intended category. One shape
+  inside it is a real change: `eval "$(cat <<'EOF' ... EOF)"` runs the body, so `develop` denied it
+  only by accident and the branch allows it (data flow, undecidable). A replay finds shapes real
+  commands already have: it caught a `"${x}"` counter bug, a too-broad terminator rule and a
+  budget over-deny that the generated fuzz missed.
   Anchor regexes are quadratic (command starts x length): `subagent-git-guard.py` charges that
   bound to a shared budget and denies past it (GH #246: 30 KB of `env ; ` before a `git stash`
   timed out into allow). Only 3 of 2,581 replayed real commands (20-28 KB scripts) hit it.
