@@ -653,6 +653,119 @@ for _c in \
   check "chain and wrapper-argument control still allowed: $_c" "$ok"
 done
 
+# GH #274: git inside a double-quoted $(...) or backticks is a real command; single-quoted text is not.
+for _c in \
+  'echo "$(git clean -fd)"' \
+  'echo `sudo -u git git clean -fd`' \
+  'echo "a `git stash` b"' \
+  'echo "x $(echo "$(git reset --hard)")"' \
+  'echo "$(true; git stash)"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "git in quoted substitution denied: $_c" "$ok"
+done
+for _c in \
+  "echo '\$(git clean -fd)'" \
+  'echo "$(git status)"' \
+  'echo "git clean is denied"' \
+  'echo "\$(git clean -fd)"' \
+  'git commit -m "$(cat <<'"'EOF'"'
+fix
+
+git stash was the cause
+EOF
+)"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "literal or safe substitution allowed: ${_c:0:40}" "$ok"
+done
+for _c in \
+  'echo "`echo \`git stash\``"' \
+  'echo "`echo \`echo \\\`git stash\\\`\``"' \
+  'echo "$(case x in x) git stash;; esac)"' \
+  'echo "$(case x in (x) git clean -fd;; esac)"' \
+  'echo "$(if true; then case x in x) git reset --hard;; esac; fi)"' \
+  'echo "$(echo x # )
+git stash)"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #274 shapes the first scanner missed denied: ${_c:0:40}" "$ok"
+done
+for _c in \
+  'echo "$(echo case) git stash is bad"' \
+  'echo "$(echo hi # git stash
+)"' \
+  'echo $(date) git stash is dangerous' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "prose around a substitution allowed: ${_c:0:40}" "$ok"
+done
+# Second fuzz round (real-shell differential): `${y:-)}`, shell bodies, backslash escapes inside
+# backticks, a backtick inside quotes inside backticks (zsh nests it), heredoc shapes.
+_nl() { local IFS=$'\n'; echo "$*"; }
+for _c in \
+  'echo "$(echo ${y:-)}; git stash)"' \
+  "bash -c 'echo \"\$(git stash)\"'" \
+  'echo `"\$(git clean -fd)"`' \
+  'echo `"`git stash`"`' \
+  "$(_nl 'echo "$(cat <<A <<B' x A '$(git stash)' B ')"')" \
+  "$(_nl 'echo "$(cat <<EOF' "it's \`git stash\`" EOF ')"')" \
+  "$(_nl 'echo "$(echo "<<A"' 'git stash' A ')"')" \
+  "$(_nl 'git commit -m "$(cat <<EOF' 'an unquoted heredoc runs `git stash` here' EOF ')"')" \
+  "$(_nl 'echo "$(cat <<EOF-1' data EOF-1 'git stash' EOF ')"')" \
+  "$(_nl 'echo "$(echo $((1<<EOF));' 'git stash' EOF ')"')" \
+  "$(_nl 'echo "$(cat <<E"O"F' 'git stash' EOF ')"')" ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "second-round shape denied: ${_c:0:50}" "$ok"
+done
+for _c in \
+  "$(_nl 'git commit -m "$(cat <<'"'EOF'" 'fix: handle `git stash` and $(git clean -fd) in prose' '' EOF ')"')" \
+  "$(_nl 'echo "$(cat <<A <<B' 'git stash is data' A 'git reset is data' B ')"')" \
+  "$(_nl 'echo "$(cat <<'"'E-1'" 'git stash is data' E-1 ')"')" \
+  "$(_nl 'echo "$(cat <<-EOF' '	git stash is data' '	EOF' ')"')" \
+  'echo "$(echo $((1<<2)); git status)"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "heredoc prose and safe shapes allowed: ${_c:0:50}" "$ok"
+done
+# Real-shell corpus (deep-audit 2026-10-01): each case was run through sh, bash and zsh against a shim
+# git. DENY = some shell ran stash/reset/clean and the gate says so by name; DENY-HEREDOC = the same
+# but the gate refuses it as an unreadable heredoc (a different deny, so it cannot hide a missing git
+# check); ALLOW = no shell ran one. Blocks split on a %% line. A corpus that replays fewer cases than
+# the fixture holds, or fails to load, fails the run.
+_corpus="$ROOT/tests/hooks/fixtures/subagent-git-guard-substitution-cases.txt"
+_corpus_rs="$_JOURNAL_TMP/corpus.rs"
+python3 -c '
+import sys
+for b in open(sys.argv[1]).read().split("\n%%\n"):
+    if b.strip(): sys.stdout.write(b.rstrip("\n") + chr(30))
+' "$_corpus" > "$_corpus_rs"; _prod=$?
+_want_n=$(/usr/bin/grep -cE '^(DENY|DENY-HEREDOC|ALLOW) ' "$_corpus"); _got_n=0
+while IFS= read -r -d $'\x1e' _blk; do
+  _head="${_blk%%$'\n'*}"; _c="${_blk#*$'\n'}"; _got_n=$((_got_n + 1))
+  _err=$(payload "$_c" fork | bash "$GATE" 2>&1 >/dev/null); rc=$?
+  ok=1
+  case "$_head" in
+    DENY-HEREDOC\ *) [ "$rc" = 2 ] && [[ "$_err" == *"cannot read"* ]] && ok=0 ;;
+    DENY\ *) [ "$rc" = 2 ] && [[ "$_err" == *"may not run"* ]] && ok=0 ;;
+    *) [ "$rc" = 0 ] && ok=0 ;;
+  esac
+  check "corpus ${_head} (rc $rc)" "$ok"
+done < "$_corpus_rs"
+ok=1; [ "$_prod" = 0 ] && [ "$_want_n" -ge 25 ] && [ "$_got_n" = "$_want_n" ] && ok=0
+check "corpus replayed every case (loaded $_got_n of $_want_n, loader exit $_prod)" "$ok"
+# A big document written through a quoted heredoc must not be refused as too costly (replay of real
+# transcripts: two 12-17 KB writes were denied by the scans' work budget, which develop allowed).
+_c=$(python3 -c '
+lines = ["cat > /tmp/doc.md <<'"'"'DOCEOF'"'"'", "# Diagrams"]
+lines += ["  node%d(step %d) --> node%d : label text for this step of the flow" % (i, i, i + 1) for i in range(190)]
+lines += ["DOCEOF"]
+print("\n".join(lines))
+')
+rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && [ "${#_c}" -gt 12000 ] && ok=0
+check "large quoted-heredoc document is allowed (rc $rc, ${#_c} bytes)" "$ok"
+_c='echo "$(cat <<EOF
+x
+$(git stash)
+EOF
+)"'
+rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+check "substitution nested in a heredoc body still denied" "$ok"
 # GH #274: git inside a double-quoted $(...) or inside backticks ran unchecked (the quote mask hid it).
 for _c in \
   'echo "$(git clean -fd)"' \
