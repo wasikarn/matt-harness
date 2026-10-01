@@ -2446,16 +2446,29 @@ done
 _flag_dos_cmd="$(python3 -c 'print("git @{1} -" + "f" * 60000 + "c; git reset --hard")')"
 _flag_dos_rc=$(bash_payload "$_flag_dos_cmd" | timeout 5 bash "$IRRECOVERABLE" 2>/dev/null; echo $?)
 if [[ "$_flag_dos_rc" == "2" ]]; then
-  echo "  ✅ DENY (bounded time): a 60 KB flag token after git @{1} denies well under the 8s PreToolUse timeout"
+  echo "  ✅ DENY (bounded time): a 60 KB non-matching flag token after git @{1} is scanned in bounded time; --hard carries the deny"
   pass=$((pass + 1))
 else
   echo "  ❌ DENY EXPECTED (bounded time) but got exit $_flag_dos_rc (124 = timed out, quadratic flag scan): 60 KB flag token after git @{1}" >&2
   fail=$((fail + 1))
 fi
-test_deny  "$IRRECOVERABLE" 'GH #275 control: a short bundled flag after git @{1} next to reset --hard still denies' \
-  "$(bash_payload 'git @{1} -fx; git reset --hard')"
-test_allow "$IRRECOVERABLE" 'GH #275 control: git log @{1} -p has no f/d/D/r/R flag and no destructive verb' \
-  "$(bash_payload 'git log @{1} -p')"
+test_deny  "$IRRECOVERABLE" 'GH #275 control: a short bundled flag after git @{1} denies with no --hard in sight' \
+  "$(bash_payload 'git reset HEAD@{1} -xdf; git stash')"
+test_allow "$IRRECOVERABLE" 'GH #275 control: a non-bundle flag after git @{1} next to a broad verb is allowed' \
+  "$(bash_payload 'git stash show stash@{1} -p')"
+# Deep-audit step 6: the narrow-verb push piece `\s-[A-Za-z]*f\b` backed off across a whole long token from
+# every git/push anchor in reach (13 s at 140 KB). The escaped backtick selects the narrow regex.
+_push_dos_cmd="$(python3 -c 'print("\\`" + "git " * 100 + "push " * 40 + "-" + "f" * 140000 + "c" + "; psql -c \"DROP TABLE users\"")')"
+_push_dos_rc=$(bash_payload "$_push_dos_cmd" | timeout 5 bash "$IRRECOVERABLE" 2>/dev/null; echo $?)
+if [[ "$_push_dos_rc" == "2" ]]; then
+  echo "  ✅ DENY (bounded time): a 140 KB flag token behind 100 git and 40 push anchors is scanned in bounded time"
+  pass=$((pass + 1))
+else
+  echo "  ❌ DENY EXPECTED (bounded time) but got exit $_push_dos_rc (124 = timed out, quadratic push-flag scan)" >&2
+  fail=$((fail + 1))
+fi
+test_deny  "$IRRECOVERABLE" 'GH #275 control: a short push -f next to an escaped backtick still denies' \
+  "$(bash_payload 'echo \` ; git push origin main -f')"
 
 echo ""
 total=$((pass + fail))

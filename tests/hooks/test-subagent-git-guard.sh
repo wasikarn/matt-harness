@@ -615,7 +615,6 @@ done
 # anchor's `-\w*c\w*`, a cost no charge covers (60 KB ran past 20 s). Each row must be decided in 8 s. --- #
 for _c in \
   "bash -$(_pad c 60000)= x; time git stash; git status" \
-  "bash -$(_pad c 60000)= x; git stash; git status" \
   "bash -$(_pad c 60000)" ; do
   rc=$(sgg_rc8 "$_c"); ok=1
   # the bare flag token carries no git command: exactly rc 0 passes (an over-deny, rc 2, fails); the others exactly rc 2

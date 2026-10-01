@@ -1056,9 +1056,11 @@ _AMBIG_GIT = "(?:" + _AMBIG_GIT_SKIP + "|" + _AMBIG_GIT_WALK + ")"
 _AMBIG_BROAD_VERB_RE = re.compile(
     r"(?<![\w.-])(?:rm\s|dd\s|find\s)|" + _AMBIG_GIT +
     r"(?:push|reset|clean|checkout|restore|switch|branch|stash)\b")
+# GH #275 follow-up: the push flag scan is capped at 200 letters (a longer run counts as a hit, an
+# over-deny); `[A-Za-z]*f\b` backed off across the whole token from every git/push anchor in reach.
 _AMBIG_NARROW_VERB_RE = re.compile(
     r"(?<![\w.-])(?:rm\s+-[A-Za-z]*[rf]|find\s[^\n]{0,300}(?:-delete|-exec\w*\s+rm)|dd\s[^\n]{0,200}of=)|"
-    + _AMBIG_GIT + r"(?:push\b[^\n;|&]{0,200}(?:--force\b|\s-[A-Za-z]*f\b)"
+    + _AMBIG_GIT + r"(?:push\b[^\n;|&]{0,200}(?:--force\b|\s-(?:[A-Za-z]{0,200}f\b|[A-Za-z]{201}))"
     r"|reset\b[^\n;|&]{0,200}--hard|clean\b"
     r"|checkout\b[^\n;|&]{0,200}(?:\s--(?:\s|$)|\s-f\b|\s\.(?:\s|$))|restore\b"
     r"|branch\b[^\n;|&]{0,200}\s-D\b|stash\s+(?:drop|clear)\b)")
