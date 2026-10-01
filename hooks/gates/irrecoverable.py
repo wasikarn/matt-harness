@@ -222,7 +222,7 @@ FLAG_VALUE_WRAPPERS = {
     "gtimeout": ("-s", "-k", "--signal"),
     "exec": ("-a",),
 }
-PREFIX_WRAPPERS = ("env", "command", "nohup", "time", "sudo", "setsid", "rtk") + tuple(FLAG_VALUE_WRAPPERS)
+PREFIX_WRAPPERS = ("env", "command", "nohup", "time", "sudo", "doas", "setsid", "rtk") + tuple(FLAG_VALUE_WRAPPERS)
 # `builtin` runs the builtin after it (`builtin eval rm -rf x`) and takes no flags. It is unwrapped
 # in the rule loop only: as a member of PREFIX_WRAPPERS it also feeds _SPAWN_ANCHOR_RE, whose greedy
 # walk then crosses `&&` and lands on the LAST `claude` (`builtin cd /tmp && claude -p x && claude
@@ -1412,12 +1412,13 @@ for _wi, w in enumerate(windows):
             if i >= len(rest):
                 break
             argv0, rest = basename(rest[i]), rest[i + 1:]
-        elif argv0 == "sudo":
+        elif argv0 in ("sudo", "doas"):  # GH #290: doas takes -u/-C values and has no long options
             # sudo -u/-g take a value: space-joined, "="-joined, attached ("-ualice"),
             # or bundled with getopt semantics ("-nu alice": alice is the value;
             # "-un alice": "n" is the value, alice is the command). -p -C -R -T -U
             # are a non-goal.
-            LONG_VALUE_FLAGS = {"--user", "--group"}
+            LONG_VALUE_FLAGS = {"--user", "--group"} if argv0 == "sudo" else set()
+            _VALUE_LETTERS = "ug" if argv0 == "sudo" else "uC"
             i = 0
             while i < len(rest):
                 t = rest[i].replace(PH, "")
@@ -1427,7 +1428,7 @@ for _wi, w in enumerate(windows):
                 elif t.startswith("--"):
                     i += 1
                 elif t.startswith("-") and len(t) > 1:
-                    m = re.search(r"[ug]", t[1:])
+                    m = re.search("[" + _VALUE_LETTERS + "]", t[1:])
                     if m:
                         attached = m.end() < len(t[1:])
                         i += 1 if attached else min(2, len(rest) - i)

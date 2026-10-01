@@ -305,6 +305,15 @@ test_deny  "$IRRECOVERABLE" "GH #200: git add --pathspec-from-file=<file> can st
   "$(bash_payload 'git add --pathspec-from-file=paths.txt')"
 test_deny  "$IRRECOVERABLE" "GH #200: git add --pathspec-from-file=- reads stdin pathspecs" \
   "$(bash_payload 'git add --pathspec-from-file=-')"
+# GH #290: doas is a privilege wrapper like sudo; its -u/-C take a value.
+for _c in "doas rm -rf x" "doas git reset --hard" "doas git add -A" "doas -u root rm -rf x" \
+          "doas -n rm -rf x" "doas -C /etc/doas.conf rm -rf x" "doas -uroot rm -rf x" \
+          "echo hi && doas rm -rf x"; do
+  test_deny  "$IRRECOVERABLE" "GH #290: $_c is judged like the bare command" "$(bash_payload "$_c")"
+done
+for _c in "doas ls /root" "doas -u root cat x" "doas git status"; do
+  test_allow "$IRRECOVERABLE" "GH #290 control: $_c is benign, must not over-block" "$(bash_payload "$_c")"
+done
 # GH #289: whole-tree pathspec spellings stage everything like a bare `.`; named paths stay allowed.
 for _c in "git add :/" "git add ':/'" "git add '*'" "git add '**'" "git add ./" "git add ':(top)'" \
           "git add ':/*'" "git add ':(top,glob)**'" "git add -f '*'"; do
