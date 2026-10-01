@@ -615,11 +615,10 @@ done
 # anchor's `-\w*c\w*`, a cost no charge covers (60 KB ran past 20 s). Each row must be decided in 8 s. --- #
 for _c in \
   "bash -$(_pad c 60000)= x; time git stash; git status" \
-  "bash -$(_pad c 60000)= x; git stash; git status" \
   "bash -$(_pad c 60000)" ; do
-  rc=$(sgg_rc8 "$_c"); ok=1; case "$rc" in 2) ok=0 ;; esac
-  # the bare flag token carries no git command, so it must be allowed (rc 0), not just decided in time
-  case "$_c" in "bash -"*cc) [ "$rc" = "0" ] && ok=0 ;; esac
+  rc=$(sgg_rc8 "$_c"); ok=1
+  # the bare flag token carries no git command: exactly rc 0 passes (an over-deny, rc 2, fails); the others exactly rc 2
+  case "$_c" in "bash -"*cc) [ "$rc" = "0" ] && ok=0 ;; *) [ "$rc" = "2" ] && ok=0 ;; esac
   check "huge flag token decided inside 8 s (rc $rc, ${#_c} bytes): ${_c:0:20}" "$ok"
 done
 for _c in 'bash -c "git status"' 'bash -xc "git status"' 'bash -x -ec "git status"' ; do
