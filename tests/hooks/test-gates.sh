@@ -297,6 +297,14 @@ test_deny  "$IRRECOVERABLE" "git add . (was prose-only)" \
   "$(bash_payload 'git add .')"
 test_allow "$IRRECOVERABLE" "git add named file (must not over-block)" \
   "$(bash_payload 'git add foo.txt')"
+# GH #200: --pathspec-from-file's VALUE is a pathspec list the gate cannot read, so any use denies
+# (same policy as restore/checkout above).
+test_deny  "$IRRECOVERABLE" "GH #200: git add --pathspec-from-file <(...) can stage everything" \
+  "$(bash_payload 'git add --pathspec-from-file <(printf .)')"
+test_deny  "$IRRECOVERABLE" "GH #200: git add --pathspec-from-file=<file> can stage everything" \
+  "$(bash_payload 'git add --pathspec-from-file=paths.txt')"
+test_deny  "$IRRECOVERABLE" "GH #200: git add --pathspec-from-file=- reads stdin pathspecs" \
+  "$(bash_payload 'git add --pathspec-from-file=-')"
 test_allow "$IRRECOVERABLE" "git checkout branch (must not over-block)" \
   "$(bash_payload 'git checkout main')"
 test_allow "$IRRECOVERABLE" "git checkout -b new branch (must not over-block)" \

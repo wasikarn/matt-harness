@@ -1850,7 +1850,11 @@ for _wi, w in enumerate(windows):
                 if sub == "commit" and any(_bundled_flag(t, "mFtu", "n") for t in scan):
                     deny("git commit -n is --no-verify, it bypasses safety hooks")
                 # -A also arrives bundled (-Af, -fA, -vA); add has no value-taking short flag.
-                if sub == "add" and any(t == "." or _bundled_flag(t, "", "A") or _is_flag(t, "--all") for t in scan) and not _mid_merge():
+                # --pathspec-from-file's value is a pathspec list the gate cannot read
+                # (GH #200), so any use denies, as in restore/checkout above.
+                if sub == "add" and any(t == "." or _bundled_flag(t, "", "A") or _is_flag(t, "--all")
+                                        or _is_flag(t.split("=", 1)[0], "--pathspec-from-file")
+                                        for t in scan) and not _mid_merge():
                     deny("git add -A/. stages everything — stage files by name instead "
                          "(allowed only while a merge is in progress, i.e. MERGE_HEAD exists)")
 
