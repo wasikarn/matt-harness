@@ -1393,10 +1393,31 @@ def _scan_body(body):
 # Candidate names for placeholder-splice duplication: the exact argv0 basenames
 # and git subcommands any check below dispatches on by exact string match.
 KNOWN_DANGEROUS = ("rm", "find", "git", "gh", "dd", "mysql", "psql", "sqlite3", "mariadb")
-# A pathspec that names the whole tree (GH #289): optional ":/" or ":(magic)" prefix, then
-# nothing, "./", "*" or "**". A non-empty remainder ("foo.txt", "*.md") names a path.
-# The lexer hands ":/" over as ":" then "/", so the add rule also tests a token joined to its next.
-_WHOLE_TREE_PATHSPEC_RE = re.compile(r"(?=.)(?::(?:/|\([^)]*\)))?(?:\./?|\*{1,2}|)")
+# A pathspec that names the whole tree (GH #289, #308): optional ":/", ":(magic)" or ":" (before
+# "." or "*") prefix, then nothing, dots joined by slashes ("./", "././", ".//."), "./*", or a
+# run of "*". A non-empty remainder ("foo.txt", "*.md", ".*") names a path.
+# The lexer hands ":/" over as ":" then "/", so the add rule also tests a token joined to its next;
+# a bare ":" or "::" is the whole tree unless the next token continues a ":/", ":(" or ":!" spelling.
+_WHOLE_TREE_PATHSPEC_RE = re.compile(r"(?=.)(?::(?:/|\([^)]*\)|(?=[.*])))?(?:\.(?:/+\.)*(?:/+\**)?|\*+/*)?")
+# GH #308: an exclude pathspec (":!x", ":^x", ":(exclude)x") alone selects the whole tree minus x;
+# it is narrow only when a positive pathspec sits beside it.
+_EXCLUDE_PATHSPEC_RE = re.compile(r":(?:[!^]|\([^)]*\bexclude\b[^)]*\))")
+def _exclude_only_pathspecs(toks):
+    # The lexer splits an unquoted ":!x" into ":", "!", "x" and "--chmod=+x" into "--chmod=", "+", "x".
+    paths, i, after_dd = [], 0, False
+    while i < len(toks):
+        t = toks[i]
+        i += 1
+        if after_dd or not t.startswith("-"):
+            if t == ":" and i < len(toks) and toks[i] in ("!", "^"):
+                t, i = t + toks[i], i + 1
+                i += i < len(toks)  # the glued word after the marker; ponytail: ":! src" lexes alike, denied too
+            paths.append(t)
+        elif t == "--":
+            after_dd = True
+        elif t in ("--chmod", "--chmod="):
+            i += 2 if i < len(toks) and toks[i] in ("+", "-") else 1
+    return bool(paths) and all(_EXCLUDE_PATHSPEC_RE.match(t) for t in paths)
 KNOWN_GIT_SUBS = ("push", "reset", "clean", "restore", "checkout", "switch", "branch", "stash", "commit", "add")
 
 # Duplication also fires on a token still carrying raw substitution syntax
@@ -1930,9 +1951,9 @@ for _wi, w in enumerate(windows):
                 # -A also arrives bundled (-Af, -fA, -vA); add has no value-taking short flag.
                 # --pathspec-from-file's value is a pathspec list the gate cannot read
                 # (GH #200), so any use denies, as in restore/checkout above.
-                if sub == "add" and any(t == "." or _WHOLE_TREE_PATHSPEC_RE.fullmatch(t) or _WHOLE_TREE_PATHSPEC_RE.fullmatch(t + nxt) or _bundled_flag(t, "", "A") or _is_flag(t, "--all")
+                if sub == "add" and (_exclude_only_pathspecs(scan) or any(t == "." or _WHOLE_TREE_PATHSPEC_RE.fullmatch(t) or (t and not t.strip(":") and not nxt.startswith(("/", "(", "!", "^"))) or _WHOLE_TREE_PATHSPEC_RE.fullmatch(t + nxt) or _bundled_flag(t, "", "A") or _is_flag(t, "--all")
                                         or _is_flag(t.split("=", 1)[0], "--pathspec-from-file")
-                                        for t, nxt in zip(scan, scan[1:] + [""])) and not _mid_merge():
+                                        for t, nxt in zip(scan, scan[1:] + [""]))) and not _mid_merge():
                     deny("git add -A/. stages everything — stage files by name instead "
                          "(allowed only while a merge is in progress, i.e. MERGE_HEAD exists)")
 

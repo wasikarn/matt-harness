@@ -322,6 +322,21 @@ done
 for _c in "git add :/foo.txt" "git add ':(top)foo.txt'" "git add src/*.py" "git add ./foo.txt" "git add '*.md'"; do
   test_allow "$IRRECOVERABLE" "GH #289 control: $_c names a path, must not over-block" "$(bash_payload "$_c")"
 done
+# GH #308: more spellings real git (git add -n, checked in a temp repo) treats as the whole tree:
+# dot components joined by one or more slashes, a "./*" glob, and exclude-only pathspecs.
+for _c in "git add ./." "git add ././" "git add .//" "git add .//." "git add ./**" "git add './*'" "git add './**'" \
+          "git add ':!x'" "git add ':^x'" "git add ':(exclude)x'" "git add ':(top,exclude)x'" "git add ':(exclude,top)x'" \
+          "git add ':!x' ':!y'" "git add -f ':!x'" "git add -- ':!x'" "git add --chmod=+x ':!x'" "git add --chmod +x ':!x'" \
+          "git add :!x" "git add :^x" "git add ':'" "git add '::'" "git add ':' src" "git add ':.'" "git add ':./'" "git add ':*'" "git add ':***'"; do
+  test_deny  "$IRRECOVERABLE" "GH #308: $_c stages the whole tree" "$(bash_payload "$_c")"
+done
+# Narrow shapes stay allowed: a positive pathspec beside an exclude, dotfile globs, `.` inside a name,
+# and the top-anchored dot forms that select nothing in real git.
+for _c in "git add src/a.txt" "git add ./a.txt" "git add .gitignore" "git add ./.gitignore" "git add src ':!x'" \
+          "git add ':!x' src" "git add ':(exclude)x' src/a.txt" "git add -- src ':!x'" "git add ./src/." "git add '.*'" \
+          "git add ./.env" "git add ./sub//a.txt" "git add -- ./a.txt" "git add :!x src" "git add src :^x" "git add :/src/a.txt" "git add -- ':!x' -weird"; do
+  test_allow "$IRRECOVERABLE" "GH #308 control: $_c names a path, must not over-block" "$(bash_payload "$_c")"
+done
 test_allow "$IRRECOVERABLE" "git checkout branch (must not over-block)" \
   "$(bash_payload 'git checkout main')"
 test_allow "$IRRECOVERABLE" "git checkout -b new branch (must not over-block)" \
