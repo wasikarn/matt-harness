@@ -545,7 +545,13 @@ _sub_texts = None
 def _substitution_texts():
     global _sub_texts
     if _sub_texts is None:
-        raw = _drop_quoted_heredocs(cmd)
+        try:
+            raw = _drop_quoted_heredocs(cmd)
+        except _Unparsed:
+            # Only a cost cut. A `"` inside a heredoc message inside `"$(cat <<'EOF' ...)"` throws the
+            # top-level quote mask off, so a `<<` in the prose can look like a bad operator here;
+            # that must never deny. Scan the whole text instead.
+            raw = cmd
         subs = _substitution_bodies(raw)
         texts = list(subs)
         for t in [raw] + subs:  # `bash -c 'echo "$(git stash)"'`: the shell body has substitutions too
