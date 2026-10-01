@@ -612,6 +612,25 @@ EOF
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
   check "literal or safe substitution allowed: ${_c:0:40}" "$ok"
 done
+for _c in \
+  'echo "`echo \`git stash\``"' \
+  'echo "`echo \`echo \\\`git stash\\\`\``"' \
+  'echo "$(case x in x) git stash;; esac)"' \
+  'echo "$(case x in (x) git clean -fd;; esac)"' \
+  'echo "$(if true; then case x in x) git reset --hard;; esac; fi)"' \
+  'echo "$(echo x # )
+git stash)"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #274 shapes the first scanner missed denied: ${_c:0:40}" "$ok"
+done
+for _c in \
+  'echo "$(echo case) git stash is bad"' \
+  'echo "$(echo hi # git stash
+)"' \
+  'echo $(date) git stash is dangerous' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "prose around a substitution allowed: ${_c:0:40}" "$ok"
+done
 _c='echo "$(cat <<EOF
 x
 $(git stash)

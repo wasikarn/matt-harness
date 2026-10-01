@@ -291,9 +291,25 @@ def _violation_in_bodies(raw_cmd, masked_cmd, overlap):
 # hid a real command. One linear pass over the raw command collects every $(...) / `...` body at
 # any depth (a frame stack, so nesting costs no rescans); each body is then checked as its own
 # command line. Single-quoted text is literal and skipped; an unterminated body runs to the end.
+_WORD_RE = re.compile(r"\w+")
+_CMD_KEYWORDS = ("then", "do", "else", "elif", "if", "while", "until", "time", "!")
+_BT_ESCAPE_RE = re.compile(r"\\([`\\$])")
+
 def _substitution_bodies(s):
     bodies, n, i = [], len(s), 0
-    frames = [["top", 0, None, 0]]  # kind, body start, open quote, paren depth
+    frames = [["top", 0, None, 0, 0, False, True]]  # kind, body start, open quote, paren depth, open `case` count, saw case, at command position
+
+    def done(f, end):
+        body = s[f[1]:end]
+        if f[0] == "bt" and "\\`" in body:
+            # Inside backticks \` is a nested substitution; read one escape level off and rescan.
+            # Each level doubles the backslashes, so this recursion is log-deep.
+            body = _BT_ESCAPE_RE.sub(r"\1", body)
+            bodies.extend(_substitution_bodies(body))
+        if f[5]:  # a case pattern's `)` opens a command; make it a separator (same length, offsets hold)
+            body = body.replace(")", ";")
+        bodies.append(body)
+
     while i < n:
         f, c = frames[-1], s[i]
         if f[2] == "'":
@@ -307,21 +323,40 @@ def _substitution_bodies(s):
             f[2] = None if f[2] == '"' else '"'
         elif c == "`":
             if f[0] == "bt":
-                bodies.append(s[f[1]:i]); frames.pop()
+                done(f, i); frames.pop()
             else:
-                frames.append(["bt", i + 1, None, 0])
+                frames.append(["bt", i + 1, None, 0, 0, False, True])
         elif c == "$" and s[i + 1:i + 2] == "(":
-            frames.append(["paren", i + 2, None, 0]); i += 1
+            frames.append(["paren", i + 2, None, 0, 0, False, True]); i += 1
         elif f[0] == "paren" and f[2] is None:
-            if c == "(":
-                f[3] += 1
+            # f[6]: at a command position, so only a `case` there opens a case (`echo case` does not)
+            if c in " \t":
+                pass
+            elif c == "(":
+                f[3] += 1; f[6] = True
             elif c == ")":
+                f[6] = bool(f[4])
                 if f[3]:
                     f[3] -= 1
-                else:
-                    bodies.append(s[f[1]:i]); frames.pop()
+                elif not f[4]:  # a `)` that ends a case pattern is not the end of the body
+                    done(f, i); frames.pop()
+            elif c == "#" and (i == f[1] or s[i - 1] in " \t\n;&|("):  # a comment: its `)` closes nothing
+                j = s.find("\n", i)
+                i = n if j < 0 else j
+            elif c.isalpha() and not (s[i - 1].isalnum() or s[i - 1] in "_$"):
+                m = _WORD_RE.match(s, i)
+                w = m.group() if m else c
+                if w == "case" and f[6]:
+                    f[4] += 1; f[5] = True
+                elif w == "esac" and f[4]:
+                    f[4] -= 1
+                f[6] = w in _CMD_KEYWORDS
+                i += len(w) - 1
+            else:
+                f[6] = c in ";&|\n{"
         i += 1
-    bodies.extend(s[f[1]:] for f in frames[1:])
+    for f in frames[1:]:
+        done(f, n)
     return bodies
 
 # A heredoc body is data (`git commit -m "$(cat <<'EOF' ... EOF)"`), so blank it before the check.
