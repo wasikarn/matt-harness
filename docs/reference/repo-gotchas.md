@@ -107,6 +107,30 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   padded shapes (thousands of statements, 20-150 KB) with the target early and late (GH #245: a
   new scan placed before the fast denies turned a 0.03 s deny into a timeout). Any exit other than
   0 or 2 from the `.py` is a finding too, even where the `.sh` wrapper fails it closed.
+  GH #274: `subagent-git-guard.py` also scans the raw command for `$(...)` / backtick bodies
+  (`_substitution_bodies`, one linear pass) because the quote mask hides them. That pass reads a
+  case pattern's `)`, `#` comments, `${x:-)}`, backslash escapes in backticks, `$'..'`, an
+  apostrophe inside `"..."`, and heredocs. Every body copy and heredoc lookup charges the same
+  budget. Its quote tracker must follow the shell's rules exactly: it once let an apostrophe inside
+  `"..."` open a fake single-quote span that hid every later substitution. A heredoc it cannot
+  read (odd delimiter, no terminator, `X)` where bash and a lenient reading disagree) is DENIED
+  (`_Unparsed`), never scanned as code, because prose fed to the tracker as code desyncs it.
+  Verify with a real-shell differential (sh/bash/zsh against a shim `git`), not by reading the
+  code: 5 rounds each missed shapes the next found. The 27 real-shell cases that survived are
+  committed (`tests/hooks/fixtures/subagent-git-guard-substitution-cases.txt`, replayed by
+  `test-subagent-git-guard.sh`). Known residue: an `eval`/`sh -c` of a command's OUTPUT (data
+  flow, undecidable), `bash -c 'sh -c ...'` (two shell levels, never covered), a quoted heredoc
+  nested under a wrapper inside a quoted substitution (denied, a false positive), and a
+  redirection before `git` (`<f git stash`, `$(<<a git stash)`), which `develop` also allows.
+  Differential against `develop` (2026-10-01, #274/#280): a replay of 109,500 distinct Bash
+  commands from local transcripts gave 0 newly denied, 0 exits other than 0/2 and a worst case of
+  1.0 s. 20 commands were denied by `develop` and allowed by the branch: all are heredoc body text
+  (commit messages, PR bodies, scripts) that `develop` denied for lack of heredoc parsing; with
+  the bodies stripped `develop` allows every one. That is the named intended category. One shape
+  inside it is a real change: `eval "$(cat <<'EOF' ... EOF)"` runs the body, so `develop` denied it
+  only by accident and the branch allows it (data flow, undecidable). A replay finds shapes real
+  commands already have: it caught a `"${x}"` counter bug, a too-broad terminator rule and a
+  budget over-deny that the generated fuzz missed.
   Anchor regexes are quadratic (command starts x length): `subagent-git-guard.py` charges that
   bound to a shared budget and denies past it (GH #246: 30 KB of `env ; ` before a `git stash`
   timed out into allow). Only 3 of 2,581 replayed real commands (20-28 KB scripts) hit it.
