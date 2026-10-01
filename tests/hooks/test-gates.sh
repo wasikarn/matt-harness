@@ -2432,6 +2432,13 @@ for _c in \
 done
 test_allow "$IRRECOVERABLE" 'GH #248 control: the main session is never scanned' \
   "$(bash_agent_payload '{ claude -p x; }' '')"
+# Deep-audit 5: repo-gotchas asks two awkward shapes of every new wrapper word, here xargs: a glued
+# `name=1` (an assignment, not the wrapper) and a decoy whose walk could hide the statements after it.
+for _c in \
+  'xargs=1 claude -p x' \
+  'xargs x && claude -p y && claude --version' ; do
+  test_deny "$IRRECOVERABLE" "xargs wrapper awkward shape still denied: $_c" "$(bash_agent_payload "$_c" fork)"
+done
 
 echo ""
 total=$((pass + fail))

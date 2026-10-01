@@ -549,6 +549,45 @@ for _c in \
   check "GH #248 control still allowed: $_c" "$ok"
 done
 
+# --- (17) Deep-audit 5: the chain prefix (eval/builtin/command/exec/rtk) after a wrapper walk re-reads
+# the rest of a chain run from every walk position, so a long run costs run x run per command start,
+# which the separator x length charge never saw: `true; ` + `command ` x 8000 before a real
+# `git stash` ran 9 s with one `;`, and a timed-out hook allows. Each row must be DECIDED inside 8 s:
+# sgg_rc waits forever, so a late deny would read as a pass. --- #
+sgg_rc8() {
+  payload "$1" fork | python3 -c '
+import os, signal, subprocess, sys
+p = subprocess.Popen(["bash", sys.argv[1]], stdin=sys.stdin, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True)
+try:
+    print(p.wait(timeout=8))
+except subprocess.TimeoutExpired:
+    os.killpg(p.pid, signal.SIGKILL)
+    print(124)
+' "$GATE"
+}
+for _c in \
+  "true; $(_pad 'command ' 8000)git stash; git status" \
+  "time git stash; time $(_pad 'rtk -a ' 8000)ls" \
+  "time git stash; git status; $(_pad 'time ; ' 50)$(_pad 'command ' 1000)ls" \
+  "bash -c 'true; $(_pad 'command ' 8000)git stash; git status'" \
+  "sudo $(_pad 'git -C ' 10000)x; time git stash; git status" ; do
+  rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "padded command denied inside 8 s, not timed out into allow (rc $rc, ${#_c} bytes): ${_c:0:30}" "$ok"
+done
+# The last row guards a dropped fix: a lazy target that looked ahead for the denied subcommand
+# re-read a `git -C` run from every `git` (11 s at 70 KB). `sudo -u git git stash; git status` is
+# still allowed, a known residual.
+for _c in \
+  'command -v git && git status' \
+  'eval "$(ssh-agent -s)"; git status' \
+  'rtk proxy git status' \
+  'sudo -u git git status; git log -1' \
+  'sudo -u git git stash list; git status' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "chain and wrapper-argument control still allowed: $_c" "$ok"
+done
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

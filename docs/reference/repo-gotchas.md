@@ -113,7 +113,11 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   GH #248 added a third, lazy-walk pass (`*?` finds the FIRST target after a wrapper, where the
   greedy walk lands on the last), `{` + blank as a command start, and `xargs` in the spawn
   anchor's wrapper list only. Each pass charges the budget, so the guard's rose to 60M; a padded
-  benign command of ~3,000 blank lines or `{ ` units is now refused where develop allowed it.
+  benign command of ~3,000 blank lines (spawn scan) or ~2,100-2,200 `{ ` units (both gates) is now refused.
+  Starts x length is not the whole cost: the guard's chain prefix (eval/builtin/command/exec/rtk)
+  re-reads a chain run from every walk position, so each run also charges its length squared per
+  start (deep-audit 5: `command ` x 8000 after one `;` took 9 s). A new regex piece needs its own
+  worst case measured, not assumed to fit the existing charge.
 - **Oracle:** run the real shells (the system `/bin/sh`, bash 3.2, a current bash, dash, zsh, ksh)
   with argv-logging stubs, never one shell or argv0-based shell guessing: whether `{fd}>` is a
   redirect depends on the binary and version (GH #219).

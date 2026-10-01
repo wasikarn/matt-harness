@@ -245,18 +245,25 @@ def _skip_git_globals(tail):
 # rest of the string when a wrapper word or assignment follows, so the work grows like
 # starts x length. `env ; ` x 5000 (30 KB) or 6000 bare newlines run past the 8 s hook timeout,
 # and a timed-out hook allows: padding in front of a real `git stash` walked around the deny.
-# Each scan charges that upper bound to one shared budget (bodies and both passes add up) and a
+# Each scan charges that upper bound to one shared budget (bodies and all three passes add up) and a
 # command over budget is denied, never scanned. Real subagent commands charge far less; only a
-# rare huge script (28 KB, about 7e7 over four scans) is refused. Padded shapes stay near 3 s.
+# rare huge script (20-28 KB, about 7e7 over six scans) is refused.
+# Deep-audit 5: a run of chain words (_CHAIN_PREFIX: eval/builtin/command/exec/rtk) after a wrapper
+# is re-read from every walk position, so it costs about run x run per command start even with a
+# single start (`true; ` + `command ` x 8000 before a `git stash` took 9 s). Each maximal run charges
+# its length squared per start, plus one for the line start.
 _WORK_BUDGET = 60_000_000
 _work = 0
+_CHAIN_RUN_RE = re.compile(r"(?<!\S)(?:" + _SHELL_PASS + r"|" + _RTK_PREFIX + r")+")
 
 class _TooCostly(Exception):
     pass
 
 def _charge(s):
     global _work
-    _work += sum(s.count(c) for c in "\n;&|({") * len(s)
+    starts = sum(s.count(c) for c in "\n;&|({")
+    runs = sum((m.end() - m.start()) ** 2 for m in _CHAIN_RUN_RE.finditer(s))
+    _work += starts * len(s) + (starts + 1) * runs
     if _work > _WORK_BUDGET:
         raise _TooCostly
 
