@@ -120,7 +120,9 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   `git log x git stash` now denies; deny-biased, accepted.
   Starts x length is not the whole cost: the guard's chain prefix (eval/builtin/command/exec/rtk)
   re-reads a chain run from every walk position, so each run also charges its length squared per
-  start (deep-audit 5: `command ` x 8000 after one `;` took 9 s). A new regex piece needs its own
+  start (deep-audit 5: `command ` x 8000 after one `;` took 9 s). GH #273 added one chain run in front of the wrapper walk too (`eval sudo git stash`); the same
+  per-run charge covers it, measured 0.08 s at 9000 `eval sudo ` pairs. A chain/wrapper loop was
+  exponential (`sudo eval ` x 250 never finished), so keep it to one leading run. A new regex piece needs its own
   worst case measured, not assumed to fit the existing charge.
 - **Oracle:** run the real shells (the system `/bin/sh`, bash 3.2, a current bash, dash, zsh, ksh)
   with argv-logging stubs, never one shell or argv0-based shell guessing: whether `{fd}>` is a
