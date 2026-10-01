@@ -891,12 +891,27 @@ test_deny "$IRRECOVERABLE" 'GH #181 round 3 control: 1000-deep nested <(...) wit
 # GH #188: bash's named-fd redirect "{var}>file" was not a recognized redirect. The outer tokenizer
 # split "{fd}" into "{" "fd" "}" ("{"/"}" are window breaks), cutting the command off before a real
 # pathspec (fail-open); the bash -c/eval tokenizer kept "{fd}" as one nonflag arg (over-deny).
-test_allow "$IRRECOVERABLE" 'GH #188: {fd}>/dev/null on a branch switch allows (bash -c)' \
+# GH #219: whether "{fd}>" is a redirect depends on the binary (bash 4+/ksh/zsh yes; macOS sh, bash 3.2,
+# dash no, where it is a literal pathspec), so both readings are checked and any deny wins. A branch
+# switch with a named-fd redirect is therefore an accepted over-deny (it was allowed under #188).
+test_deny "$IRRECOVERABLE" 'GH #219: {fd}>/dev/null on a branch switch denies, {fd} may be a literal pathspec (bash -c)' \
   "$(bash_payload 'bash -c "git checkout main {fd}>/dev/null"')"
-test_allow "$IRRECOVERABLE" 'GH #188: {fd}>/dev/null on a branch switch allows (eval)' \
+test_deny "$IRRECOVERABLE" 'GH #219: same (eval)' \
   "$(bash_payload 'eval "git checkout main {fd}>/dev/null"')"
-test_allow "$IRRECOVERABLE" 'GH #188 control: {fd}>/dev/null on a branch switch allows (direct)' \
+test_deny "$IRRECOVERABLE" 'GH #219: same (direct)' \
   "$(bash_payload 'git checkout main {fd}>/dev/null')"
+test_deny "$IRRECOVERABLE" 'GH #219: {fd} stays a literal restore pathspec on macOS sh / bash 3.2 / dash (sh -c)' \
+  "$(bash_payload 'sh -c "git restore {fd}>/dev/null"')"
+test_deny "$IRRECOVERABLE" 'GH #219: same (direct)' \
+  "$(bash_payload 'git restore {fd}>x')"
+test_deny "$IRRECOVERABLE" 'GH #219: zsh reads {fd}&>x as a named fd, so it hides the subcommand slot (direct)' \
+  "$(bash_payload 'git {fd}&>x reset --hard')"
+test_deny "$IRRECOVERABLE" 'GH #219: same (eval)' \
+  "$(bash_payload 'eval "git {fd}&>x clean -fd"')"
+test_allow "$IRRECOVERABLE" 'GH #219 control: a named-fd redirect on a harmless command still allows' \
+  "$(bash_payload 'bash -c "git status {fd}>/dev/null"')"
+test_allow "$IRRECOVERABLE" 'GH #219 control: {fd}>x before a plain branch-less log allows (direct)' \
+  "$(bash_payload 'git log {fd}>x')"
 test_deny "$IRRECOVERABLE" 'GH #188: {fd}> redirect does not hide a real tree-ish+path checkout (direct)' \
   "$(bash_payload 'git checkout HEAD {fd}>/dev/null hooks/gates/irrecoverable.py')"
 test_deny "$IRRECOVERABLE" 'GH #188 control: same, bash -c' \
@@ -921,9 +936,9 @@ test_deny "$IRRECOVERABLE" 'plain >|x does not hide a tree-ish+path checkout (wa
   "$(bash_payload 'git checkout HEAD >|x hooks/gates/irrecoverable.py')"
 test_deny "$IRRECOVERABLE" 'plain 2>|x, same (was allowed on develop too)' \
   "$(bash_payload 'git checkout HEAD 2>|x hooks/gates/irrecoverable.py')"
-test_allow "$IRRECOVERABLE" 'GH #188: {fd}>|/dev/null on a branch switch allows (bash -c)' \
+test_deny "$IRRECOVERABLE" 'GH #219: {fd}>|/dev/null on a branch switch denies (literal {fd} pathspec reading, bash -c)' \
   "$(bash_payload 'bash -c "git checkout main {fd}>|/dev/null"')"
-test_allow "$IRRECOVERABLE" 'GH #188: {fd}<>/dev/null on a branch switch allows (bash -c)' \
+test_deny "$IRRECOVERABLE" 'GH #219: {fd}<>/dev/null on a branch switch denies, same (bash -c)' \
   "$(bash_payload 'bash -c "git checkout main {fd}<>/dev/null"')"
 test_deny "$IRRECOVERABLE" 'GH #188 control: {fd}<>x does not hide a tree-ish+path checkout (bash -c)' \
   "$(bash_payload 'bash -c "git checkout HEAD {fd}<>x hooks/gates/irrecoverable.py"')"
@@ -2302,7 +2317,7 @@ rm -f "$_errf"
 # GH #184/#185/#194/#195/#196: fail closed when the command is syntactically ambiguous (nested or
 # mixed substitutions, a quoted ")" inside "$(", a "case" inside "$(", brace tokens, eval of a
 # substitution) AND names an irrecoverable verb. Raw-text check, so it holds where blanking mis-closes.
-# GH #219 (named-fd "{var}>") is deliberately NOT here: the #188 tests above allow "{fd}>" on a branch switch.
+# GH #219 (named-fd "{var}>") is not a raw-text rule here: the tokenizer reads it both ways instead (see _blank_redirections).
 test_deny "$IRRECOVERABLE" 'GH #184: a quoted ")" inside $() must not hide rm -rf' \
   "$(bash_payload 'echo $(echo ")"; rm -rf /nonexistent-x)')"
 test_deny "$IRRECOVERABLE" 'GH #185: backtick nested inside $() must not hide rm -rf' \
