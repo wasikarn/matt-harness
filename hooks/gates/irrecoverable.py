@@ -1037,33 +1037,64 @@ _AMBIG_BRACE_RE = re.compile(r"(?:^|[\s;|&(])\{[^{}\s\"'`$]{1,60}\}(?=[\s;|&)]|$
 _AMBIG_FLAG_RE = re.compile(r"--h(?:a(?:r(?:d)?)?)?\b|--fo(?:r(?:c(?:e)?)?)?\b|(?:^|\s)-[uvnqx]*[fdDrR][uvnqxfdDrR]*\b")
 # A brace token can hide a flag ("rm {-rf,} X"), so its verb check is broad (any rm/dd/find/git sub);
 # the other shapes leave the flags visible, so their verb check is the destructive form itself.
-# A verb may be path-qualified ("/bin/rm", "/usr/bin/git"), so "/" may precede it, and git may carry
-# global flags before its sub ("git -C . push", "--no-pager", "-c user.name='A B'"). _AMBIG_GIT does not
-# parse them: it skips up to 400 units of the same simple command (no bare ; | & or newline; a quoted or
-# escaped span, which may hold those characters, is one unit) lazily to the first sub word.
-# A walk that parsed the globals backtracked exponentially on repeated "-C -C -C" (GH #255 validator);
-# the unit alternatives here start with disjoint characters, so this one is linear per anchor. Over-denial (a sub word used as an argument) only
-# happens once an ambiguity shape has already matched, and is the safe direction.
+# GH #269 F1-F4: the verb checks were regexes with length bounds (400 of git globals, 200 between verb and
+# flag), so padding walked past them, and the rm test looked at the first flag only. They now cut each
+# simple command into one segment (the verb, then units up to a bare ; | & or newline; a quoted or escaped
+# span, which may hold those characters, is one unit) with a greedy non-overlapping finditer, which is
+# linear, and look for the sub word and the flags anywhere in the segment, from the sub word's FIRST
+# occurrence on (a superset of any later one). A segment that meets an unterminated quote or backtick runs
+# on to the next bare separator. Over-denial (a sub word used as an argument) only happens once an
+# ambiguity shape has already matched, and is the safe direction.
+# ponytail: a quoted span over 200 chars that holds a separator ends its segment early; no known payload.
 # GIT_VALUE_GLOBALS is the one list of value-taking git globals, used by the main parser below.
 GIT_VALUE_GLOBALS = ("-C", "-c", "--git-dir", "--work-tree", "--namespace", "--attr-source", "--config-env")
-_AMBIG_GIT_SKIP = (r"(?<![\w.-])git(?=\s)(?:[^\n;|&'\"\\$`]|\"[^\"\n]{0,200}\"|'[^'\n]{0,200}'|\\."
-                   r"|\$\([^)\n]{0,200}\)|\$(?!\()|`[^`\n]{0,200}`){0,400}?\s")
-# The skip cannot cross an unterminated backtick or $( ) value, so the previous 8-global walk stays as a
-# second alternative: the deny set is a superset of the walk's by construction (GH #255 round 3).
-_AMBIG_GIT_WALK = (r"(?<![\w.-])git(?:\s+(?:-[Cc]|--(?:git-dir|work-tree|namespace|config-env))\s+"
-                   r"(?:\"[^\"\n]{0,200}\"|'[^'\n]{0,200}'|\S{1,200})|\s+-\S{1,200}){0,8}\s+")
-_AMBIG_GIT = "(?:" + _AMBIG_GIT_SKIP + "|" + _AMBIG_GIT_WALK + ")"
-_AMBIG_BROAD_VERB_RE = re.compile(
-    r"(?<![\w.-])(?:rm\s|dd\s|find\s)|" + _AMBIG_GIT +
-    r"(?:push|reset|clean|checkout|restore|switch|branch|stash)\b")
-# GH #275 follow-up: the push flag scan is capped at 200 letters (a longer run counts as a hit, an
-# over-deny; a bundle like -fu counts, GH #284); `[A-Za-z]*f\b` backed off across the whole token from every git/push anchor in reach.
-_AMBIG_NARROW_VERB_RE = re.compile(
-    r"(?<![\w.-])(?:rm\s+-[A-Za-z]*[rf]|find\s[^\n]{0,300}(?:-delete|-exec\w*\s+rm)|dd\s[^\n]{0,200}of=)|"
-    + _AMBIG_GIT + r"(?:push\b[^\n;|&]{0,200}(?:--force\b|\s-(?:[A-Za-z]{0,200}f[A-Za-z]{0,200}\b|[A-Za-z]{201}))"
-    r"|reset\b[^\n;|&]{0,200}--hard|clean\b"
-    r"|checkout\b[^\n;|&]{0,200}(?:\s--(?:\s|$)|\s-f\b|\s\.(?:\s|$))|restore\b"
-    r"|branch\b[^\n;|&]{0,200}\s-D\b|stash\s+(?:drop|clear)\b)")
+_AMBIG_UNIT = (r"(?:[^\n;|&'\"\\$`]|\"[^\"\n]{0,200}\"|'[^'\n]{0,200}'|\\."
+               r"|\$\([^)\n]{0,200}\)|\$(?!\()|`[^`\n]{0,200}`)")
+_AMBIG_SEG_RE = re.compile(r"(?<![\w.-])(rm|dd|find|git)(?=\s)" + _AMBIG_UNIT + r"*[^\n;|&]*")
+# GH #269 F3: a sub word may sit inside a brace token ("{a=b,push}", "{push,}"), so "{" and "," may precede it.
+_AMBIG_GIT_SUB_RE = re.compile(r"(?<![\w.\-/])(push|reset|clean|checkout|restore|switch|branch|stash)\b")
+# GH #275 follow-up / GH #284: a bundle like -fu counts as a force flag, and a run of 201+ letters counts as a hit.
+_AMBIG_NARROW_AFTER = {
+    "push": re.compile(r"--force\b|\s-[A-Za-z]*f|\s-[A-Za-z]{201}"),
+    "reset": re.compile(r"--hard"),
+    "clean": re.compile(r""),
+    "restore": re.compile(r""),
+    "checkout": re.compile(r"\s--(?:\s|$)|\s-f\b|\s\.(?:\s|$)"),
+    "branch": re.compile(r"\s-D\b"),
+    "stash": re.compile(r"\s+(?:drop|clear)\b"),
+}
+_AMBIG_RM_FLAG_RE = re.compile(r"\s(?:-[A-Za-z]*[rRf]|--recursive\b|--force\b)")
+_AMBIG_FIND_RE = re.compile(r"-delete|-exec\w*\s+rm")
+
+class _AmbigVerb:
+    """.search(text): does any simple command in text name a broad (or narrow) irrecoverable verb?"""
+    def __init__(self, narrow):
+        self.narrow = narrow
+    def search(self, text):
+        for m in _AMBIG_SEG_RE.finditer(text):
+            verb, seg = m.group(1), m.group()
+            if verb == "git":
+                first = {}
+                for sm in _AMBIG_GIT_SUB_RE.finditer(seg):
+                    first.setdefault(sm.group(1), sm.end())
+                if first and not self.narrow:
+                    return True
+                if any(_AMBIG_NARROW_AFTER[v].search(seg, e) for v, e in first.items()):
+                    return True
+            elif not self.narrow:
+                return True
+            elif verb == "rm":
+                if _AMBIG_RM_FLAG_RE.search(seg):
+                    return True
+            elif verb == "find":
+                if _AMBIG_FIND_RE.search(seg):
+                    return True
+            elif "of=" in seg:  # dd
+                return True
+        return False
+
+_AMBIG_BROAD_VERB_RE = _AmbigVerb(False)
+_AMBIG_NARROW_VERB_RE = _AmbigVerb(True)
 
 def _ambiguous(c):
     """(reason, verb_re) when c is syntactically ambiguous, else None."""
@@ -1137,17 +1168,18 @@ if "{" in cmd or "}" in cmd:
         pass  # the first copy already handled an unparsable command
 
 windows = []
-for _toks in _token_lists:
+_seen_windows = set()  # GH #268: the second copy skips a window the first already holds, so the budget charges it once
+for _i, _toks in enumerate(_token_lists):
     cur = []
-    for tok in [p for t in _toks for p in _split_ops(t)]:
+    for tok in [p for t in _toks for p in _split_ops(t)] + [";"]:
         if tok in OPERATORS:
-            if cur:
+            if cur and not (_i and tuple(cur) in _seen_windows):
+                if not _i:
+                    _seen_windows.add(tuple(cur))
                 windows.append(cur)
             cur = []
         else:
             cur.append(tok)
-    if cur:
-        windows.append(cur)
 
 # A standalone substitution resolving to empty ($(true)) vanishes as a token in
 # bash, shifting later tokens left, but leaves a PH-only token here, so every

@@ -2514,9 +2514,9 @@ test_deny  "$IRRECOVERABLE" 'GH #275 control: a short push -f next to an escaped
 # (defense-in-depth: the main parser already denies these). Check the regex itself, since the hook never reaches it.
 _narrow_rc=$(python3 - "$ROOT/hooks/gates/irrecoverable.py" <<'PY'
 import re, sys
-# The module runs the gate at import, so exec only the regex definitions (from _AMBIG_GIT_SKIP to the blank line after the narrow regex).
+# The module runs the gate at import, so exec only the regex definitions (from _AMBIG_UNIT to _ambiguous).
 src = open(sys.argv[1]).read()
-block = src[src.index("_AMBIG_GIT_SKIP = "):src.index("\n\n", src.index("_AMBIG_NARROW_VERB_RE = "))]
+block = src[src.index("_AMBIG_UNIT = "):src.index("def _ambiguous(")]
 ns = {"re": re}; exec(block, ns)
 r = ns["_AMBIG_NARROW_VERB_RE"]
 hit = all(r.search(c) for c in ("git push origin main -fu", "git push -uf origin main", "git push origin main -f"))
@@ -2531,6 +2531,81 @@ else
   echo "  ❌ GH #284: narrow push piece misses a bundled force flag or over-matches -u" >&2
   fail=$((fail + 1))
 fi
+
+# GH #268: a brace inside a word made a second tokenization whose windows doubled the subagent
+# work-budget count, so a long benign bash -c body was denied only when it carried a brace.
+_long_body="git status; $(printf 'echo x; %.0s' $(seq 650))"
+test_allow "$IRRECOVERABLE" 'GH #268 control: subagent, long benign bash -c body, no brace' \
+  "$(bash_agent_payload "bash -c \"${_long_body}echo foo1\"" agent-268)"
+test_allow "$IRRECOVERABLE" 'GH #268: subagent, long benign bash -c body, brace inside a word' \
+  "$(bash_agent_payload "bash -c \"${_long_body}echo foo{1}\"" agent-268)"
+
+# GH #269 F3: a brace token in a -c/-C value or in the sub slot hid the verb (the verb regex needed whitespace before it).
+test_deny "$IRRECOVERABLE" 'GH #269 F3: git -c {a=b,push} --force' \
+  "$(bash_payload 'git -c {a=b,push} --force origin main')"
+test_deny "$IRRECOVERABLE" 'GH #269 F3: git -c {a=b,branch} -D main' \
+  "$(bash_payload 'git -c {a=b,branch} -D main')"
+test_deny "$IRRECOVERABLE" 'GH #269 F3: git -c {a=b,reset} --hard' \
+  "$(bash_payload 'git -c {a=b,reset} --hard')"
+test_deny "$IRRECOVERABLE" 'GH #269 F3: git -c {a=b,clean} -fdx' \
+  "$(bash_payload 'git -c {a=b,clean} -fdx')"
+test_deny "$IRRECOVERABLE" 'GH #269 F3: git -C {.,push} -f' \
+  "$(bash_payload 'git -C {.,push} -f origin main')"
+test_deny "$IRRECOVERABLE" 'GH #269 F3: the brace sits in the sub slot itself' \
+  "$(bash_payload 'git {push,} --force origin main')"
+test_deny "$IRRECOVERABLE" 'GH #269 F3: stash inside a -c brace value' \
+  "$(bash_payload 'git -c {a=b,stash} drop')"
+test_allow "$IRRECOVERABLE" 'GH #269 F3 control: brace -c values, read-only sub' \
+  "$(bash_payload 'git -c {a=b,c=d} log')"
+test_allow "$IRRECOVERABLE" 'GH #269 F3 control: brace -C values, read-only sub' \
+  "$(bash_payload 'git -C {a,b} status')"
+test_allow "$IRRECOVERABLE" 'GH #269 F3 control: brace in the sub slot, no destructive word' \
+  "$(bash_payload 'git {log,show} --oneline')"
+
+# GH #269 F4: the narrow rm piece only looked at the first flag, and the substitution body is an echo window.
+test_deny "$IRRECOVERABLE" 'GH #269 F4: eval of $(echo rm -v -rf x)' \
+  "$(bash_payload 'eval "$(echo rm -v -rf /tmp/x)"')"
+test_deny "$IRRECOVERABLE" 'GH #269 F4: eval of $(echo rm --recursive --force x)' \
+  "$(bash_payload 'eval "$(echo rm --recursive --force /tmp/x)"')"
+test_deny "$IRRECOVERABLE" 'GH #269 F4: eval of $(echo rm -v -R -f x)' \
+  "$(bash_payload 'eval "$(echo rm -v -R -f /tmp/x)"')"
+test_deny "$IRRECOVERABLE" 'GH #269 F4: nested backtick form' \
+  "$(bash_payload 'eval "`echo $(echo rm -v -rf /tmp/x)`"')"
+test_deny "$IRRECOVERABLE" 'GH #269 F4: quoted ) form' \
+  "$(bash_payload 'eval "$(echo "a)" ; echo rm -v -rf /tmp/x)"')"
+test_deny "$IRRECOVERABLE" 'GH #269 F4: case form' \
+  "$(bash_payload 'eval "$(case x in x) echo rm -v -rf /tmp/x;; esac)"')"
+test_allow "$IRRECOVERABLE" 'GH #269 F4 control: eval of $(echo rm -v x), no recursive or force flag' \
+  "$(bash_payload 'eval "$(echo rm -v /tmp/x)"')"
+
+# GH #269 F1/F2: the narrow shapes had a ~400-char globals limit and a 200-char verb-to-flag limit.
+_pad130=$(printf 'a %.0s' $(seq 130))
+test_deny "$IRRECOVERABLE" 'GH #269 F1: eval, 100 -C globals, push --force' \
+  "$(bash_payload 'eval "$(echo git '"$_many_c"'push --force origin main)"')"
+test_deny "$IRRECOVERABLE" 'GH #269 F1: eval, 100 -C globals, reset --hard' \
+  "$(bash_payload 'eval "$(echo git '"$_many_c"'reset --hard)"')"
+test_deny "$IRRECOVERABLE" 'GH #269 F1: nested backtick form, 100 -C globals' \
+  "$(bash_payload 'eval "`echo $(echo git '"$_many_c"'push --force origin main)`"')"
+test_deny "$IRRECOVERABLE" 'GH #269 F1: quoted ) form, 100 -C globals' \
+  "$(bash_payload 'eval "$(echo "a)" ; echo git '"$_many_c"'push --force origin main)"')"
+test_deny "$IRRECOVERABLE" 'GH #269 F1: case form, 100 -C globals' \
+  "$(bash_payload 'eval "$(case x in x) echo git '"$_many_c"'push --force origin main;; esac)"')"
+test_deny "$IRRECOVERABLE" 'GH #269 F1: escaped-backtick form, 100 -C globals' \
+  "$(bash_payload 'eval "\`echo git '"$_many_c"'push --force origin main\`"')"
+test_deny "$IRRECOVERABLE" 'GH #269 F1: the brace form inside eval, 100 -C globals' \
+  "$(bash_payload 'eval "$(echo git '"$_many_c"'push {--force,} origin main)"')"
+test_deny "$IRRECOVERABLE" 'GH #269 F2: eval, push, 130 words before --force' \
+  "$(bash_payload 'eval "$(echo git push origin '"$_pad130"'--force)"')"
+test_deny "$IRRECOVERABLE" 'GH #269 F2: eval, reset, 130 words before --hard' \
+  "$(bash_payload 'eval "$(echo git reset '"$_pad130"'--hard)"')"
+test_deny "$IRRECOVERABLE" 'GH #269 F2: eval, branch, 130 words before -D main' \
+  "$(bash_payload 'eval "$(echo git branch '"$_pad130"'-D main)"')"
+test_allow "$IRRECOVERABLE" 'GH #269 F1 control: eval, 100 -C globals, read-only sub' \
+  "$(bash_payload 'eval "$(echo git '"$_many_c"'log --oneline)"')"
+test_allow "$IRRECOVERABLE" 'GH #269 F1 control: eval, 100 -C globals, push without a force flag' \
+  "$(bash_payload 'eval "$(echo git '"$_many_c"'push origin main)"')"
+test_allow "$IRRECOVERABLE" 'GH #269 F2 control: eval, push with 130 words and no force flag' \
+  "$(bash_payload 'eval "$(echo git push origin '"$_pad130"'main)"')"
 
 echo ""
 total=$((pass + fail))
