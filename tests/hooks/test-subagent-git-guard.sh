@@ -577,6 +577,23 @@ for _c in \
   rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
   check "padded command denied inside 8 s, not timed out into allow (rc $rc, ${#_c} bytes): ${_c:0:30}" "$ok"
 done
+# GH #276 deep-audit: the scan after a wrapper-argument git re-sliced the tail per hit (quadratic
+# copying, 8 s at ~2 MB). A payload that size never fits an argv, so it is built and piped here.
+_rc=$(python3 -c '
+import json, signal, subprocess, sys, os
+c = "sudo -u git env " + "-u git " * 330000 + "git stash; git status"
+d = json.dumps({"tool_name": "Bash", "tool_input": {"command": c}, "agent_id": "a", "agent_type": "general-purpose"})
+p = subprocess.Popen(["bash", sys.argv[1]], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True)
+try:
+    p.communicate(d.encode(), timeout=8)
+    print(p.returncode)
+except subprocess.TimeoutExpired:
+    os.killpg(p.pid, signal.SIGKILL)
+    print(124)
+' "$GATE")
+ok=1; [ "$_rc" = "2" ] && ok=0
+check "2 MB run of wrapper-argument git words denied inside 8 s, not timed out into allow (rc $_rc)" "$ok"
 # The last row guards a dropped fix: a lazy target that looked ahead for the denied subcommand
 # re-read a `git -C` run from every `git` (11 s at 70 KB).
 # GH #276: a wrapper argument spelled git stopped the lazy target; the guard now re-checks from a
