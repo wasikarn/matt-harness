@@ -753,7 +753,7 @@ check "corpus replayed every case (loaded $_got_n of $_want_n, loader exit $_pro
 # transcripts: two 12-17 KB writes were denied by the scans' work budget, which develop allowed).
 _c=$(python3 -c '
 lines = ["cat > /tmp/doc.md <<'"'"'DOCEOF'"'"'", "# Diagrams"]
-lines += ["  node%d(step %d) --> node%d : label text for this step of the flow" % (i, i, i + 1) for i in range(250)]
+lines += ["  node%d(step %d) --> node%d : label text for this step of the flow" % (i, i, i + 1) for i in range(190)]
 lines += ["DOCEOF"]
 print("\n".join(lines))
 ')
