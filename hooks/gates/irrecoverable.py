@@ -440,8 +440,17 @@ def delete_hint():
 # has no continuation effect there), so it still gets the separator. Comment
 # and quote state are tracked char by char with backslash-escape parity.
 DQ = chr(34)
+# GH #233: shlex drops quotes, so a quoted operator-only argument (";", "&&", "|") would reach the
+# window split as a bare separator and hide a later flag. At the closing quote, such a body is
+# swapped for HASH_LIT (a wordchar, one nonflag token); the quotes stay.
+_OP_CHARS = frozenset(";&|(){}")
+def _mask_quoted_ops(out, qstart):
+    body = out[qstart:-1]
+    if body and all(ch in _OP_CHARS for ch in body):
+        out[qstart:-1] = [HASH_LIT]
 def _newlines_to_seps(s):
     out = []
+    qstart = 0
     in_squote = in_dquote = in_comment = False
     # An escaped separator ("\ ", "\;", "\|", ...) is still a LITERAL character
     # in bash, not a real word break, so a "#" right after it is mid-word, not
@@ -465,6 +474,7 @@ def _newlines_to_seps(s):
             out.append(c)
             if c == SQ:
                 in_squote = False
+                _mask_quoted_ops(out, qstart)
             last_escaped = False
             i += 1
             continue
@@ -481,17 +491,18 @@ def _newlines_to_seps(s):
             out.append(c)
             if c == DQ:
                 in_dquote = False
+                _mask_quoted_ops(out, qstart)
             last_escaped = False
             i += 1
             continue
         # unquoted, not in a comment
         if c == SQ:
             in_squote = True
-            out.append(c); i += 1
+            out.append(c); i += 1; qstart = len(out)
             last_escaped = False
         elif c == DQ:
             in_dquote = True
-            out.append(c); i += 1
+            out.append(c); i += 1; qstart = len(out)
             last_escaped = False
         elif c == "\\" and i + 1 < n and s[i + 1] == "\n":
             # real line continuation: both chars removed, nothing appended
