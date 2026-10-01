@@ -299,7 +299,18 @@ def _violation_in_bodies(raw_cmd, masked_cmd, overlap):
 _WORD_RE = re.compile(r"\w+")
 _CMD_KEYWORDS = ("then", "do", "else", "elif", "if", "while", "until", "time", "!")
 _BT_ESCAPE_RE = re.compile(r"\\([`\\$])")
-_HD_START_RE = re.compile(r"<<-?[ \t]*(['\"]?)([A-Za-z_]\w*)\1")
+# The delimiter is the whole shell word: a quoted word, or a run of plain characters that must end
+# at a blank or a metacharacter (`EOF-1` is one delimiter; `E"O"F` and `$x` are not read at all, so
+# the body is scanned as code, never skipped). `<<\EOF` (a backslash-quoted word) is read the same way.
+_HD_START_RE = re.compile(
+    r"<<-?[ \t]*(?:'([^'\n]+)'|\"([^\"\n]+)\"|(\\?[^\s;&|<>()'\"`$\\]+))(?=[\s;&|<>()]|$)")
+
+def _in_arith(s, i):
+    # `$((1<<EOF))` and `((x<<EOF))` shift; they open no heredoc. Looks back on the same line for a
+    # `((` that no `))` has closed. Anything unsure is read as arithmetic, so the body is scanned.
+    ls = s.rfind("\n", 0, i) + 1
+    _scan_cost(i - ls)
+    return s.rfind("((", ls, i) > s.rfind("))", ls, i)
 
 def _scan_cost(k):
     global _work
@@ -315,12 +326,13 @@ def _heredoc_at(s, i, after=None):
     # only end the body sooner than the shell does, never later: a lenient miss scans more, not less.
     m = _HD_START_RE.match(s, i)
     eol = s.find("\n", m.end()) if m else -1
-    if eol < 0:
+    if eol < 0 or _in_arith(s, i):
         return None
+    word = m.group(1) or m.group(2) or m.group(3)
     trigger = eol if after is None else after
     _scan_cost(len(s) - i)
-    t = re.compile(r"^[ \t]*" + re.escape(m.group(2)) + r"[ \t]*$", re.MULTILINE).search(s, trigger + 1)
-    return (trigger, trigger + 1, t.start(), t.end(), bool(m.group(1))) if t else None
+    t = re.compile(r"^[ \t]*" + re.escape(word.lstrip("\\")) + r"[ \t]*$", re.MULTILINE).search(s, trigger + 1)
+    return (trigger, trigger + 1, t.start(), t.end(), m.group(3) is None or word.startswith("\\")) if t else None
 
 def _substitution_bodies(s):
     bodies, n, i = [], len(s), 0

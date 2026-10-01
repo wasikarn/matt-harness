@@ -642,13 +642,18 @@ for _c in \
   "$(_nl 'echo "$(cat <<A <<B' x A '$(git stash)' B ')"')" \
   "$(_nl 'echo "$(cat <<EOF' "it's \`git stash\`" EOF ')"')" \
   "$(_nl 'echo "$(echo "<<A"' 'git stash' A ')"')" \
-  "$(_nl 'git commit -m "$(cat <<EOF' 'an unquoted heredoc runs `git stash` here' EOF ')"')" ; do
+  "$(_nl 'git commit -m "$(cat <<EOF' 'an unquoted heredoc runs `git stash` here' EOF ')"')" \
+  "$(_nl 'echo "$(cat <<EOF-1' data EOF-1 'git stash' EOF ')"')" \
+  "$(_nl 'echo "$(echo $((1<<EOF));' 'git stash' EOF ')"')" \
+  "$(_nl 'echo "$(cat <<E"O"F' 'git stash' EOF ')"')" ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
   check "second-round shape denied: ${_c:0:50}" "$ok"
 done
 for _c in \
   "$(_nl 'git commit -m "$(cat <<'"'EOF'" 'fix: handle `git stash` and $(git clean -fd) in prose' '' EOF ')"')" \
   "$(_nl 'echo "$(cat <<A <<B' 'git stash is data' A 'git reset is data' B ')"')" \
+  "$(_nl 'echo "$(cat <<'"'E-1'" 'git stash is data' E-1 ')"')" \
+  "$(_nl 'echo "$(cat <<-EOF' '	git stash is data' '	EOF' ')"')" \
   'echo "$(echo $((1<<2)); git status)"' ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
   check "heredoc prose and safe shapes allowed: ${_c:0:50}" "$ok"
