@@ -129,6 +129,10 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   greedy walk lands on the last), `{` + blank as a command start, and `xargs` in the spawn
   anchor's wrapper list only. Each pass charges the budget, so the guard's rose to 60M; a padded
   benign command of ~3,000 blank lines (spawn scan) or ~2,100-2,200 `{ ` units (both gates) is now refused.
+  GH #276: the lazy pass can land on a wrapper argument spelled `git` (`sudo -u git env git stash`),
+  so it keeps scanning forward for later `git` words in the same statement, one linear walk (a
+  lookahead from every `git` re-read `git -C ` runs and took 11 s). Lazy pass only, so an unquoted
+  `git log x git stash` now denies; deny-biased, accepted.
   Starts x length is not the whole cost: the guard's chain prefix (eval/builtin/command/exec/rtk)
   re-reads a chain run from every walk position, so each run also charges its length squared per
   start (deep-audit 5: `command ` x 8000 after one `;` took 9 s). A new regex piece needs its own

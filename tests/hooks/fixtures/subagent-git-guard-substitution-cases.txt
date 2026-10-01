@@ -144,3 +144,15 @@ EOF
 DENY C43 real comment after a space still hides its text
 echo "$(echo x # it's
 git stash)"
+%%
+ALLOW C44 braces inside a substitution close; the later printf argument is data
+f() { echo "$(echo "${2:-}")"; }
+f "$(printf 'ls\ngit reset')"
+%%
+ALLOW C45 body line starting with the delimiter word is not a terminator
+python3 - <<'PY'
+cmd = '''python3 - <<'PY'
+x
+PY'''
+print(cmd)
+PY

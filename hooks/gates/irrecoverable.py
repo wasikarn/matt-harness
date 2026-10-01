@@ -1031,8 +1031,10 @@ if len(cmd) > _CMD_LEN_CAP:
 # GH #219 (named-fd "{var}>") is left out: it would deny the "{fd}>" branch switches GH #188 allows.
 _AMBIG_QUOTED_CLOSE_RE = re.compile(r"\$\([^)\n]{0,80}[\"'][^\"'\n$(]{0,20}\)[^\"'\n$(]{0,20}[\"']")
 _AMBIG_BRACE_RE = re.compile(r"(?:^|[\s;|&(])\{[^{}\s\"'`$]{1,60}\}(?=[\s;|&)]|$)")
+# GH #275 follow-up: the bundle form splits at the FIRST f/d/D/r/R only (same language as the old
+# `[uvnqxfdDrR]*[fdDrR][uvnqxfdDrR]*`); the old form retried every split of a long `-fff...` token.
 # Git accepts unique long-option prefixes ("--har", "--forc"), so both spellings are flags here.
-_AMBIG_FLAG_RE = re.compile(r"--h(?:a(?:r(?:d)?)?)?\b|--fo(?:r(?:c(?:e)?)?)?\b|(?:^|\s)-[uvnqxfdDrR]*[fdDrR][uvnqxfdDrR]*\b")
+_AMBIG_FLAG_RE = re.compile(r"--h(?:a(?:r(?:d)?)?)?\b|--fo(?:r(?:c(?:e)?)?)?\b|(?:^|\s)-[uvnqx]*[fdDrR][uvnqxfdDrR]*\b")
 # A brace token can hide a flag ("rm {-rf,} X"), so its verb check is broad (any rm/dd/find/git sub);
 # the other shapes leave the flags visible, so their verb check is the destructive form itself.
 # A verb may be path-qualified ("/bin/rm", "/usr/bin/git"), so "/" may precede it, and git may carry
@@ -1054,9 +1056,11 @@ _AMBIG_GIT = "(?:" + _AMBIG_GIT_SKIP + "|" + _AMBIG_GIT_WALK + ")"
 _AMBIG_BROAD_VERB_RE = re.compile(
     r"(?<![\w.-])(?:rm\s|dd\s|find\s)|" + _AMBIG_GIT +
     r"(?:push|reset|clean|checkout|restore|switch|branch|stash)\b")
+# GH #275 follow-up: the push flag scan is capped at 200 letters (a longer run counts as a hit, an
+# over-deny); `[A-Za-z]*f\b` backed off across the whole token from every git/push anchor in reach.
 _AMBIG_NARROW_VERB_RE = re.compile(
     r"(?<![\w.-])(?:rm\s+-[A-Za-z]*[rf]|find\s[^\n]{0,300}(?:-delete|-exec\w*\s+rm)|dd\s[^\n]{0,200}of=)|"
-    + _AMBIG_GIT + r"(?:push\b[^\n;|&]{0,200}(?:--force\b|\s-[A-Za-z]*f\b)"
+    + _AMBIG_GIT + r"(?:push\b[^\n;|&]{0,200}(?:--force\b|\s-(?:[A-Za-z]{0,200}f\b|[A-Za-z]{201}))"
     r"|reset\b[^\n;|&]{0,200}--hard|clean\b"
     r"|checkout\b[^\n;|&]{0,200}(?:\s--(?:\s|$)|\s-f\b|\s\.(?:\s|$))|restore\b"
     r"|branch\b[^\n;|&]{0,200}\s-D\b|stash\s+(?:drop|clear)\b)")
@@ -1846,7 +1850,11 @@ for _wi, w in enumerate(windows):
                 if sub == "commit" and any(_bundled_flag(t, "mFtu", "n") for t in scan):
                     deny("git commit -n is --no-verify, it bypasses safety hooks")
                 # -A also arrives bundled (-Af, -fA, -vA); add has no value-taking short flag.
-                if sub == "add" and any(t == "." or _bundled_flag(t, "", "A") or _is_flag(t, "--all") for t in scan) and not _mid_merge():
+                # --pathspec-from-file's value is a pathspec list the gate cannot read
+                # (GH #200), so any use denies, as in restore/checkout above.
+                if sub == "add" and any(t == "." or _bundled_flag(t, "", "A") or _is_flag(t, "--all")
+                                        or _is_flag(t.split("=", 1)[0], "--pathspec-from-file")
+                                        for t in scan) and not _mid_merge():
                     deny("git add -A/. stages everything — stage files by name instead "
                          "(allowed only while a merge is in progress, i.e. MERGE_HEAD exists)")
 

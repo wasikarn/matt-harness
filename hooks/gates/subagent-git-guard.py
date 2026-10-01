@@ -191,7 +191,9 @@ def _plain_and_overlapping(tail):
             re.compile(r"(?=(" + pattern + r"))", re.MULTILINE),
             re.compile(r"(?=(" + _cmd_start(_WRAPPER_PREFIX_LAZY) + tail + r"))", re.MULTILINE))
 
-_ANCHOR_RES = _plain_and_overlapping(r"\\?(?:\S*/)?git\b")
+_GIT_WORD = r"\\?(?:\S*/)?git\b"
+_ANCHOR_RES = _plain_and_overlapping(_GIT_WORD)
+_LAZY = 2  # index of the lazy pass in _plain_and_overlapping's tuple
 # `bash -c "<body>"` / `eval "<body>"`: the body is a quoted string, so the masked
 # text hides it. The shell word is matched on the masked string (a real command,
 # not text inside a message); the body is read from the raw command at the same
@@ -206,36 +208,40 @@ _ANCHOR_RES = _plain_and_overlapping(r"\\?(?:\S*/)?git\b")
 # so finditer resumed after it and never saw that statement's shell word.
 _RTK_BODY = r"rtk[ \t]+(?:-\S+[ \t]+)*(?:run|err|test|summary)(?:[ \t]+-[^\s;&|]*)*"
 _SHELL_RES = _plain_and_overlapping(
-    r"\\?(?:\S*/)?(?:(?:bash|sh|zsh|dash|ksh)\s+(?:-\S+\s+)*?-\w*c\w*|eval|" + _RTK_BODY + r")(?=\s)"
+    r"\\?(?:\S*/)?(?:(?:bash|sh|zsh|dash|ksh)\s+(?:-\S+\s+)*?-[^\Wc]*c\w*|eval|" + _RTK_BODY + r")(?=\s)"
 )
+# GH #275: `-[^\Wc]*c\w*` is the same language as `-\w*c\w*` but splits at the FIRST `c` only; the old
+# form retried every split of a long `-ccc...` token (quadratic, 60 KB ran past 20 s, a timeout allows).
 # Masking blanks the quote characters, so the raw body is found by skipping
 # whitespace from the end of the shell word.
 _QUOTED_RE = re.compile(r'\s*(?:"((?:[^"\\]|\\.)*)"|' + "'([^']*)')")
 # Only stash/reset/clean (see header); read-only `stash list|show` carved out.
-_DENY_SUBCMD_RE = re.compile(r"\A\s+(stash(?!\s+(list|show)\b)|reset|clean)\b")
+_DENY_SUBCMD_RE = re.compile(r"\s+(stash(?!\s+(list|show)\b)|reset|clean)\b")
 
 # Git global flags walked past before the subcommand check, so `git -C /repo
 # stash` / `git --no-pager clean` do not land the check on sub="-C".
 _GIT_VALUE_GLOBALS = ("-C", "-c", "--git-dir", "--work-tree", "--config-env", "--namespace", "--attr-source")
 
+# GH #276: the next git word in the same statement (matched at the offset of a non-flag token, so
+# each hit moves forward).
+_NEXT_GIT_RE = re.compile(r"[^;&|\n()]*?\s" + _GIT_WORD)
 _FLAG_TOKEN_RE = re.compile(r"\s+(\S+)")
 _FLAG_VALUE_RE = re.compile(r"\s+\S+")
 
-def _skip_git_globals(tail):
-    # tail starts right after the "git" anchor on the masked string. Returns the
-    # suffix from the first non-flag token, leading whitespace intact for \A\s+.
-    # GH #246: match at offset i, never re-slice the tail per flag (quadratic on a long flag run).
-    i = 0
+def _skip_git_globals(s, i):
+    # i is the offset right after the "git" anchor on the masked string. Returns the offset of the
+    # first non-flag token's leading whitespace, so _DENY_SUBCMD_RE's \s+ still matches there.
+    # GH #246: walk by offset, never re-slice the string per flag (quadratic on a long flag run).
     while True:
-        m = _FLAG_TOKEN_RE.match(tail, i)
+        m = _FLAG_TOKEN_RE.match(s, i)
         if not m:
-            return tail[i:]
+            return i
         tok = m.group(1)
         if not tok.startswith("-"):
-            return tail[i:]
+            return i
         if tok in _GIT_VALUE_GLOBALS:
             i = m.end()
-            m2 = _FLAG_VALUE_RE.match(tail, i)
+            m2 = _FLAG_VALUE_RE.match(s, i)
             if m2:
                 i = m2.end()
             continue
@@ -270,9 +276,19 @@ def _charge(s):
 def _violation(masked_cmd, overlap):
     _charge(masked_cmd)
     for m in _ANCHOR_RES[overlap].finditer(masked_cmd):
-        dm = _DENY_SUBCMD_RE.match(_skip_git_globals(masked_cmd[m.end(1):]))
-        if dm:
-            return dm.group(1)
+        pos = m.end(1)
+        while True:
+            pos = _skip_git_globals(masked_cmd, pos)
+            dm = _DENY_SUBCMD_RE.match(masked_cmd, pos)
+            if dm:
+                return dm.group(1)
+            # GH #276: the lazy pass lands on the first git word, which can be a wrapper's argument
+            # (sudo -u git git stash); a later git word in the same statement may be the real one.
+            # Offsets only, no re-slicing: each hit moves pos forward, so the walk is linear.
+            nxt = _NEXT_GIT_RE.match(masked_cmd, pos) if overlap == _LAZY else None
+            if not nxt:
+                break
+            pos = nxt.end()
     return None
 
 def _violation_in_bodies(raw_cmd, masked_cmd, overlap):
@@ -357,7 +373,9 @@ def _heredoc_at(s, i, after=None):
     d = re.escape(word.lstrip("\\"))
     lead = "^\t*" if s[i + 2:i + 3] == "-" else "^"  # no shell accepts a space-indented terminator
     strict = re.compile(lead + d + "$", re.MULTILINE).search(s, trigger + 1)
-    lenient = re.compile(lead + d + r"(?!\w)", re.MULTILINE).search(s, trigger + 1)
+    # The one known disagreement: bash and sh end a heredoc inside `$(...)` at `X)`; trailing blanks
+    # are the other unsure spot. A body line that merely starts with the word (`PY'''`) is not one.
+    lenient = re.compile(lead + d + r"(?:[ \t]*\)|[ \t]*$)", re.MULTILINE).search(s, trigger + 1)
     if not strict or not lenient or strict.start() != lenient.start():
         raise _Unparsed
     return (trigger, trigger + 1, strict.start(), strict.end(), m.group(3) is None or word.startswith("\\"))
@@ -437,12 +455,12 @@ def _substitution_bodies(s):
             frames.append(["paren", i + 2, None, 0, 0, False, True, 0]); i += 1
         elif c == "$" and s[i + 1:i + 2] == "{":
             f[7] += 1; i += 1
+        elif c == "}" and f[7] and f[2] in (None, '"'):  # also inside "...": `"${x}"` must close
+            f[7] -= 1
         elif f[0] == "paren" and f[2] is None:
             # f[6]: at a command position, so only a `case` there opens a case (`echo case` does not)
             if c in " \t":
                 pass
-            elif c == "}" and f[7]:
-                f[7] -= 1
             elif c == "(":
                 f[3] += 1; f[6] = True
             elif c == ")":
@@ -474,12 +492,12 @@ def _substitution_bodies(s):
 # is looked for on the quote-masked text, so a `<<A` inside quotes cannot blank a real command.
 _HD_OP_RE = re.compile(r"(?<!<)<<(?!<)")
 
-def _blank_heredocs(s):
+def _heredoc_spans(s):
     spans, line_end, last = [], -1, None
     for m in _HD_OP_RE.finditer(_mask_quotes(s)):
         p = m.start()
         _scan_cost(len(spans))
-        if any(a <= p < b for a, b in spans):  # inside a body already blanked
+        if any(a <= p < b for a, b, _ in spans):  # inside a body already blanked
             continue
         chained = last is not None and p < line_end  # a second heredoc on the same line as the previous one
         h = _heredoc_at(s, p, last[3] if chained else None)
@@ -487,10 +505,24 @@ def _blank_heredocs(s):
             if not chained:
                 line_end = s.find("\n", p)
             last = h
-            spans.append((h[1], h[2]))
+            spans.append((h[1], h[2], h[4]))
+    return sorted(spans)
+
+def _blank_heredocs(s):
     out, i = [], 0
-    for a, b in sorted(spans):
+    for a, b, _ in _heredoc_spans(s):
         out.append(s[i:a]); out.append(re.sub(r"[^\n]", "Q", s[a:b])); i = b
+    return "".join(out) + s[i:]
+
+# A quoted-delimiter body is data, never a command. Cutting it out before the substitution scans
+# keeps a big document written by `cat > f <<'EOF'` from spending the shared work budget (it would
+# otherwise be refused as too costly, a new deny develop never made). Offsets do not matter here:
+# the scans return body strings, not positions.
+def _drop_quoted_heredocs(s):
+    out, i = [], 0
+    for a, b, quoted in _heredoc_spans(s):
+        if quoted:
+            out.append(s[i:a]); i = b
     return "".join(out) + s[i:]
 
 # The bodies of `bash -c '<body>'` / `eval "<body>"` in a text (one level, like _violation_in_bodies).
@@ -505,26 +537,36 @@ def _shell_bodies(raw):
                 out.append(q.group(1) if q.group(1) is not None else q.group(2))
     return out
 
-def _violation_in_substitutions(raw_cmd):
-    subs = _substitution_bodies(raw_cmd)
-    texts = list(subs)
-    for t in [raw_cmd] + subs:  # `bash -c 'echo "$(git stash)"'`: the shell body has substitutions too
-        for sb in _shell_bodies(t):
-            texts.extend(_substitution_bodies(sb))
-    for body in texts:
-        body = _blank_heredocs(body)
-        mb = _mask_quotes(body)
-        for overlap in (False, True, 2):
-            hit = _violation(mb, overlap) or _violation_in_bodies(body, mb, overlap)
-            if hit:
-                return hit
+# The substitution texts are built once (a scan plus a heredoc blank and a mask per body) and checked
+# on every anchor pass, the same per-pass order develop's #281 introduced, so a deny that the plain
+# pass finds is found before the cost of the lazy pass.
+_sub_texts = None
+
+def _substitution_texts():
+    global _sub_texts
+    if _sub_texts is None:
+        raw = _drop_quoted_heredocs(cmd)
+        subs = _substitution_bodies(raw)
+        texts = list(subs)
+        for t in [raw] + subs:  # `bash -c 'echo "$(git stash)"'`: the shell body has substitutions too
+            for sb in _shell_bodies(t):
+                texts.extend(_substitution_bodies(sb))
+        blanked = [_blank_heredocs(b) for b in texts]
+        _sub_texts = [(b, _mask_quotes(b)) for b in blanked]
+    return _sub_texts
+
+def _violation_everywhere(overlap):
+    hit = _violation(masked, overlap) or _violation_in_bodies(cmd, masked, overlap)
+    if hit:
+        return hit
+    for body, mb in _substitution_texts():
+        hit = _violation(mb, overlap) or _violation_in_bodies(body, mb, overlap)
+        if hit:
+            return hit
     return None
 
 try:
-    hit = (_violation(masked, False) or _violation_in_bodies(cmd, masked, False)
-           or _violation(masked, True) or _violation_in_bodies(cmd, masked, True)
-           or _violation(masked, 2) or _violation_in_bodies(cmd, masked, 2)
-           or _violation_in_substitutions(cmd))
+    hit = _violation_everywhere(False) or _violation_everywhere(True) or _violation_everywhere(_LAZY)
 except _TooCostly:
     print(f"[mh:gate] BLOCKED: subagent ({agent_type}) command is too long or too dense to check "
           f"safely ({len(cmd)} bytes); write it to a file with the Write tool and run the file, "

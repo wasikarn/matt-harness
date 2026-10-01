@@ -571,13 +571,44 @@ for _c in \
   "time git stash; time $(_pad 'rtk -a ' 8000)ls" \
   "time git stash; git status; $(_pad 'time ; ' 50)$(_pad 'command ' 1000)ls" \
   "bash -c 'true; $(_pad 'command ' 8000)git stash; git status'" \
-  "sudo $(_pad 'git -C ' 10000)x; time git stash; git status" ; do
+  "sudo $(_pad 'git -C ' 10000)x; time git stash; git status" \
+  "sudo -u git $(_pad 'git ' 20000)stash; git status" \
+  "sudo -u git $(_pad 'git -u ' 10000)env git stash; git status" ; do
   rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
   check "padded command denied inside 8 s, not timed out into allow (rc $rc, ${#_c} bytes): ${_c:0:30}" "$ok"
 done
+# GH #276 deep-audit: the scan after a wrapper-argument git re-sliced the tail per hit (quadratic
+# copying, 8 s at ~2 MB). A payload that size never fits an argv, so it is built and piped here.
+_rc=$(python3 -c '
+import json, signal, subprocess, sys, os
+c = "sudo -u git env " + "-u git " * 330000 + "git stash; git status"
+d = json.dumps({"tool_name": "Bash", "tool_input": {"command": c}, "agent_id": "a", "agent_type": "general-purpose"})
+p = subprocess.Popen(["bash", sys.argv[1]], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True)
+try:
+    p.communicate(d.encode(), timeout=8)
+    print(p.returncode)
+except subprocess.TimeoutExpired:
+    os.killpg(p.pid, signal.SIGKILL)
+    print(124)
+' "$GATE")
+ok=1; [ "$_rc" = "2" ] && ok=0
+check "2 MB run of wrapper-argument git words denied inside 8 s, not timed out into allow (rc $_rc)" "$ok"
 # The last row guards a dropped fix: a lazy target that looked ahead for the denied subcommand
-# re-read a `git -C` run from every `git` (11 s at 70 KB). `sudo -u git git stash; git status` is
-# still allowed, a known residual.
+# re-read a `git -C` run from every `git` (11 s at 70 KB).
+# GH #276: a wrapper argument spelled git stopped the lazy target; the guard now re-checks from a
+# git word that directly follows the anchored one (one forward walk, so the row above stays fast).
+for _c in \
+  'sudo -u git git stash; git status' \
+  'xargs -I git git stash; git status' \
+  'sudo -u git git -C /r reset --hard; git log -1' \
+  'sudo -g git -u root git stash; git status' \
+  'sudo -u git env git stash; git status' \
+  'sudo -u git sudo git stash; git status' \
+  'sudo -u git git -C /r -u root git stash; git status' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "wrapper argument spelled git no longer hides a denied statement: $_c" "$ok"
+done
 for _c in \
   'command -v git && git status' \
   'eval "$(ssh-agent -s)"; git status' \
@@ -684,6 +715,16 @@ while IFS= read -r -d $'\x1e' _blk; do
 done < "$_corpus_rs"
 ok=1; [ "$_prod" = 0 ] && [ "$_want_n" -ge 25 ] && [ "$_got_n" = "$_want_n" ] && ok=0
 check "corpus replayed every case (loaded $_got_n of $_want_n, loader exit $_prod)" "$ok"
+# A big document written through a quoted heredoc must not be refused as too costly (replay of real
+# transcripts: two 12-17 KB writes were denied by the scans' work budget, which develop allowed).
+_c=$(python3 -c '
+lines = ["cat > /tmp/doc.md <<'"'"'DOCEOF'"'"'", "# Diagrams"]
+lines += ["  node%d(step %d) --> node%d : label text for this step of the flow" % (i, i, i + 1) for i in range(250)]
+lines += ["DOCEOF"]
+print("\n".join(lines))
+')
+rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && [ "${#_c}" -gt 12000 ] && ok=0
+check "large quoted-heredoc document is allowed (rc $rc, ${#_c} bytes)" "$ok"
 _c='echo "$(cat <<EOF
 x
 $(git stash)
@@ -691,6 +732,47 @@ EOF
 )"'
 rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
 check "substitution nested in a heredoc body still denied" "$ok"
+# GH #274: git inside a double-quoted $(...) or inside backticks ran unchecked (the quote mask hid it).
+for _c in \
+  'echo "$(git clean -fd)"' \
+  'echo `sudo -u git git clean -fd`' \
+  'echo "a $(true; git stash) b"' \
+  'echo "$(echo "$(git reset --hard)")"' \
+  'echo "x `git stash`"' \
+  'echo "$(bash -c "git stash")"' \
+  'echo '"'"'\'"'"'"$(git clean -fd)"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "git inside a quoted substitution or backticks denied: $_c" "$ok"
+done
+for _c in \
+  'echo "$(git status)"' \
+  'echo "$(git stash list)"' \
+  "echo '\$(git stash)'" \
+  "echo '\`git stash\`'" \
+  'echo "\$(git stash)"' \
+  'echo "$(echo hi) git stash"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "substitution scan has no false deny: $_c" "$ok"
+done
+
+# --- (18) GH #275: a huge flag token after a shell word backtracked quadratically inside the shell-body
+# anchor's `-\w*c\w*`, a cost no charge covers (60 KB ran past 20 s). Each row must be decided in 8 s. --- #
+for _c in \
+  "bash -$(_pad c 60000)= x; time git stash; git status" \
+  "bash -$(_pad c 60000)" ; do
+  rc=$(sgg_rc8 "$_c"); ok=1
+  # the bare flag token carries no git command: exactly rc 0 passes (an over-deny, rc 2, fails); the others exactly rc 2
+  case "$_c" in "bash -"*cc) [ "$rc" = "0" ] && ok=0 ;; *) [ "$rc" = "2" ] && ok=0 ;; esac
+  check "huge flag token decided inside 8 s (rc $rc, ${#_c} bytes): ${_c:0:20}" "$ok"
+done
+for _c in 'bash -c "git status"' 'bash -xc "git status"' 'bash -x -ec "git status"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "GH #275 control still allowed: $_c" "$ok"
+done
+for _c in 'bash -c "git stash"' 'bash -xc "git stash"' 'bash -x -ec "git reset --hard"' 'bash -cx "git stash"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #275 control still denied: $_c" "$ok"
+done
 
 echo ""
 echo "=== $pass passed, $fail failed ==="
