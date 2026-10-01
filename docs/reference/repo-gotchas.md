@@ -163,7 +163,11 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   patch (validator round 1) and merged; validator round 2 then found an sh/dash residue, and its
   fix (PR #218) was the piece dropped, with the residue tracked in GH #219. Shipping only the
   pieces that pass is how #208 merged after PR #192 failed.
-- **When the shell is ambiguous, check both readings; any deny wins** (GH #219).
+- **When the shell is ambiguous, check both readings; any deny wins** (GH #219). Shipped for named-fd
+  `{var}>f`: `_blank_redirections(s, named_fd)` is run as redirect (bash 4+/ksh), literal word (sh,
+  bash 3.2, dash) and zsh (`{var}&>f` too), and every window is checked. Fuzz, 4000 cases against real
+  shells: false-allows 84 to 0, false-denies 545 to 602 (a branch switch or restore with `{fd}>x` now
+  denies; accepted, the safe direction). A check by argv0 stays unsound (`exec -a sh bash`).
 - Attack strings live in files, never in Bash command text, and the gate only classifies them.
 - **A word list one gate types by hand drifts from its sibling.** `subagent-git-guard.py`'s
   `_WRAPPER_WORDS` is a second copy of `irrecoverable.py`'s `PREFIX_WRAPPERS`; `rtk` reached the

@@ -869,8 +869,13 @@ def _blank_substitutions(s):
 _REDIRECT_OP_RE = re.compile(
     r"\{[A-Za-z_][A-Za-z0-9_]*\}(?:>>|<<<|<<|>&|<&|>\||<>|>|<)"
     r"|\d{0,2}(?:>>|<<<|<<|>&|<&|&>>|&>|>\||<>|>|<)")
+# GH #219: zsh alone takes "{var}&>f" as a named-fd redirect (bash reads the word "{var}" plus "&>f").
+_REDIRECT_OP_ZSH_RE = re.compile(r"\{[A-Za-z_][A-Za-z0-9_]*\}(?:&>>|&>)|" + _REDIRECT_OP_RE.pattern)
 _REDIRECT_TARGET_STOP = set(" \t\n;|&()")
-def _blank_redirections(s):
+def _blank_redirections(s, named_fd=True):
+    # named_fd: True = bash 4+/ksh93 (consume "{var}>f"), False = macOS /bin/sh, bash 3.2, dash (the
+    # literal word "{var}" plus a plain redirect), "zsh" = True plus "{var}&>f" (GH #219).
+    # Callers check every reading; any deny wins.
     out = []
     in_squote = in_dquote = in_comment = False
     # See _newlines_to_seps's own comment: an escaped separator is still a
@@ -933,11 +938,11 @@ def _blank_redirections(s):
             out.append(HASH_LIT); i += 1
             last_escaped = False
             continue
-        m = _REDIRECT_OP_RE.match(s, i)
+        m = (_REDIRECT_OP_ZSH_RE if named_fd == "zsh" else _REDIRECT_OP_RE).match(s, i)
         # mid-word "{": literal text, not a named fd (GH #188). After an
         # escaped char ("x\ {fd}>f") it is still read as a redirect: keeping
         # "{" as text lets the outer tokenizer break the window at "{".
-        if m and c == "{" and out and out[-1] not in _REDIRECT_TARGET_STOP:
+        if m and c == "{" and (not named_fd or (out and out[-1] not in _REDIRECT_TARGET_STOP)):
             m = None
         if m:
             j = m.end()
@@ -1039,7 +1044,7 @@ if len(cmd) > _CMD_LEN_CAP:
 # text (pre-blanking) when the command is BOTH ambiguous and names an irrecoverable verb. Over-denies
 # are the safe direction. Every test is linear or bounded: the length cap above is the only input bound.
 # ponytail: not a parser; a real parser (or a differential fuzz per shape) is the upgrade path.
-# GH #219 (named-fd "{var}>") is left out: it would deny the "{fd}>" branch switches GH #188 allows.
+# GH #219 (named-fd "{var}>") is not a raw-text rule: _blank_redirections reads it both ways instead.
 _AMBIG_QUOTED_CLOSE_RE = re.compile(r"\$\([^)\n]{0,80}[\"'][^\"'\n$(]{0,20}\)[^\"'\n$(]{0,20}[\"']")
 _AMBIG_BRACE_RE = re.compile(r"(?:^|[\s;|&(])\{[^{}\s\"'`$]{1,60}\}(?=[\s;|&)]|$)")
 # GH #275 follow-up: the bundle form splits at the FIRST f/d/D/r/R only (same language as the old
@@ -1175,6 +1180,11 @@ if "{" in cmd or "}" in cmd:
         _lex2 = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd)))), posix=True, punctuation_chars=True)
         _lex2.wordchars += PH + HASH_LIT + PSUB + "{}"
         _token_lists.append(list(_lex2))
+        # GH #219: the same text read the macOS sh / bash 3.2 / dash way, "{var}>f" a literal word.
+        for _nf in (False, "zsh"):
+            _lex3 = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd))), _nf), posix=True, punctuation_chars=True)
+            _lex3.wordchars += PH + HASH_LIT + PSUB + "{}"
+            _token_lists.append(list(_lex3))
     except ValueError:
         pass  # the first copy already handled an unparsable command
 
@@ -1345,22 +1355,25 @@ def _scan_body(body):
              "(claude -p/--print/--agent/--bg/--worktree), inside bash -c / eval either "
              "-- only the main session dispatches")
     try:
-        lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(body)))), posix=True, punctuation_chars=True)
-        lex.wordchars += PH + HASH_LIT + PSUB
-        lex.whitespace_split = True
-        cur = []
-        for tok in [p for t in list(lex) for p in _split_ops(t)] + [";"]:
-            if tok in OPERATORS:
-                if cur:
-                    _WDEPTH[len(windows)] = _cur_depth + 1
-                    windows.append(cur)
-                    curc = [t for t in cur if not (t and all(c == PH for c in t))]
-                    if curc != cur:
+        # GH #219: "{var}>f" is a redirect in bash 4+/ksh/zsh and a literal word plus a redirect in
+        # macOS sh, bash 3.2 and dash, so a body holding "{" is read both ways and every window checked.
+        for nf in ((True, False, "zsh") if "{" in body else (True,)):
+            lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(body))), nf), posix=True, punctuation_chars=True)
+            lex.wordchars += PH + HASH_LIT + PSUB
+            lex.whitespace_split = True
+            cur = []
+            for tok in [p for t in list(lex) for p in _split_ops(t)] + [";"]:
+                if tok in OPERATORS:
+                    if cur:
                         _WDEPTH[len(windows)] = _cur_depth + 1
-                        windows.append(curc)
-                cur = []
-            else:
-                cur.append(tok)
+                        windows.append(cur)
+                        curc = [t for t in cur if not (t and all(c == PH for c in t))]
+                        if curc != cur:
+                            _WDEPTH[len(windows)] = _cur_depth + 1
+                            windows.append(curc)
+                    cur = []
+                else:
+                    cur.append(tok)
     except ValueError:
         deny("could not safely tokenize the body of a bash -c / eval string - confirm with user first")
     if _DEPTH_BUDGET_BLOWN[0]:
