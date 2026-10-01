@@ -1781,7 +1781,11 @@ for _wi, w in enumerate(windows):
                             _val = t.find("s") == len(t) - 1 and t != "-"
                         else:
                             _val = "=" not in t and (_is_flag(t, "--source") or _is_flag(t, "--pathspec-from-file"))
-                    targets_worktree = "--staged" not in _opts or any(
+                    # GH #197: -S is --staged; same cluster rule as -W (stops at "s").
+                    _staged = any(_is_flag(t, "--staged")
+                                  or (t.startswith("-") and not t.startswith("--") and "S" in t.split("s", 1)[0])
+                                  for t in _opts)
+                    targets_worktree = not _staged or any(
                         _is_flag(t, "--worktree")
                         or (t.startswith("-") and not t.startswith("--") and "W" in t.split("s", 1)[0])
                         for t in _opts)
