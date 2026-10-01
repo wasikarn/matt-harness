@@ -2440,6 +2440,23 @@ for _c in \
   test_deny "$IRRECOVERABLE" "xargs wrapper awkward shape still denied: $_c" "$(bash_agent_payload "$_c" fork)"
 done
 
+# GH #275 follow-up (deep-audit): _AMBIG_FLAG_RE's `[uvnqxfdDrR]*[fdDrR][uvnqxfdDrR]*\b` retried every split
+# of a long `-fff...` token (quadratic: 60 KB took 11 s, past the 8 s hook timeout, and a timed-out hook
+# allows). `timeout 5` wraps the run, so a regression reads as rc 124, not a slow pass.
+_flag_dos_cmd="$(python3 -c 'print("git @{1} -" + "f" * 60000 + "c; git reset --hard")')"
+_flag_dos_rc=$(bash_payload "$_flag_dos_cmd" | timeout 5 bash "$IRRECOVERABLE" 2>/dev/null; echo $?)
+if [[ "$_flag_dos_rc" == "2" ]]; then
+  echo "  ✅ DENY (bounded time): a 60 KB flag token after git @{1} denies well under the 8s PreToolUse timeout"
+  pass=$((pass + 1))
+else
+  echo "  ❌ DENY EXPECTED (bounded time) but got exit $_flag_dos_rc (124 = timed out, quadratic flag scan): 60 KB flag token after git @{1}" >&2
+  fail=$((fail + 1))
+fi
+test_deny  "$IRRECOVERABLE" 'GH #275 control: a short bundled flag after git @{1} next to reset --hard still denies' \
+  "$(bash_payload 'git @{1} -fx; git reset --hard')"
+test_allow "$IRRECOVERABLE" 'GH #275 control: git log @{1} -p has no f/d/D/r/R flag and no destructive verb' \
+  "$(bash_payload 'git log @{1} -p')"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="

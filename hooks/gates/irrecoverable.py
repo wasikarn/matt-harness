@@ -1031,8 +1031,10 @@ if len(cmd) > _CMD_LEN_CAP:
 # GH #219 (named-fd "{var}>") is left out: it would deny the "{fd}>" branch switches GH #188 allows.
 _AMBIG_QUOTED_CLOSE_RE = re.compile(r"\$\([^)\n]{0,80}[\"'][^\"'\n$(]{0,20}\)[^\"'\n$(]{0,20}[\"']")
 _AMBIG_BRACE_RE = re.compile(r"(?:^|[\s;|&(])\{[^{}\s\"'`$]{1,60}\}(?=[\s;|&)]|$)")
+# GH #275 follow-up: the bundle form splits at the FIRST f/d/D/r/R only (same language as the old
+# `[uvnqxfdDrR]*[fdDrR][uvnqxfdDrR]*`); the old form retried every split of a long `-fff...` token.
 # Git accepts unique long-option prefixes ("--har", "--forc"), so both spellings are flags here.
-_AMBIG_FLAG_RE = re.compile(r"--h(?:a(?:r(?:d)?)?)?\b|--fo(?:r(?:c(?:e)?)?)?\b|(?:^|\s)-[uvnqxfdDrR]*[fdDrR][uvnqxfdDrR]*\b")
+_AMBIG_FLAG_RE = re.compile(r"--h(?:a(?:r(?:d)?)?)?\b|--fo(?:r(?:c(?:e)?)?)?\b|(?:^|\s)-[uvnqx]*[fdDrR][uvnqxfdDrR]*\b")
 # A brace token can hide a flag ("rm {-rf,} X"), so its verb check is broad (any rm/dd/find/git sub);
 # the other shapes leave the flags visible, so their verb check is the destructive form itself.
 # A verb may be path-qualified ("/bin/rm", "/usr/bin/git"), so "/" may precede it, and git may carry
