@@ -191,7 +191,9 @@ def _plain_and_overlapping(tail):
             re.compile(r"(?=(" + pattern + r"))", re.MULTILINE),
             re.compile(r"(?=(" + _cmd_start(_WRAPPER_PREFIX_LAZY) + tail + r"))", re.MULTILINE))
 
-_ANCHOR_RES = _plain_and_overlapping(r"\\?(?:\S*/)?git\b")
+_GIT_WORD = r"\\?(?:\S*/)?git\b"
+_ANCHOR_RES = _plain_and_overlapping(_GIT_WORD)
+_LAZY = 2  # index of the lazy pass in _plain_and_overlapping's tuple
 # `bash -c "<body>"` / `eval "<body>"`: the body is a quoted string, so the masked
 # text hides it. The shell word is matched on the masked string (a real command,
 # not text inside a message); the body is read from the raw command at the same
@@ -220,7 +222,9 @@ _DENY_SUBCMD_RE = re.compile(r"\A\s+(stash(?!\s+(list|show)\b)|reset|clean)\b")
 # stash` / `git --no-pager clean` do not land the check on sub="-C".
 _GIT_VALUE_GLOBALS = ("-C", "-c", "--git-dir", "--work-tree", "--config-env", "--namespace", "--attr-source")
 
-_GIT_WORD_RE = re.compile(r"\s+\\?(?:\S*/)?git\b")
+# GH #276: the next git word in the same statement (`rest` starts at a non-flag token, so each hit
+# moves forward and the walk stays linear).
+_NEXT_GIT_RE = re.compile(r"[^;&|\n()]*?\s" + _GIT_WORD)
 _FLAG_TOKEN_RE = re.compile(r"\s+(\S+)")
 _FLAG_VALUE_RE = re.compile(r"\s+\S+")
 
@@ -281,7 +285,7 @@ def _violation(masked_cmd, overlap):
                 return dm.group(1)
             # GH #276: the lazy pass lands on the first git word, which can be a wrapper's argument
             # (sudo -u git git stash); the real one follows it directly. One forward walk, no re-read.
-            nxt = _GIT_WORD_RE.match(rest) if overlap == 2 else None
+            nxt = _NEXT_GIT_RE.match(rest) if overlap == _LAZY else None
             if not nxt:
                 break
             tail = rest[nxt.end():]
@@ -349,7 +353,7 @@ def _violation_everywhere(overlap):
     return None
 
 try:
-    hit = _violation_everywhere(False) or _violation_everywhere(True) or _violation_everywhere(2)
+    hit = _violation_everywhere(False) or _violation_everywhere(True) or _violation_everywhere(_LAZY)
 except _TooCostly:
     print(f"[mh:gate] BLOCKED: subagent ({agent_type}) command is too long or too dense to check "
           f"safely ({len(cmd)} bytes); write it to a file with the Write tool and run the file, "

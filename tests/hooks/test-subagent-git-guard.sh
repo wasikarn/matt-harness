@@ -571,7 +571,9 @@ for _c in \
   "time git stash; time $(_pad 'rtk -a ' 8000)ls" \
   "time git stash; git status; $(_pad 'time ; ' 50)$(_pad 'command ' 1000)ls" \
   "bash -c 'true; $(_pad 'command ' 8000)git stash; git status'" \
-  "sudo $(_pad 'git -C ' 10000)x; time git stash; git status" ; do
+  "sudo $(_pad 'git -C ' 10000)x; time git stash; git status" \
+  "sudo -u git $(_pad 'git ' 20000)stash; git status" \
+  "sudo -u git $(_pad 'git -u ' 10000)env git stash; git status" ; do
   rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
   check "padded command denied inside 8 s, not timed out into allow (rc $rc, ${#_c} bytes): ${_c:0:30}" "$ok"
 done
@@ -582,7 +584,11 @@ done
 for _c in \
   'sudo -u git git stash; git status' \
   'xargs -I git git stash; git status' \
-  'sudo -u git git -C /r reset --hard; git log -1' ; do
+  'sudo -u git git -C /r reset --hard; git log -1' \
+  'sudo -g git -u root git stash; git status' \
+  'sudo -u git env git stash; git status' \
+  'sudo -u git sudo git stash; git status' \
+  'sudo -u git git -C /r -u root git stash; git status' ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
   check "wrapper argument spelled git no longer hides a denied statement: $_c" "$ok"
 done
