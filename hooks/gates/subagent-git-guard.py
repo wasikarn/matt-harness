@@ -151,7 +151,7 @@ masked = _mask_quotes(cmd)
 # stash; done"). A wrapper word must be followed by whitespace in the lookahead
 # too: with a bare \b a token that only STARTS with one ("timeout=30") is neither
 # a wrapper nor an ordinary token, and the regex dead-ends.
-_WRAPPER_WORDS = ("env", "command", "nohup", "nice", "time", "sudo", "xargs",
+_WRAPPER_WORDS = ("env", "command", "nohup", "nice", "time", "sudo", "doas", "xargs",
                   "exec", "setsid", "timeout", "gtimeout", "stdbuf", "ionice")
 _KEYWORDS = ("!", "if", "elif", "then", "else", "do", "while", "until", "coproc")
 _WRAPPER_ALT = r"(?:" + "|".join(_WRAPPER_WORDS) + r")(?=\s)"
