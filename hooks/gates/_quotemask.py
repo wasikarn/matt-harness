@@ -36,9 +36,10 @@ def mask_quotes(s):
     # real miss traces to an omitted operator. A backslash-escaped quote
     # OUTSIDE a span is a literal (GH #157 sibling, 2026-09-21); other
     # escaped characters outside spans are left as-is. A backslash-newline
-    # pair deliberately stays a line boundary: masking it hid a real
-    # `\<nl>git stash` from the callers' git anchor, so `echo \<nl>git stash`
-    # is a conservative false deny by design (GH #161 round 2).
+    # (odd run) is a line continuation (GH #286): masked as blanks when it
+    # starts a word, so `\<nl>git stash` still shows git to the callers'
+    # anchor (GH #161 round 2), and as Q's mid-word so a "#" after it is not
+    # a comment.
     out = []
     i, n = 0, len(s)
     at_word_start = True
@@ -114,8 +115,21 @@ def mask_quotes(s):
             # anchor regexes. An even run leaves a following quote live.
             j = i
             while j < n and s[j] == "\\":
-                out.append("\\")
                 j += 1
+            if (j - i) % 2 == 1 and j < n and s[j] == "\n":
+                # GH #286: an odd run before a newline is a line continuation;
+                # bash joins the lines, so a "#" after it is mid-word, not a
+                # comment. Blanks when the pair starts a word (a following
+                # git / # stays visible); Q's otherwise (glues to the word).
+                out.append("\\" * (j - i - 1))
+                if j - i == 1 and at_word_start:
+                    out.append("  ")
+                else:
+                    out.append("QQ")
+                    at_word_start = False
+                i = j + 1
+                continue
+            out.append("\\" * (j - i))
             if (j - i) % 2 == 1 and j < n and s[j] in "'\"$":
                 out.append("Q")
                 j += 1
