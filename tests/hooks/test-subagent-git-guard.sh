@@ -588,6 +588,25 @@ for _c in \
   check "chain and wrapper-argument control still allowed: $_c" "$ok"
 done
 
+# GH #274: git inside a double-quoted $(...) or backticks is a real command; single-quoted text is not.
+for _c in \
+  'echo "$(git clean -fd)"' \
+  'echo `sudo -u git git clean -fd`' \
+  'echo "a `git stash` b"' \
+  'echo "x $(echo "$(git reset --hard)")"' \
+  'echo "$(true; git stash)"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "git in quoted substitution denied: $_c" "$ok"
+done
+for _c in \
+  "echo '\$(git clean -fd)'" \
+  'echo "$(git status)"' \
+  'echo "git clean is denied"' \
+  'echo "\$(git clean -fd)"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "literal or safe substitution allowed: $_c" "$ok"
+done
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

@@ -287,10 +287,57 @@ def _violation_in_bodies(raw_cmd, masked_cmd, overlap):
                 return hit
     return None
 
+# GH #274: the mask blanks everything inside "..." so `echo "$(git clean -fd)"` and backticks
+# hid a real command. One linear pass over the raw command collects every $(...) / `...` body at
+# any depth (a frame stack, so nesting costs no rescans); each body is then checked as its own
+# command line. Single-quoted text is literal and skipped; an unterminated body runs to the end.
+def _substitution_bodies(s):
+    bodies, n, i = [], len(s), 0
+    frames = [["top", 0, None, 0]]  # kind, body start, open quote, paren depth
+    while i < n:
+        f, c = frames[-1], s[i]
+        if f[2] == "'":
+            if c == "'":
+                f[2] = None
+        elif c == "\\":
+            i += 1
+        elif c == "'" and f[0] != "bt":
+            f[2] = "'"
+        elif c == '"':
+            f[2] = None if f[2] == '"' else '"'
+        elif c == "`":
+            if f[0] == "bt":
+                bodies.append(s[f[1]:i]); frames.pop()
+            else:
+                frames.append(["bt", i + 1, None, 0])
+        elif c == "$" and s[i + 1:i + 2] == "(":
+            frames.append(["paren", i + 2, None, 0]); i += 1
+        elif f[0] == "paren" and f[2] is None:
+            if c == "(":
+                f[3] += 1
+            elif c == ")":
+                if f[3]:
+                    f[3] -= 1
+                else:
+                    bodies.append(s[f[1]:i]); frames.pop()
+        i += 1
+    bodies.extend(s[f[1]:] for f in frames[1:])
+    return bodies
+
+def _violation_in_substitutions(raw_cmd):
+    for body in _substitution_bodies(raw_cmd):
+        mb = _mask_quotes(body)
+        for overlap in (False, True, 2):
+            hit = _violation(mb, overlap) or _violation_in_bodies(body, mb, overlap)
+            if hit:
+                return hit
+    return None
+
 try:
     hit = (_violation(masked, False) or _violation_in_bodies(cmd, masked, False)
            or _violation(masked, True) or _violation_in_bodies(cmd, masked, True)
-           or _violation(masked, 2) or _violation_in_bodies(cmd, masked, 2))
+           or _violation(masked, 2) or _violation_in_bodies(cmd, masked, 2)
+           or _violation_in_substitutions(cmd))
 except _TooCostly:
     print(f"[mh:gate] BLOCKED: subagent ({agent_type}) command is too long or too dense to check "
           f"safely ({len(cmd)} bytes); write it to a file with the Write tool and run the file, "
