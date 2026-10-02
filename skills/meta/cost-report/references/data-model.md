@@ -79,14 +79,14 @@ the turns of every orchestrator row carrying `verify_per_return`, including zero
 A session's latest row can trail its transcript, for two reasons:
 
 - **Read before flush.** Stop could fire before Claude Code flushed the turn's final response,
-  so the last row came up short, almost always by one response (73 of 235 sessions on this
-  machine, 2026-10-02). A later Stop repairs earlier turns, so only the session's last turn was
+  so the last row came up one response short (67 of 235 sessions on this machine, 2026-10-02;
+  6 more were short for other reasons, such as a kill). A later Stop repairs earlier turns, so only the session's last turn was
   ever lost. Since the fix the hook waits until the transcript stops growing
   (`MH_COST_TRACKER_SETTLE_S`, default 1 s) and reads again if it grew during the scan. Rows
   written before the fix keep the gap; it is not backfilled.
 - **Killed mid-tool.** A turn killed during a tool call never fires Stop, so its spend stays
   unrecorded. A `SessionEnd` re-run was considered and left out: a plugin's `SessionEnd` hook
-  gets a 1.5 s budget, too short to rescan a large transcript, and it would not cover a kill
+  gets a 1.5 s budget that its own `timeout` cannot raise, too short to rescan a large transcript, and it would not cover a kill
   either.
 
 ## Aggregation rule

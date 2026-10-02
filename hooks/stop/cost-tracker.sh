@@ -533,9 +533,9 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
 
   # Settle (GH #329): Stop can fire before Claude Code has flushed the turn's
   # final response to the transcript, so the session's last row came up short
-  # (73 of 235 sessions on this machine, 2026-10-02, almost all by exactly one
-  # response). In every one, this hook wrote its row within about 1 s of the
-  # missing line's own timestamp, so the race is sub-second. Wait until the
+  # by one response in 67 of 235 sessions on this machine (2026-10-02). In
+  # each of those 67, this hook wrote its row within about 1 s of the missing
+  # line's own timestamp, so the race is sub-second. Wait until the
   # file stops growing for one window (bounded at 5 windows), read, and if the
   # file grew during the scan, settle and read once more. The hook is async,
   # so the wait costs the user nothing; it does widen the overlap window the

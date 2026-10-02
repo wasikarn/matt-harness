@@ -284,7 +284,7 @@ echo "$pass2 passed, $fail2 failed (phase 2)"
 # Phase 3 -- late-flush race (GH #329). Failure class: read-before-write race.
 # The Stop hook can read the transcript before Claude Code has flushed the
 # turn's final response, so the session's last row came up one response short
-# (73 of 235 sessions on this machine, 2026-10-02). The hook must wait for the
+# (67 of 235 sessions on this machine, 2026-10-02). The hook must wait for the
 # transcript to stop growing before it reads. A background writer appends the
 # second response 1 s after the hook starts; with a 3 s settle window the row
 # must count both. Timing row: a load spike can delay the writer, so one retry
