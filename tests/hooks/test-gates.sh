@@ -2855,6 +2855,31 @@ else
   fail=$((fail + 1))
 fi
 
+# GH #349: the narrow pieces read $'-f' in a substitution body as $-f (no blank before the dash), so push,
+# reset, checkout, branch, stash and rm let a quoted flag through. The ambiguity check now also reads a view
+# with $'..' decoded and $".." as "..". The fuzz also found three narrow pieces narrower than the main parser:
+# reset now takes --h/--har, push a +refspec, and checkout a "." that ends at a substitution close.
+# Cases (each checked against real shells) live in a fixture.
+_ansi_corpus="$ROOT/tests/hooks/fixtures/irrecoverable-ansi-c-flag-cases.txt"
+_ansi_want=$(/usr/bin/grep -cE '^(DENY|ALLOW) ' "$_ansi_corpus"); _ansi_got=0
+while IFS= read -r _line; do
+  case "$_line" in
+    DENY\ *) test_deny "$IRRECOVERABLE" "GH #349: ${_line#DENY }" "$(bash_payload "${_line#DENY }")" ;;
+    ALLOW\ *) test_allow "$IRRECOVERABLE" "GH #349 control: ${_line#ALLOW }" "$(bash_payload "${_line#ALLOW }")" ;;
+    *) continue ;;
+  esac
+  _ansi_got=$((_ansi_got + 1))
+done < "$_ansi_corpus"
+if [ "$_ansi_want" -ge 20 ] && [ "$_ansi_got" = "$_ansi_want" ]; then
+  echo "  ✅ GH #349: corpus replayed every case ($_ansi_got)"; pass=$((pass + 1))
+else
+  echo "  ❌ GH #349: corpus replayed $_ansi_got of $_ansi_want cases" >&2; fail=$((fail + 1))
+fi
+_ansi_dos_cmd="$(python3 -c 'print("\\`" + "git " * 100 + "push " * 40 + "$" + chr(39) + "-" + "f" * 140000 + chr(39))')"
+_timed_case "GH #349: a 140 KB \$'-f...' flag behind 100 git and 40 push anchors is found in bounded time" 2 "$_ansi_dos_cmd"
+_ansi_dos_cmd="$(python3 -c 'print("\\`" + "git " * 100 + "push " * 40 + ("$" + chr(39) + "-u" + chr(39) + " ") * 20000)')"
+_timed_case "GH #349: 20000 \$'-u' words behind 100 git and 40 push anchors are allowed in bounded time" 0 "$_ansi_dos_cmd"
+
 # GH #268: a brace inside a word made a second tokenization whose windows doubled the subagent
 # work-budget count, so a long benign bash -c body was denied only when it carried a brace.
 _long_body="git status; $(printf 'echo x; %.0s' $(seq 650))"
