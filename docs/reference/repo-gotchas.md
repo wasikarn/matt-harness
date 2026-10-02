@@ -107,6 +107,11 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   padded shapes (thousands of statements, 20-150 KB) with the target early and late (GH #245: a
   new scan placed before the fast denies turned a 0.03 s deny into a timeout). Any exit other than
   0 or 2 from the `.py` is a finding too, even where the `.sh` wrapper fails it closed.
+  GH #340: `_AMBIG_NARROW_AFTER` had no `switch` piece, so a narrow ambiguity shape holding `git switch`
+  raised KeyError (exit 1, an "internal error" deny). A sub word with no piece now counts as a hit, and a
+  test checks the keys against `_AMBIG_GIT_SUB_RE`. A narrow piece is the only check that sees a
+  substitution body, and its view reads `$'-f'` as `$-f` (no blank before the dash): a flag piece for
+  switch let 14 fuzzed `$'-f'` commands through, so switch takes any form, like clean and restore.
   GH #274: `subagent-git-guard.py` also scans the raw command for `$(...)` / backtick bodies
   (`_substitution_bodies`, one linear pass) because the quote mask hides them. That pass reads a
   case pattern's `)`, `#` comments, `${x:-)}`, backslash escapes in backticks, `$'..'`, an

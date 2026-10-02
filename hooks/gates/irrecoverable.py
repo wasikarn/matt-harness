@@ -1117,7 +1117,12 @@ _AMBIG_NARROW_AFTER = {
     "checkout": re.compile(r"\s--(?:\s|$)|\s-f\b|\s\.(?:\s|$)"),
     "branch": re.compile(r"\s-D\b"),
     "stash": re.compile(r"\s+(?:drop|clear)\b"),
+    # GH #340: any switch, like clean/restore. A flag piece (-f/--force/--discard-changes) was fuzzed and
+    # missed a quoted spelling inside a substitution body ($'-f'), where this check is the only defense.
+    "switch": re.compile(r""),
 }
+# A sub word with no piece above counts as a hit, so a word added to _AMBIG_GIT_SUB_RE alone fails closed.
+_AMBIG_ANY = re.compile(r"")
 _AMBIG_RM_FLAG_RE = re.compile(r"\s(?:-[A-Za-z]*[rRf]|--recursive\b|--force\b)")
 _AMBIG_FIND_RE = re.compile(r"-delete|-exec\w*\s+rm")
 
@@ -1134,7 +1139,7 @@ class _AmbigVerb:
                     first.setdefault(sm.group(1), sm.end())
                 if first and not self.narrow:
                     return True
-                if any(_AMBIG_NARROW_AFTER[v].search(seg, e) for v, e in first.items()):
+                if any(_AMBIG_NARROW_AFTER.get(v, _AMBIG_ANY).search(seg, e) for v, e in first.items()):
                     return True
             elif not self.narrow:
                 return True
