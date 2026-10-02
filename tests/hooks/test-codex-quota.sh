@@ -84,6 +84,41 @@ else
   bad "expected a negative TTL to make any existing record immediately stale, got out='$out' state_exists=$([ -f "$STATE" ] && echo yes || echo no)"
 fi
 
+# --- GH #333: the Codex plugin's own runner, codex-companion.mjs (false negative: the
+# trailing token boundary rejected the "-companion" suffix, so the main dispatch path never
+# recorded or warned). Command form is the one the plugin's docs use, unexpanded.
+COMPANION='node "${CLAUDE_PLUGIN_ROOT}/scripts/codex-companion.mjs" task "review the diff"'
+
+# Real logged-out failure text (captured from codex-companion.mjs task, codex-cli 0.160.0,
+# empty CODEX_HOME): exit 1, this line on stdout. Not quota-shaped, so it must not record.
+out=$(failure_payload "$COMPANION" "Exit code 1
+unexpected status 401 Unauthorized: Missing bearer or basic authentication in header, url: https://api.openai.com/v1/responses" | bash "$SENSOR" "$STATE")
+if [ -z "$out" ] && [ ! -f "$STATE" ]; then
+  ok "companion command failing logged-out (401) never records"
+else
+  bad "expected no state file for a logged-out companion failure, got out='$out'"
+fi
+
+# Quota text: the companion relays the app-server error message verbatim to stdout (and as
+# "[codex] Codex error: <msg>" on stderr); "You've hit your usage limit." is that message's
+# wording in the codex binary. Inferred, not reproduced: an exhausted account was not available.
+out=$(failure_payload "$COMPANION" "Exit code 1
+[codex] Codex error: You've hit your usage limit.
+[codex] Turn failed.
+You've hit your usage limit." | bash "$SENSOR" "$STATE")
+if [ -z "$out" ] && [ -f "$STATE" ]; then
+  ok "companion command + usage-limit failure records state"
+else
+  bad "expected a state file for a companion usage-limit failure, got out='$out' state_exists=$([ -f "$STATE" ] && echo yes || echo no)"
+fi
+
+out=$(pretooluse_payload "$COMPANION" | bash "$ADVISORY" "$STATE")
+if echo "$out" | /usr/bin/grep -q 'mh-codex-quota-advisory'; then
+  ok "advisory warns on the next companion command while the record is fresh"
+else
+  bad "expected an advisory for the next companion command, got out='$out'"
+fi
+
 echo
 echo "codex-quota tests: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

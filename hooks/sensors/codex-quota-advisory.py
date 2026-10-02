@@ -17,7 +17,8 @@ import re
 import sys
 import time
 
-_CODEX_RE = re.compile(r"(^|[\s/\"'])codex([\s\"']|$)")
+# Same pattern as codex-quota-sensor.py; keep the two in step (GH #333).
+_CODEX_RE = re.compile(r"(^|[\s/\"'])codex([\s\"']|$)|codex-companion\.mjs")
 _DEFAULT_TTL_SECONDS = 24 * 3600
 
 
