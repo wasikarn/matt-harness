@@ -162,6 +162,15 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   lookahead for a wrapper word: a run that also took `command`/`exec` doubled every split (deep-audit
   checker, `command ` x 700 + `eval "git stash"` took 8 s). A new regex piece needs its own
   worst case measured, not assumed to fit the existing charge.
+  GH #339: the lookahead's step also takes exec's `-a NAME` and rtk runs after a command/exec word
+  (`eval command rtk proxy nohup git stash`), and `_SHELL_PASS`'s exec takes `-c`/`-l`/`-a NAME`
+  (`eval exec -a x git stash`). Each flag reads one way only: a flag holding an `a` takes the next word,
+  one without takes none. Letting `-a` read both ways was exponential (`eval exec ` + `-a ` x 30 took
+  16 s). The spawn anchor takes one leading run of `builtin`, only when a wrapper word follows
+  (`builtin command claude --agent x`); a run that could read `builtin ` two ways took 15 s at 24 words.
+  A `builtin ...` timing row must name `claude` or `git`: the `.sh` fast path never starts python for `ls`.
+  A chain run with `exec -a x` units now charges the budget, so `eval ` + `exec -a x ` x 500 (5 KB) is
+  refused as too dense, as `command rtk proxy ` x 200 already was.
 - **Oracle:** run the real shells (the system `/bin/sh`, bash 3.2, a current bash, dash, zsh, ksh)
   with argv-logging stubs, never one shell or argv0-based shell guessing: whether `{fd}>` is a
   redirect depends on the binary and version (GH #219).
