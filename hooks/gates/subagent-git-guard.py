@@ -426,12 +426,113 @@ def _violation(masked_cmd, overlap):
             pos = nxt.end()
     return None
 
+# GH #327: eval and `sh -c` hand their argument text to a second parse, so a backslash pair that is a
+# literal backslash after the first parse is an escape in the second (`eval g\\\it stash`,
+# `bash -c "g\\it stash"`, `eval "git " stash`). _read_words does the first parse's quote removal: one
+# word after -c, every word to the end of the statement after eval (joined with blanks, as eval does).
+# That text is checked as a second body; the raw quoted body is still checked, so any deny wins. A
+# `$(..)` or backtick span is copied as it is. `$'..'` is decoded the bash way (dash reads it as `$`
+# plus a quoted word, which names no git). One linear pass, memoized, charged to the work budget.
+_ANSI_ESC = {"n": "\n", "t": "\t", "\\": "\\", "'": "'", '"': '"'}
+_STMT_END = frozenset(";&|\n<>()")
+
+def _ansi_c(s, i, n):  # s[i] follows `$'`; returns (decoded text, index after the closing quote)
+    out = []
+    while i < n and s[i] != "'":
+        if s[i] == "\\" and i + 1 < n:
+            c = s[i + 1]
+            if c in _ANSI_ESC:
+                out.append(_ANSI_ESC[c]); i += 2; continue
+            digits, lim = ("0123456789abcdefABCDEF", 2) if c == "x" else ("01234567", 3)
+            j = k = i + 1 + (c == "x")  # the first digit: after `\x`, or right after `\` for octal
+            while k < n and k - j < lim and s[k] in digits:
+                k += 1
+            if k > j:
+                out.append(chr(int(s[j:k], 16 if c == "x" else 8) & 0xFF)); i = k; continue
+            out.append(s[i:i + 2]); i += 2
+        else:
+            out.append(s[i]); i += 1
+    return "".join(out), i + 1
+
+def _read_words(s, i, all_words):
+    """-> (words, end, new_sub). new_sub: a `$` or backtick came out of a quote or an escape, so the text
+    may hold a substitution the raw scan never saw (a copied span is one it already saw)."""
+    words, cur, n, new_sub = [], None, len(s), False
+    while i < n:
+        c = s[i]
+        if c in " \t":
+            if cur is not None:
+                words.append("".join(cur)); cur = None
+                if not all_words:
+                    break
+            i += 1; continue
+        if c in _STMT_END:
+            break
+        if cur is None:
+            cur = []
+        if c == "\\":
+            if i + 1 < n and s[i + 1] != "\n":
+                cur.append(s[i + 1])
+                new_sub = new_sub or s[i + 1] in "$`"
+            i += 2
+        elif c == "'":
+            j = s.find("'", i + 1)
+            j = n if j < 0 else j
+            cur.append(s[i + 1:j]); i, new_sub = j + 1, new_sub or "$" in cur[-1] or "`" in cur[-1]
+        elif c == "$" and s.startswith("'", i + 1):
+            text, i = _ansi_c(s, i + 2, n); cur.append(text)
+            new_sub = new_sub or "$" in text or "`" in text
+        elif c == '"' or (c == "$" and s.startswith('"', i + 1)):
+            i += 1 if c == '"' else 2
+            while i < n and s[i] != '"':
+                if s[i] == "\\" and i + 1 < n and s[i + 1] in '$`"\\\n':
+                    if s[i + 1] != "\n":
+                        cur.append(s[i + 1])
+                        new_sub = new_sub or s[i + 1] in "$`"
+                    i += 2
+                else:
+                    cur.append(s[i]); i += 1
+            i += 1
+        elif c == "`" or (c == "$" and s.startswith("(", i + 1)):
+            j, depth = (i + 1, 0) if c == "`" else (i + 2, 1)
+            while j < n and (s[j] != "`" if c == "`" else depth):
+                depth += {"(": 1, ")": -1}.get(s[j], 0)
+                j += 2 if s[j] == "\\" else 1
+            j = min(j + (c == "`"), n)
+            cur.append(s[i:j]); i = j
+        else:
+            cur.append(c); i += 1
+    if cur is not None:
+        words.append("".join(cur))
+    return words, i, new_sub
+
+_reparse_memo = {}
+
+def _bodies_at(raw_cmd, masked_cmd, m, for_subs=False):
+    """The text a shell word at m hands to a second parse: the raw quoted body, then the GH #327 one.
+    for_subs: the caller only wants substitutions, so the GH #327 body counts only when it can hold new ones."""
+    global _work
+    i, out = m.end(1), []
+    q = _QUOTED_RE.match(raw_cmd, i)
+    if q:
+        out.append(q.group(1) if q.group(1) is not None else q.group(2))
+    k = (raw_cmd, i)
+    if k not in _reparse_memo:
+        is_eval = masked_cmd.endswith("eval", 0, i)
+        words, end, new_sub = _read_words(raw_cmd, i, is_eval)
+        _work += end - i
+        if _work > _WORK_BUDGET:
+            raise _TooCostly
+        _reparse_memo[k] = (" ".join(words) if is_eval else (words[0] if words else ""), new_sub)
+    text, new_sub = _reparse_memo[k]
+    if text and text not in out and (new_sub or not for_subs):
+        out.append(text)
+    return out
+
 def _violation_in_bodies(raw_cmd, masked_cmd, overlap):
     _charge(masked_cmd)
     for m in _SHELL_RES[overlap].finditer(masked_cmd):
-        q = _QUOTED_RE.match(raw_cmd, m.end(1))
-        if q:
-            body = q.group(1) if q.group(1) is not None else q.group(2)
+        for body in _bodies_at(raw_cmd, masked_cmd, m):
             mb = _mask(body)
             hit = _violation(mb, False) or (overlap and _violation(mb, overlap))
             if hit:
@@ -673,9 +774,7 @@ def _shell_bodies(raw):
     for overlap in (False, True, 2):
         _charge(mt)
         for m in _SHELL_RES[overlap].finditer(mt):
-            q = _QUOTED_RE.match(raw, m.end(1))
-            if q:
-                out.append(q.group(1) if q.group(1) is not None else q.group(2))
+            out.extend(_bodies_at(raw, mt, m, for_subs=True))
     return out
 
 # The substitution texts are built once (a scan plus a heredoc blank and a mask per body) and checked
@@ -693,12 +792,15 @@ def _substitution_texts():
             # top-level quote mask off, so a `<<` in the prose can look like a bad operator here;
             # that must never deny. Scan the whole text instead.
             raw = cmd
-        subs = _substitution_bodies(raw)
+        # GH #327: a body string is checked once. The second-parse body of an eval copies its substitution
+        # spans as they are, so without this every one of them was scanned twice (a late target behind
+        # `eval ` + a million backticks went from 4 s to 6 s, too close to the 8 s timeout).
+        subs = list(dict.fromkeys(_substitution_bodies(raw)))
         texts = list(subs)
         for t in [raw] + subs:  # `bash -c 'echo "$(git stash)"'`: the shell body has substitutions too
             for sb in _shell_bodies(t):
                 texts.extend(_substitution_bodies(sb))
-        blanked = [_blank_heredocs(b) for b in texts]
+        blanked = [_blank_heredocs(b) for b in dict.fromkeys(texts)]
         _sub_texts = [(b, _mask(b)) for b in blanked]
     return _sub_texts
 

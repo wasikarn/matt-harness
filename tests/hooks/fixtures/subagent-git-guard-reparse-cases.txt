@@ -1,0 +1,110 @@
+DENY R01 eval: an escaped backslash pair turns into an escape on the second parse
+eval g\\\it stash
+%%
+DENY R02 eval: an escaped blank joins a wrapper and git into one word, eval splits it again
+eval nice\ git -C . reset
+%%
+DENY R03 bash -c: a double-quoted body turns \\ into one backslash before the inner parse
+bash -c "g\\it stash"
+%%
+DENY R04 eval of a double-quoted body
+eval "g\\it stash"
+%%
+DENY R05 sh -c: an escaped backslash before the subcommand
+sh -c "git \\stash"
+%%
+DENY R06 bash -c: git reset spelled with an escaped backslash pair
+bash -c "git re\\set --hard"
+%%
+DENY R07 eval: escaped quotes become real quotes on the second parse
+eval \"git\" stash
+%%
+DENY R08 eval joins its words with a blank
+eval "git " stash
+%%
+DENY R09 eval: an escaped blank inside one word
+eval git\ stash
+%%
+DENY R10 eval of an ANSI-C body with an escaped backslash
+eval $'g\\it stash'
+%%
+DENY R11 eval of an ANSI-C body
+eval $'git stash'
+%%
+DENY R12 bash -c with an ANSI-C body
+bash -c $'git stash'
+%%
+DENY R13 bash -c: an escaped backtick becomes a substitution in the inner shell
+bash -c "x=\`git stash\`"
+%%
+DENY R14 eval in a later statement of a chain
+true && eval g\\\it clean -fd; echo done
+%%
+DENY R15 bash -c: the second statement of a double-quoted body
+bash -c "echo ok; g\\it stash"
+%%
+DENY R16 eval: the second statement of a double-quoted body
+eval "echo ok; g\\it stash"
+%%
+DENY R17 eval of a locale-quoted body
+eval $"g\\it stash"
+%%
+DENY R18 eval: an assignment holding a substitution, then the command
+eval x=$(true) g\\\it stash
+%%
+DENY R19 eval: an assignment holding a backtick substitution, then the command
+eval x=`true` g\\\it stash
+%%
+DENY R20 eval: a shell keyword opens the re-parsed command line
+eval ! git stash
+%%
+DENY R21 eval: single-quoted pieces join into a substitution on the second parse
+eval echo '`git' 'stash`'
+%%
+DENY R22 eval: escaped backticks become a substitution on the second parse
+eval echo \`git stash\`
+%%
+DENY R23 eval: an ANSI-C piece holds a backtick substitution
+eval echo $'`git stash`'
+%%
+DENY R24 eval: escaped $( characters become a substitution on the second parse
+eval echo \$\(git stash\)
+%%
+ALLOW A01 eval of a command's output, then a read-only git
+eval "$(ssh-agent -s)"; git status
+%%
+ALLOW A02 eval echo: the git word is an argument
+eval echo g\\\it stash && git status
+%%
+ALLOW A03 eval of a double-quoted echo
+eval "echo g\\it stash; git status"
+%%
+ALLOW A04 bash -c: git stash inside an inner quoted string
+bash -c "echo \"git stash\"; git status"
+%%
+ALLOW A05 eval: stash list through an escaped blank
+eval git\ stash\ list
+%%
+ALLOW A06 eval: stash show through an escaped backslash pair
+eval "g\\it stash show"
+%%
+ALLOW A07 bash -c: stash inside an escaped-quote argument
+bash -c "git log --grep=\"stash\""
+%%
+ALLOW A08 eval: git commit whose message names stash
+eval git commit -m "\"git stash\""
+%%
+ALLOW A09 bash -c: an escaped quote then a read-only git
+bash -c "echo \\\"; git status"
+%%
+ALLOW A10 eval of an ANSI-C body with a newline
+eval $'echo git stash\ngit status'
+%%
+ALLOW A11 eval of a single-quoted echo
+eval 'echo "git reset"; git status'
+%%
+ALLOW A12 eval's text ends at the statement: the escaped blank after it stays one command name
+eval true; nice\ git stash; git status
+%%
+ALLOW A13 bash -c reads one word: the next words are $0 and $1, never run
+bash -c 'true;' g\\\it stash; git status
