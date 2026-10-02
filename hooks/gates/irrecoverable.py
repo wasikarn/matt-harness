@@ -507,10 +507,53 @@ def _escaped_op_word_end(s, i):
     while j + 1 < n and s[j] == "\\" and s[j + 1] in ";&|()":
         j += 2
     return j if j > i and (j == n or s[j].isspace() or s[j] in ";&|)") else 0
+# Quoted and comment spans copied verbatim, one char per `out` item (_mask_quoted_ops and the "#"
+# word-start test read single items). Each takes the index just past the span's opener and returns
+# the index just past its closer, or len(s) when the span is unterminated.
+def _copy_comment(s, i, out, nl):
+    # The newline ends the comment and is written as `nl`.
+    j = s.find("\n", i)
+    if j < 0:
+        out.extend(s[i:])
+        return len(s)
+    out.extend(s[i:j])
+    out.extend(nl)
+    return j + 1
+
+def _copy_squote(s, i, out, mask_from=None):
+    # mask_from: where the body starts in `out`; a closed body is passed to _mask_quoted_ops.
+    j = s.find(SQ, i)
+    if j < 0:
+        out.extend(s[i:])
+        return len(s)
+    out.extend(s[i:j + 1])
+    if mask_from is not None:
+        _mask_quoted_ops(out, mask_from)
+    return j + 1
+
+def _copy_dquote(s, i, out, mask_from=None, join_lines=False):
+    # An escaped DQ, backslash, $ or backtick is copied as a pair. join_lines: a backslash-newline
+    # is a continuation inside double quotes too, and bash strips both chars.
+    n = len(s)
+    while i < n:
+        c = s[i]
+        if join_lines and c == "\\" and i + 1 < n and s[i + 1] == "\n":
+            i += 2
+            continue
+        if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`"):
+            out.append(c); out.append(s[i + 1])
+            i += 2
+            continue
+        out.append(c)
+        i += 1
+        if c == DQ:
+            if mask_from is not None:
+                _mask_quoted_ops(out, mask_from)
+            return i
+    return n
+
 def _newlines_to_seps(s):
     out = []
-    qstart = 0
-    in_squote = in_dquote = in_comment = False
     # An escaped separator ("\ ", "\;", "\|", ...) is still a LITERAL character
     # in bash, not a real word break, so a "#" right after it is mid-word, not
     # a comment start -- out[-1] alone can't tell the two apart (both leave the
@@ -520,48 +563,13 @@ def _newlines_to_seps(s):
     i, n = 0, len(s)
     while i < n:
         c = s[i]
-        if in_comment:
-            if c == "\n":
-                out.append(c); out.append(";"); out.append(" ")
-                in_comment = False
-            else:
-                out.append(c)
-            last_escaped = False
-            i += 1
-            continue
-        if in_squote:
-            out.append(c)
-            if c == SQ:
-                in_squote = False
-                _mask_quoted_ops(out, qstart)
-            last_escaped = False
-            i += 1
-            continue
-        if in_dquote:
-            if c == "\\" and i + 1 < n and s[i + 1] == "\n":
-                # continuation inside double quotes: bash strips both chars
-                i += 2
-                continue
-            if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`"):
-                out.append(c); out.append(s[i + 1])
-                last_escaped = False
-                i += 2
-                continue
-            out.append(c)
-            if c == DQ:
-                in_dquote = False
-                _mask_quoted_ops(out, qstart)
-            last_escaped = False
-            i += 1
-            continue
-        # unquoted, not in a comment
         if c == SQ:
-            in_squote = True
-            out.append(c); i += 1; qstart = len(out)
+            out.append(c)
+            i = _copy_squote(s, i + 1, out, len(out))
             last_escaped = False
         elif c == DQ:
-            in_dquote = True
-            out.append(c); i += 1; qstart = len(out)
+            out.append(c)
+            i = _copy_dquote(s, i + 1, out, len(out), join_lines=True)
             last_escaped = False
         elif c == "\\" and i + 1 < n and s[i + 1] == "\n":
             # real line continuation: both chars removed, nothing appended
@@ -578,14 +586,14 @@ def _newlines_to_seps(s):
             i += 2
             last_escaped = True
         elif c == "#" and not last_escaped and (not out or out[-1] in _REDIRECT_TARGET_STOP):
-            in_comment = True
-            out.append(c); i += 1
+            out.append(c)
+            i = _copy_comment(s, i + 1, out, "\n; ")
             last_escaped = False
         elif c == "#":
             out.append(HASH_LIT); i += 1
             last_escaped = False
         elif c == "\n":
-            out.append(c); out.append(";"); out.append(" ")
+            out.extend("\n; ")
             i += 1
             last_escaped = False
         else:
