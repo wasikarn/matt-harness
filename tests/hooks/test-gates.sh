@@ -2733,6 +2733,47 @@ else
   fail=$((fail + 1))
 fi
 
+# GH #340: _AMBIG_GIT_SUB_RE names `switch` but _AMBIG_NARROW_AFTER had no `switch` key, so a narrow-shape
+# command (escaped backtick, backtick plus $()) with a git switch raised KeyError: exit 1, which the .sh
+# turned into an "internal error" deny. test_deny rejects a crash deny, so these rows need the real rule.
+# The narrow piece for switch is "any switch" (like clean/restore): a flag piece missed $'-f' in a substitution
+# body, which the main parser never sees, so a plain branch switch in these rare shapes stays denied.
+test_deny  "$IRRECOVERABLE" 'GH #340: git switch <branch> next to an escaped backtick denies by rule, not crash' \
+  "$(bash_payload 'echo \` ; git switch main')"
+test_deny  "$IRRECOVERABLE" 'GH #340: git switch -c next to a backtick plus $() denies by rule, not crash' \
+  "$(bash_payload 'x=$(echo `pwd`); git switch -c feat')"
+test_deny  "$IRRECOVERABLE" 'GH #340: git switch --discard-changes next to an escaped backtick denies' \
+  "$(bash_payload 'echo \` ; git switch --discard-changes main')"
+test_deny  "$IRRECOVERABLE" "GH #340: git switch \$'-f' in a backtick body inside \$() denies" \
+  "$(bash_payload "echo \$(echo \`git switch \$'-f' main\`)")"
+test_deny  "$IRRECOVERABLE" "GH #340: eval of \$() holding git switch \$'-f' denies" \
+  "$(bash_payload "eval \"\$(echo git switch \$'-f' main)\"")"
+test_allow "$IRRECOVERABLE" 'GH #340 control: git status next to an escaped backtick is allowed' \
+  "$(bash_payload 'echo \` ; git status')"
+_switch_dos_cmd="$(python3 -c 'print("\\`" + "git status " * 100 + "-" + "q" * 140000 + " switch")')"
+_timed_case 'GH #340: a switch after 100 git anchors and a 140 KB token is found in bounded time' 2 "$_switch_dos_cmd"
+# Every sub word the ambiguity check finds needs a narrow piece; one with no piece counts as a hit (deny).
+_narrow_keys_rc=$(python3 - "$ROOT/hooks/gates/irrecoverable.py" <<'PY'
+import re, sys
+src = open(sys.argv[1]).read()
+block = src[src.index("_AMBIG_UNIT = "):src.index("def _ambiguous(")]
+ns = {"re": re}; exec(block, ns)
+subs = set(re.findall(r"\w+", ns["_AMBIG_GIT_SUB_RE"].pattern.split("(", 2)[2].split(")")[0]))
+r = ns["_AMBIG_NARROW_VERB_RE"]
+ok = subs == set(ns["_AMBIG_NARROW_AFTER"]) and bool(r.search("git switch main"))
+ns["_AMBIG_NARROW_AFTER"].pop("switch")
+ok = ok and bool(r.search("git switch main"))  # a sub with no narrow piece fails closed
+print(0 if ok else 1)
+PY
+)
+if [[ "$_narrow_keys_rc" == "0" ]]; then
+  echo "  ✅ GH #340: every ambiguity sub word has a narrow piece, and a missing piece counts as a hit"
+  pass=$((pass + 1))
+else
+  echo "  ❌ GH #340: an ambiguity sub word has no narrow piece, or a missing piece does not fail closed" >&2
+  fail=$((fail + 1))
+fi
+
 # GH #268: a brace inside a word made a second tokenization whose windows doubled the subagent
 # work-budget count, so a long benign bash -c body was denied only when it carried a brace.
 _long_body="git status; $(printf 'echo x; %.0s' $(seq 650))"
