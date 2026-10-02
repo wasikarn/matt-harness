@@ -1,6 +1,7 @@
 ---
 description: "Gate-report: ask/deny counts per gate from the gate-decisions journal. Use when checking how often gates interrupt writes. Not a wait-time/approval-latency metric (none logged)."
 name: gate-report
+disable-model-invocation: true
 model: inherit
 effort: low
 ---
