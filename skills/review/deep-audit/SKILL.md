@@ -1,6 +1,6 @@
 ---
 name: deep-audit
-description: "Deep-audit: post-implementation audit — verify every claim, score before/after, fix evidence-backed gaps, re-score. Use after an implementation pass. Don't use for a first-pass review (/code-review)."
+description: "Deep-audit: post-implementation audit: verify every claim, score before/after, fix gaps, re-score. Not for plan conformance (/mh:compliance-audit) or first-pass review (/code-review)."
 model: inherit
 effort: xhigh
 ---
