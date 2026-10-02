@@ -1393,15 +1393,35 @@ def _scan_body(body):
 # Candidate names for placeholder-splice duplication: the exact argv0 basenames
 # and git subcommands any check below dispatches on by exact string match.
 KNOWN_DANGEROUS = ("rm", "find", "git", "gh", "dd", "mysql", "psql", "sqlite3", "mariadb")
-# A pathspec that names the whole tree (GH #289, #308): optional ":/", ":(magic)" or ":" (before
-# "." or "*") prefix, then nothing, dots joined by slashes ("./", "././", ".//."), "./*", or a
-# run of "*". A non-empty remainder ("foo.txt", "*.md", ".*") names a path.
+# A pathspec that names the whole tree (GH #289, #308, #315). Magic is parsed as git does: ":(...)",
+# or ":" then a run of "/", "!", "^" ended by an optional ":" ("::.", "://", ":/:"). The rest is
+# collapsed lexically as git does ("x/.." drops x, "." and "//" drop out); nothing left, or one
+# run of "*" ("?*" too), is the whole tree. A ".." left over names an ancestor dir, the whole tree
+# from a subdir, so ".." alone is denied too. Exclude magic is left to _exclude_only_pathspecs.
+# Over-denies on purpose: ":/." and ":/src/.." (top magic) select nothing in git 2.55, and
+# ":(attr:x)" or ":(literal)" narrowing is not modelled.
 # The lexer hands ":/" over as ":" then "/", so the add rule also tests a token joined to its next;
 # a bare ":" or "::" is the whole tree unless the next token continues a ":/", ":(" or ":!" spelling.
-_WHOLE_TREE_PATHSPEC_RE = re.compile(r"(?=.)(?::(?:/|\([^)]*\)|(?=[.*])))?(?:\.(?:/+\.)*(?:/+\**)?|\*+/*)?")
-# GH #308: an exclude pathspec (":!x", ":^x", ":(exclude)x") alone selects the whole tree minus x;
-# it is narrow only when a positive pathspec sits beside it.
-_EXCLUDE_PATHSPEC_RE = re.compile(r":(?:[!^]|\([^)]*\bexclude\b[^)]*\))")
+_PATHSPEC_MAGIC_RE = re.compile(r":(?:\([^)]*\)|[/!^]*:?)")
+def _whole_tree_pathspec(t):
+    if not t.strip(":") or _EXCLUDE_PATHSPEC_RE.match(t):
+        return False  # "", ":" and "::" go to the bare-colon test, which reads the next token
+    m = _PATHSPEC_MAGIC_RE.match(t)
+    glob = bool(m) and "glob" in m.group(0)
+    t = t[m.end():] if m else t
+    parts = []
+    for p in t.split("/"):
+        if p == "..":
+            parts = parts[:-1]  # a ".." past the start climbs out of cwd: dropped, see above
+        elif p not in ("", "."):
+            parts.append(p)
+    # "*" matches across "/" in a pathspec, so one part of only "*" (and at most one "?") matches all;
+    # under ":(glob)" "*" stops at "/" but "**/" spans dirs, so "**/*" and "**/**" match all.
+    star = [("*" in p and p.replace("*", "") in ("", "?")) for p in parts]
+    return not parts or (len(parts) == 1 and star[0]) or (glob and all(star) and all("**" in p for p in parts[:-1]))
+# GH #308: an exclude pathspec (":!x", ":^x", ":(exclude)x", ":/!x") alone selects the whole tree
+# minus x; it is narrow only when a positive pathspec sits beside it.
+_EXCLUDE_PATHSPEC_RE = re.compile(r":(?:[/!^]*[!^]|\([^)]*\bexclude\b[^)]*\))")
 def _exclude_only_pathspecs(toks):
     # The lexer splits an unquoted ":!x" into ":", "!", "x" and "--chmod=+x" into "--chmod=", "+", "x".
     paths, i, after_dd = [], 0, False
@@ -1951,7 +1971,7 @@ for _wi, w in enumerate(windows):
                 # -A also arrives bundled (-Af, -fA, -vA); add has no value-taking short flag.
                 # --pathspec-from-file's value is a pathspec list the gate cannot read
                 # (GH #200), so any use denies, as in restore/checkout above.
-                if sub == "add" and (_exclude_only_pathspecs(scan) or any(t == "." or _WHOLE_TREE_PATHSPEC_RE.fullmatch(t) or (t and not t.strip(":") and not nxt.startswith(("/", "(", "!", "^"))) or _WHOLE_TREE_PATHSPEC_RE.fullmatch(t + nxt) or _bundled_flag(t, "", "A") or _is_flag(t, "--all")
+                if sub == "add" and (_exclude_only_pathspecs(scan) or any(t == "." or _whole_tree_pathspec(t) or (t and not t.strip(":") and not nxt.startswith(("/", "(", "!", "^"))) or _whole_tree_pathspec(t + nxt) or _bundled_flag(t, "", "A") or _is_flag(t, "--all")
                                         or _is_flag(t.split("=", 1)[0], "--pathspec-from-file")
                                         for t, nxt in zip(scan, scan[1:] + [""]))) and not _mid_merge():
                     deny("git add -A/. stages everything — stage files by name instead "

@@ -337,6 +337,22 @@ for _c in "git add src/a.txt" "git add ./a.txt" "git add .gitignore" "git add ./
           "git add ./.env" "git add ./sub//a.txt" "git add -- ./a.txt" "git add :!x src" "git add src :^x" "git add :/src/a.txt" "git add -- ':!x' -weird"; do
   test_allow "$IRRECOVERABLE" "GH #308 control: $_c names a path, must not over-block" "$(bash_payload "$_c")"
 done
+# GH #315: real git (git add -n, 7-file temp repo) collapses "x/.." lexically, so a name then ".."
+# is the whole tree; so are the magic-colon combos below. ".." alone names an ancestor dir.
+for _c in "git add src/.." "git add sub/.." "git add '*/..'" "git add src/../" "git add src/../." "git add ./src/.." \
+          "git add src//.." "git add src/./.." "git add sub/deep/../.." "git add nonexist/.." "git add 'src/../*'" \
+          "git add '**/..'" "git add '.../..'" "git add a.txt/.." "git add ':(glob)src/..'" "git add ':(literal)*/..'" \
+          "git add -- src/.." "git add -f src/.. a.txt" "git add '::.'" "git add '://'" "git add ':///*'" "git add ':/^.'" \
+          "git add ':/!x'" "git add ':/:'" "git add '::*'" "git add .." "git add ../" "git add 'src\\/..'" \
+          "git add '?*'" "git add '*?'" "git add './.*//../?*'" "git add ':(top,glob)***/*'" "git add ':(glob)**/**'" \
+          "git add ':(glob)**/?*'"; do
+  test_deny  "$IRRECOVERABLE" "GH #315: $_c stages the whole tree" "$(bash_payload "$_c")"
+done
+for _c in "git add src/../a.txt" "git add sub/deep/.." "git add src/.../.." "git add ../foo.txt" "git add 'src/..x'" \
+          "git add src/..." "git add ':/::'" "git add '://x'" "git add ':!x' src/.../.." "git add ./sub/../a.txt" "git add '?'" "git add '*?.txt'" \
+          "git add '**/*'" "git add ':(glob)*/**'" "git add ':(glob)*/*'"; do
+  test_allow "$IRRECOVERABLE" "GH #315 control: $_c names a path, must not over-block" "$(bash_payload "$_c")"
+done
 test_allow "$IRRECOVERABLE" "git checkout branch (must not over-block)" \
   "$(bash_payload 'git checkout main')"
 test_allow "$IRRECOVERABLE" "git checkout -b new branch (must not over-block)" \
