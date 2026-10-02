@@ -30,37 +30,43 @@ fi
 # only ever deletes a marker strictly older than its own lock-acquisition
 # time, never a concurrent one).
 #
-# Runs BEFORE the lint-script/python3 gates on a BEST-EFFORT, bash-only ENC
-# (`pwd -P`, not the shared resolver) -- the marker check needs neither
-# python3 nor CLAUDE_PLUGIN_ROOT, and that no-dependency guarantee (2026-09-21
-# deep-audit finding) matters more here than worktree correctness: this
-# bash-only ENC agrees with the shared resolver's for the common case (a main
-# checkout, not a worktree) and only under-reports from inside a worktree
-# without python3 available -- a strictly better outcome than the guarantee
-# not existing at all. The correct, worktree-aware ENC is computed separately
-# below, only once python3 is confirmed present, for the actual lint pass.
-_BASH_ENC="$(pwd -P)"
-_BASH_ENC="${_BASH_ENC//\//-}"
-FAILMARKERS=("$HOME"/.claude/state/memory-audit-commit-fail-"$_BASH_ENC"-*)
+# The marker glob uses the same ENC the writer names markers with: the shared
+# resolver's `--enc` (git-common-dir, autoMemoryDirectory, or
+# CLAUDE_CODE_PROJECT_DIR_NAME), so a marker written from any linked worktree
+# is found (GH #328; a `pwd -P` ENC missed it there even with python3).
+# The marker check must not depend on python3 or CLAUDE_PLUGIN_ROOT (2026-09-21
+# deep-audit finding), so without them it falls back to a bash-only `pwd -P`
+# ENC: right for a main checkout, it can only under-report from a worktree or
+# under autoMemoryDirectory. The lint pass below runs only on the resolver ENC.
+ENC=""
+_MEMDIR_RESOLVER="${CLAUDE_PLUGIN_ROOT:-}/scripts/_lib/memory-dir.py"
+if command -v python3 >/dev/null 2>&1 && [ -r "$_MEMDIR_RESOLVER" ]; then
+  ENC="$(python3 "$_MEMDIR_RESOLVER" --enc 2>/dev/null)" || ENC=""
+fi
+_MARKER_ENC="$ENC"
+if [ -z "$_MARKER_ENC" ]; then
+  _MARKER_ENC="$(pwd -P)"
+  _MARKER_ENC="${_MARKER_ENC//\//-}"
+fi
+FAILMARKERS=("$HOME"/.claude/state/memory-audit-commit-fail-"$_MARKER_ENC"-*)
 if [ -e "${FAILMARKERS[0]}" ]; then
   printf '%s\n' "[memory-lint] the memory store's auto-commit failed and is not currently versioned:"
   for _m in "${FAILMARKERS[@]}"; do
-    cat "$_m" 2>/dev/null
+    # Line 1 is the writer's machine-read acquisition_ts= record; keep it out
+    # of model context. Pure bash, so this works without grep or python3.
+    while IFS= read -r _line || [ -n "$_line" ]; do
+      [[ "$_line" == acquisition_ts=* ]] || printf '%s\n' "$_line"
+    done < "$_m" 2>/dev/null
   done
   printf '%s\n' "Fix the underlying git issue in the memory store, then it will resolve on the next successful commit."
 fi
 
-command -v python3 >/dev/null 2>&1 || exit 0
-_MEMDIR_RESOLVER="${CLAUDE_PLUGIN_ROOT:-}/scripts/_lib/memory-dir.py"
-[ -r "$_MEMDIR_RESOLVER" ] || exit 0
-ENC="$(python3 "$_MEMDIR_RESOLVER" --enc 2>/dev/null)" || exit 0
 [ -n "$ENC" ] || exit 0
 MEMDIR="$HOME/.claude/projects/$ENC/memory"
 [ -d "$MEMDIR" ] || exit 0
 
 LINT="${CLAUDE_PLUGIN_ROOT:-}/skills/meta/memory-lint/scripts/memory-lint.py"
 [ -f "$LINT" ] || exit 0
-command -v python3 >/dev/null 2>&1 || exit 0
 
 # Skip the python3 scan if nothing changed since the last clean run. -maxdepth 1
 # matches collect_state()'s non-recursive listdir; _archive/ never feeds the detector.
