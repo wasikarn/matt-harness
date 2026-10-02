@@ -248,7 +248,11 @@ SHELL_KEYWORDS = ("!", "if", "elif", "then", "else", "do", "while", "until", "co
 # wrapper nor an ordinary token, the regex dead-ends and the anchor never fires.
 # GH #248: `xargs claude -p x` runs claude. xargs is a wrapper for the spawn anchor only: adding it
 # to PREFIX_WRAPPERS would change the unwrap loop and every other consumer of that list.
-_WRAPPER_ALT = r"(?:" + "|".join(PREFIX_WRAPPERS + ("xargs",)) + r")(?=\s)"
+# GH #320: a wrapper written as a path (`/usr/bin/env claude -p x`) runs the same program; the rule
+# loop compares basenames, this anchor matched the bare word only. The prefix is one plain word that
+# never starts with `-` and holds no `=`, `<` or `>`, so a token is a path wrapper, a flag or an
+# assignment, never two of them, and the walk stays unambiguous (same prefix as subagent-git-guard.py).
+_WRAPPER_ALT = r"(?:(?!-)[^\s;&|()<>=]*/)?(?:" + "|".join(PREFIX_WRAPPERS + ("xargs",)) + r")(?=\s)"
 _WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"\s+(?:(?!" + _WRAPPER_ALT + r")\S+\s+)*)*"
 # GH #248: the greedy walk lands on the LAST claude (`time claude -p x; claude --version` anchored
 # only the second). The lazy twin (`*?`) lands on the FIRST; it runs as one more last pass, so it
