@@ -213,14 +213,44 @@ build_type_map() {
 # flat) and is a no-op on every real line measured (e1h already <= flat,
 # so cw lands on flat - e1h either way -- the 5m field itself turned out to
 # be unnecessary once the split is anchored to flat like this).
+#
+# Advisor records (GH #324): a response's top-level usage excludes its
+# `advisor_message` iterations (128 of 128 real responses checked), and the
+# flat anchoring above rightly keeps them off the executor's row, so before
+# this fix nothing priced them at all (~11% of spend over 25 ended sessions,
+# 2026-10-02). adv_recs emits one record per advisor iteration on that
+# iteration's own model, tagged `adv: true` so group_and_price keeps it out
+# of `turns` and `cache_read_per_turn`. Its id is "adv:<message.id>:<index>"
+# and it dedups across files, not per file: one response repeats its usage
+# on every content-block line, and a copy of a message can land in more than
+# one file. A line whose top-level counters are all zero (the background-
+# session copy shape, F4 above) emits none; the original is billed where it
+# ran. $adv_seen holds the main transcript's advisor ids, so a subagent file
+# never re-bills one main already counted.
+adv_def='def adv_recs($t; $f):
+  (.message.id // null) as $mid
+  | (.message.usage) as $u
+  | select((($u.input_tokens // 0) + ($u.output_tokens // 0) + ($u.cache_creation_input_tokens // 0) + ($u.cache_read_input_tokens // 0)) > 0)
+  | ($u.iterations // []) | to_entries[]
+  | select(.value.type == "advisor_message" and ((.value.model // "") | ascii_downcase | test("^claude")))
+  | .key as $k | .value
+  | (.cache_creation_input_tokens // 0) as $flat
+  | ([(.cache_creation.ephemeral_1h_input_tokens // 0), $flat] | min) as $h
+  | { in: (.input_tokens // 0), out: (.output_tokens // 0), cw: ($flat - $h), cw1h: $h,
+      cr: (.cache_read_input_tokens // 0), m: .model, t: $t, adv: true,
+      id: (if $mid == null then null else "adv:\($mid):\($k)" end), f: $f };'
+adv_seen='[]'
+
 raw_records() {
   local typemap="$1"; shift
-  jq -nRc --argjson typemap "$typemap" '
-    [ inputs | try fromjson |
+  jq -nRc --argjson typemap "$typemap" --argjson seen "$adv_seen" "$adv_def"'
+    ($seen | map({(.): true}) | add // {}) as $s
+    | [ inputs | try fromjson |
       select(.type == "assistant") |
       select((.message // {}).usage != null) |
       select((.message.model // "") | ascii_downcase | test("^claude")) |
-      (.message.usage.iterations // []) as $its |
+      adv_recs($typemap[input_filename].t // null; input_filename),
+      ((.message.usage.iterations // []) as $its |
       (.message.usage.cache_creation_input_tokens // 0) as $flat |
       { in: (.message.usage.input_tokens // 0),
         out: (.message.usage.output_tokens // 0),
@@ -234,11 +264,13 @@ raw_records() {
         m: (.message.model // "unknown"),
         t: ($typemap[input_filename].t // null),
         id: (.message.id // null),
-        f: input_filename } ]
+        f: input_filename }) ]
     | reduce .[] as $x ({byid: {}, out: []};
         if $x.id == null then .out += [$x]
+        elif $x.adv then .byid[$x.id] = $x
         else .byid[$x.f + "\u0000" + $x.id] = $x end)
     | .out + (.byid | [.[]])
+    | map(select(.adv != true or ($s[.id // ""] | not)))
   ' "$@"
 }
 
@@ -295,7 +327,8 @@ group_and_price() {
         | {
           model: .[0].m,
           agent_type: .[0].t,
-          turns: length,
+          turns: (map(select(.adv != true)) | length),
+          cr_exec: ((map(select(.adv != true) | .cr) | add) // 0),
           input_tokens: ((map(.in) | add) // 0),
           output_tokens: ((map(.out) | add) // 0),
           cache_write_tokens: ((map(.cw) | add) // 0),
@@ -314,7 +347,7 @@ group_and_price() {
       input_tokens: $u.input_tokens, output_tokens: $u.output_tokens,
       cache_write_tokens: $u.cache_write_tokens, cache_write_tokens_1h: $u.cache_write_tokens_1h,
       cache_read_tokens: $u.cache_read_tokens,
-      cache_read_per_turn: (if $u.turns > 0 then ($u.cache_read_tokens / $u.turns | round) else 0 end),
+      cache_read_per_turn: (if $u.turns > 0 then ($u.cr_exec / $u.turns | round) else 0 end),
       returns: $u.returns, verify_tokens: $u.verify_tokens, verify_cache_read: $u.verify_cache_read,
       verify_per_return: $u.verify_per_return,
       rate_verified: $r.v,
@@ -401,7 +434,7 @@ scan_transcript() {
   # much larger than that ever shows up is a single streaming `reduce (inputs
   # | try fromjson) as $l (...)` computing all four accumulators together
   # instead of materializing $lines first.
-  jq -nRc --arg tp "$1" --argjson ids "$(jq -nc '$ARGS.positional' --args ${_ids[@]+"${_ids[@]}"})" '
+  jq -nRc --arg tp "$1" --argjson ids "$(jq -nc '$ARGS.positional' --args ${_ids[@]+"${_ids[@]}"})" "$adv_def"'
     [inputs | try fromjson] as $lines
     | {
         verify_map: ( try (
@@ -432,7 +465,8 @@ scan_transcript() {
             select(.type == "assistant") |
             select((.message // {}).usage != null) |
             select((.message.model // "") | ascii_downcase | test("^claude")) |
-            (.message.usage.iterations // []) as $its |
+            adv_recs(null; $tp),
+            ((.message.usage.iterations // []) as $its |
             (.message.usage.cache_creation_input_tokens // 0) as $flat |
             { in: (.message.usage.input_tokens // 0),
               out: (.message.usage.output_tokens // 0),
@@ -446,7 +480,7 @@ scan_transcript() {
               m: (.message.model // "unknown"),
               t: null,
               id: (.message.id // null),
-              f: $tp } ]
+              f: $tp }) ]
           | reduce .[] as $x ({byid: {}, out: []};
               if $x.id == null then .out += [$x]
               else .byid[$x.id] = $x end)
@@ -617,6 +651,8 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
     sub_files=("$sub_dir"/*.jsonl)
     shopt -u nullglob
     if (( ${#sub_files[@]} )); then
+      adv_seen=$(printf '%s' "$main_usages" | jq -c '[.[]? | select(.adv == true and .id != null) | .id]' 2>/dev/null)
+      [[ -z "$adv_seen" ]] && adv_seen='[]'
       sub_typemap=$(build_type_map "$parent_map" "$verify_map" "${sub_files[@]}")
       sub_rows=$(emit_rows subagent "$sub_typemap" "${sub_files[@]}")
       [[ -n "$sub_rows" ]] && rows="${rows:+$rows$'\n'}$sub_rows"
