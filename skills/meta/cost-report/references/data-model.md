@@ -98,14 +98,16 @@ A session's latest row can trail its transcript, for two reasons:
 ## Gap to Claude Code's own ledger (GH #334)
 
 Claude Code writes `cost-state` lines into the main transcript: `totalCostUSD`, plus per-model
-`modelUsage` (tokens and `costUSD`), cumulative from the process start. It writes them only at
-checkpoints, so the last one can trail the transcript's end. In 1 of 346 sessions it reset
-mid-session. It breaks spend down by model only, with no field saying which kind of request
+`modelUsage` (tokens and `costUSD`), cumulative from the process start. They appear in pairs at a few
+points per session, not every turn (the trigger was not identified), so the last one can trail
+the transcript's end. In 1 of 346 sessions the total reset to near zero when a new process
+(new `startTime`) took over the same session id, so a reader must not assume it only grows. It breaks spend down by model only, with no field saying which kind of request
 spent it.
 
 Attribution over the 25 most recent cleanly ended sessions on this machine (2026-10-02; the
 last `cost-state` line within 15 lines of the end; ledger at least $5; ledger total $1,504).
-The transcript was priced with this tracker's rate table:
+The transcript was priced with this tracker's rate table, all cache writes at the 1-hour rate
+(99.3% of writes are 1-hour, so the error is under 1%):
 
 | part | $ | share |
 |---|---|---|
@@ -136,7 +138,8 @@ The transcript was priced with this tracker's rate table:
   ledger has no request-type field and the local telemetry files hold no API events. The ledger
   also files `claude-opus-5-5[1m]` under its own key.
 - The share for the `cost-state` total depends on how advisor-heavy a session is: 52% to 99%
-  per session before #324.
+  per session before #324. A small negative "other" (3ee810d0, -$2.6, 1.5%) is within the
+  cache-write pricing approximation above.
 
 **Decision: open.** Whether cost-report should treat the ledger total as the authoritative
 session cost, and keep the transcript rows for per-model, per-stream and per-agent detail, is a
