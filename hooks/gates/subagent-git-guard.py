@@ -149,8 +149,58 @@ def _drop_escapes(m):
     u = _ESC_PAIR_RE.sub(lambda e: e.group(0) if e.group(1) in _KEEP_ESCAPED else e.group(1), w)
     return " " * (len(w) - len(u)) + u
 
+# GH #344: a shell also removes the quotes inside a word, so `"git" stash`, `g'i't stash`, `git "stash"`
+# and `"env" git stash` run git, but the mask turns the quoted letters into Q. A word made only of
+# command-word characters and quoted runs of them (`$'..'` and `$".."` too) is joined back to its
+# letters, blanks to its front so offsets hold, where the mask shows it outside every quote (each quote
+# mark a blank, each quoted letter a Q). An escaped letter (`"g"\it`) is one more piece. A quoted `=` is
+# a command name, not an assignment, so it is not a word character, and a message with a blank or
+# separator in it never forms such a word, so `-m "fix; git reset"` stays masked. The candidates sit
+# between separators and hold none, so one finditer is linear. The same pattern is _SPAWN_QWORD_RE in
+# irrecoverable.py (a test checks they match).
+# `$'list'` is `list` in bash, zsh and ksh but `$list` in dash, and `$"show"` is `$show` in dash and zsh,
+# so the `$` pieces are read three ways: both joined (bash, ksh), only `$'..'` joined (zsh), neither (dash,
+# develop's reading). Each later pass runs only when the ones before allowed, and any deny wins. Joining
+# can only lower a verdict through the `stash list|show` carve-out, which is why the readings matter there.
+_QWORD_RE = re.compile(r"(?<![^\s;&|()<>{])(?:[\w./-]|\\[\w./-]|\$?\"[\w./-]*\"|\$?'[\w./-]*')+(?![^\s;&|()<>}])")
+_QPIECE_RE = re.compile(r"(\$?)([\"'])([\w./-]*)[\"']|\\([\w./-])|([\w./-])")
+_dollar_join = "'\""  # the `$` quote kinds joined in this pass
+_dollar_joined = False  # a word with a `$` piece was joined, so the other readings differ
+
+def _join_quoted_words(raw, masked):
+    global _dollar_joined
+    if len(raw) != len(masked):
+        return masked
+    out, last = [], 0
+    for m in _QWORD_RE.finditer(raw):
+        if "'" not in m.group() and '"' not in m.group():
+            continue
+        a, letters, ok = m.start(), [], True
+        for p in _QPIECE_RE.finditer(m.group()):
+            k = a + p.start()
+            if p.group(5):
+                ok = masked[k] == p.group(5)
+                letters.append(p.group(5))
+            elif p.group(4):
+                ok = masked[k:k + 2] == p.group()
+                letters.append(p.group(4))
+            elif p.group(1) and p.group(2) not in _dollar_join:
+                ok = False
+            else:
+                d, body = len(p.group(1)), p.group(3)
+                ok = (masked[k:k + d] in ("", " ", "$") and masked[k + d] == " " and
+                      masked[k + d + 1:k + d + 1 + len(body)] == "Q" * len(body) and masked[k + d + 1 + len(body)] == " ")
+                letters.append(body)
+            if not ok:
+                break
+        if ok:
+            _dollar_joined = _dollar_joined or "$" in m.group()
+            j = "".join(letters)
+            out.append(masked[last:a]); out.append(" " * (m.end() - a - len(j)) + j); last = m.end()
+    return "".join(out) + masked[last:]
+
 def _mask(s):
-    return _WORD_TOKEN_RE.sub(_drop_escapes, _mask_quotes(s))
+    return _WORD_TOKEN_RE.sub(_drop_escapes, _join_quoted_words(s, _mask_quotes(s)))
 
 masked = _mask(cmd)
 
@@ -647,8 +697,17 @@ def _violation_everywhere(overlap):
             return hit
     return None
 
+def _all_passes():
+    return _violation_everywhere(False) or _violation_everywhere(True) or _violation_everywhere(_LAZY)
+
 try:
-    hit = _violation_everywhere(False) or _violation_everywhere(True) or _violation_everywhere(_LAZY)
+    hit = _all_passes()
+    for _dollar_join in ("'", ""):  # GH #344: the zsh and dash readings of `$` pieces (see _QWORD_RE)
+        if hit or not _dollar_joined:
+            break
+        _sub_texts = None
+        masked = _mask(cmd)
+        hit = _all_passes()
 except _TooCostly:
     print(f"[mh:gate] BLOCKED: subagent ({agent_type}) command is too long or too dense to check "
           f"safely ({len(cmd)} bytes); write it to a file with the Write tool and run the file, "

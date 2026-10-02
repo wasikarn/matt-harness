@@ -1210,6 +1210,82 @@ for _c in \
   check "GH #320 padded path wrappers allow shape finishes inside 8 s (rc $rc, ${#_c} bytes): ${_c:0:24}" "$ok"
 done
 
+# --- (26) GH #344: a shell removes the quotes inside a word, so a quoted or partly quoted git, wrapper
+# or subcommand still runs it, but the quote mask turned the quoted letters into Q. Each deny row runs
+# git stash/reset/clean in sh, bash 3.2, bash 5, dash, zsh and ksh (logging git stub; $'..' rows in all
+# but dash, the glued-brace row in zsh only); the controls run none.
+for _c in \
+  '"git" stash' \
+  "g'i't stash" \
+  'g""it stash' \
+  'git "stash"' \
+  "git 'reset' --hard" \
+  'git cl"ea"n -fd' \
+  '"env" git stash' \
+  '"sudo" -u x git stash' \
+  '"/usr/bin/env" git stash' \
+  '"git" -C . stash' \
+  'git -C "." "stash"' \
+  'true && "git" stash' \
+  'echo $("git" stash)' \
+  'echo "$("git" stash)"' \
+  "bash -c '\"git\" stash'" \
+  '"bash" -c "git stash"' \
+  '"eval" "git stash"' \
+  '{ "git" stash; }' \
+  '{"git" stash;}' \
+  "\$'git' stash" \
+  "git \$'stash'" \
+  '"g"\it stash' \
+  'git "res"\et --hard' \
+  "git stash \$'list'" \
+  'git stash $"show"' \
+  "\$'git' stash \$\"show\"" ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #344 denied (quoted word): $_c" "$ok"
+done
+for _c in \
+  'git commit -m "fix; git reset"' \
+  'git commit -m "stash"' \
+  'echo "git" stash' \
+  "echo 'a \"git\" stash'" \
+  '"git stash"' \
+  '"gitx" stash' \
+  '"A=1" git stash' \
+  '"git" stash list' \
+  'git "stash" show' \
+  "git stash 'list'" \
+  'git stash"x"' \
+  "printf '%s\n' \"git\" \"stash\"" \
+  '# "git" stash' \
+  '# "git" "stash"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "GH #344 control allowed: $_c" "$ok"
+done
+# The guard's quoted-word pattern is typed again in irrecoverable.py's spawn anchor; they must not drift.
+ok=$(python3 - "$ROOT/hooks/gates" <<'PY'
+import re, sys
+def pat(f, name):
+    m = re.search(r"^" + name + r" = re\.compile\((r\".*\")\)$", open(sys.argv[1] + "/" + f).read(), re.M)
+    return m and m.group(1)
+a, b = pat("subagent-git-guard.py", "_QWORD_RE"), pat("irrecoverable.py", "_SPAWN_QWORD_RE")
+print(0 if a and a == b else 1)
+PY
+)
+check "GH #344 quoted-word pattern is the same in both gates" "$ok"
+# The quoted-word join is a new regex piece; its worst cases must still be decided inside 8 s.
+for _c in \
+  "$(_pad '"e"nv ' 3000)git stash" \
+  "$(_pad '"a"' 40000) ; git stash" \
+  "$(_pad "'a'" 40000)\\x; git stash" ; do
+  rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #344 padded quoted words decided inside 8 s as deny (rc $rc, ${#_c} bytes): ${_c:0:24}" "$ok"
+done
+for _c in "$(_pad '"e"nv ' 3000)ls" "$(_pad '"a" ' 4000)ls" ; do
+  rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" != "124" ] && ok=0
+  check "GH #344 padded quoted words allow shape finishes inside 8 s (rc $rc, ${#_c} bytes): ${_c:0:24}" "$ok"
+done
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

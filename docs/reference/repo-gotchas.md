@@ -195,3 +195,12 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   (`git commit -m "fix {claude -p x;}"`), the same over-deny develop already makes for `"fix; claude -p x"`.
   Its glued `{` alternative carries `(?!\s)` so it never matches the same `{` as `{` + blank: with both,
   every `{ env ` unit was walked twice (2.4 s against 1.2 s at 2000 units).
+  GH #344: a shell removes the quotes inside a word (`"git" stash`, `g'i't stash`, `git "stash"`,
+  `"claude" -p x`). Both gates join a word made only of command-word characters (`[\w./-]`, an escaped
+  one too) and quoted runs of them back to its letters (`_QWORD_RE` / `_SPAWN_QWORD_RE`, one pattern, a
+  drift test). The guard joins only where its quote mask shows the word outside every quote, so a
+  message stays masked. A `$'..'`/`$".."` piece reads differently per shell (`$'list'` is `$list` in
+  dash, `$"show"` is `$show` in dash and zsh), which matters for the `stash list|show` carve-out, so the
+  guard runs up to three readings. The spawn anchor also scans the unjoined text when a join changed it
+  (`claude -p"x"` is `-px`). Residue, which `develop` also allows: a second parse level (`eval \"git\"
+  stash`, `eval "git " stash`, an escaped quote inside a `bash -c "..."` body).
