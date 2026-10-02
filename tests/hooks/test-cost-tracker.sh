@@ -322,7 +322,122 @@ else
 fi
 echo "$pass3 passed, $fail3 failed (phase 3)"
 
-pass=$((pass + pass2 + pass3))
-fail=$((fail + fail2 + fail3))
+# Phase 4 -- advisor-tool calls are priced (GH #324). Failure class: omitted
+# billing component. A response's top-level usage excludes its advisor_message
+# iterations (128 of 128 real responses checked), and the flat anchoring above
+# rightly keeps them off the executor's row, but nothing priced them at the
+# advisor's own model, so ~11% of spend went missing. Each advisor iteration
+# must become its own record on the advisor's model, counted once per
+# (message.id, iteration) across every file the hook reads, and kept out of
+# `turns` and `cache_read_per_turn`.
+echo "=== advisor: advisor_message iterations are priced at the advisor's model ==="
+pass4=0
+fail4=0
+ok4()  { pass4=$((pass4 + 1)); echo "PASS: $1"; }
+bad4() { fail4=$((fail4 + 1)); echo "FAIL: $1" >&2; }
+
+# adv_line <executor-model> <message-id> [zeroed]
+# One executor response with an advisor iteration on claude-fable-5-1
+# (1,000,000 in / 10,000 out = $10 + $0.50 = $10.50). The executor's own
+# top-level usage is 1000 in / 100 out / 5000 cache read.
+adv_line() {
+  python3 -c '
+import json, sys
+model, mid = sys.argv[1], sys.argv[2]
+zero = len(sys.argv) > 3
+iters = [
+    {"type": "message", "input_tokens": 1000, "output_tokens": 100, "cache_read_input_tokens": 5000,
+     "cache_creation_input_tokens": 0, "cache_creation": {"ephemeral_5m_input_tokens": 0, "ephemeral_1h_input_tokens": 0}},
+    {"type": "advisor_message", "model": "claude-fable-5-1", "input_tokens": 1000000, "output_tokens": 10000,
+     "cache_read_input_tokens": 0, "cache_creation_input_tokens": 0,
+     "cache_creation": {"ephemeral_5m_input_tokens": 0, "ephemeral_1h_input_tokens": 0}},
+]
+top = {"input_tokens": 0 if zero else 1000, "output_tokens": 0 if zero else 100,
+       "cache_read_input_tokens": 0 if zero else 5000, "cache_creation_input_tokens": 0, "iterations": iters}
+print(json.dumps({"type": "assistant", "message": {"model": model, "id": mid, "usage": top}}))
+' "$@"
+}
+
+# run_rows <main-transcript-lines-file> [subagent-lines-file]
+# Runs the hook on a main transcript (and optionally one subagent file) and
+# prints every row it wrote.
+run_rows() {
+  local dir fake_home payload
+  dir=$(mktemp -d); fake_home=$(mktemp -d)
+  cp "$1" "$dir/s.jsonl"
+  if [[ -n "${2:-}" ]]; then
+    mkdir -p "$dir/s/subagents"
+    cp "$2" "$dir/s/subagents/agent-a1.jsonl"
+  fi
+  payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "t324"}))' "$dir/s.jsonl")
+  printf '%s' "$payload" | HOME="$fake_home" MH_COST_TRACKER_SETTLE_S=0 bash "$SCRIPT" >/dev/null 2>/dev/null
+  cat "$fake_home/.local/share/kbg/metrics/costs.jsonl" 2>/dev/null
+  trash "$dir" "$fake_home" 2>/dev/null || true
+}
+fx=$(mktemp -d)
+
+# 1. One advisor iteration -> a fable row with exactly that iteration's tokens;
+#    the executor's own sonnet row is unchanged (1 turn, its own tokens).
+adv_line claude-sonnet-5 msg_adv1 > "$fx/one.jsonl"
+rows=$(run_rows "$fx/one.jsonl")
+fable=$(jq -c 'select(.model == "claude-fable-5-1")' <<<"$rows")
+sonnet=$(jq -c 'select(.model == "claude-sonnet-5")' <<<"$rows")
+if [[ "$(jq -r '[.input_tokens, .output_tokens, .turns, .estimated_cost_usd, .stream] | @tsv' <<<"$fable")" == $'1000000\t10000\t0\t10.5\torchestrator' ]]; then
+  ok4 "one advisor iteration writes a claude-fable-5-1 row: 1000000 in, 10000 out, 0 turns, \$10.50"
+else
+  bad4 "advisor row wrong or missing: ${fable:-<none>} (expected fable row 1000000/10000, turns 0, \$10.50)"
+fi
+if [[ "$(jq -r '[.input_tokens, .output_tokens, .cache_read_tokens, .turns, .cache_read_per_turn] | @tsv' <<<"$sonnet")" == $'1000\t100\t5000\t1\t5000' ]]; then
+  ok4 "the executor's own row is unchanged: 1000 in, 100 out, 5000 cache read, 1 turn"
+else
+  bad4 "executor row changed: $sonnet (expected 1000/100/5000, 1 turn, 5000 per turn)"
+fi
+
+# 2. Same model on both sides (a fable executor calling a fable advisor): the
+#    rows merge, but turns stays 1 and cache_read_per_turn stays the executor's.
+adv_line claude-fable-5-1 msg_adv2 > "$fx/same.jsonl"
+row=$(run_rows "$fx/same.jsonl" | jq -c 'select(.model == "claude-fable-5-1")')
+if [[ "$(jq -r '[.input_tokens, .output_tokens, .turns, .cache_read_per_turn] | @tsv' <<<"$row")" == $'1001000\t10100\t1\t5000' ]]; then
+  ok4 "executor and advisor on one model: tokens add (1001000 in), turns stays 1, cache_read_per_turn 5000"
+else
+  bad4 "same-model merge wrong: $row (expected 1001000 in, 10100 out, 1 turn, 5000 per turn)"
+fi
+
+# 3. One response spans several lines (one per content block), and a copy of
+#    the same message.id can land in a subagent file: the advisor counts once.
+{ adv_line claude-sonnet-5 msg_adv3; adv_line claude-sonnet-5 msg_adv3; } > "$fx/dup-main.jsonl"
+adv_line claude-sonnet-5 msg_adv3 > "$fx/dup-sub.jsonl"
+fin=$(run_rows "$fx/dup-main.jsonl" "$fx/dup-sub.jsonl" | jq -s '[.[] | select(.model == "claude-fable-5-1") | .input_tokens] | add')
+if [[ "$fin" == "1000000" ]]; then
+  ok4 "an advisor call repeated across lines and a subagent copy counts once (1000000 in)"
+else
+  bad4 "duplicated advisor call counted $fin input tokens, expected 1000000"
+fi
+
+# 3b. An advisor call made only inside a subagent is priced on the subagent stream.
+make_usage_line 1000 > "$fx/plain.jsonl"
+adv_line claude-sonnet-5 msg_adv5 > "$fx/sub-only.jsonl"
+row=$(run_rows "$fx/plain.jsonl" "$fx/sub-only.jsonl" | jq -c 'select(.model == "claude-fable-5-1")')
+if [[ "$(jq -r '[.stream, .input_tokens, .turns] | @tsv' <<<"$row")" == $'subagent\t1000000\t0' ]]; then
+  ok4 "an advisor call inside a subagent writes a subagent-stream fable row (1000000 in, 0 turns)"
+else
+  bad4 "subagent-only advisor row wrong or missing: ${row:-<none>}"
+fi
+
+# 4. A background-session zeroed copy (every top-level counter 0) carries the
+#    advisor iteration too; it must add nothing (the original is billed where
+#    it really ran).
+adv_line claude-sonnet-5 msg_adv4 zeroed > "$fx/zero.jsonl"
+rows=$(run_rows "$fx/zero.jsonl")
+if [[ -z "$rows" ]]; then
+  ok4 "a zeroed duplicate copy writes no advisor row"
+else
+  bad4 "zeroed duplicate copy wrote rows: $rows"
+fi
+trash "$fx" 2>/dev/null || true
+echo "$pass4 passed, $fail4 failed (phase 4)"
+
+pass=$((pass + pass2 + pass3 + pass4))
+fail=$((fail + fail2 + fail3 + fail4))
 echo "TOTAL: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]
