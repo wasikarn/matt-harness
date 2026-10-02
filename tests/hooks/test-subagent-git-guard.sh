@@ -460,6 +460,9 @@ for _w in $_wrappers; do
   # list when the flag is absent; a flag before the command word only the wrapper walk can skip.
   rc=$(sgg_rc "$_w -x git stash"); ok=1; [ "$rc" = "2" ] && ok=0
   check "irrecoverable wrapper word is a wrapper in the guard too, flag before the command: $_w -x git stash" "$ok"
+  # GH #320: a wrapper written as a path runs the same program (`/usr/bin/env git stash`).
+  rc=$(sgg_rc "/usr/bin/$_w git stash"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "irrecoverable wrapper word written as a path is a wrapper in the guard too: /usr/bin/$_w git stash" "$ok"
 done
 
 # --- (14) eval / builtin / rtk must not hide the statements after them (deep-audit 4, whole-picture
@@ -1136,6 +1139,75 @@ for _c in \
   $'echo "$(cat <<\\EOF\nhello\nEOF\n)"' ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
   check "GH #317 control allowed: ${_c//$'\n'/<nl>}" "$ok"
+done
+
+# --- (25) GH #320: a wrapper or rtk written as a path (`/usr/bin/env git stash`) runs the same
+# program, so it is the same wrapper. Each deny row runs git stash/reset/clean in sh, bash 3.2,
+# bash 5, dash, zsh and ksh (logging git stub; the glued-brace row in zsh only); the controls run none.
+for _c in \
+  '/usr/bin/env git stash' \
+  '/usr/bin/nice git reset --hard' \
+  '/usr/bin/time git clean -fd' \
+  '/usr/bin/command git stash' \
+  '/usr/bin/nohup git stash' \
+  '/opt/homebrew/bin/timeout 5 git stash' \
+  '( { /usr/bin/env git -C . clean -fd; } )' \
+  '{/usr/bin/env git stash;}' \
+  '/usr/bin/env A=1 git stash' \
+  '/usr/bin/env -u X git stash' \
+  '/usr/bin/env /usr/bin/nice git stash' \
+  'sudo -u root /usr/bin/env git stash' \
+  '/usr/bin/env true && git stash && git status' \
+  'true; /usr/bin/time git stash' \
+  'eval /usr/bin/env git stash' \
+  'eval /usr/bin/command /usr/bin/env git stash' \
+  'eval /usr/bin/command git stash' \
+  'true && eval /usr/bin/command -- git stash pop' \
+  'rtk proxy /usr/bin/command -- git clean -fd' \
+  '/opt/homebrew/bin/rtk proxy git stash' \
+  '/opt/homebrew/bin/rtk proxy /usr/bin/env git stash' \
+  'rtk proxy /usr/bin/env git stash' \
+  'bash -c "/usr/bin/env git stash"' \
+  'echo $(/usr/bin/env git stash)' \
+  '/usr/bin/e\nv git stash' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #320 denied (wrapper written as a path): $_c" "$ok"
+done
+for _c in \
+  '/usr/bin/env git status' \
+  '/usr/bin/env git stash list' \
+  'echo /usr/bin/env git stash' \
+  'ls /usr/bin/env && git status' \
+  '/usr/bin/env=1 git stash' \
+  '/usr/bin/envy git stash' \
+  '/usr/bin/xenv git stash' \
+  'git commit -m "/usr/bin/env git stash"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "GH #320 control allowed: $_c" "$ok"
+done
+# The path prefix is a new regex piece (`\S*/` before every wrapper word); its worst cases must
+# still be decided inside 8 s.
+for _c in \
+  "$(_pad '/usr/bin/env ' 3000)git stash" \
+  "eval $(_pad '/usr/bin/command ' 3000)/usr/bin/env git stash" ; do
+  rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #320 padded path wrappers decided inside 8 s as deny (rc $rc, ${#_c} bytes): ${_c:0:24}" "$ok"
+done
+# A prefix that may start with `-` or hold `<`/`>` lets one token read two ways (a flag or a path
+# command, a redirection or a path wrapper), and the chain loops then try every split of a run:
+# with `\S*/` each of the -/command, -x/rtk and 2>/x/env rows below ran past 15 s.
+for _c in \
+  "$(_pad '/usr/bin/env ' 3000)ls" \
+  "$(_pad ';/' 4000)env ls" \
+  "x $(_pad '/' 20000)env ls" \
+  "eval $(_pad '/usr/bin/command ' 3000)ls" \
+  "eval command $(_pad '-/command ' 40)ls" \
+  "eval rtk $(_pad '-/rtk ' 40)ls" \
+  "rtk $(_pad '-x/rtk ' 40)ls" \
+  "$(_pad '2>/x/env ' 3000)ls" \
+  "eval $(_pad 'A=/rtk ' 3000)ls" ; do
+  rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" != "124" ] && ok=0
+  check "GH #320 padded path wrappers allow shape finishes inside 8 s (rc $rc, ${#_c} bytes): ${_c:0:24}" "$ok"
 done
 
 echo ""

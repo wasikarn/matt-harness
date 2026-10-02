@@ -1776,6 +1776,24 @@ for _c in \
 done
 test_allow "$IRRECOVERABLE" "subagent: old-wrapper walk control, no spawn flag: time ls; claude --version; claude --help" \
   "$(bash_agent_payload 'time ls; claude --version; claude --help' fork)"
+# GH #320: a wrapper written as a path (`/usr/bin/env claude -p x`) runs the same program. The rule
+# loop already compares basenames; the spawn anchor matched the bare word only.
+for _c in \
+  '/usr/bin/env claude -p "x"' \
+  '/usr/bin/nice claude -p "x"' \
+  '/opt/homebrew/bin/timeout 5 claude -p "x"' \
+  '/usr/bin/env /usr/bin/nice claude --print "x"' \
+  '/opt/homebrew/bin/rtk proxy claude -p "x"' \
+  'true; /usr/bin/time claude --bg "x"' \
+  '/usr/bin/env ls; claude -p "x"; claude --version' ; do
+  test_deny "$IRRECOVERABLE" "subagent: spawn behind a wrapper written as a path: $_c" "$(bash_agent_payload "$_c" fork)"
+done
+for _c in \
+  '/usr/bin/env claude --version' \
+  'echo /usr/bin/env claude -p x' \
+  '/usr/bin/envy claude -p x' ; do
+  test_allow "$IRRECOVERABLE" "subagent: wrapper-path control, no spawn: $_c" "$(bash_agent_payload "$_c" fork)"
+done
 
 echo ""
 echo "=== gh merge ask-tier gate (Phase B, 2026-09-28: local defense-in-depth for the PR-review flow) ==="
