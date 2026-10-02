@@ -185,3 +185,8 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   exponential: a token such as `-/command` or `2>/x/env` then reads two ways (flag or path command,
   redirection or path wrapper), and the chain loops try every split (`eval command ` + `-/command ` x 40
   ran past 15 s, and a timed-out hook allows).
+  GH #322: `irrecoverable.py`'s spawn anchor got the guard's #317 and #318 fixes (`cl\aude -p x`,
+  `{claude -p x;}`). It reads raw text, so a glued `{` inside quotes after a blank now denies too
+  (`git commit -m "fix {claude -p x;}"`), the same over-deny develop already makes for `"fix; claude -p x"`.
+  Its glued `{` alternative carries `(?!\s)` so it never matches the same `{` as `{` + blank: with both,
+  every `{ env ` unit was walked twice (2.4 s against 1.2 s at 2000 units).

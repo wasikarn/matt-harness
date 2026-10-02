@@ -1794,6 +1794,67 @@ for _c in \
   '/usr/bin/envy claude -p x' ; do
   test_allow "$IRRECOVERABLE" "subagent: wrapper-path control, no spawn: $_c" "$(bash_agent_payload "$_c" fork)"
 done
+# GH #322: the spawn anchor reads the raw command, so it missed what subagent-git-guard.py learned
+# in #317 and #318. A shell drops a backslash before an ordinary character (`cl\aude -p x`,
+# `claude --pri\nt x`), and zsh runs a brace group glued to its `{` (`{claude -p x;}`). Each deny
+# row runs claude with a spawn flag in sh, bash 3.2, bash 5, dash, zsh and ksh (logging claude stub;
+# the glued-brace rows in zsh only); the controls run none.
+for _c in \
+  'cl\aude -p hello' \
+  '\c\l\a\u\d\e -p hello' \
+  'e\nv claude -p hello' \
+  'ti\me claude -p hello' \
+  's\udo claude -p hello' \
+  'claude -\p hello' \
+  'claude --pri\nt hello' \
+  'claude --a\gent x' \
+  'claude --b\g x' \
+  "bash -c 'cl\\aude -p hello'" \
+  'bash -c "cl\aude -p hello"' \
+  "eval 'cl\\aude -p hello'" \
+  'true; cl\aude --bg x' \
+  '{ cl\aude -p hello; }' \
+  'echo $(cl\aude -p x)' \
+  '/usr/bin/e\nv claude -p hello' \
+  '{claude -p hello;}' \
+  '{claude -p hello; }' \
+  '(){claude -p hello;}' \
+  'f(){claude -p x;}; f' \
+  '{{claude -p x;};}' \
+  'true; {claude -p x;}' \
+  'true&&{claude -p x;}' \
+  '({claude -p x;})' \
+  '{env claude -p x;}' \
+  '{cl\aude -p x;}' \
+  'echo $({claude -p x;})' \
+  'if true; then {claude -p x;}; fi' ; do
+  test_deny "$IRRECOVERABLE" "subagent: GH #322 spawn denied (escaped letter / zsh glued brace): $_c" "$(bash_agent_payload "$_c" fork)"
+done
+for _c in \
+  'cl\\aude -p hello' \
+  'cl\\\aude -p hello' \
+  'echo cl\aude -p hello' \
+  'x{claude -p hello;}' \
+  '${claude -p x;}' \
+  '{true;}{claude -p x;}' \
+  '{claude --version;}' \
+  'cl\aude --version' \
+  'claude -\v' \
+  '\{claude -p x;}' \
+  'claude --pri\\nt hello' ; do
+  test_allow "$IRRECOVERABLE" "subagent: GH #322 control, no spawn: $_c" "$(bash_agent_payload "$_c" fork)"
+done
+# Every glued `{` is now a command start that walks a wrapper chain; padded shapes must still be
+# decided in bounded time (worst measured about 1 s; `timeout 5` turns a regression into rc 124).
+for _u in '{env ' '{ env ' '{sudo -u x ' 'e\nv ' ; do
+  _c="$(python3 -c 'import sys; print(sys.argv[1] * 2000 + "claude -p x")' "$_u")"
+  _rc=$(bash_agent_payload "$_c" fork | timeout 5 bash "$IRRECOVERABLE" 2>/dev/null; echo $?)
+  if [[ "$_rc" == "2" ]]; then
+    echo "  ✅ DENY (bounded time): GH #322 padded '$_u' x 2000 before claude -p"; pass=$((pass + 1))
+  else
+    echo "  ❌ DENY EXPECTED (bounded time) but got exit $_rc (124 = timed out): GH #322 padded '$_u' x 2000" >&2; fail=$((fail + 1))
+  fi
+done
 
 echo ""
 echo "=== gh merge ask-tier gate (Phase B, 2026-09-28: local defense-in-depth for the PR-review flow) ==="

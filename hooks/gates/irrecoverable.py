@@ -267,8 +267,12 @@ _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in SHELL_KEYWORDS) + r
 # behaviour) runs where it always did and the overlapping one runs last, after every rule allowed:
 # a command develop denied is denied just as fast as before.
 # GH #248: `{ claude -p x; }` -- a brace group opens a command position (`{` then a blank).
+# GH #322 (#318's shape in subagent-git-guard.py): zsh also runs a brace group with no blank after
+# `{` (`{claude -p x;}`, `(){claude -p x;}`), and the Bash tool runs zsh, so a glued `{` that starts
+# a word opens one too (any deny wins). Not `x{claude`, `${claude` or `}{claude`, which zsh does not run.
 def _spawn_anchor_body(wrapper_prefix):
-    return (r"(?:^|[|;&()]|&&|\|\||\{(?=\s))\s*" + _KEYWORD_PREFIX + r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" +
+    # `(?!\s)` keeps the glued alternative disjoint from `{` + blank, so no `{` is walked twice.
+    return (r"(?:^|[|;&()]|&&|\|\||\{(?=\s)|(?<![^\s;&|(){])\{(?!\s))\s*" + _KEYWORD_PREFIX + r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" +
             wrapper_prefix + r"\\?(?:\S*/)?claude(?![-\w./])")
 _SPAWN_ANCHOR_RES = (re.compile(r"(" + _spawn_anchor_body(_WRAPPER_PREFIX) + r")", re.MULTILINE),
                      re.compile(r"(?=(" + _spawn_anchor_body(_WRAPPER_PREFIX) + r"))", re.MULTILINE),
@@ -310,8 +314,28 @@ _SPAWN_ANCHOR_BUDGET = 26_000_000
 _spawn_anchor_work = 0
 _spawn_over_budget = False
 
+# GH #322 (#317's fix in subagent-git-guard.py): outside quotes a shell drops a backslash before an
+# ordinary character, so `cl\aude -p x`, `e\nv claude -p x` and `claude --pri\nt x` spawn, but this
+# anchor and _SPAWN_FLAG_RE read the raw text. Inside each word the backslash is dropped before the
+# scan (freed blanks go to the word's front, so the length holds). A pair stays (`\\` is a literal
+# backslash), and so does a backslash before a character it makes literal (`\{`, `\;`, `\"`): dropping
+# it there would change what the text means. Inside quotes the drop can only add an anchor.
+_SPAWN_WORD_RE = re.compile(r"[^\s;&|()<>]+")
+_SPAWN_ESC_RE = re.compile(r"\\(.)")
+_SPAWN_KEEP_ESCAPED = set("\\{}=#$'\"`~*?[]!")
+
+def _spawn_drop_escapes(c):
+    def word(m):
+        w = m.group()
+        if "\\" not in w:
+            return w
+        u = _SPAWN_ESC_RE.sub(lambda e: e.group(0) if e.group(1) in _SPAWN_KEEP_ESCAPED else e.group(1), w)
+        return " " * (len(w) - len(u)) + u
+    return _SPAWN_WORD_RE.sub(word, c)
+
 def _nested_spawn(c, overlap):
     global _spawn_anchor_work, _spawn_over_budget
+    c = _spawn_drop_escapes(c)
     _spawn_anchor_work += sum(c.count(ch) for ch in "\n;&|({") * len(c)
     if _spawn_anchor_work > _SPAWN_ANCHOR_BUDGET:
         _spawn_over_budget = True
