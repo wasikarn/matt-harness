@@ -169,7 +169,7 @@ _dollar_joined = False  # a word with a `$` piece was joined, so the other readi
 
 def _join_quoted_words(raw, masked):
     global _dollar_joined
-    if len(raw) != len(masked):
+    if len(raw) != len(masked) or ("'" not in raw and '"' not in raw):
         return masked
     out, last = [], 0
     for m in _QWORD_RE.finditer(raw):
@@ -199,8 +199,14 @@ def _join_quoted_words(raw, masked):
             out.append(masked[last:a]); out.append(" " * (m.end() - a - len(j)) + j); last = m.end()
     return "".join(out) + masked[last:]
 
+# The whole command is masked again by _shell_bodies; on a 2 MB command each mask costs about 1 s.
+_mask_memo = {}
+
 def _mask(s):
-    return _WORD_TOKEN_RE.sub(_drop_escapes, _join_quoted_words(s, _mask_quotes(s)))
+    k = (_dollar_join, s)
+    if k not in _mask_memo:
+        _mask_memo[k] = _WORD_TOKEN_RE.sub(_drop_escapes, _join_quoted_words(s, _mask_quotes(s)))
+    return _mask_memo[k]
 
 masked = _mask(cmd)
 
