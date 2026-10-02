@@ -179,3 +179,9 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   drift test, and a new word needs two awkward-shape cases per consumer: a glued `name=1`, and a
   multi-statement decoy (`<word> x && git stash && git status`), because a wider wrapper list can
   also hide the statements after it (the guard's walk ran across `;` to the last `git`).
+  GH #320: each word may also be written as a path (`/usr/bin/env git stash`), so every copy takes a
+  directory prefix, and the drift test checks `/usr/bin/<word>` too. The prefix is one plain word that
+  never starts with `-` and holds no `=`, `<` or `>`. The git word's `\S*/` was tried first and was
+  exponential: a token such as `-/command` or `2>/x/env` then reads two ways (flag or path command,
+  redirection or path wrapper), and the chain loops try every split (`eval command ` + `-/command ` x 40
+  ran past 15 s, and a timed-out hook allows).

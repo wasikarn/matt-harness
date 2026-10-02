@@ -188,7 +188,13 @@ masked = _mask(cmd)
 _WRAPPER_WORDS = ("env", "command", "nohup", "nice", "time", "sudo", "doas", "xargs",
                   "exec", "setsid", "timeout", "gtimeout", "stdbuf", "ionice")
 _KEYWORDS = ("!", "if", "elif", "then", "else", "do", "while", "until", "coproc")
-_WRAPPER_ALT = r"(?:" + "|".join(_WRAPPER_WORDS) + r")(?=\s)"
+# GH #320: a wrapper written as a path (`/usr/bin/env git stash`) runs the same program, so each
+# wrapper word (and rtk, command and exec below) takes an optional directory prefix. The prefix is
+# one plain word that never starts with `-` and holds no `=`, `<` or `>`: then a token is a path
+# wrapper, a flag, an assignment or a redirection, never two of them, so no repeated group here can
+# split a run of tokens two ways (that ambiguity is what made the old chain loops exponential).
+_PATH = r"(?:(?!-)[^\s;&|()<>=]*/)?"
+_WRAPPER_ALT = _PATH + r"(?:" + "|".join(_WRAPPER_WORDS) + r")(?=\s)"
 _WRAPPER_PREFIX = r"(?:" + _WRAPPER_ALT + r"\s+(?:(?!" + _WRAPPER_ALT + r")\S+\s+)*)*"
 # GH #248: the greedy walk above lands on the LAST target, so `time git stash; git status` anchored
 # only the second `git`. The lazy twin (`*?`) lands on the FIRST target after the wrappers. It only
@@ -207,8 +213,8 @@ _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in _KEYWORDS) + r")\s+
 # other three treat `A=1` as a command name. Only eval takes assignments.
 _ASSIGN_RUN = r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*[ \t]+)*"
 _EVAL_PASS = r"eval[ \t]+(?:--[ \t]+)?" + _ASSIGN_RUN
-_SHELL_PASS = r"(?:" + _EVAL_PASS + r"|(?:builtin|command|exec)[ \t]+(?:--[ \t]+)?)"
-_RTK_PREFIX = r"(?:rtk[ \t]+(?:-\S+[ \t]+)*(?:(?:proxy|run|err|test|summary)[ \t]+(?:-\S+[ \t]+)*)?)"
+_SHELL_PASS = r"(?:" + _EVAL_PASS + r"|(?:builtin|" + _PATH + r"(?:command|exec))[ \t]+(?:--[ \t]+)?)"
+_RTK_PREFIX = r"(?:" + _PATH + r"rtk[ \t]+(?:-\S+[ \t]+)*(?:(?:proxy|run|err|test|summary)[ \t]+(?:-\S+[ \t]+)*)?)"
 _CHAIN_PREFIX = r"(?:" + _SHELL_PASS + r"|" + _RTK_PREFIX + r")*"
 # GH #248: `{ git stash; }` -- a brace group opens a command position (`{` then blank).
 # GH #273: a chain word may come BEFORE a wrapper (eval sudo git stash, rtk proxy time git stash).
@@ -220,12 +226,12 @@ _CHAIN_PREFIX = r"(?:" + _SHELL_PASS + r"|" + _RTK_PREFIX + r")*"
 # The lookahead names the wrapper words minus command/exec: with them, `rtk exec git stash; git status`
 # lost the anchor develop gave it through _CHAIN_PREFIX (deep-audit whole-picture pass). GH #307:
 # command/exec are only stepped over (_LEAD_STEP) on the way to a real lead wrapper.
-_LEAD_WRAPPER_ALT = r"(?:" + "|".join(w for w in _WRAPPER_WORDS if w not in ("command", "exec")) + r")(?=\s)"
+_LEAD_WRAPPER_ALT = _PATH + r"(?:" + "|".join(w for w in _WRAPPER_WORDS if w not in ("command", "exec")) + r")(?=\s)"
 # GH #307: the lookahead may step over command/exec (with their flags) to reach a lead wrapper
 # (`eval command env git stash`). Only the lookahead does: the run still ends at the same chain word, and
 # the walk takes command/exec itself, so no second parse of any run appears. The stepped words are fixed
 # words and `-flags`, disjoint from each other, so the scan is linear in the stepped span.
-_LEAD_STEP = r"(?:(?:command|exec)[ \t]+(?:-\S*[ \t]+)*)*"
+_LEAD_STEP = r"(?:" + _PATH + r"(?:command|exec)[ \t]+(?:-\S*[ \t]+)*)*"
 _LEAD_CHAIN = (r"(?:(?:" + _EVAL_PASS + r"|builtin[ \t]+(?:--[ \t]+)?|" + _RTK_PREFIX + r")+(?=" + _LEAD_STEP + _LEAD_WRAPPER_ALT + r"))?")
 # GH #285: a redirection (operator + its word) may sit before the command word and hid it
 # (`</dev/null git stash`, `<<EOF git stash`); skipped like a VAR=val, in any mix with them.
