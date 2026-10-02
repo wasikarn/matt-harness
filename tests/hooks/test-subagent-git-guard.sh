@@ -425,10 +425,15 @@ for _c in \
   'eval time git stash list' \
   'eval env A=1 git diff' \
   'rtk proxy sudo git log' \
-  'eval sudo echo "git stash"' ; do
+  "eval sudo echo \"'git stash'\"" ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
   check "chain word before a wrapper control allowed for a subagent: $_c" "$ok"
 done
+# GH #327: eval re-parses its words, so `eval sudo echo "git stash"` is read as `sudo echo git stash`,
+# which the wrapper walk denies like the plain text (sudo's arguments are skipped). The control above
+# keeps the string quoted through both parses. Deny-biased, accepted.
+rc=$(sgg_rc 'eval sudo echo "git stash"'); ok=1; [ "$rc" = "2" ] && ok=0
+check "GH #327: eval sudo echo \"git stash\" reads like sudo echo git stash (denied, over-deny accepted)" "$ok"
 # Worst case stays fast: long runs of chain words and wrappers, in both orders.
 _lc1=$(python3 -c 'print("true; " + "eval sudo " * 3000 + "git stash")')
 _lc2=$(python3 -c 'print("rtk proxy time " * 3000 + "git status")')
@@ -639,6 +644,33 @@ else:
 ' "$GATE")
 ok=1; [ "$_rc" = "2" ] && ok=0
 check "2 MB run of wrapper-argument git words denied inside 8 s, not timed out into allow (rc $_rc)" "$ok"
+# GH #327: the second-parse body of an eval copies its substitution spans, which the raw scan already
+# read. Body strings are now checked once: a late target behind 2 million backticks took 8.3 s on develop
+# (a timed-out hook allows) and 8.9 s with the second-parse body and no dedupe; 3 s now.
+# Also time a 2 MB double-quoted body and a 40 KB eval body whose target only the second parse finds.
+for _shape in bt dq evdq; do
+_rc=$(python3 -c '
+import json, signal, subprocess, sys, os
+bs, dq, bt = chr(92), chr(34), chr(96)
+c = {"bt": "eval " + bt * 2000000 + "; echo " + dq + "$(git stash)" + dq,
+     "dq": "bash -c " + dq + "a " * 1000000 + "; g" + bs * 2 + "it stash" + dq,
+     "evdq": "eval " + dq + "a; " * 13000 + "g" + bs * 2 + "it stash" + dq}[sys.argv[2]]
+d = json.dumps({"tool_name": "Bash", "tool_input": {"command": c}, "agent_id": "a", "agent_type": "general-purpose"})
+for _ in range(2):  # a load spike can time one run out; a real slowdown times out both (GH #158)
+    p = subprocess.Popen(["bash", sys.argv[1]], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                         stderr=subprocess.DEVNULL, start_new_session=True)
+    try:
+        p.communicate(d.encode(), timeout=8)
+        print(p.returncode)
+        break
+    except subprocess.TimeoutExpired:
+        os.killpg(p.pid, signal.SIGKILL)
+else:
+    print(124)
+' "$GATE" "$_shape")
+ok=1; [ "$_rc" = "2" ] && ok=0
+check "GH #327: second-parse worst case ($_shape) denied inside 8 s, not timed out into allow (rc $_rc)" "$ok"
+done
 # The last row guards a dropped fix: a lazy target that looked ahead for the denied subcommand
 # re-read a `git -C` run from every `git` (11 s at 70 KB).
 # GH #276: a wrapper argument spelled git stopped the lazy target; the guard now re-checks from a
@@ -739,7 +771,10 @@ done
 # but the gate refuses it as an unreadable heredoc (a different deny, so it cannot hide a missing git
 # check); ALLOW = no shell ran one. Blocks split on a %% line. A corpus that replays fewer cases than
 # the fixture holds, or fails to load, fails the run.
-_corpus="$ROOT/tests/hooks/fixtures/subagent-git-guard-substitution-cases.txt"
+# GH #327: the second corpus holds second-parse shapes (eval, a double-quoted `sh -c` body), checked
+# against sh, bash 3.2, bash 5, dash, zsh and ksh the same way.
+for _corpus_min in substitution:25 reparse:20; do
+_corpus="$ROOT/tests/hooks/fixtures/subagent-git-guard-${_corpus_min%:*}-cases.txt"
 _corpus_rs="$_JOURNAL_TMP/corpus.rs"
 python3 -c '
 import sys
@@ -758,8 +793,9 @@ while IFS= read -r -d $'\x1e' _blk; do
   esac
   check "corpus ${_head} (rc $rc)" "$ok"
 done < "$_corpus_rs"
-ok=1; [ "$_prod" = 0 ] && [ "$_want_n" -ge 25 ] && [ "$_got_n" = "$_want_n" ] && ok=0
-check "corpus replayed every case (loaded $_got_n of $_want_n, loader exit $_prod)" "$ok"
+ok=1; [ "$_prod" = 0 ] && [ "$_want_n" -ge "${_corpus_min#*:}" ] && [ "$_got_n" = "$_want_n" ] && ok=0
+check "${_corpus_min%:*} corpus replayed every case (loaded $_got_n of $_want_n, loader exit $_prod)" "$ok"
+done
 # A big document written through a quoted heredoc must not be refused as too costly (replay of real
 # transcripts: two 12-17 KB writes were denied by the scans' work budget, which develop allowed).
 _c=$(python3 -c '
