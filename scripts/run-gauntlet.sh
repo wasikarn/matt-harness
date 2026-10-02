@@ -67,6 +67,17 @@ run_lint() {
   return "$rc"
 }
 
+# The test files the layer runs, in glob order. Kept apart from run_hook_tests so
+# tests/scripts/test-run-gauntlet-wiring.sh can check the globs without running
+# anything (it once ran the whole layer through a shim, which xargs bypasses).
+hook_test_files() {
+  local t
+  for t in tests/hooks/*.sh tests/skills/test*.sh tests/skills/*/test*.sh tests/scripts/test*.sh tests/evals/test*.sh tests/skills/memory-lint/test_*.py; do
+    [ -f "$t" ] && printf '%s\n' "$t"
+  done
+  return 0
+}
+
 run_hook_tests() {
   local rc=0 t
   # Redirect the gate-verdict journal for the whole hook-test layer: several
@@ -85,15 +96,23 @@ run_hook_tests() {
   JOURNAL_TMP="$(mktemp -d)"
   trap 'trash "$JOURNAL_TMP" 2>/dev/null || true' RETURN
   export MH_GATE_JOURNAL_PATH="$JOURNAL_TMP/gate-decisions.jsonl"
-  for t in tests/hooks/*.sh tests/skills/test*.sh tests/skills/*/test*.sh tests/scripts/test*.sh tests/evals/test*.sh; do
-    [ -f "$t" ] || continue
+  # Test files run in parallel (GAUNTLET_JOBS, default 4), each with its own
+  # journal file and output file, then print in glob order so the log reads the
+  # same as a serial run. Biggest files start first (`ls -S`, longest job first):
+  # test-gates.sh and test-subagent-git-guard.sh are ~half of all test time, so
+  # they must not queue behind the cheap files. Kept at 4, not nproc: the box is
+  # shared and timing rows (GH #158) fail under heavy load.
+  local TDIR="$JOURNAL_TMP/t" o
+  mkdir -p "$TDIR"
+  hook_test_files | xargs ls -S |
+    xargs -P "${GAUNTLET_JOBS:-4}" -I{} bash -c \
+      'o="$1/${2//\//_}"; case "$2" in *.py) interp=python3;; *) interp=bash;; esac
+       MH_GATE_JOURNAL_PATH="$o.jsonl" "$interp" "$2" >"$o.out" 2>&1; echo $? >"$o.rc"' _ "$TDIR" {}
+  for t in $(hook_test_files); do
+    o="$TDIR/${t//\//_}"
     echo "--- $t"
-    bash "$t" 2>&1 || rc=1
-  done
-  for t in tests/skills/memory-lint/test_*.py; do
-    [ -f "$t" ] || continue
-    echo "--- $t"
-    python3 "$t" 2>&1 || rc=1
+    cat "$o.out"
+    [ "$(cat "$o.rc" 2>/dev/null)" = 0 ] || rc=1
   done
   return "$rc"
 }
