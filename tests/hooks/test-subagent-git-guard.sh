@@ -1033,6 +1033,52 @@ for _c in \
   check "GH #307 allow shape finishes inside 8 s (rc $rc, ${#_c} bytes): ${_c:0:30}" "$ok"
 done
 
+# --- (23) GH #318: zsh runs a brace group with no blank after `{` (`{git stash;}`); bash, dash and
+# ksh read `{git` as a word. The Bash tool runs zsh here, so a glued `{` is a command start too (any
+# deny wins). Each deny row runs git stash/reset/clean in zsh (logging git stub); the controls run none.
+for _c in \
+  '{git stash;}' \
+  '{git stash; }' \
+  '{git reset --hard;}' \
+  '{git clean -fd;}' \
+  '{git stash}' \
+  $'{git stash\n}' \
+  'true; {git stash;}' \
+  'true&&{git stash;}' \
+  '{ {git stash;}; }' \
+  '{{git stash;};}' \
+  'if true; then {git stash;}; fi' \
+  '! {git stash;}' \
+  '({git stash;})' \
+  '{env git stash;}' \
+  '{time git stash;}' \
+  '{A=1 git stash;}' \
+  '{git -C . stash;}' \
+  '{git stash;} 2>&1' \
+  'time {git stash;}' \
+  '{git stash;}; git status' \
+  '(){git stash;}' \
+  'f(){git stash;}; f' \
+  '{true;}{git stash;}' \
+  'for i in 1; {git stash;}' \
+  '2>&1 {git stash;}' \
+  'echo $({git stash;})' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #318 denied (zsh glued brace group): ${_c//$'\n'/<nl>}" "$ok"
+done
+for _c in \
+  '{git status;}' \
+  '{git stash list;}' \
+  'echo {git,x} stash' \
+  '{}git stash' \
+  'x{git stash;}' \
+  '${git stash;}' \
+  'echo {a,b} git stash' \
+  'git commit -m "fix {git stash;}"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "GH #318 control allowed: $_c" "$ok"
+done
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]
