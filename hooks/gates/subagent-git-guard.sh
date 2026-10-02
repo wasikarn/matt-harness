@@ -10,8 +10,9 @@
 # sessions also lack agent_id, so agent_type is NOT the discriminant.
 # irrecoverable.sh already denies the destructive forms (reset --hard, clean -f,
 # checkout --, restore <path>) for every session; this gate only adds the three
-# non-force verbs, for subagents. Coarse pattern match, not a sandbox: quote-
-# splitting or substitution of the word "git" itself is a non-goal, and a
+# non-force verbs, for subagents. Coarse pattern match, not a sandbox: a quoted
+# "git" is read (GH #344), but a second parse level (eval of an escaped quote)
+# or a substitution that builds the word "git" is a non-goal, and a
 # heredoc BODY line starting with "git stash" over-blocks (no heredoc parsing).
 #
 # No bash-level fast path on the agent_id key (2026-09-20 audit, same GH #154

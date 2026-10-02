@@ -324,6 +324,22 @@ _SPAWN_WORD_RE = re.compile(r"[^\s;&|()<>]+")
 _SPAWN_ESC_RE = re.compile(r"\\(.)")
 _SPAWN_KEEP_ESCAPED = set("\\{}=#$'\"`~*?[]!")
 
+# GH #344 (subagent-git-guard.py's _QWORD_RE, same pattern, a test checks they match): a shell also
+# removes the quotes inside a word, so `"claude" -p x`, `cl'a'ude -p x`, `"env" claude -p x` and
+# `claude '-'p x` spawn. A word made only of command-word characters and quoted runs of them (`$'..'`
+# and `$".."` too) is joined back to its letters, blanks to its front, after the backslash drop. A
+# quoted `=` is a command name, not an assignment, so it is not a word character. This anchor reads raw
+# text, where a quoted `;` already opens a command start, so joining inside quotes can only add an anchor.
+# Joining can glue a flag to its neighbour (`claude -p"x"` is `-px`), so when it changed the text the
+# unjoined text is scanned too, and either reading denies.
+_SPAWN_QWORD_RE = re.compile(r"(?<![^\s;&|()<>{])(?:[\w./-]|\\[\w./-]|\$?\"[\w./-]*\"|\$?'[\w./-]*')+(?![^\s;&|()<>}])")
+_SPAWN_QMARK_RE = re.compile(r"\$?[\"']|\\(?=[\w./-])")
+
+def _spawn_join_quoted(m):
+    w = m.group()
+    j = _SPAWN_QMARK_RE.sub("", w)
+    return " " * (len(w) - len(j)) + j
+
 def _spawn_drop_escapes(c):
     def word(m):
         w = m.group()
@@ -334,8 +350,12 @@ def _spawn_drop_escapes(c):
     return _SPAWN_WORD_RE.sub(word, c)
 
 def _nested_spawn(c, overlap):
-    global _spawn_anchor_work, _spawn_over_budget
     c = _spawn_drop_escapes(c)
+    j = _SPAWN_QWORD_RE.sub(_spawn_join_quoted, c)
+    return _nested_spawn_text(j, overlap) or (j != c and _nested_spawn_text(c, overlap))
+
+def _nested_spawn_text(c, overlap):
+    global _spawn_anchor_work, _spawn_over_budget
     _spawn_anchor_work += sum(c.count(ch) for ch in "\n;&|({") * len(c)
     if _spawn_anchor_work > _SPAWN_ANCHOR_BUDGET:
         _spawn_over_budget = True

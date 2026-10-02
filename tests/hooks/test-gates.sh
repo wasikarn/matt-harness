@@ -1855,6 +1855,47 @@ for _u in '{env ' '{ env ' '{sudo -u x ' 'e\nv ' ; do
     echo "  ❌ DENY EXPECTED (bounded time) but got exit $_rc (124 = timed out): GH #322 padded '$_u' x 2000" >&2; fail=$((fail + 1))
   fi
 done
+# GH #344: a shell removes the quotes inside a word, so a quoted or partly quoted claude, wrapper or
+# flag still runs claude. Each deny row runs claude with a spawn flag in sh, bash 3.2, bash 5, dash, zsh
+# and ksh (logging claude stub; $'..' rows in all but dash, the glued-brace row in zsh only); the
+# controls run none.
+for _c in \
+  '"claude" -p x' \
+  "cl'a'ude -p x" \
+  'cl""aude -p x' \
+  "'claude' --print x" \
+  'sudo "claude" -p x' \
+  '"env" claude -p x' \
+  '"sudo" -u x claude -p x' \
+  'true; "claude" --bg x' \
+  'echo $("claude" -p x)' \
+  "bash -c '\"claude\" -p x'" \
+  '{ "claude" -p x; }' \
+  '{"claude" -p x;}' \
+  "claude '-'p x" \
+  'claude --"print" x' \
+  "\$'claude' -p x" \
+  '"cl"\aude -p x' \
+  'claude -p"x"' ; do
+  test_deny "$IRRECOVERABLE" "subagent: GH #344 spawn denied (quoted word): $_c" "$(bash_agent_payload "$_c" fork)"
+done
+for _c in \
+  'echo "claude" -p x' \
+  '"claude -p x"' \
+  '"claudex" -p x' \
+  '"A=1" claude -p x' \
+  '"claude" --version' \
+  'git commit -m "use claude -p"' \
+  "echo 'a \"claude\" -p'" ; do
+  test_allow "$IRRECOVERABLE" "subagent: GH #344 control, no spawn: $_c" "$(bash_agent_payload "$_c" fork)"
+done
+_c="$(python3 -c 'print("\"e\"nv " * 4000 + "claude -p x")')"
+_rc=$(bash_agent_payload "$_c" fork | timeout 5 bash "$IRRECOVERABLE" 2>/dev/null; echo $?)
+if [[ "$_rc" == "2" ]]; then
+  echo "  ✅ DENY (bounded time): GH #344 '\"e\"nv ' x 4000 before claude -p"; pass=$((pass + 1))
+else
+  echo "  ❌ DENY EXPECTED (bounded time) but got exit $_rc (124 = timed out): GH #344 '\"e\"nv ' x 4000" >&2; fail=$((fail + 1))
+fi
 
 echo ""
 echo "=== gh merge ask-tier gate (Phase B, 2026-09-28: local defense-in-depth for the PR-review flow) ==="
