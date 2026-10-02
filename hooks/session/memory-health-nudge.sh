@@ -56,7 +56,7 @@ if [ -e "${FAILMARKERS[0]}" ]; then
     # of model context. Pure bash, so this works without grep or python3.
     while IFS= read -r _line || [ -n "$_line" ]; do
       [[ "$_line" == acquisition_ts=* ]] || printf '%s\n' "$_line"
-    done < "$_m" 2>/dev/null
+    done 2>/dev/null < "$_m"
   done
   printf '%s\n' "Fix the underlying git issue in the memory store, then it will resolve on the next successful commit."
 fi
