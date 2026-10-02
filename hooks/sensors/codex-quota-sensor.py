@@ -30,7 +30,9 @@ import re
 import sys
 import time
 
-_CODEX_RE = re.compile(r"(^|[\s/\"'])codex([\s\"']|$)")
+# The bare CLI, or the Codex plugin's own runner (`node .../codex-companion.mjs task ...`),
+# which the trailing boundary alone rejects (GH #333).
+_CODEX_RE = re.compile(r"(^|[\s/\"'])codex([\s\"']|$)|codex-companion\.mjs")
 _QUOTA_RE = re.compile(r"usage\s*limit|rate\s*limit|quota", re.IGNORECASE)
 _MAX_MESSAGE_LEN = 500
 

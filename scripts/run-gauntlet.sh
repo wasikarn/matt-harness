@@ -96,16 +96,18 @@ run_hook_tests() {
   JOURNAL_TMP="$(mktemp -d)"
   trap 'trash "$JOURNAL_TMP" 2>/dev/null || true' RETURN
   export MH_GATE_JOURNAL_PATH="$JOURNAL_TMP/gate-decisions.jsonl"
-  # Test files run in parallel (GAUNTLET_JOBS, default 4), each with its own
-  # journal file and output file, then print in glob order so the log reads the
-  # same as a serial run. Biggest files start first (`ls -S`, longest job first):
-  # test-gates.sh and test-subagent-git-guard.sh are ~half of all test time, so
-  # they must not queue behind the cheap files. Kept at 4, not nproc: the box is
-  # shared and timing rows (GH #158) fail under heavy load.
+  # Test files run in parallel (GAUNTLET_JOBS, default 4 locally, 1 when CI is
+  # set), each with its own journal file and output file, then print in glob
+  # order so the log reads the same as a serial run. Biggest files start first
+  # (`ls -S`, longest job first): test-gates.sh and test-subagent-git-guard.sh
+  # are ~half of all test time, so they must not queue behind the cheap files.
+  # Kept at 4, not nproc: the box is shared and timing rows (GH #158) fail under
+  # heavy load. CI stays serial: its runner is slower with fewer cores, and the
+  # 8 s rows already have only ~1.1x margin there; 4 concurrent files timed one out.
   local TDIR="$JOURNAL_TMP/t" o
   mkdir -p "$TDIR"
   hook_test_files | xargs ls -S |
-    xargs -P "${GAUNTLET_JOBS:-4}" -I{} bash -c \
+    xargs -P "${GAUNTLET_JOBS:-$([ -n "${CI:-}" ] && echo 1 || echo 4)}" -I{} bash -c \
       'o="$1/${2//\//_}"; case "$2" in *.py) interp=python3;; *) interp=bash;; esac
        MH_GATE_JOURNAL_PATH="$o.jsonl" "$interp" "$2" >"$o.out" 2>&1; echo $? >"$o.rc"' _ "$TDIR" {}
   for t in $(hook_test_files); do

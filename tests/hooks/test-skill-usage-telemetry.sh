@@ -122,6 +122,73 @@ else
   fail=$((fail + 1))
 fi
 
+# GH #330: rows say where the call came from. A model Skill call is
+# source "tool"; a user-typed /skill never makes a Skill call, so it is caught
+# on UserPromptExpansion instead and logged as source "typed".
+if tail -1 "$LOG_FILE" | jq -e '.source == "tool"' >/dev/null 2>&1; then
+  echo "  ✅ SOURCE TOOL: a PostToolUse(Skill) row carries source=tool"
+  pass=$((pass + 1))
+else
+  echo "  ❌ a PostToolUse(Skill) row should carry source=tool, got $(tail -1 "$LOG_FILE")" >&2
+  fail=$((fail + 1))
+fi
+
+payload_typed='{"session_id":"sess-2","hook_event_name":"UserPromptExpansion","expansion_type":"slash_command","command_name":"mh:memory-lint","command_args":"","command_source":"plugin","prompt":"/mh:memory-lint"}'
+run_hook "$payload_typed" >/dev/null 2>&1
+if tail -1 "$LOG_FILE" | jq -e '.skill == "mh:memory-lint" and .plugin == "mh" and .source == "typed" and .session_id == "sess-2"' >/dev/null 2>&1; then
+  echo "  ✅ SOURCE TYPED: a UserPromptExpansion slash_command appends a source=typed row"
+  pass=$((pass + 1))
+else
+  echo "  ❌ a typed /mh:memory-lint should append a source=typed row, got $(tail -1 "$LOG_FILE")" >&2
+  fail=$((fail + 1))
+fi
+
+payload_mcp='{"session_id":"sess-2","hook_event_name":"UserPromptExpansion","expansion_type":"mcp_prompt","command_name":"srv:prompt","command_args":"","prompt":"/srv:prompt"}'
+lines_before=$(wc -l <"$LOG_FILE" | tr -d ' ')
+run_hook "$payload_mcp" >/dev/null 2>&1
+lines_after=$(wc -l <"$LOG_FILE" | tr -d ' ')
+if [[ "$lines_after" == "$lines_before" ]]; then
+  echo "  ✅ MCP PROMPT SKIPPED: an mcp_prompt expansion is not a skill, no row"
+  pass=$((pass + 1))
+else
+  echo "  ❌ an mcp_prompt expansion should not append a row" >&2
+  fail=$((fail + 1))
+fi
+
+# GH #330: a short name the model passes is mapped to its namespaced form
+# when exactly one installed plugin ships it; a name two plugins share, or a
+# name a user-level skill owns, stays as-is. Fake plugin cache under TMP_HOME.
+PLUG="$TMP_HOME/.claude/plugins"
+mkdir -p "$PLUG/a/skills/grilling" "$PLUG/a/skills/doctor" "$PLUG/b/skills/doctor" \
+  "$PLUG/b/nested/bucket/deep-one" "$PLUG/a/skills/mine" "$TMP_HOME/.claude/skills/mine" "$PLUG/b/.claude-plugin"
+touch "$PLUG/a/skills/grilling/SKILL.md" "$PLUG/a/skills/doctor/SKILL.md" "$PLUG/b/skills/doctor/SKILL.md" \
+  "$PLUG/b/nested/bucket/deep-one/SKILL.md" "$PLUG/a/skills/mine/SKILL.md"
+printf '{"name":"plugb","skills":["./nested/bucket/"]}' > "$PLUG/b/.claude-plugin/plugin.json"
+printf '{"version":2,"plugins":{"pluga@m":[{"installPath":"%s"}],"x@m":[{"installPath":"%s"}]}}' \
+  "$PLUG/a" "$PLUG/b" > "$PLUG/installed_plugins.json"
+check_mapped() {
+  local short="$1" want="$2" label="$3"
+  run_hook "{\"session_id\":\"sess-3\",\"hook_event_name\":\"PostToolUse\",\"tool_name\":\"Skill\",\"tool_input\":{\"skill\":\"$short\"}}" >/dev/null 2>&1
+  if tail -1 "$LOG_FILE" | jq -e --arg w "$want" '.skill == $w and .source == "tool"' >/dev/null 2>&1; then
+    echo "  ✅ $label"
+    pass=$((pass + 1))
+  else
+    echo "  ❌ $label: expected skill=$want, got $(tail -1 "$LOG_FILE")" >&2
+    fail=$((fail + 1))
+  fi
+}
+check_mapped grilling "pluga:grilling" "SHORT NAME MAPPED: one plugin ships it -> namespaced, plugin name from the install key"
+check_mapped deep-one "plugb:deep-one" "MANIFEST SKILLS ENTRY: a skill under a plugin.json bucket maps, name from plugin.json"
+check_mapped doctor "doctor" "AMBIGUOUS KEPT: two plugins ship it -> stays short"
+check_mapped mine "mine" "USER SKILL KEPT: a ~/.claude/skills entry owns the short name"
+if tail -1 "$LOG_FILE" | jq -e '.plugin == "unnamespaced"' >/dev/null 2>&1; then
+  echo "  ✅ UNMAPPED PLUGIN FIELD: a kept short name still reports plugin=unnamespaced"
+  pass=$((pass + 1))
+else
+  echo "  ❌ a kept short name should report plugin=unnamespaced" >&2
+  fail=$((fail + 1))
+fi
+
 # Malformed payload must not crash the hook or corrupt the log.
 run_hook 'not json' >/tmp/sut-stdout2.$$ 2>/tmp/sut-stderr2.$$
 rc=$?
