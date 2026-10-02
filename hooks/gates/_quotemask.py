@@ -36,11 +36,16 @@ def mask_quotes(s):
     # real miss traces to an omitted operator. A backslash-escaped quote
     # OUTSIDE a span is a literal (GH #157 sibling, 2026-09-21); other
     # escaped characters outside spans are left as-is. A backslash-newline
-    # (odd run) is a line continuation (GH #286): masked as blanks when it
-    # starts a word, so `\<nl>git stash` still shows git to the callers'
-    # anchor (GH #161 round 2), and as Q's mid-word so a "#" after it is not
-    # a comment.
+    # (odd run) is a line continuation (GH #286): the shell deletes the pair.
+    # GH #306: when a blank, a separator or the end follows, nothing glues and
+    # the pair is blanks in place (`git\<nl> stash` is `git stash`). When a
+    # word char follows, the two halves are one word (`g\<nl>it` is `git`):
+    # the two blanks go to the FRONT of that word, so the joined word reads
+    # whole to the callers' anchors and every char after the pair keeps its
+    # offset. A "#" after a mid-word pair stays mid-word, not a comment.
     out = []
+    pad = {}  # out index -> blank pairs to put in front of that piece (GH #306)
+    word_start = 0  # out index where the current word begins
     i, n = 0, len(s)
     at_word_start = True
     while i < n:
@@ -117,17 +122,16 @@ def mask_quotes(s):
             while j < n and s[j] == "\\":
                 j += 1
             if (j - i) % 2 == 1 and j < n and s[j] == "\n":
-                # GH #286: an odd run before a newline is a line continuation;
-                # bash joins the lines, so a "#" after it is mid-word, not a
-                # comment. Blanks when the pair starts a word (a following
-                # git / # stays visible); Q's otherwise (glues to the word).
-                out.append("\\" * (j - i - 1))
-                if j - i == 1 and at_word_start:
-                    out.append("  ")
-                else:
-                    out.append("QQ")
+                # GH #286/#306: an odd run before a newline is a line
+                # continuation; the shell deletes the pair (see the header).
+                if j - i > 1:
+                    out.append("\\" * (j - i - 1))  # escaped backslashes: word chars
                     at_word_start = False
                 i = j + 1
+                if i < n and s[i] not in _WORD_BOUNDARY_CHARS and word_start < len(out):
+                    pad[word_start] = pad.get(word_start, 0) + 1
+                else:
+                    out.append("  ")
                 continue
             out.append("\\" * (j - i))
             if (j - i) % 2 == 1 and j < n and s[j] in "'\"$":
@@ -139,4 +143,6 @@ def mask_quotes(s):
             out.append(c)
             i += 1
             at_word_start = c in _WORD_BOUNDARY_CHARS
-    return "".join(out)
+            if at_word_start:
+                word_start = len(out)
+    return "".join("  " * pad.get(k, 0) + p for k, p in enumerate(out))

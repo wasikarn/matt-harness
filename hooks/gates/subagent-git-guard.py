@@ -64,6 +64,8 @@ try:
 except Exception:
     def _mask_quotes(s):
         out = []
+        pad = {}  # GH #306: out index -> blank pairs to put in front of that piece
+        word_start = 0
         i, n = 0, len(s)
         at_word_start = True
         while i < n:
@@ -109,13 +111,14 @@ except Exception:
                 j = i
                 while j < n and s[j] == "\\":
                     j += 1
-                if (j - i) % 2 == 1 and j < n and s[j] == "\n":  # GH #286: odd run + newline = line continuation
-                    out.append("\\" * (j - i - 1))
-                    if j - i == 1 and at_word_start:
-                        out.append("  ")  # blanks: a following git / # stays visible at a word start
-                    else:
-                        out.append("QQ"); at_word_start = False  # glues to the previous word
+                if (j - i) % 2 == 1 and j < n and s[j] == "\n":  # GH #286: odd run + newline = line continuation, the shell deletes the pair
+                    if j - i > 1:
+                        out.append("\\" * (j - i - 1)); at_word_start = False
                     i = j + 1
+                    if i < n and s[i] not in set(" \t\n;&|()") and word_start < len(out):
+                        pad[word_start] = pad.get(word_start, 0) + 1  # GH #306: joins the word; blanks go to its front
+                    else:
+                        out.append("  ")  # GH #306: a blank, separator or the end follows: nothing glues
                     continue
                 out.append("\\" * (j - i))
                 if (j - i) % 2 == 1 and j < n and s[j] in "'\"$":  # an escaped "$" is literal too, never an ANSI-C opener
@@ -125,7 +128,9 @@ except Exception:
             else:
                 out.append(c); i += 1
                 at_word_start = c in set(" \t\n;&|()")
-        return "".join(out)
+                if at_word_start:
+                    word_start = len(out)
+        return "".join("  " * pad.get(k, 0) + p for k, p in enumerate(out))
 
 masked = _mask_quotes(cmd)
 
@@ -246,7 +251,10 @@ _SHELL_RES = _plain_and_overlapping(
 # form retried every split of a long `-ccc...` token (quadratic, 60 KB ran past 20 s, a timeout allows).
 # Masking blanks the quote characters, so the raw body is found by skipping
 # whitespace from the end of the shell word.
-_QUOTED_RE = re.compile(r'\s*(?:"((?:[^"\\]|\\.)*)"|' + "'([^']*)')")
+# GH #306: `\\[\s\S]`, not `\\.`: a backslash-newline inside "..." is a continuation, and `.` stopped
+# at it, so `bash -c "git \<nl>stash"` had no body at all. A continuation may also sit between the
+# shell word and the quote (`bash -c\<nl> 'git stash'`): the mask blanks it, the raw text still has it.
+_QUOTED_RE = re.compile(r'(?:\s|\\\n)*(?:"((?:[^"\\]|\\[\s\S])*)"|' + "'([^']*)')")
 # Only stash/reset/clean (see header); read-only `stash list|show` carved out.
 _DENY_SUBCMD_RE = re.compile(r"\s+(stash(?!\s+(list|show)\b)|reset|clean)\b")
 

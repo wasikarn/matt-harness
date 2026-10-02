@@ -27,6 +27,23 @@ CORPUS = [
     "echo $'a\\'b' ; git stash",
     "a\\",
     "(true)#c\ngit stash",
+    # GH #306: one per continuation placement.
+    "git\\\n stash",
+    "g\\\nit stash",
+    "git s\\\ntash",
+    "env\\\n git stash",
+    "{\\\n git stash; }",
+    "if true; then\\\n git stash; fi",
+    "git stash\\\n",
+    "git\\\n;x",
+    "g\\\ni\\\nt st\\\nash",
+    "''\\\ngit stash",
+    "\\\\\\\ngit stash",
+    "x\\\\\\\ngit",
+    "\\\n\\\n#y",
+    "bash -\\\nc \"git \\\nstash\"",
+    "eval 'g\\\nit stash'",
+    "$'a'\\\nb c",
 ]
 
 
