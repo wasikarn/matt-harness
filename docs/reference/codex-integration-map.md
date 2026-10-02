@@ -165,6 +165,14 @@ refusal** ("this workspace requires the orchestrator flow ... you didn't opt out
 preamble, exit 0 and the file changed. Quota-exhausted and provider-without-access runs, by
 contrast, exit 1 with `ERROR:` on stderr: those fail loudly, only the refusal is silent.
 
+The plugin's runner, `codex-companion.mjs task`, fails the same loud way, in its own shape
+(GH #333, codex-cli 0.160.0, plugin 1.0.6). Reproduced logged-out with an empty `CODEX_HOME`:
+exit 1, the backend error message alone on stdout, and `[codex] Codex error: <message>` then
+`[codex] Turn failed.` on stderr. The quota-exhausted case was not reproduced. From the runner
+source it takes the same path (app-server `error` notification, turn not completed, exit 1),
+carrying the binary's "You've hit your usage limit." text. The codex-quota sensor and advisory
+match the companion invocation as well as the bare `codex` CLI.
+
 ## Degrading gracefully
 
 Every line above still has to make sense with the plugin absent, the Codex CLI missing, or the
