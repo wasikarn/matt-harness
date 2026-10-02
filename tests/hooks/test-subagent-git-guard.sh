@@ -1257,7 +1257,8 @@ for _c in \
   "git stash 'list'" \
   'git stash"x"' \
   "printf '%s\n' \"git\" \"stash\"" \
-  '# "git" stash' ; do
+  '# "git" stash' \
+  '# "git" "stash"' ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
   check "GH #344 control allowed: $_c" "$ok"
 done

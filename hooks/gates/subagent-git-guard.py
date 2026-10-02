@@ -165,8 +165,10 @@ def _drop_escapes(m):
 _QWORD_RE = re.compile(r"(?<![^\s;&|()<>{])(?:[\w./-]|\\[\w./-]|\$?\"[\w./-]*\"|\$?'[\w./-]*')+(?![^\s;&|()<>}])")
 _QPIECE_RE = re.compile(r"(\$?)([\"'])([\w./-]*)[\"']|\\([\w./-])|([\w./-])")
 _dollar_join = "'\""  # the `$` quote kinds joined in this pass
+_dollar_joined = False  # a word with a `$` piece was joined, so the other readings differ
 
 def _join_quoted_words(raw, masked):
+    global _dollar_joined
     if len(raw) != len(masked):
         return masked
     out, last = [], 0
@@ -192,6 +194,7 @@ def _join_quoted_words(raw, masked):
             if not ok:
                 break
         if ok:
+            _dollar_joined = _dollar_joined or "$" in m.group()
             j = "".join(letters)
             out.append(masked[last:a]); out.append(" " * (m.end() - a - len(j)) + j); last = m.end()
     return "".join(out) + masked[last:]
@@ -700,7 +703,7 @@ def _all_passes():
 try:
     hit = _all_passes()
     for _dollar_join in ("'", ""):  # GH #344: the zsh and dash readings of `$` pieces (see _QWORD_RE)
-        if hit or ("$'" not in cmd and '$"' not in cmd):
+        if hit or not _dollar_joined:
             break
         _sub_texts = None
         masked = _mask(cmd)
