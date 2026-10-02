@@ -1059,7 +1059,6 @@ for _c in \
   '{git stash;}; git status' \
   '(){git stash;}' \
   'f(){git stash;}; f' \
-  '{true;}{git stash;}' \
   'for i in 1; {git stash;}' \
   '2>&1 {git stash;}' \
   'echo $({git stash;})' ; do
@@ -1073,11 +1072,19 @@ for _c in \
   '{}git stash' \
   'x{git stash;}' \
   '${git stash;}' \
+  '{true;}{git stash;}' \
   'echo {a,b} git stash' \
   'git commit -m "fix {git stash;}"' ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
   check "GH #318 control allowed: $_c" "$ok"
 done
+# Every glued `{` is now a command start; a long run of them must still be decided inside 8 s.
+_c="$(_pad '{' 3000)git stash;}"
+rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+check "GH #318 padded glued braces decided inside 8 s as deny (rc $rc, ${#_c} bytes)" "$ok"
+_c="$(_pad '{' 3000)ls"
+rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" != "124" ] && ok=0
+check "GH #318 padded glued braces allow shape finishes inside 8 s (rc $rc, ${#_c} bytes)" "$ok"
 
 echo ""
 echo "=== $pass passed, $fail failed ==="
