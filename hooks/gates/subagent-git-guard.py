@@ -132,7 +132,27 @@ except Exception:
                     word_start = len(out)
         return "".join("  " * pad.get(k, 0) + p for k, p in enumerate(out))
 
-masked = _mask_quotes(cmd)
+# GH #317: outside quotes a shell drops a backslash before an ordinary character (`g\it stash` and
+# `git re\set` run git), but the mask keeps it. _mask drops it inside each word for the anchor scans;
+# the freed blanks go to the word's front, so every word still ends at the same offset (the shell-body
+# lookup reads the raw command there). A pair stays as it is (`\\` is a literal backslash), and so
+# does a backslash before a character it makes literal (`\{`, `A\=1`, `\*`): dropping it there would
+# change what the word means. Kept out of _quotemask.py: the heredoc scans need its offsets.
+_WORD_TOKEN_RE = re.compile(r"[^\s;&|()<>]+")
+_ESC_PAIR_RE = re.compile(r"\\(.)")
+_KEEP_ESCAPED = set("\\{}=#$'\"`~*?[]!")
+
+def _drop_escapes(m):
+    w = m.group()
+    if "\\" not in w:
+        return w
+    u = _ESC_PAIR_RE.sub(lambda e: e.group(0) if e.group(1) in _KEEP_ESCAPED else e.group(1), w)
+    return " " * (len(w) - len(u)) + u
+
+def _mask(s):
+    return _WORD_TOKEN_RE.sub(_drop_escapes, _mask_quotes(s))
+
+masked = _mask(cmd)
 
 # Anchor: "git" must sit at a real command-start (string/line start, |;&(, &&,
 # ||, optional VAR=val chain, optional prefix wrapper(s), or a /path/git).
@@ -341,7 +361,7 @@ def _violation_in_bodies(raw_cmd, masked_cmd, overlap):
         q = _QUOTED_RE.match(raw_cmd, m.end(1))
         if q:
             body = q.group(1) if q.group(1) is not None else q.group(2)
-            mb = _mask_quotes(body)
+            mb = _mask(body)
             hit = _violation(mb, False) or (overlap and _violation(mb, overlap))
             if hit:
                 return hit
@@ -577,7 +597,7 @@ def _drop_quoted_heredocs(s):
 
 # The bodies of `bash -c '<body>'` / `eval "<body>"` in a text (one level, like _violation_in_bodies).
 def _shell_bodies(raw):
-    mt = _mask_quotes(raw)
+    mt = _mask(raw)
     out = []
     for overlap in (False, True, 2):
         _charge(mt)
@@ -608,7 +628,7 @@ def _substitution_texts():
             for sb in _shell_bodies(t):
                 texts.extend(_substitution_bodies(sb))
         blanked = [_blank_heredocs(b) for b in texts]
-        _sub_texts = [(b, _mask_quotes(b)) for b in blanked]
+        _sub_texts = [(b, _mask(b)) for b in blanked]
     return _sub_texts
 
 def _violation_everywhere(overlap):
