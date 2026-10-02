@@ -1059,6 +1059,20 @@ def _blank_redirections(s, named_fd=True):
         last_escaped = False
     return "".join(out)
 
+def _blanked(c, named_fd=True):
+    # The text every tokenizer below reads: ANSI-C quotes decoded, newlines turned into separators,
+    # substitutions and redirections blanked. Recomputed on every call: each _blank_substitutions run
+    # charges a fresh depth-scan budget and may set _DEPTH_BUDGET_BLOWN.
+    return _blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(c))), named_fd)
+
+def _tokens(src, extra_wordchars="", whitespace_split=False):
+    # shlex tokens of a _blanked() text; the placeholders are word characters. Raises ValueError.
+    lex = shlex.shlex(src, posix=True, punctuation_chars=True)
+    lex.wordchars += PH + HASH_LIT + PSUB + extra_wordchars
+    if whitespace_split:
+        lex.whitespace_split = True
+    return list(lex)
+
 # shlex.split() only recognizes ;/&&/||/|/& as separators when whitespace
 # surrounds them ("echo hi;rm -rf x" glued "hi;rm"); punctuation_chars=True
 # splits them out as their own tokens while respecting quotes. ( ) { } get the
@@ -1096,6 +1110,21 @@ def _split_ops(tok):
         else:
             return [tok]
     return out
+
+def _statements(toks):
+    # Yield each non-empty run of tokens between OPERATORS (one statement window).
+    cur = []
+    for tok in [p for t in toks for p in _split_ops(t)] + [";"]:
+        if tok in OPERATORS:
+            if cur:
+                yield cur
+            cur = []
+        else:
+            cur.append(tok)
+
+def _drop_ph_tokens(w):
+    # w without its bare-placeholder tokens (a substitution that may expand to nothing).
+    return [t for t in w if not (t and all(c == PH for c in t))]
 
 # shlex cost is superlinear in the longest SINGLE token (700k chars blows a 2s
 # timeout), so an oversized command denies on length ALONE before shlex runs.
@@ -1217,9 +1246,7 @@ if _ambig and any(_ambig[1].search(v) for v in _views):
     deny("ambiguous shell syntax (" + _ambig[0] + ") next to an irrecoverable verb - confirm with user first")
 
 try:
-    lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd)))), posix=True, punctuation_chars=True)
-    lex.wordchars += PH + HASH_LIT + PSUB
-    tokens = list(lex)
+    tokens = _tokens(_blanked(cmd))
 except ValueError:
     # Two causes: (1) a genuinely unbalanced quote; (2) the closer-search above
     # does not track quotes INSIDE a span, so a span crossing a quote char
@@ -1231,7 +1258,7 @@ except ValueError:
     # If the original also fails to parse, deny on ambiguity.
     try:
         shlex.split(cmd)
-        _fallback_src = _blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd))))
+        _fallback_src = _blanked(cmd)
         parts = re.split(r"(&&|\|\||;|\||&)", _fallback_src)
         tokens = []
         for part in parts:
@@ -1253,30 +1280,21 @@ if _DEPTH_BUDGET_BLOWN[0]:
 _token_lists = [tokens]
 if "{" in cmd or "}" in cmd:
     try:
-        _lex2 = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd)))), posix=True, punctuation_chars=True)
-        _lex2.wordchars += PH + HASH_LIT + PSUB + "{}"
-        _token_lists.append(list(_lex2))
+        _token_lists.append(_tokens(_blanked(cmd), "{}"))
         # GH #219: the same text read the macOS sh / bash 3.2 / dash way, "{var}>f" a literal word.
         for _nf in (False, "zsh"):
-            _lex3 = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd))), _nf), posix=True, punctuation_chars=True)
-            _lex3.wordchars += PH + HASH_LIT + PSUB + "{}"
-            _token_lists.append(list(_lex3))
+            _token_lists.append(_tokens(_blanked(cmd, _nf), "{}"))
     except ValueError:
         pass  # the first copy already handled an unparsable command
 
 windows = []
 _seen_windows = set()  # GH #268: the second copy skips a window the first already holds, so the budget charges it once
 for _i, _toks in enumerate(_token_lists):
-    cur = []
-    for tok in [p for t in _toks for p in _split_ops(t)] + [";"]:
-        if tok in OPERATORS:
-            if cur and not (_i and tuple(cur) in _seen_windows):
-                if not _i:
-                    _seen_windows.add(tuple(cur))
-                windows.append(cur)
-            cur = []
-        else:
-            cur.append(tok)
+    for cur in _statements(_toks):
+        if not (_i and tuple(cur) in _seen_windows):
+            if not _i:
+                _seen_windows.add(tuple(cur))
+            windows.append(cur)
 
 # A standalone substitution resolving to empty ($(true)) vanishes as a token in
 # bash, shifting later tokens left, but leaves a PH-only token here, so every
@@ -1285,7 +1303,7 @@ for _i, _toks in enumerate(_token_lists):
 # dropped; a deny in either copy wins ("$(which git) status" -> ["status"]).
 _aug = []
 for _w in windows:
-    _wc = [_t for _t in _w if not (_t and all(_c == PH for _c in _t))]
+    _wc = _drop_ph_tokens(_w)
     _aug.append(_w)
     if _wc != _w:
         _aug.append(_wc)
@@ -1434,22 +1452,13 @@ def _scan_body(body):
         # GH #219: "{var}>f" is a redirect in bash 4+/ksh/zsh and a literal word plus a redirect in
         # macOS sh, bash 3.2 and dash, so a body holding "{" is read both ways and every window checked.
         for nf in ((True, False, "zsh") if "{" in body else (True,)):
-            lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(body))), nf), posix=True, punctuation_chars=True)
-            lex.wordchars += PH + HASH_LIT + PSUB
-            lex.whitespace_split = True
-            cur = []
-            for tok in [p for t in list(lex) for p in _split_ops(t)] + [";"]:
-                if tok in OPERATORS:
-                    if cur:
-                        _WDEPTH[len(windows)] = _cur_depth + 1
-                        windows.append(cur)
-                        curc = [t for t in cur if not (t and all(c == PH for c in t))]
-                        if curc != cur:
-                            _WDEPTH[len(windows)] = _cur_depth + 1
-                            windows.append(curc)
-                    cur = []
-                else:
-                    cur.append(tok)
+            for cur in _statements(_tokens(_blanked(body, nf), whitespace_split=True)):
+                _WDEPTH[len(windows)] = _cur_depth + 1
+                windows.append(cur)
+                curc = _drop_ph_tokens(cur)
+                if curc != cur:
+                    _WDEPTH[len(windows)] = _cur_depth + 1
+                    windows.append(curc)
     except ValueError:
         deny("could not safely tokenize the body of a bash -c / eval string - confirm with user first")
     if _DEPTH_BUDGET_BLOWN[0]:
