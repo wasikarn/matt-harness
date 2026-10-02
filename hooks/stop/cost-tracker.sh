@@ -530,18 +530,46 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
   marker_id="$session_id"
   [[ "$marker_id" =~ ^[A-Za-z0-9._-]+$ && "$marker_id" != "." && "$marker_id" != ".." ]] || marker_id="default"
   marker_file="$marker_dir/$marker_id"
-  transcript_size=$(wc -c < "$transcript" 2>/dev/null | tr -d ' ')
-  dedup_key="$transcript"$'\t'"$transcript_size"
-  if [[ -f "$marker_file" && "$(cat "$marker_file" 2>/dev/null)" == "$dedup_key" ]]; then
-    printf '%s' "$payload"
-    exit 0
-  fi
 
-  # Single pass over the main transcript (2026-09-22 perf fix — see
-  # scan_transcript's own comment above) replaces the 3-5 separate full-file
-  # jq scans this block used to run.
-  scan=$(scan_transcript "$transcript")
-  scan_rc=$?
+  # Settle (GH #329): Stop can fire before Claude Code has flushed the turn's
+  # final response to the transcript, so the session's last row came up short
+  # by one response in 67 of 235 sessions on this machine (2026-10-02). In
+  # each of those 67, this hook wrote its row within about 1 s of the missing
+  # line's own timestamp, so the race is sub-second. Wait until the
+  # file stops growing for one window (bounded at 5 windows), read, and if the
+  # file grew during the scan, settle and read once more. The hook is async,
+  # so the wait costs the user nothing; it does widen the overlap window the
+  # check-then-write note above describes, which stays harmless because the
+  # report keeps only the latest row per key. A turn killed mid-tool gets no
+  # Stop at all, so no wait here can recover it (documented in
+  # skills/meta/cost-report/references/data-model.md).
+  settle_s="${MH_COST_TRACKER_SETTLE_S:-1}"
+  [[ "$settle_s" =~ ^[0-9]+([.][0-9]+)?$ ]] || settle_s=1
+  tsize() { wc -c < "$transcript" 2>/dev/null | tr -d ' '; }
+  settle() {
+    local prev cur n=0
+    prev=$(tsize)
+    while (( n++ < 5 )); do
+      sleep "$settle_s"; cur=$(tsize)
+      [[ "$cur" == "$prev" ]] && break
+      prev=$cur
+    done
+  }
+  for _ in 1 2; do
+    settle
+    transcript_size=$(tsize)
+    dedup_key="$transcript"$'\t'"$transcript_size"
+    if [[ -f "$marker_file" && "$(cat "$marker_file" 2>/dev/null)" == "$dedup_key" ]]; then
+      printf '%s' "$payload"
+      exit 0
+    fi
+    # Single pass over the main transcript (2026-09-22 perf fix — see
+    # scan_transcript's own comment above) replaces the 3-5 separate full-file
+    # jq scans this block used to run.
+    scan=$(scan_transcript "$transcript")
+    scan_rc=$?
+    [[ "$(tsize)" == "$transcript_size" ]] && break
+  done
   verify_map=$(printf '%s' "$scan" | jq -c '.verify_map' 2>/dev/null); [[ -z "$verify_map" ]] && verify_map='{}'
   parent_map=$(printf '%s' "$scan" | jq -c '.parent_map' 2>/dev/null); [[ -z "$parent_map" ]] && parent_map='{}'
   main_usages=$(printf '%s' "$scan" | jq -c '.usages' 2>/dev/null)

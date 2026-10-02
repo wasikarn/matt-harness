@@ -100,7 +100,7 @@ run_row() {
   transcript=$(mktemp)
   cat > "$transcript"
   payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "t162"}))' "$transcript")
-  printf '%s' "$payload" | HOME="$fake_home" bash "$SCRIPT" >/dev/null 2>/dev/null
+  printf '%s' "$payload" | HOME="$fake_home" MH_COST_TRACKER_SETTLE_S=0 bash "$SCRIPT" >/dev/null 2>/dev/null
   row=$(tail -1 "$fake_home/.local/share/kbg/metrics/costs.jsonl" 2>/dev/null)
   trash "$fake_home" "$transcript" 2>/dev/null || true
   printf '%s' "$row"
@@ -281,7 +281,48 @@ fi
 
 echo "$pass2 passed, $fail2 failed (phase 2)"
 
-pass=$((pass + pass2))
-fail=$((fail + fail2))
+# Phase 3 -- late-flush race (GH #329). Failure class: read-before-write race.
+# The Stop hook can read the transcript before Claude Code has flushed the
+# turn's final response, so the session's last row came up one response short
+# (67 of 235 sessions on this machine, 2026-10-02). The hook must wait for the
+# transcript to stop growing before it reads. A background writer appends the
+# second response 1 s after the hook starts; with a 3 s settle window the row
+# must count both. Timing row: a load spike can delay the writer, so one retry
+# (same pattern as GH #158).
+echo "=== settle: a response flushed after the Stop hook starts is still counted ==="
+pass3=0
+fail3=0
+late_flush_turns() {
+  local fake_home transcript payload turns
+  fake_home=$(mktemp -d)
+  transcript=$(mktemp)
+  python3 -c '
+import json
+u = {"input_tokens": 10, "output_tokens": 10, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}
+print(json.dumps({"type": "assistant", "message": {"model": "claude-opus-5-5", "id": "msg_a", "usage": u}}))
+' > "$transcript"
+  payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "t329"}))' "$transcript")
+  ( sleep 1; python3 -c '
+import json
+u = {"input_tokens": 10, "output_tokens": 10, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}
+print(json.dumps({"type": "assistant", "message": {"model": "claude-opus-5-5", "id": "msg_b", "usage": u}}))
+' >> "$transcript" ) &
+  printf '%s' "$payload" | HOME="$fake_home" MH_COST_TRACKER_SETTLE_S=3 bash "$SCRIPT" >/dev/null 2>/dev/null
+  wait
+  turns=$(tail -1 "$fake_home/.local/share/kbg/metrics/costs.jsonl" 2>/dev/null | jq -r .turns 2>/dev/null)
+  trash "$fake_home" "$transcript" 2>/dev/null || true
+  printf '%s' "$turns"
+}
+turns="$(late_flush_turns)"
+[[ "$turns" == "2" ]] || turns="$(late_flush_turns)"
+if [[ "$turns" == "2" ]]; then
+  pass3=$((pass3 + 1)); echo "PASS: a response flushed 1 s after the hook started is counted (turns=2)"
+else
+  fail3=$((fail3 + 1)); echo "FAIL: late-flushed response missed: turns=$turns, expected 2 -- the hook read before the transcript settled" >&2
+fi
+echo "$pass3 passed, $fail3 failed (phase 3)"
+
+pass=$((pass + pass2 + pass3))
+fail=$((fail + fail2 + fail3))
 echo "TOTAL: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]

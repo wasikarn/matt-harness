@@ -13,6 +13,8 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OB
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 COST_TRACKER="$ROOT/hooks/stop/cost-tracker.sh"
+# No settle wait (GH #329): these fixtures are written before the hook runs.
+export MH_COST_TRACKER_SETTLE_S=0
 MEMORY_COMMIT="$ROOT/hooks/stop/memory-audit-commit.sh"
 
 pass=0
