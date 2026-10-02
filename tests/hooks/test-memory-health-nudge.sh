@@ -5,6 +5,8 @@
 # fixtures must be planted at that exact computed path.
 # Run standalone: bash tests/hooks/test-memory-health-nudge.sh
 set -uo pipefail
+# The linked-worktree row below runs git init/worktree; a pre-push hook env has GIT_DIR set and would hijack them.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HOOK="$ROOT/hooks/session/memory-health-nudge.sh"
