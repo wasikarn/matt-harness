@@ -1086,6 +1086,58 @@ _c="$(_pad '{' 3000)ls"
 rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" != "124" ] && ok=0
 check "GH #318 padded glued braces allow shape finishes inside 8 s (rc $rc, ${#_c} bytes)" "$ok"
 
+# --- (24) GH #317: a shell drops a backslash before an ordinary character, so an escaped letter in
+# git, its subcommand, a flag or a wrapper/shell word still runs it. Each deny row runs git
+# stash/reset/clean in sh, bash 3.2, bash 5, dash, zsh and ksh (logging git stub; the last row in zsh
+# only); the controls run none (an even backslash run is a literal backslash).
+for _c in \
+  'g\it stash' \
+  'gi\t stash' \
+  '\g\i\t stash' \
+  'git st\ash' \
+  'git \stash' \
+  'git \reset --hard' \
+  'git cl\ean -fd' \
+  'git res\et' \
+  '\git \stash' \
+  'git -\C . stash' \
+  'git \-C . stash' \
+  'e\nv git stash' \
+  '\env git stash' \
+  'ti\me git stash' \
+  's\udo git stash' \
+  'comm\and git stash' \
+  'ev\al git stash' \
+  "ev\\al 'git stash'" \
+  "ba\\sh -c 'git stash'" \
+  "bash -\\c 'git stash'" \
+  "bash -c 'g\\it stash'" \
+  'bash -c "g\it stash"' \
+  'echo $(g\it stash)' \
+  'echo "$(git st\ash)"' \
+  "ba\\sh -c 'echo \"\$(git stash)\"'" \
+  'true; g\it reset --hard' \
+  '{ g\it stash; }' \
+  '{g\it stash;}' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #317 denied (escaped letter): $_c" "$ok"
+done
+for _c in \
+  'g\\it stash' \
+  'g\\\it stash' \
+  'g\\\\it stash' \
+  'git\ stash' \
+  'echo g\it stash' \
+  'git \stash list' \
+  'git stash l\ist' \
+  'A\=1 git stash' \
+  '\{git stash;}' \
+  'true; \>f git stash' \
+  $'echo "$(cat <<\\EOF\nhello\nEOF\n)"' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "GH #317 control allowed: ${_c//$'\n'/<nl>}" "$ok"
+done
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]
