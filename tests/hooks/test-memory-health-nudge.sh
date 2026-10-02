@@ -5,6 +5,8 @@
 # fixtures must be planted at that exact computed path.
 # Run standalone: bash tests/hooks/test-memory-health-nudge.sh
 set -uo pipefail
+# The linked-worktree row below runs git init/worktree; a pre-push hook env has GIT_DIR set and would hijack them.
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HOOK="$ROOT/hooks/session/memory-health-nudge.sh"
@@ -259,6 +261,34 @@ rm -f "$FAILMARKER"
 OUT=$(run_hook)
 assert_not_contains "marker cleared (by memory-audit-commit.sh) -> nudge stops firing" \
   "auto-commit failed" "$OUT"
+
+echo ""
+echo "--- GH #328: from a linked worktree, the marker named with the resolver's ENC still surfaces ---"
+# memory-audit-commit.sh names markers with memory-dir.py --enc, which keys off
+# git-common-dir, so every linked worktree shares the main checkout's ENC. The
+# plain project dir above is not a git repo, so both encodings coincide there.
+WT_REPO="$TMP/wtrepo"
+WT_DIR="$TMP/wtrepo-wt"
+git init -q "$WT_REPO"
+git -C "$WT_REPO" -c user.name=t -c user.email=t@example.invalid commit -q --allow-empty -m init
+git -C "$WT_REPO" worktree add -q "$WT_DIR" 2>/dev/null
+WT_ENC=$(cd "$WT_DIR" && env -u CLAUDE_CONFIG_DIR -u CLAUDE_CODE_PROJECT_DIR_NAME HOME="$FAKE_HOME" python3 "$ROOT/scripts/_lib/memory-dir.py" --enc)
+WT_PWD_ENC=$(cd "$WT_DIR" && pwd -P); WT_PWD_ENC="${WT_PWD_ENC//\//-}"
+if [ -n "$WT_ENC" ] && [ "$WT_ENC" != "$WT_PWD_ENC" ]; then
+  echo "  ✅ fixture: the resolver's ENC differs from the worktree's pwd -P encoding"; pass=$((pass + 1))
+else
+  echo "  ❌ fixture: expected two different encodings, got resolver=<$WT_ENC> pwd=<$WT_PWD_ENC>" >&2; fail=$((fail + 1))
+fi
+WT_MARKER="$FAKE_HOME/.claude/state/memory-audit-commit-fail-$WT_ENC-999902"
+printf 'acquisition_ts=1700000000.5\ngit commit failed (exit 1): worktree marker\n' > "$WT_MARKER"
+OUT=$( cd "$WT_DIR" && env -u CLAUDE_CONFIG_DIR -u CLAUDE_CODE_PROJECT_DIR_NAME CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$FAKE_HOME" bash "$HOOK" 2>&1 )
+assert_contains "linked worktree: the resolver-ENC marker surfaces" \
+  "[memory-lint] the memory store's auto-commit failed" "$OUT"
+assert_contains "linked worktree: the marker's diagnostic line is shown" \
+  "worktree marker" "$OUT"
+assert_not_contains "the machine-read acquisition_ts line stays out of model context" \
+  "acquisition_ts=" "$OUT"
+rm -f "$WT_MARKER"
 
 echo ""
 echo "--- (2026-09-21) the H6 marker surfaces even when the lint gates would exit early ---"
