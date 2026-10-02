@@ -210,8 +210,12 @@ _LEAD_CHAIN = (r"(?:(?:" + _EVAL_PASS + r"|builtin[ \t]+(?:--[ \t]+)?|" + _RTK_P
 # GH #285: a redirection (operator + its word) may sit before the command word and hid it
 # (`</dev/null git stash`, `<<EOF git stash`); skipped like a VAR=val, in any mix with them.
 _REDIR = r"(?:(?:\d+|\{\w+\})?(?:<<<?-?|&>>?|[<>]&|<>|>\||[<>]>?)[ \t]*[^\s;&|()<>]+[ \t]+)"
+# GH #318: zsh also runs a brace group with no blank after `{` (`{git stash;}`); bash, dash and ksh
+# read `{git` as a word. The Bash tool runs zsh, so a glued `{` opens a command position too (any
+# deny wins) when it starts a word: zsh runs `(){git stash;}` and `{{git stash;};}`, but not
+# `x{git stash;}`, `${git stash;}` or `{true;}{git stash;}`. `{` + blank keeps develop's reading.
 def _cmd_start(wrapper_prefix):
-    return (r"(?:^|[|;&(]|&&|\|\||\{(?=\s))\s*" + _KEYWORD_PREFIX +
+    return (r"(?:^|[|;&(]|&&|\|\||\{(?=\s)|(?<![^\s;&|(){])\{)\s*" + _KEYWORD_PREFIX +
             r"(?:(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)|" + _REDIR + r")*" + _LEAD_CHAIN + wrapper_prefix + _CHAIN_PREFIX)
 # GH #245: every anchor regex is scanned with overlapping matches, `(?=(...))`, read through
 # m.end(1). The old wrappers' greedy argument walk (`time ls; git stash; git status`) crosses

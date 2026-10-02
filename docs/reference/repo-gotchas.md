@@ -135,7 +135,8 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   bound to a shared budget and denies past it (GH #246: 30 KB of `env ; ` before a `git stash`
   timed out into allow). Only 3 of 2,581 replayed real commands (20-28 KB scripts) hit it.
   GH #248 added a third, lazy-walk pass (`*?` finds the FIRST target after a wrapper, where the
-  greedy walk lands on the last), `{` + blank as a command start, and `xargs` in the spawn
+  greedy walk lands on the last), `{` + blank as a command start (GH #318: also a glued `{` that
+  starts a word, since zsh runs `{git stash;}`), and `xargs` in the spawn
   anchor's wrapper list only. Each pass charges the budget, so the guard's rose to 60M; a padded
   benign command of ~3,000 blank lines (spawn scan) or ~2,100-2,200 `{ ` units (both gates) is now refused.
   GH #276: the lazy pass can land on a wrapper argument spelled `git` (`sudo -u git env git stash`),
