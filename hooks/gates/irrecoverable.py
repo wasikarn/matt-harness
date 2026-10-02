@@ -1135,11 +1135,13 @@ _AMBIG_SEG_RE = re.compile(r"(?<![\w.-])(rm|dd|find|git)(?=\s)" + _AMBIG_UNIT + 
 _AMBIG_GIT_SUB_RE = re.compile(r"(?<![\w.\-/])(push|reset|clean|checkout|restore|switch|branch|stash)\b")
 # GH #275 follow-up / GH #284: a bundle like -fu counts as a force flag, and a run of 201+ letters counts as a hit.
 _AMBIG_NARROW_AFTER = {
-    "push": re.compile(r"--force\b|\s-[A-Za-z]*f|\s-[A-Za-z]{201}"),
-    "reset": re.compile(r"--hard"),
+    # GH #349: a +refspec forces too, as the main parser reads it (a lone "+", as in code text, does not).
+    "push": re.compile(r"--force\b|\s-[A-Za-z]*f|\s-[A-Za-z]{201}|\s\+\S"),
+    "reset": re.compile(r"--h(?:a(?:r(?:d)?)?)?\b"),  # GH #349: a unique prefix (--h, --har), as the main parser reads it
     "clean": re.compile(r""),
     "restore": re.compile(r""),
-    "checkout": re.compile(r"\s--(?:\s|$)|\s-f\b|\s\.(?:\s|$)"),
+    # GH #349: a "." word may also end at the close of a substitution (`git checkout .`).
+    "checkout": re.compile(r"\s--(?:\s|$)|\s-f\b|\s\.(?=[\s`)]|$)"),
     "branch": re.compile(r"\s-D\b"),
     "stash": re.compile(r"\s+(?:drop|clear)\b"),
     # GH #340: any switch, like clean/restore. A flag piece (-f/--force/--discard-changes) was fuzzed and
@@ -1205,8 +1207,13 @@ def _ambiguous(c):
 _ambig = _ambiguous(cmd)
 # The verb is looked for in three views: the raw text, the text with line continuations joined, and the
 # text with quotes and backslashes dropped, so '"git" push' and 'r\m' cannot hide it (GH #255).
+# GH #349: that last view reads $'-f' as $-f (no blank before the dash), so a narrow flag piece missed it in
+# a substitution body. A fourth view decodes $'..' and reads $".." as "..", for every verb rule at once.
 _joined = cmd.replace("\\\n", "")
-if _ambig and any(_ambig[1].search(v) for v in (cmd, _joined, re.sub(r"[\"'\\]", "", _joined))):
+_views = [cmd, _joined, re.sub(r"[\"'\\]", "", _joined)]
+if _ambig and ("$'" in _joined or '$"' in _joined):
+    _views.append(re.sub(r"[\"'\\]", "", re.sub(r"\$(?=\")", "", _normalize_ansi_c_quotes(_joined))))
+if _ambig and any(_ambig[1].search(v) for v in _views):
     deny("ambiguous shell syntax (" + _ambig[0] + ") next to an irrecoverable verb - confirm with user first")
 
 try:

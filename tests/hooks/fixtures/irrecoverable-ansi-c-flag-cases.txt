@@ -1,0 +1,35 @@
+# GH #349: an ANSI-C ($'..') or locale ($"..") quoted word inside a substitution body, next to an
+# ambiguity shape, where the narrow verb check is the only defense. One case per line: DENY or ALLOW,
+# a blank, then the command. DENY = at least one real shell (sh, bash 3.2, bash 5, dash, zsh, ksh)
+# ran the destructive form; ALLOW = none did. Replayed by tests/hooks/test-gates.sh.
+DENY echo $(echo `git push $'-f' origin main`)
+DENY echo $(echo `git push origin main $'-f'`)
+DENY echo $(echo `git push -$'f' origin main`)
+DENY echo $(echo `git push $'\x2df' origin main`)
+DENY echo $(echo `git push $"-f" origin main`)
+DENY echo $(echo `git push origin +main`)
+DENY eval "$(echo git push origin $'+main')"
+DENY echo $(echo `git reset --h$'ard'`)
+DENY echo $(echo `git reset --$'har'`)
+DENY echo "$(echo `git reset '--h'`)"
+DENY echo $(echo `git checkout $'-f' main`)
+DENY echo $(echo `git checkout $'--' x`)
+DENY echo $(echo `git checkout $'.'`)
+DENY echo $(echo `git checkout .`)
+DENY eval "$(echo git checkout .)"
+DENY echo $(echo `git branch $'-D' x`)
+DENY echo $(echo `git branch $'\055D' x`)
+DENY echo $(echo `git stash $'drop'`)
+DENY echo $(echo `rm $'-rf' x`)
+DENY eval "$(echo git push $'-f' origin main)"
+DENY eval "$(echo git branch $'-D' main)"
+ALLOW echo $(echo `git push $'-u' origin main`)
+ALLOW echo $(echo `git log $'-f'`)
+ALLOW echo $(echo `git branch $'-d' x`)
+ALLOW eval "$(echo git push $'-u' origin main)"
+ALLOW echo $(echo `git push origin main`)
+ALLOW c="$(python3 -c "print('(' + 'git push origin main' + ')')")"
+ALLOW echo $(echo `git checkout main`)
+ALLOW echo $(echo `git reset --help`)
+ALLOW echo $(echo `git reset $'--soft'`)
+ALLOW echo $(echo `git checkout $'main'`)

@@ -112,6 +112,13 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   test checks the keys against `_AMBIG_GIT_SUB_RE`. A narrow piece is the only check that sees a
   substitution body, and its view reads `$'-f'` as `$-f` (no blank before the dash): a flag piece for
   switch let 14 fuzzed `$'-f'` commands through, so switch takes any form, like clean and restore.
+  GH #349: the same `$-f` reading hid a quoted flag from push, reset, checkout, branch, stash and rm, so
+  the check now also reads a fourth view with `$'..'` decoded and `$".."` read as `".."` (only when the
+  command holds one). Its fuzz also found three pieces narrower than the main parser: reset now takes
+  `--h`/`--har`, push a `+refspec`, and checkout a `.` that ends at `` ` `` or `)`. Fuzz, 4000 cases:
+  false-allows 473 to 48, false-denies 66 to 111 (a `stash list ... drop` or a bare trailing `checkout --`
+  in these shapes now denies). The 48 left are `checkout ./` and `branch -d -f`, which the main parser
+  allows too.
   GH #274: `subagent-git-guard.py` also scans the raw command for `$(...)` / backtick bodies
   (`_substitution_bodies`, one linear pass) because the quote mask hides them. That pass reads a
   case pattern's `)`, `#` comments, `${x:-)}`, backslash escapes in backticks, `$'..'`, an
