@@ -36,6 +36,13 @@
         "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sensors/fragments-arm.sh\""
       }
     ],
+    "UserPromptExpansion": [
+      {
+        "id": "session:skill-usage-telemetry-typed",
+        "description": "Journal each user-typed /skill (slash_command expansion) to ~/.local/share/kbg/metrics/skill-usage.jsonl with source typed. A typed skill never makes a Skill tool call, so the PostToolUse(Skill) entry alone misses it (GH #330). Audit logging only, never blocks.",
+        "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session/skill-usage-telemetry.sh\""
+      }
+    ],
     "PreToolUse": [
       {
         "id": "gate:bash:irrecoverable",
@@ -101,7 +108,7 @@
       },
       {
         "id": "session:skill-usage-telemetry",
-        "description": "Journal every skill invocation (skill, plugin, ts) to ~/.local/share/kbg/metrics/skill-usage.jsonl. Audit logging only, restored 2026-09-20 (harness gap-audit H9) after deletion in a1055f64.",
+        "description": "Journal each model-called skill (skill, plugin, ts, source tool; a short name is mapped to its namespaced form when one installed plugin ships it) to ~/.local/share/kbg/metrics/skill-usage.jsonl. User-typed skills are caught by session:skill-usage-telemetry-typed. Audit logging only, restored 2026-09-20 (harness gap-audit H9) after deletion in a1055f64.",
         "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/session/skill-usage-telemetry.sh\""
       }
     ],
