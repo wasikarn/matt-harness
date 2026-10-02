@@ -1896,6 +1896,46 @@ if [[ "$_rc" == "2" ]]; then
 else
   echo "  ❌ DENY EXPECTED (bounded time) but got exit $_rc (124 = timed out): GH #344 '\"e\"nv ' x 4000" >&2; fail=$((fail + 1))
 fi
+# GH #339: `builtin` before a wrapper runs the wrapper (`builtin command claude --agent x`). It is not a
+# wrapper word (it made the greedy walk cross `&&`, see _UNWRAP_ONLY), so the anchor takes one leading
+# run of it, only when a wrapper word follows. Each deny row runs claude with a spawn flag in sh, bash 3.2,
+# bash 5 and zsh (logging claude stub); the controls run none.
+for _c in \
+  'builtin command claude --agent x' \
+  'builtin exec -a x claude --print x' \
+  'builtin builtin command claude -p x' \
+  'true; builtin exec claude -p x' \
+  'builtin -- command claude -p x' \
+  'builtin cd /tmp && claude -p x && claude --version' \
+  'builtin command true && claude -p x && claude --version' \
+  '{ builtin exec -a x claude -p x; }' ; do
+  test_deny "$IRRECOVERABLE" "subagent: GH #339 spawn denied (builtin before a wrapper): $_c" "$(bash_agent_payload "$_c" fork)"
+done
+for _c in \
+  'builtin command claude --version' \
+  'builtin echo claude -p x' \
+  'builtin claude -p x' \
+  'echo builtin command claude -p x' \
+  'builtin cd /tmp && claude --version' ; do
+  test_allow "$IRRECOVERABLE" "subagent: GH #339 control, no spawn: $_c" "$(bash_agent_payload "$_c" fork)"
+done
+for _u in 'builtin ' 'builtin command ' ; do
+  _c="$(python3 -c 'import sys; print(sys.argv[1] * 3000 + "command claude -p x")' "$_u")"
+  _rc=$(bash_agent_payload "$_c" fork | timeout 5 bash "$IRRECOVERABLE" 2>/dev/null; echo $?)
+  if [[ "$_rc" == "2" ]]; then
+    echo "  ✅ DENY (bounded time): GH #339 padded '$_u' x 3000 before claude -p"; pass=$((pass + 1))
+  else
+    echo "  ❌ DENY EXPECTED (bounded time) but got exit $_rc (124 = timed out): GH #339 padded '$_u' x 3000" >&2; fail=$((fail + 1))
+  fi
+done
+# `claude --version`, not `ls`: the .sh fast path skips python for a command with no claude/git in it.
+_c="$(python3 -c 'print("builtin " * 3000 + "claude --version")')"
+_rc=$(bash_agent_payload "$_c" fork | timeout 5 bash "$IRRECOVERABLE" 2>/dev/null; echo $?)
+if [[ "$_rc" == "0" ]]; then
+  echo "  ✅ GH #339 padded 'builtin ' x 3000 allow shape finishes in bounded time (rc $_rc)"; pass=$((pass + 1))
+else
+  echo "  ❌ GH #339 padded 'builtin ' x 3000 allow shape: expected rc 0, got $_rc (124 = timed out)" >&2; fail=$((fail + 1))
+fi
 
 echo ""
 echo "=== gh merge ask-tier gate (Phase B, 2026-09-28: local defense-in-depth for the PR-review flow) ==="

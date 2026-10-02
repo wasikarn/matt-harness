@@ -1286,6 +1286,58 @@ for _c in "$(_pad '"e"nv ' 3000)ls" "$(_pad '"a" ' 4000)ls" ; do
   check "GH #344 padded quoted words allow shape finishes inside 8 s (rc $rc, ${#_c} bytes): ${_c:0:24}" "$ok"
 done
 
+# --- (27) GH #339: a chain word, then command/exec, then rtk, then a wrapper (`eval command rtk proxy nohup
+# git stash`); `exec -a NAME` in a chain (`eval A=1 exec -a x doas git stash`, `rtk proxy exec -a x git
+# stash`). Each deny row runs git stash/reset/clean in sh, bash 3.2, bash 5 and zsh at least (logging
+# git stub; `exec -a` is not in dash); the controls run none.
+for _c in \
+  'eval command rtk proxy nohup git stash' \
+  'eval exec rtk proxy stdbuf -oL git reset' \
+  'eval A=1 exec -a x doas git stash' \
+  'builtin exec -a x timeout 5 git clean -fd' \
+  'eval exec -a x env git stash' \
+  'builtin command rtk proxy sudo git stash' \
+  'eval command rtk proxy command rtk proxy nohup git stash' \
+  'eval exec -a x git stash' \
+  'builtin exec -a x git reset' \
+  'eval exec -a exec env git stash' \
+  'eval command rtk proxy nohup true && git stash && git status' \
+  'true; eval exec -a x doas git stash' \
+  'eval exec -l git stash' \
+  'eval exec -la x git stash' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #339 denied (chain word before command/exec, rtk, exec -a): $_c" "$ok"
+done
+for _c in \
+  'eval command rtk proxy nohup git status' \
+  'eval exec -a x doas git stash list' \
+  'builtin exec -a git ls' \
+  'echo eval command rtk proxy nohup git stash' \
+  'rtk proxy exec -a git ls' \
+  'eval exec -a x ls && git status' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "GH #339 control allowed: $_c" "$ok"
+done
+for _c in \
+  "eval $(_pad 'command rtk proxy ' 2000)nohup git stash" \
+  "eval $(_pad 'exec -a x ' 3000)env git stash" \
+  "builtin $(_pad 'command ' 3000)rtk proxy nohup git stash" ; do
+  rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #339 padded chain decided inside 8 s as deny (rc $rc, ${#_c} bytes): ${_c:0:24}" "$ok"
+done
+for _c in \
+  "eval $(_pad 'command rtk proxy ' 2000)ls" \
+  "eval $(_pad 'exec -a x ' 3000)ls" \
+  "eval $(_pad 'exec -a ' 4000)ls" \
+  "rtk proxy $(_pad 'exec -a x ' 3000)ls" \
+  "$(_pad 'eval exec -a x nohup ; ' 1500)ls" \
+  "eval exec $(_pad '-a ' 200)ls" \
+  "eval exec $(_pad '-la ' 200)env ls" \
+  "builtin command $(_pad '-a ' 200)env ls" ; do
+  rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" != "124" ] && ok=0
+  check "GH #339 padded chain allow shape finishes inside 8 s (rc $rc, ${#_c} bytes): ${_c:0:24}" "$ok"
+done
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

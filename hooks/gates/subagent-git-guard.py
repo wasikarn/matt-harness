@@ -169,7 +169,7 @@ _dollar_joined = False  # a word with a `$` piece was joined, so the other readi
 
 def _join_quoted_words(raw, masked):
     global _dollar_joined
-    if len(raw) != len(masked):
+    if len(raw) != len(masked) or ("'" not in raw and '"' not in raw):
         return masked
     out, last = [], 0
     for m in _QWORD_RE.finditer(raw):
@@ -199,8 +199,14 @@ def _join_quoted_words(raw, masked):
             out.append(masked[last:a]); out.append(" " * (m.end() - a - len(j)) + j); last = m.end()
     return "".join(out) + masked[last:]
 
+# The whole command is masked again by _shell_bodies; on a 2 MB command each mask costs about 1 s.
+_mask_memo = {}
+
 def _mask(s):
-    return _WORD_TOKEN_RE.sub(_drop_escapes, _join_quoted_words(s, _mask_quotes(s)))
+    k = (_dollar_join, s)
+    if k not in _mask_memo:
+        _mask_memo[k] = _WORD_TOKEN_RE.sub(_drop_escapes, _join_quoted_words(s, _mask_quotes(s)))
+    return _mask_memo[k]
 
 masked = _mask(cmd)
 
@@ -263,7 +269,11 @@ _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in _KEYWORDS) + r")\s+
 # other three treat `A=1` as a command name. Only eval takes assignments.
 _ASSIGN_RUN = r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*[ \t]+)*"
 _EVAL_PASS = r"eval[ \t]+(?:--[ \t]+)?" + _ASSIGN_RUN
-_SHELL_PASS = r"(?:" + _EVAL_PASS + r"|(?:builtin|" + _PATH + r"(?:command|exec))[ \t]+(?:--[ \t]+)?)"
+# GH #339: exec takes -c, -l and `-a NAME` (`eval exec -a x git stash` runs git). A flag holding an `a`
+# takes the next word, one without takes none, so a token is read one way only.
+_EXEC_FLAGS = r"(?:-[cl]*a[ \t]+\S+[ \t]+|-[cl]+[ \t]+)*"
+_SHELL_PASS = (r"(?:" + _EVAL_PASS + r"|(?:builtin|" + _PATH + r"command)[ \t]+(?:--[ \t]+)?|" +
+               _PATH + r"exec[ \t]+" + _EXEC_FLAGS + r"(?:--[ \t]+)?)")
 _RTK_PREFIX = r"(?:" + _PATH + r"rtk[ \t]+(?:-\S+[ \t]+)*(?:(?:proxy|run|err|test|summary)[ \t]+(?:-\S+[ \t]+)*)?)"
 _CHAIN_PREFIX = r"(?:" + _SHELL_PASS + r"|" + _RTK_PREFIX + r")*"
 # GH #248: `{ git stash; }` -- a brace group opens a command position (`{` then blank).
@@ -281,7 +291,12 @@ _LEAD_WRAPPER_ALT = _PATH + r"(?:" + "|".join(w for w in _WRAPPER_WORDS if w not
 # (`eval command env git stash`). Only the lookahead does: the run still ends at the same chain word, and
 # the walk takes command/exec itself, so no second parse of any run appears. The stepped words are fixed
 # words and `-flags`, disjoint from each other, so the scan is linear in the stepped span.
-_LEAD_STEP = r"(?:" + _PATH + r"(?:command|exec)[ \t]+(?:-\S*[ \t]+)*)*"
+# GH #339: a step also takes exec's `-a NAME` (`eval A=1 exec -a x doas git stash`) and rtk runs after
+# command/exec (`eval command rtk proxy nohup git stash`). rtk comes only after a command/exec word, never
+# first, so it cannot split against the leading run's own rtk; every repeated piece starts with a
+# different fixed word or a `-`, so the step stays linear.
+_LEAD_STEP = (r"(?:" + _PATH + r"(?:command|exec)[ \t]+(?:-[cl]*a[ \t]+\S+[ \t]+|-(?![cl]*a[ \t])\S*[ \t]+)*" +
+              _RTK_PREFIX + r"*)*")
 _LEAD_CHAIN = (r"(?:(?:" + _EVAL_PASS + r"|builtin[ \t]+(?:--[ \t]+)?|" + _RTK_PREFIX + r")+(?=" + _LEAD_STEP + _LEAD_WRAPPER_ALT + r"))?")
 # GH #285: a redirection (operator + its word) may sit before the command word and hid it
 # (`</dev/null git stash`, `<<EOF git stash`); skipped like a VAR=val, in any mix with them.

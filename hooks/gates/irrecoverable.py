@@ -270,10 +270,15 @@ _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in SHELL_KEYWORDS) + r
 # GH #322 (#318's shape in subagent-git-guard.py): zsh also runs a brace group with no blank after
 # `{` (`{claude -p x;}`, `(){claude -p x;}`), and the Bash tool runs zsh, so a glued `{` that starts
 # a word opens one too (any deny wins). Not `x{claude`, `${claude` or `}{claude`, which zsh does not run.
+# GH #339: `builtin` before a wrapper runs it (`builtin command claude --agent x`, `builtin exec -a x claude
+# --print x`). Not in the walk (see _UNWRAP_ONLY): one leading run of it instead, taken only when a wrapper
+# word follows, as subagent-git-guard.py's _LEAD_CHAIN does. The run is one fixed word repeated and the
+# lookahead makes its end unique, so it adds no split to the walk.
+_SPAWN_LEAD = r"(?:(?:builtin[ \t]+(?:--[ \t]+)?)+(?=" + _WRAPPER_ALT + r"))?"
 def _spawn_anchor_body(wrapper_prefix):
     # `(?!\s)` keeps the glued alternative disjoint from `{` + blank, so no `{` is walked twice.
     return (r"(?:^|[|;&()]|&&|\|\||\{(?=\s)|(?<![^\s;&|(){])\{(?!\s))\s*" + _KEYWORD_PREFIX + r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*" +
-            wrapper_prefix + r"\\?(?:\S*/)?claude(?![-\w./])")
+            _SPAWN_LEAD + wrapper_prefix + r"\\?(?:\S*/)?claude(?![-\w./])")
 _SPAWN_ANCHOR_RES = (re.compile(r"(" + _spawn_anchor_body(_WRAPPER_PREFIX) + r")", re.MULTILINE),
                      re.compile(r"(?=(" + _spawn_anchor_body(_WRAPPER_PREFIX) + r"))", re.MULTILINE),
                      re.compile(r"(?=(" + _spawn_anchor_body(_WRAPPER_PREFIX_LAZY) + r"))", re.MULTILINE))
