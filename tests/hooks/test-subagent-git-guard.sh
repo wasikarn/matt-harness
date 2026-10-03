@@ -1425,13 +1425,15 @@ print(json.dumps(d).replace("XKEYX", "agent" + chr(92) + "u005fid"))
 ')"
 ok=1; [ "$fp_rc" -eq 2 ] && [ "$fp_py" = yes ] && ok=0
 check "GH #154/#326 escaped agent_id key (\\u005f) + git stash: reaches python3 and denies (rc $fp_rc)" "$ok"
-for _k in 'agent_id' 'agent_id' 'agent_id'; do
+# @ stands for the backslash (chr(92)), for the same transport reason.
+for _k in 'agent@u005fid' '@u0061gent_id' 'a@u0067ent@u005F@u0069d'; do
   fp_run "$(python3 -c '
 import json, sys
-print(json.dumps({"tool_name": "Bash", "tool_input": {"command": "git stash"}, "XKEYX": None}).replace("XKEYX", sys.argv[1]))
+k = sys.argv[1].replace("@", chr(92))
+print(json.dumps({"tool_name": "Bash", "tool_input": {"command": "git stash"}, "XKEYX": None}).replace("XKEYX", k))
 ' "$_k")"
-  ok=1; [ "$fp_rc" -eq 2 ] && ok=0
-  check "GH #154/#326 escaped key spelling $_k + git stash: denies (rc $fp_rc)" "$ok"
+  ok=1; [ "$fp_rc" -eq 2 ] && [ "$fp_py" = yes ] && ok=0
+  check "GH #154/#326 escaped key spelling $_k (@ = backslash), null value + git stash: denies (rc $fp_rc)" "$ok"
 done
 fp_run "$(cc_payload 'echo café')"
 ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = yes ] && ok=0
@@ -1445,6 +1447,14 @@ for _p in '{"tool_name":"Bash","tool_input":{"command":"ls"}' '[{"tool_name":"Ba
   fp_run "$_p"
   ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = yes ] && [ -n "$fp_err" ] && ok=0
   check "GH #326 malformed/non-object payload reaches python3 and keeps its diagnostic: ${_p:0:40}" "$ok"
+done
+# Invalid JSON the regex must refuse: raw control bytes inside a string, a [ opening an object body.
+for _p in "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"a$(printf '\t')b\"}}" \
+  "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"a$(printf '\001')b\"}}" \
+  '["tool_name":"Bash","tool_input":{"command":"ls"}}'; do
+  fp_run "$_p"
+  ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = yes ] && [ -n "$fp_err" ] && ok=0
+  check "GH #326 invalid JSON (raw control byte in a string / [ before an object body) reaches python3" "$ok"
 done
 fp_run '{"tool_name":"Bash","tool_input":{"command":"ls","x":{"y":1}}}'
 ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = yes ] && ok=0

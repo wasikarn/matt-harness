@@ -161,6 +161,10 @@ if [ "$py" = yes ] && echo "$out" | /usr/bin/grep -q 'mh-codex-quota-advisory'; 
   ok "GH #326 a present argv state file reaches python3 and warns"
 else bad "expected python3 and an advisory from the argv state file, got out='$out' python=$py"; fi
 
+out=$(pretooluse_payload "npm test" | env -u HOME -u MH_CODEX_QUOTA_STATE_FILE bash "$ADVISORY" 2>&1); rc=$?
+if [ "$rc" -eq 0 ] && [ -z "$out" ]; then ok "GH #326 HOME unset: no unbound-variable error, exit 0 and silent"
+else bad "expected exit 0 and no output with HOME unset, got rc=$rc out='$out'"; fi
+
 echo
 echo "codex-quota tests: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
