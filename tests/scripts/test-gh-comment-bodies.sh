@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-[ -n "${CI:-}" ] && { echo "THROWAWAY: deliberate CI-only failure (GH #400 proof)"; exit 1; }
 # scripts/_lib/gh-comment-bodies.sh: exercises its argument-validation
 # branches only (missing args, invalid kind) -- no gh/network call, so this
 # runs in the gauntlet without live GitHub access.
