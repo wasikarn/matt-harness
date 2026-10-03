@@ -63,6 +63,10 @@ DENY for d in a b; do sudo -u $U git -C $d clean -fd; done
 DENY sudo -u $U git reset --hard 2>$LOG
 DENY >$LOG sudo -u $U git reset --hard
 DENY sudo -u $U $(true) git reset --hard
+DENY sudo -u $U $(which git) reset --hard
+DENY sudo -u $U g$(echo i)t reset --hard
+DENY sudo -u $U git $(echo re)set --hard
+DENY X=$Y $(echo rm) -rf build
 DENY sudo${IFS}-u${IFS}$U${IFS}git${IFS}reset${IFS}--hard
 # 6. an empty word
 DENY exec -a "" git reset --hard
@@ -76,6 +80,9 @@ DENY git reset$E --hard
 # 7a. "" runs nothing, but develop denies it on the token reading, which stays.
 DENY "" rm -rf x
 DENY git "" reset --hard
+# 7b. a quoted '$(x)' runs a program of that name, but the token reading treats any substitution text
+# in argv0 as every dangerous name, which stays; only a word window matches the literal text around it.
+DENY '$(x)' -rf build
 # 8. controls: a split value or an empty word in a command that runs nothing destructive
 # (`X=$Y make` allows too, but the token reading still journals a shadow opaque-var-verb ask, as on develop.)
 ALLOW sudo -u $USER git status
@@ -106,3 +113,7 @@ ALLOW git checkout main ""
 ALLOW git add ""
 ALLOW echo "" rm -rf x
 ALLOW git config user.email a@b.c
+# a joined argv0 around a substitution names no dangerous program (prose and code read as shell)
+ALLOW x:$(date) -rf build
+ALLOW echo a | x,$(date) push +b
+ALLOW sudo -u $U $(date):x -rf build

@@ -1619,6 +1619,33 @@ KNOWN_GIT_SUBS = ("push", "reset", "clean", "restore", "checkout", "switch", "br
 def _has_raw_subst(t):
     return "`" in t or "$(" in t or "${" in t
 
+# GH #382: the names a word in a word window may expand to. A joined word holds more text than a token
+# (prose and code read as shell, `r\(x\) $(..)\. You,`), so "any name" there over-denied; each PH run
+# (a blanked substitution) stands for any text and the rest must match. Raw substitution syntax is
+# literal here (quoted or unparsed text); the token windows keep the broad reading of both.
+_WORD_PHASE = [False]
+def _candidates(word, names):
+    if not (PH in word or _has_raw_subst(word)):
+        return (word,)
+    if not _WORD_PHASE[0]:
+        return names
+    parts = re.split(PH + "+", word)
+    if len(parts) == 1:
+        return tuple(n for n in names if n == word)
+    out = []
+    for n in names:
+        i, end = len(parts[0]), len(n) - len(parts[-1])
+        if i > end or not (n.startswith(parts[0]) and n.endswith(parts[-1])):
+            continue
+        for p in parts[1:-1]:
+            j = n.find(p, i, end)
+            if j < 0:
+                break
+            i = j + len(p)
+        else:
+            out.append(n)
+    return tuple(out)
+
 # 2026-09-21 deep-audit: a bare `NAME=value` prefix (`FOO=bar rm -rf x`) made
 # argv0 "FOO=bar", so every token-dispatched deny below fell through. Returns
 # the assignment's (key, value) or None; the same env-var hook bypass the -c
@@ -2011,7 +2038,7 @@ def _check_window(_wi, w):
     if argv0 in ("source", ".") and rest:
         ask("source runs a file's commands in this shell, unchecked — confirm what it runs", rule="source-file")
 
-    for argv0 in (KNOWN_DANGEROUS if (PH in argv0 or _has_raw_subst(argv0)) else (argv0,)):
+    for argv0 in _candidates(argv0, KNOWN_DANGEROUS):
         if argv0 == "rm":
             # Lowercase so "rm -Rf" matches. A SHORT bundled cluster counts
             # per-character; a LONG option only on exact --recursive/--force
@@ -2120,7 +2147,7 @@ def _check_window(_wi, w):
             # instead of the stripped one closes that (deep-audit, 2026-09-29).
             scan = [t.replace(PH, "") for t in scan_raw]
 
-            for sub in (KNOWN_GIT_SUBS if (PH in sub or _has_raw_subst(sub)) else (sub,)):
+            for sub in _candidates(sub, KNOWN_GIT_SUBS):
                 if sub == "push" and any(
                     t in ("-f", "--force") or (t.startswith("--force") and not t.startswith(("--force-with-lease", "--force-if-includes")))
                     or (t.startswith("-") and not t.startswith("--") and "f" in t)
@@ -2301,7 +2328,11 @@ def _run_words():
                 _WDEPTH[len(windows)] = depth
                 windows.append(x)
         del _WORDS[:]
-        _run_windows(i)
+        _WORD_PHASE[0] = True
+        try:
+            _run_windows(i)
+        finally:
+            _WORD_PHASE[0] = False
 
 _run_windows(0)
 

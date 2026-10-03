@@ -216,6 +216,9 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   words (`_readings`: glued runs joined, `""` kept), queued and checked after every token window, so a
   develop deny keeps its message. The token reading still drops `""`: keeping it there would allow
   `"" rm -rf x`, which develop denies. Git ignores an empty argument in its rules (git rejects it).
+  A joined word holds more text, so in a word window a substitution word only stands for the names
+  its literal text allows (`_candidates`: `g$(..)t` may be git, `x:$(date)` names nothing); before
+  that, prose read as shell (python heredocs, a PR body) denied 8 replayed commands as `git restore`.
 - **Oracle:** run the real shells (the system `/bin/sh`, bash 3.2, a current bash, dash, zsh, ksh)
   with argv-logging stubs, never one shell or argv0-based shell guessing: whether `{fd}>` is a
   redirect depends on the binary and version (GH #219).
