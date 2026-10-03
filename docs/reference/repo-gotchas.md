@@ -193,7 +193,7 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   blank) and `var-verb` (`$NAME` read back where the command assigns NAME a plain value). A view runs
   after the command passed, up to 20 KB, and a structural deny inside one only ends that view. Replay of
   55,000 real commands with every new rule shadowed: 0 verdict diffs against develop; 0 hits for the
-  first four, 1 for `var-verb` (a real `git -C $R checkout -- <file>`, a discard develop misses), 63
+  first four, 1 for `var-verb` (a real `git -C $R checkout -- <file>`, a discard develop misses, GH #375), 63
   `opaque-var-verb` asks and 98 `source-file` asks. Those three ship shadow. Residue: zsh does not split
   $IFS (bash and dash do); `. file` with no candidate word never reaches python; `mk$(true)fs` matches,
   `${X}` as argv0 does not read as mkfs.
