@@ -38,7 +38,9 @@ Quote the script's counts as printed.
   answer a prompt.
 - **`allow-suppressed` isn't a block.** `secret-scan.py` logs this decision when a same-line
   suppression marker (`gitleaks:allow` etc.) let a match through — it's informational, not a
-  friction event, so don't fold it into an "interruptions" total without saying so.
+  friction event, so don't fold it into an "interruptions" total without saying so. Since GH #378
+  it writes one row per write with `count` (the matches suppressed in it); the script counts
+  matches, so older one-row-per-match logs and newer ones add up the same way.
 - **`would_deny`/`would_ask` rows are not blocks.** A rule listed in a gate's `SHADOW_RULES`
   (GH #337) only journals a match and allows the call. The "Shadow rules" section lists each
   such rule's count, session count and up to 3 sample commands. Read the samples: a rule is

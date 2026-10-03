@@ -217,6 +217,27 @@ check "suppressed match is journaled as allow-suppressed" "$ok"
 ok=1; /usr/bin/grep -qF "$suppressedTok1" "$MH_GATE_JOURNAL_PATH" || ok=0
 check "journal row never contains the actual matched token" "$ok"
 
+# GH #378: suppressed matches are journaled as ONE row per payload carrying the match count, written
+# before the ask row. jrows prints the journal as "<decision>:<count or ->" per row, in order.
+jrows() {
+  python3 -c '
+import json, sys
+print(" ".join("%s:%s" % (r.get("decision"), r.get("count", "-")) for r in map(json.loads, open(sys.argv[1]))))' "$MH_GATE_JOURNAL_PATH" 2>/dev/null
+}
+ok=1; [ "$(jrows)" = "allow-suppressed:1" ] && ok=0
+check "one suppressed match -> one allow-suppressed row with count 1" "$ok"
+
+: > "$MH_GATE_JOURNAL_PATH"
+cntTok1="AKIA$(rnd 16 "$UPPER36" 43)"; cntTok2="AKIA$(rnd 16 "$UPPER36" 44)"; cntTok3="AKIA$(rnd 16 "$UPPER36" 45)"
+out=$(asks "${cntTok1} ${cntTok2} # gitleaks:allow"$'\n'"${ghp} // pragma: allowlist secret"$'\n'"${cntTok3}")
+ok=1; [ "$(jrows)" = "allow-suppressed:3 ask:-" ] && echo "$out" | /usr/bin/grep -q 'AWS access/session key (line 3)\.' && ok=0
+check "3 suppressed matches on 2 lines + 1 real -> one allow-suppressed row (count 3), then the ask row" "$ok"
+
+: > "$MH_GATE_JOURNAL_PATH"
+out=$(asks "${cntTok3}")
+ok=1; [ "$(jrows)" = "ask:-" ] && ok=0
+check "no suppressed match -> no allow-suppressed row, only the ask row" "$ok"
+
 : > "$MH_GATE_JOURNAL_PATH"
 suppressedTok2="AKIA$(rnd 16 "$UPPER36" 36)"
 out=$(asks "${suppressedTok2} // pragma: allowlist secret"); ok=1; [ -z "$out" ] && ok=0
@@ -260,22 +281,33 @@ check "ask reason names the vendor label" "$ok"
 # every match, and the suppress-marker check read the whole line for every match, so 40,000
 # matches in 2 MB ran past the 8 s hook timeout on 40,000 lines and on one line alike (M3 Pro).
 # Linear now: well under 1 s. The 4 s limit leaves room for a CI runner about 1.5x slower.
-timed_scan() { # timed_scan <lines|oneline> -- prints "<seconds> <stdout>" for a 40,000-match Write
+# GH #378: the "suppressed" shape is 199,999 suppressed lines plus one real token (7.8 MB). One
+# journal row per suppressed match took 10.3 s, so the write went through without the ask.
+timed_scan() { # timed_scan <lines|oneline|suppressed> -- prints "<seconds> <stdout>" for a big Write
   python3 - "$GATE" "$1" "$UPPER36" <<'PY'
-import json, random, subprocess, sys, time
+import json, os, random, signal, subprocess, sys, time
 gate, shape, cs = sys.argv[1], sys.argv[2], sys.argv[3]
 r = random.Random(40000)
-toks = ["AKIA" + "".join(r.choice(cs) for _ in range(16)) for _ in range(40000)]
+if shape == "suppressed":
+    toks = ["AKIA" + "".join(r.choices(cs, k=16)) for _ in range(200000)]
+    text = "\n".join("k = " + t + " # gitleaks:allow" for t in toks[:-1]) + "\nk = " + toks[-1]
+else:
+    toks = ["AKIA" + "".join(r.choice(cs) for _ in range(16)) for _ in range(40000)]
 pad = "x" * 24  # about 2 MB either way
 if shape == "lines":
     text = "\n".join("k = " + t + " # " + pad for t in toks)
-else:
+elif shape == "oneline":
     text = " ".join(t + " " + pad + "yyyyy" for t in toks)
 p = json.dumps({"tool_name": "Write", "tool_input": {"file_path": "/x/big.txt", "content": text}})
 t = time.time()
+# Own process group, killed whole on timeout: a python child left running would keep journaling.
+proc = subprocess.Popen(["bash", gate], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                        stderr=subprocess.DEVNULL, start_new_session=True)
 try:
-    out = subprocess.run(["bash", gate], input=p.encode(), capture_output=True, timeout=8).stdout.decode()
+    out = proc.communicate(p.encode(), timeout=8)[0].decode()
 except subprocess.TimeoutExpired:
+    os.killpg(proc.pid, signal.SIGKILL)
+    proc.communicate()
     out = "TIMEOUT"
 print("%.2f %s" % (time.time() - t, out))
 PY
@@ -286,6 +318,12 @@ check "40,000 matches on 40,000 lines (2 MB): asks with exact line numbers in ${
 res=$(timed_scan oneline); secs=${res%% *}
 ok=1; awk -v s="$secs" 'BEGIN { exit !(s < 4) }' && echo "$res" | /usr/bin/grep -q 'AWS access/session key (line 1)\.' && ok=0
 check "40,000 matches on one 2 MB line: asks, line 1, in ${secs}s (< 4 s)" "$ok"
+: > "$MH_GATE_JOURNAL_PATH"
+res=$(timed_scan suppressed); secs=${res%% *}
+ok=1; awk -v s="$secs" 'BEGIN { exit !(s < 4) }' && echo "$res" | /usr/bin/grep -q 'AWS access/session key (line 200000)\.' && ok=0
+check "199,999 suppressed lines + 1 real token (7.8 MB): asks, line 200000, in ${secs}s (< 4 s)" "$ok"
+ok=1; [ "$(jrows)" = "allow-suppressed:199999 ask:-" ] && ok=0
+check "199,999 suppressed matches journal one counted row, then the ask row" "$ok"
 
 # --- error path / canary sanity -------------------------------------------
 
