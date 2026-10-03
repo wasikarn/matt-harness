@@ -67,6 +67,23 @@ assert "missing journal exits 0" "$([[ $rc_missing -eq 0 ]] && echo 1 || echo 0)
 assert "missing journal prints the documented line, not a traceback" \
   "$([[ "$out_missing" == "Gate journal not set up." ]] && echo 1 || echo 0)"
 
+# GH #378: secret-scan journals its suppressed matches as one row with "count": N. The report counts
+# matches, as it did when each match had its own row; a count that is not a positive int counts 1.
+COUNTED="$TMPDIR_TEST/counted.jsonl"
+cat > "$COUNTED" <<'EOF'
+{"ts": "2026-10-03T10:00:00Z", "id": "gate:write:secret-scan", "tool_name": "Write", "decision": "allow-suppressed", "session_id": "s1"}
+{"ts": "2026-10-03T10:01:00Z", "id": "gate:write:secret-scan", "tool_name": "Write", "decision": "allow-suppressed", "session_id": "s1", "count": 3}
+{"ts": "2026-10-03T10:01:00Z", "id": "gate:write:secret-scan", "tool_name": "Write", "decision": "ask", "session_id": "s1"}
+{"ts": "2026-10-03T10:02:00Z", "id": "gate:write:secret-scan", "tool_name": "Edit", "decision": "allow-suppressed", "session_id": "s1", "count": "x"}
+{"ts": "2026-10-03T10:03:00Z", "id": "gate:write:secret-scan", "tool_name": "Edit", "decision": "allow-suppressed", "session_id": "s1", "count": true}
+{"ts": "2026-10-03T10:04:00Z", "id": "gate:write:secret-scan", "tool_name": "Edit", "decision": "allow-suppressed", "session_id": "s1", "count": 0}
+EOF
+out_counted="$(MH_GATE_JOURNAL_PATH="$COUNTED" python3 "$REPORT_PY")"
+assert "a count row adds its count: 1 + 3 + three malformed counts at 1 each = 7 allow-suppressed" \
+  "$(grep -qE '^ *7  gate:write:secret-scan  allow-suppressed$' <<<"$out_counted" && echo 1 || echo 0)"
+assert "the header total and the per-tool counts weigh by count too (8 events; Write 5, Edit 3)" \
+  "$(grep -q '^Gate journal: 8 ask/deny event(s)$' <<<"$out_counted" && grep -qE '^ *5  Write$' <<<"$out_counted" && grep -qE '^ *3  Edit$' <<<"$out_counted" && echo 1 || echo 0)"
+
 EMPTY="$TMPDIR_TEST/empty.jsonl"
 : > "$EMPTY"
 out_empty="$(MH_GATE_JOURNAL_PATH="$EMPTY" python3 "$REPORT_PY")"

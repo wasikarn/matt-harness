@@ -164,6 +164,24 @@ ok=1
 [ -f "$OVERRIDE_PATH" ] && /usr/bin/grep -q '"decision": "deny"' "$OVERRIDE_PATH" && ok=0
 check "MH_GATE_JOURNAL_PATH override is honored, ignoring HOME entirely" "$ok"
 
+# --- Case 5b: GH #378 count key. secret-scan.py journals its suppressed matches as one row with
+# count=N; the key is written only when set, so every other gate's row keeps its old shape. ---
+J5B="$WORK/case5b/count.jsonl"
+MH_GATE_JOURNAL_PATH="$J5B" python3 -c '
+import sys; sys.path.insert(0, "hooks/gates")
+from _journal import journal
+journal("gate:write:secret-scan", "Write", "allow-suppressed", "s1", count=3)
+journal("gate:write:secret-scan", "Write", "ask", "s1")'
+ok=1
+python3 -c '
+import json, sys
+a, b = [json.loads(l) for l in open(sys.argv[1])]
+assert a["decision"] == "allow-suppressed" and a["count"] == 3 and type(a["count"]) is int
+assert b["decision"] == "ask" and "count" not in b' "$J5B" 2>/dev/null && ok=0
+check "journal(count=3) writes \"count\": 3; a row without count= has no count key" "$ok"
+ok=1; [ -f "$OVERRIDE_PATH" ] && ! /usr/bin/grep -q '"count"' "$OVERRIDE_PATH" && ok=0
+check "irrecoverable's deny row carries no count key" "$ok"
+
 # --- Case 6: GH #337 shadow mode. A rule id listed in irrecoverable.py's SHADOW_RULES journals
 # would_deny/would_ask and allows. The list is a constant in the gate's source (no env var), so the
 # test marks a rule shadowed in a copy of hooks/gates/, as case 4b does. ---
