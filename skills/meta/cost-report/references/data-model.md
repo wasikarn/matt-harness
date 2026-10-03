@@ -95,6 +95,57 @@ A session's latest row can trail its transcript, for two reasons:
   gets a 1.5 s budget that its own `timeout` cannot raise, too short to rescan a large transcript, and it would not cover a kill
   either.
 
+## Gap to Claude Code's own ledger (GH #334)
+
+Claude Code writes `cost-state` lines into the main transcript: `totalCostUSD`, plus per-model
+`modelUsage` (tokens and `costUSD`), cumulative from the process start. They appear in pairs at a few
+points per session, not every turn (the trigger was not identified), so the last one can trail
+the transcript's end. In 1 of 346 sessions the total reset to near zero when a new process
+(new `startTime`) took over the same session id, so a reader must not assume it only grows. It breaks spend down by model only, with no field saying which kind of request
+spent it.
+
+Attribution over the 25 most recent cleanly ended sessions on this machine (2026-10-02; the
+last `cost-state` line within 15 lines of the end; ledger at least $5; ledger total $1,504).
+The transcript was priced with this tracker's rate table, all cache writes at the 1-hour rate
+(99.3% of writes are 1-hour, so the error is under 1%):
+
+| part | $ | share |
+|---|---|---|
+| executor responses in the transcripts (all that rows held before #324) | 1,087 | 72% |
+| `advisor_message` iterations in the transcripts (priced since #324) | 168 | 11% |
+| advisor calls with no iteration in any transcript | 108 | 7% |
+| other spend on the executor models with no transcript line | 141 | 9% |
+
+| session | ledger | executor | advisor | advisor blocks / iterations | no-iteration advisor | other |
+|---|---|---|---|---|---|---|
+| 30223e32 | 331.5 | 227.4 | 75.2 | 44 / 44 | 1.0 | 28.0 |
+| 6f444787 | 217.3 | 135.3 | 11.6 | 23 / 6 | 27.8 | 42.6 |
+| 3ee810d0 | 178.6 | 155.8 | 18.9 | 16 / 9 | 6.5 | -2.6 |
+| a91ba587 | 135.4 | 84.0 | 13.5 | 14 / 7 | 18.9 | 19.0 |
+| 9226c634 | 102.0 | 77.5 | 16.7 | 15 / 14 | 4.2 | 3.7 |
+| e7c0ebca | 55.0 | 40.5 | 0.0 | 3 / 0 | 5.4 | 9.1 |
+| 2ff6e790 | 29.8 | 16.5 | 0.0 | 5 / 0 | 8.1 | 5.3 |
+
+- **No-iteration advisor calls.** The ledger's fable spend beyond the transcript tracks the
+  sessions where `server_tool_use` advisor blocks outnumber recorded `advisor_message`
+  iterations. Where the two counts match (30223e32, 44 / 44), the remainder is about $1. These
+  calls leave no tokens in any transcript, so no scan can price them.
+- **Other spend.** On the executor models the ledger carries millions of uncached input tokens
+  where the transcripts hold almost none (claude-opus-5-5 over 40 sessions: 6.2M vs 24K). It
+  also carries more output and cache-read tokens. These are requests that write no transcript
+  line. Likely sources are the auto-mode classifier, prompt suggestions, away summaries,
+  compaction and title generation (haiku). They cannot be split further from local data: the
+  ledger has no request-type field and the local telemetry files hold no API events. The ledger
+  also files `claude-opus-5-5[1m]` under its own key.
+- The share for the `cost-state` total depends on how advisor-heavy a session is: 52% to 99%
+  per session before #324. A small negative "other" (3ee810d0, -$2.6, 1.5%) is within the
+  cache-write pricing approximation above.
+
+**Decision: open.** Whether cost-report should treat the ledger total as the authoritative
+session cost, and keep the transcript rows for per-model, per-stream and per-agent detail, is a
+pricing-policy call left to the operator (GH #334). Until it is made, rows stay
+transcript-only and capture about 83% of the ledger.
+
 ## Aggregation rule
 
 For each session with any `model_scoped` row: take the latest row per

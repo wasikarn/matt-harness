@@ -507,10 +507,53 @@ def _escaped_op_word_end(s, i):
     while j + 1 < n and s[j] == "\\" and s[j + 1] in ";&|()":
         j += 2
     return j if j > i and (j == n or s[j].isspace() or s[j] in ";&|)") else 0
+# Quoted and comment spans copied verbatim, one char per `out` item (_mask_quoted_ops and the "#"
+# word-start test read single items). Each takes the index just past the span's opener and returns
+# the index just past its closer, or len(s) when the span is unterminated.
+def _copy_comment(s, i, out, nl):
+    # The newline ends the comment and is written as `nl`.
+    j = s.find("\n", i)
+    if j < 0:
+        out.extend(s[i:])
+        return len(s)
+    out.extend(s[i:j])
+    out.extend(nl)
+    return j + 1
+
+def _copy_squote(s, i, out, mask_from=None):
+    # mask_from: where the body starts in `out`; a closed body is passed to _mask_quoted_ops.
+    j = s.find(SQ, i)
+    if j < 0:
+        out.extend(s[i:])
+        return len(s)
+    out.extend(s[i:j + 1])
+    if mask_from is not None:
+        _mask_quoted_ops(out, mask_from)
+    return j + 1
+
+def _copy_dquote(s, i, out, mask_from=None, join_lines=False):
+    # An escaped DQ, backslash, $ or backtick is copied as a pair. join_lines: a backslash-newline
+    # is a continuation inside double quotes too, and bash strips both chars.
+    n = len(s)
+    while i < n:
+        c = s[i]
+        if join_lines and c == "\\" and i + 1 < n and s[i + 1] == "\n":
+            i += 2
+            continue
+        if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`"):
+            out.append(c); out.append(s[i + 1])
+            i += 2
+            continue
+        out.append(c)
+        i += 1
+        if c == DQ:
+            if mask_from is not None:
+                _mask_quoted_ops(out, mask_from)
+            return i
+    return n
+
 def _newlines_to_seps(s):
     out = []
-    qstart = 0
-    in_squote = in_dquote = in_comment = False
     # An escaped separator ("\ ", "\;", "\|", ...) is still a LITERAL character
     # in bash, not a real word break, so a "#" right after it is mid-word, not
     # a comment start -- out[-1] alone can't tell the two apart (both leave the
@@ -520,48 +563,13 @@ def _newlines_to_seps(s):
     i, n = 0, len(s)
     while i < n:
         c = s[i]
-        if in_comment:
-            if c == "\n":
-                out.append(c); out.append(";"); out.append(" ")
-                in_comment = False
-            else:
-                out.append(c)
-            last_escaped = False
-            i += 1
-            continue
-        if in_squote:
-            out.append(c)
-            if c == SQ:
-                in_squote = False
-                _mask_quoted_ops(out, qstart)
-            last_escaped = False
-            i += 1
-            continue
-        if in_dquote:
-            if c == "\\" and i + 1 < n and s[i + 1] == "\n":
-                # continuation inside double quotes: bash strips both chars
-                i += 2
-                continue
-            if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`"):
-                out.append(c); out.append(s[i + 1])
-                last_escaped = False
-                i += 2
-                continue
-            out.append(c)
-            if c == DQ:
-                in_dquote = False
-                _mask_quoted_ops(out, qstart)
-            last_escaped = False
-            i += 1
-            continue
-        # unquoted, not in a comment
         if c == SQ:
-            in_squote = True
-            out.append(c); i += 1; qstart = len(out)
+            out.append(c)
+            i = _copy_squote(s, i + 1, out, len(out))
             last_escaped = False
         elif c == DQ:
-            in_dquote = True
-            out.append(c); i += 1; qstart = len(out)
+            out.append(c)
+            i = _copy_dquote(s, i + 1, out, len(out), join_lines=True)
             last_escaped = False
         elif c == "\\" and i + 1 < n and s[i + 1] == "\n":
             # real line continuation: both chars removed, nothing appended
@@ -578,14 +586,14 @@ def _newlines_to_seps(s):
             i += 2
             last_escaped = True
         elif c == "#" and not last_escaped and (not out or out[-1] in _REDIRECT_TARGET_STOP):
-            in_comment = True
-            out.append(c); i += 1
+            out.append(c)
+            i = _copy_comment(s, i + 1, out, "\n; ")
             last_escaped = False
         elif c == "#":
             out.append(HASH_LIT); i += 1
             last_escaped = False
         elif c == "\n":
-            out.append(c); out.append(";"); out.append(" ")
+            out.extend("\n; ")
             i += 1
             last_escaped = False
         else:
@@ -936,12 +944,55 @@ _REDIRECT_OP_RE = re.compile(
 # GH #219: zsh alone takes "{var}&>f" as a named-fd redirect (bash reads the word "{var}" plus "&>f").
 _REDIRECT_OP_ZSH_RE = re.compile(r"\{[A-Za-z_][A-Za-z0-9_]*\}(?:&>>|&>)|" + _REDIRECT_OP_RE.pattern)
 _REDIRECT_TARGET_STOP = set(" \t\n;|&()")
+def _past_quoted(s, k):
+    # s[k] opens a quote: the index just past its close, or len(s). Inside double quotes an escaped
+    # DQ, backslash, $ or backtick is skipped as a pair.
+    n = len(s)
+    if s[k] == SQ:
+        j = s.find(SQ, k + 1)
+        return n if j < 0 else j + 1
+    k += 1
+    while k < n:
+        if s[k] == "\\" and k + 1 < n and s[k + 1] in (DQ, "\\", "$", "`"):
+            k += 2
+        elif s[k] == DQ:
+            return k + 1
+        else:
+            k += 1
+    return n
+
+def _redirect_target_end(s, j):
+    # The index just past the target word of a redirect operator that ends at s[j]: blanks first,
+    # then the word, itself quote/escape-aware (a quoted or spaced redirect target, "> \"my file\"",
+    # is one word).
+    n = len(s)
+    while j < n and s[j] in " \t":
+        j += 1
+    k = j
+    while k < n:
+        tc = s[k]
+        if tc == SQ or tc == DQ:
+            k = _past_quoted(s, k)
+        elif tc == "\\" and k + 1 < n:
+            k += 2
+        elif tc == "#" and k == j:
+            # "#" as the very first target char IS a real word-start,
+            # i.e. a genuine comment ("> #comment") -- leave it for the
+            # outer dispatcher's own "#" branch to enter comment state
+            # correctly, rather than swallowing it here.
+            break
+        elif tc in _REDIRECT_TARGET_STOP:
+            break
+        else:
+            k += 1
+    return k
+
 def _blank_redirections(s, named_fd=True):
     # named_fd: True = bash 4+/ksh93 (consume "{var}>f"), False = macOS /bin/sh, bash 3.2, dash (the
     # literal word "{var}" plus a plain redirect), "zsh" = True plus "{var}&>f" (GH #219).
     # Callers check every reading; any deny wins.
+    op_re = _REDIRECT_OP_ZSH_RE if named_fd == "zsh" else _REDIRECT_OP_RE
     out = []
-    in_squote = in_dquote = in_comment = False
     # See _newlines_to_seps's own comment: an escaped separator is still a
     # literal char in bash, not a real word break, so a "#" right after it
     # is mid-word -- out[-1] alone can't tell the two apart.
@@ -949,41 +1000,14 @@ def _blank_redirections(s, named_fd=True):
     i, n = 0, len(s)
     while i < n:
         c = s[i]
-        if in_comment:
-            out.append(c)
-            if c == "\n":
-                in_comment = False
-            last_escaped = False
-            i += 1
-            continue
-        if in_squote:
-            out.append(c)
-            if c == SQ:
-                in_squote = False
-            last_escaped = False
-            i += 1
-            continue
-        if in_dquote:
-            if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`"):
-                out.append(c); out.append(s[i + 1])
-                last_escaped = False
-                i += 2
-                continue
-            out.append(c)
-            if c == DQ:
-                in_dquote = False
-            last_escaped = False
-            i += 1
-            continue
-        # unquoted, not in a comment
         if c == SQ:
-            in_squote = True
-            out.append(c); i += 1
+            out.append(c)
+            i = _copy_squote(s, i + 1, out)
             last_escaped = False
             continue
         if c == DQ:
-            in_dquote = True
-            out.append(c); i += 1
+            out.append(c)
+            i = _copy_dquote(s, i + 1, out)
             last_escaped = False
             continue
         if c == "\\" and i + 1 < n:
@@ -994,70 +1018,47 @@ def _blank_redirections(s, named_fd=True):
             last_escaped = True
             continue
         if c == "#" and not last_escaped and (not out or out[-1] in _REDIRECT_TARGET_STOP):
-            in_comment = True
-            out.append(c); i += 1
+            out.append(c)
+            i = _copy_comment(s, i + 1, out, "\n")
             last_escaped = False
             continue
         if c == "#":
             out.append(HASH_LIT); i += 1
             last_escaped = False
             continue
-        m = (_REDIRECT_OP_ZSH_RE if named_fd == "zsh" else _REDIRECT_OP_RE).match(s, i)
+        m = op_re.match(s, i)
         # mid-word "{": literal text, not a named fd (GH #188). After an
         # escaped char ("x\ {fd}>f") it is still read as a redirect: keeping
         # "{" as text lets the outer tokenizer break the window at "{".
         if m and c == "{" and (not named_fd or (out and out[-1] not in _REDIRECT_TARGET_STOP)):
             m = None
         if m:
-            j = m.end()
-            while j < n and s[j] in " \t":
-                j += 1
-            # Consume the operator's target word, itself quote/escape-aware
-            # (a quoted or spaced redirect target, "> \"my file\"", is one word).
-            k, tsq, tdq = j, False, False
-            while k < n:
-                tc = s[k]
-                if tsq:
-                    if tc == SQ:
-                        tsq = False
-                    k += 1
-                    continue
-                if tdq:
-                    if tc == "\\" and k + 1 < n and s[k + 1] in (DQ, "\\", "$", "`"):
-                        k += 2
-                        continue
-                    if tc == DQ:
-                        tdq = False
-                    k += 1
-                    continue
-                if tc == SQ:
-                    tsq = True; k += 1; continue
-                if tc == DQ:
-                    tdq = True; k += 1; continue
-                if tc == "\\" and k + 1 < n:
-                    k += 2
-                    continue
-                if tc == "#" and k == j:
-                    # "#" as the very first target char IS a real word-start,
-                    # i.e. a genuine comment ("> #comment") -- leave it for the
-                    # outer dispatcher's own "#" branch to enter comment state
-                    # correctly, rather than swallowing it here.
-                    break
-                if tc in _REDIRECT_TARGET_STOP:
-                    break
-                k += 1
             # Leave a space where the redirect was: deleting it outright can
             # glue the punctuation on either side into one shlex token (")"
             # + ";" -> ");", not in OPERATORS), hiding the window break before
             # a dangerous tail (found by the GH #188 differential fuzz).
             out.append(" ")
-            i = k
+            i = _redirect_target_end(s, m.end())
             last_escaped = False
             continue
         out.append(c)
         i += 1
         last_escaped = False
     return "".join(out)
+
+def _blanked(c, named_fd=True):
+    # The text every tokenizer below reads: ANSI-C quotes decoded, newlines turned into separators,
+    # substitutions and redirections blanked. Recomputed on every call: each _blank_substitutions run
+    # charges a fresh depth-scan budget and may set _DEPTH_BUDGET_BLOWN.
+    return _blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(c))), named_fd)
+
+def _tokens(src, extra_wordchars="", whitespace_split=False):
+    # shlex tokens of a _blanked() text; the placeholders are word characters. Raises ValueError.
+    lex = shlex.shlex(src, posix=True, punctuation_chars=True)
+    lex.wordchars += PH + HASH_LIT + PSUB + extra_wordchars
+    if whitespace_split:
+        lex.whitespace_split = True
+    return list(lex)
 
 # shlex.split() only recognizes ;/&&/||/|/& as separators when whitespace
 # surrounds them ("echo hi;rm -rf x" glued "hi;rm"); punctuation_chars=True
@@ -1096,6 +1097,21 @@ def _split_ops(tok):
         else:
             return [tok]
     return out
+
+def _statements(toks):
+    # Yield each non-empty run of tokens between OPERATORS (one statement window).
+    cur = []
+    for tok in [p for t in toks for p in _split_ops(t)] + [";"]:
+        if tok in OPERATORS:
+            if cur:
+                yield cur
+            cur = []
+        else:
+            cur.append(tok)
+
+def _drop_ph_tokens(w):
+    # w without its bare-placeholder tokens (a substitution that may expand to nothing).
+    return [t for t in w if not (t and all(c == PH for c in t))]
 
 # shlex cost is superlinear in the longest SINGLE token (700k chars blows a 2s
 # timeout), so an oversized command denies on length ALONE before shlex runs.
@@ -1205,6 +1221,8 @@ def _ambiguous(c):
     return None
 
 _ambig = _ambiguous(cmd)
+def _deny_ambiguous():
+    deny("ambiguous shell syntax (" + _ambig[0] + ") next to an irrecoverable verb - confirm with user first")
 # The verb is looked for in three views: the raw text, the text with line continuations joined, and the
 # text with quotes and backslashes dropped, so '"git" push' and 'r\m' cannot hide it (GH #255).
 # GH #349: that last view reads $'-f' as $-f (no blank before the dash), so a narrow flag piece missed it in
@@ -1214,12 +1232,10 @@ _views = [cmd, _joined, re.sub(r"[\"'\\]", "", _joined)]
 if _ambig and ("$'" in _joined or '$"' in _joined):
     _views.append(re.sub(r"[\"'\\]", "", re.sub(r"\$(?=\")", "", _normalize_ansi_c_quotes(_joined))))
 if _ambig and any(_ambig[1].search(v) for v in _views):
-    deny("ambiguous shell syntax (" + _ambig[0] + ") next to an irrecoverable verb - confirm with user first")
+    _deny_ambiguous()
 
 try:
-    lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd)))), posix=True, punctuation_chars=True)
-    lex.wordchars += PH + HASH_LIT + PSUB
-    tokens = list(lex)
+    tokens = _tokens(_blanked(cmd))
 except ValueError:
     # Two causes: (1) a genuinely unbalanced quote; (2) the closer-search above
     # does not track quotes INSIDE a span, so a span crossing a quote char
@@ -1231,7 +1247,7 @@ except ValueError:
     # If the original also fails to parse, deny on ambiguity.
     try:
         shlex.split(cmd)
-        _fallback_src = _blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd))))
+        _fallback_src = _blanked(cmd)
         parts = re.split(r"(&&|\|\||;|\||&)", _fallback_src)
         tokens = []
         for part in parts:
@@ -1243,8 +1259,10 @@ except ValueError:
         deny("could not safely tokenize command for pattern matching (unbalanced quote/substitution) - confirm with user first")
 
 # A scan that could not finish left a span un-blanked -- deny before dispatch.
-if _DEPTH_BUDGET_BLOWN[0]:
-    deny("command too long to safely tokenize (nested substitution exceeded depth-scan budget) - confirm with user first")
+def _deny_if_depth_blown():
+    if _DEPTH_BUDGET_BLOWN[0]:
+        deny("command too long to safely tokenize (nested substitution exceeded depth-scan budget) - confirm with user first")
+_deny_if_depth_blown()
 
 # GH #254: a "{" or "}" inside a word is literal in bash ("feat{1}"), but shlex splits the word there
 # and the split opens a new window, so "git reset feat{1} --hard" left "--hard" in a window of its own.
@@ -1253,30 +1271,21 @@ if _DEPTH_BUDGET_BLOWN[0]:
 _token_lists = [tokens]
 if "{" in cmd or "}" in cmd:
     try:
-        _lex2 = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd)))), posix=True, punctuation_chars=True)
-        _lex2.wordchars += PH + HASH_LIT + PSUB + "{}"
-        _token_lists.append(list(_lex2))
+        _token_lists.append(_tokens(_blanked(cmd), "{}"))
         # GH #219: the same text read the macOS sh / bash 3.2 / dash way, "{var}>f" a literal word.
         for _nf in (False, "zsh"):
-            _lex3 = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(cmd))), _nf), posix=True, punctuation_chars=True)
-            _lex3.wordchars += PH + HASH_LIT + PSUB + "{}"
-            _token_lists.append(list(_lex3))
+            _token_lists.append(_tokens(_blanked(cmd, _nf), "{}"))
     except ValueError:
         pass  # the first copy already handled an unparsable command
 
 windows = []
 _seen_windows = set()  # GH #268: the second copy skips a window the first already holds, so the budget charges it once
 for _i, _toks in enumerate(_token_lists):
-    cur = []
-    for tok in [p for t in _toks for p in _split_ops(t)] + [";"]:
-        if tok in OPERATORS:
-            if cur and not (_i and tuple(cur) in _seen_windows):
-                if not _i:
-                    _seen_windows.add(tuple(cur))
-                windows.append(cur)
-            cur = []
-        else:
-            cur.append(tok)
+    for cur in _statements(_toks):
+        if not (_i and tuple(cur) in _seen_windows):
+            if not _i:
+                _seen_windows.add(tuple(cur))
+            windows.append(cur)
 
 # A standalone substitution resolving to empty ($(true)) vanishes as a token in
 # bash, shifting later tokens left, but leaves a PH-only token here, so every
@@ -1285,7 +1294,7 @@ for _i, _toks in enumerate(_token_lists):
 # dropped; a deny in either copy wins ("$(which git) status" -> ["status"]).
 _aug = []
 for _w in windows:
-    _wc = [_t for _t in _w if not (_t and all(_c == PH for _c in _t))]
+    _wc = _drop_ph_tokens(_w)
     _aug.append(_w)
     if _wc != _w:
         _aug.append(_wc)
@@ -1293,6 +1302,12 @@ windows = _aug
 
 def basename(p):
     return p.rsplit("/", 1)[-1]
+
+def _past_dash_words(rest, i=0):
+    # Index of the first word from i on that does not start with "-" once placeholders are stripped.
+    while i < len(rest) and rest[i].replace(PH, "").startswith("-"):
+        i += 1
+    return i
 
 # One-level unwrap of `bash|sh|zsh|dash|ksh -c "<body>"` and `eval <body>`: the
 # quoted body is a command line, so it is re-tokenized into windows of its own,
@@ -1309,6 +1324,11 @@ _MAX_SHELL_DEPTH = 5
 _WDEPTH = {}      # window index -> unwrap depth (absent = 0, an original window)
 _XARGS_HANDOVERS = [0]  # windows appended for `xargs <wrapper> ...` (bounded, see the xargs branch)
 _cur_depth = 0
+
+def _count_handover(what):
+    _XARGS_HANDOVERS[0] += 1
+    if _XARGS_HANDOVERS[0] > 50:
+        deny("more than 50 chained " + what + " wrappers - too complex to scan safely, confirm with user first")
 
 def _shell_body(argv0, rest, getopt, need_c=True):
     """The `-c` command string of `argv0 rest`, or None. `getopt` picks how a value flag reads:
@@ -1434,26 +1454,16 @@ def _scan_body(body):
         # GH #219: "{var}>f" is a redirect in bash 4+/ksh/zsh and a literal word plus a redirect in
         # macOS sh, bash 3.2 and dash, so a body holding "{" is read both ways and every window checked.
         for nf in ((True, False, "zsh") if "{" in body else (True,)):
-            lex = shlex.shlex(_blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(body))), nf), posix=True, punctuation_chars=True)
-            lex.wordchars += PH + HASH_LIT + PSUB
-            lex.whitespace_split = True
-            cur = []
-            for tok in [p for t in list(lex) for p in _split_ops(t)] + [";"]:
-                if tok in OPERATORS:
-                    if cur:
-                        _WDEPTH[len(windows)] = _cur_depth + 1
-                        windows.append(cur)
-                        curc = [t for t in cur if not (t and all(c == PH for c in t))]
-                        if curc != cur:
-                            _WDEPTH[len(windows)] = _cur_depth + 1
-                            windows.append(curc)
-                    cur = []
-                else:
-                    cur.append(tok)
+            for cur in _statements(_tokens(_blanked(body, nf), whitespace_split=True)):
+                _WDEPTH[len(windows)] = _cur_depth + 1
+                windows.append(cur)
+                curc = _drop_ph_tokens(cur)
+                if curc != cur:
+                    _WDEPTH[len(windows)] = _cur_depth + 1
+                    windows.append(curc)
     except ValueError:
         deny("could not safely tokenize the body of a bash -c / eval string - confirm with user first")
-    if _DEPTH_BUDGET_BLOWN[0]:
-        deny("command too long to safely tokenize (nested substitution exceeded depth-scan budget) - confirm with user first")
+    _deny_if_depth_blown()
 
 # Candidate names for placeholder-splice duplication: the exact argv0 basenames
 # and git subcommands any check below dispatches on by exact string match.
@@ -1525,6 +1535,93 @@ def _assignment(t):
             and "core.hookspath" in val.lower():
         deny("-c core.hooksPath=<path> re-points git at a different hooks dir — same bypass as --no-verify")
     return key, val
+
+# 2026-09-20 audit: git accepts any unambiguous prefix of a long
+# option ("--no-veri" for "--no-verify"); the exact-string checks
+# below missed it -- live-confirmed to actually execute
+# (--no-veri/--ha/--amen/--forc/--discard-ch/--del all ran for real).
+# `git push --forc` is NOT exploitable this way: git itself rejects
+# it as ambiguous with --force-with-lease/--force-if-includes, so
+# the push check below is untouched.
+def _is_flag(token, *long_forms):
+    # Checked only against the SPECIFIC long form(s) given at each
+    # call site below, never a global git-flag list -- so this
+    # cannot itself confuse "--force" with an unrelated flag.
+    # Confirmed safe against this file's own documented noisy
+    # neighbors (--find-renames, --format=fuller, --force-with-lease,
+    # --force-if-includes): none is a prefix of any long form checked
+    # here, and a longer arg can never satisfy long_form.startswith().
+    # A false-positive abbreviation only costs an extra deny/
+    # confirmation -- the safe direction for this gate
+    # (operating-model.md's fail-closed principle).
+    #
+    # compliance-audit fix-round 2, 2026-09-20: an independent
+    # verifier flagged this as not "establishing unambiguity" (e.g.
+    # denying `commit --no`, `branch --fo`) and claimed `--n` /
+    # `--force=` slip through unguarded. Empirically re-checked
+    # against real git: `--n` and every 2-3-char `=value`-suffixed
+    # abbreviation tested at the time was ALWAYS rejected by git
+    # itself (ambiguous, or "option takes no value") -- but that
+    # check missed the shorter, plain (no `=`) 2-char-after-`--`
+    # shape entirely, since the len()>3 guard below excluded it from
+    # ever being checked in the first place, regardless of what git
+    # would do with it.
+    #
+    # deep-audit fix-round 3, 2026-09-20: that gap was real and
+    # live -- `git reset --h` and `git clean --f` are BOTH accepted
+    # by real git as unambiguous (only one long option starts with
+    # "h"/"f" for each of those subcommands) and actually executed
+    # destructively, while this gate's old len()>3 guard never even
+    # checked them. Fixed by lowering the guard to len()>2 (still
+    # excludes a bare "--", which has no letters to be an
+    # abbreviation of anything). This does NOT reintroduce the
+    # already-git-rejected forms as a gap: those still fail on the
+    # `long_form.startswith(token)` check itself (git's own
+    # ambiguity has no bearing on that), so lowering the length
+    # floor only newly catches tokens that are BOTH short and an
+    # exact prefix of one specific named long form -- the same
+    # narrow, call-site-scoped match this helper always made, one
+    # character shorter.
+    return token.startswith("--") and len(token) > 2 and any(
+        lf.startswith(token) for lf in long_forms
+    )
+
+# Bundled short flags: "-qf" means -q -f. Stop scanning a cluster
+# at a value-taking letter (checkout -b/-B, switch -c/-C) so
+# "-bfoo" is not misread as -f hiding inside a branch name.
+# `flag` is the letter looked for (default -f; commit -n, branch
+# -d, add -A use the same scan).
+def _bundled_flag(t, stop_chars, flag="f"):
+    if not (t.startswith("-") and not t.startswith("--")):
+        return False
+    for ch in t[1:]:
+        if ch in stop_chars:
+            return False
+        if ch == flag:
+            return True
+    return False
+
+def _sets_hooks_path(w):
+    # Does a `-c KEY=VAL` / `-cKEY=VAL` / `--config-env KEY=VAR` / `--config-env=KEY=VAR` word in
+    # window w set core.hooksPath (key case-insensitive) to a non-empty value?
+    for idx, t in enumerate(w):
+        t_pf = t.replace(PH, "")
+        if t_pf == "-c" and idx + 1 < len(w):
+            kv = w[idx + 1]
+        elif t_pf.startswith("-c"):
+            kv = t_pf[2:]
+        # --config-env=KEY=VAR / --config-env KEY=VAR: git reads the
+        # value from env var VAR, same effect as -c (2026-09-21 audit).
+        elif t_pf == "--config-env" and idx + 1 < len(w):
+            kv = w[idx + 1]
+        elif t_pf.startswith("--config-env="):
+            kv = t_pf[len("--config-env="):]
+        else:
+            continue
+        key, _, val = kv.partition("=")
+        if key.lower() == "core.hookspath" and val:
+            return True
+    return False
 
 for _wi, w in enumerate(windows):
     _cur_depth = _WDEPTH.get(_wi, 0)
@@ -1616,9 +1713,7 @@ for _wi, w in enumerate(windows):
             argv0, rest = basename(rest[i]), rest[i + 1:]
         elif argv0 == "rtk":
             # GH #216. Global flags first, then the subcommand; see _RTK_RUNNERS above.
-            i = 0
-            while i < len(rest) and rest[i].replace(PH, "").startswith("-"):
-                i += 1
+            i = _past_dash_words(rest)
             if i >= len(rest):
                 break
             sub = rest[i].replace(PH, "")
@@ -1643,9 +1738,7 @@ for _wi, w in enumerate(windows):
                 argv0, rest = "sh", ["-c", " ".join(rest[j:])]
                 break
             elif sub in _RTK_RUNNERS or sub in _RTK_SHELL_RUNNERS:
-                j = i + 1
-                while j < len(rest) and rest[j].replace(PH, "").startswith("-"):
-                    j += 1
+                j = _past_dash_words(rest, i + 1)
                 if j >= len(rest):
                     break
                 if sub in _RTK_SHELL_RUNNERS:
@@ -1655,9 +1748,7 @@ for _wi, w in enumerate(windows):
             else:  # an rtk verb that dispatches to the real tool of the same name
                 argv0, rest = basename(rest[i]), rest[i + 1:]
         else:  # command, nohup, time, setsid, builtin — bare flags then the wrapped command
-            i = 0
-            while i < len(rest) and rest[i].replace(PH, "").startswith("-"):
-                i += 1
+            i = _past_dash_words(rest)
             if i >= len(rest):
                 break
             argv0, rest = basename(rest[i]), rest[i + 1:]
@@ -1682,9 +1773,7 @@ for _wi, w in enumerate(windows):
             # A later `-exec` may be a shell's option letters (`bash -c -exec 'body'`), not a find
             # action: also scan everything after the first action as ONE command. Each such window
             # can be a find again, so the chain is bounded like the xargs one below.
-            _XARGS_HANDOVERS[0] += 1
-            if _XARGS_HANDOVERS[0] > 50:
-                deny("more than 50 chained find/xargs wrappers - too complex to scan safely, confirm with user first")
+            _count_handover("find/xargs")
             _WDEPTH[len(windows)] = _cur_depth
             windows.append(rest[acts[0] + 1:])
 
@@ -1701,9 +1790,7 @@ for _wi, w in enumerate(windows):
             if basename(t).replace(PH, "") in PREFIX_WRAPPERS:
                 # Each wrapper window re-enters this branch when it hands over another xargs and
                 # copies its tail: chained `xargs env xargs env ...` is quadratic, so bound the chain.
-                _XARGS_HANDOVERS[0] += 1
-                if _XARGS_HANDOVERS[0] > 50:
-                    deny("more than 50 chained xargs wrappers - too complex to scan safely, confirm with user first")
+                _count_handover("xargs")
                 _WDEPTH[len(windows)] = _cur_depth
                 windows.append(rest[j:])
                 break
@@ -1714,9 +1801,7 @@ for _wi, w in enumerate(windows):
     elif argv0 == "docker" and rest and rest[0].replace(PH, "") == "exec":
         # "docker exec <flags> <container> <cmd...>" re-points argv0 to the
         # inner command so the SQL check fires on a containerized client.
-        j = 1
-        while j < len(rest) and rest[j].replace(PH, "").startswith("-"):
-            j += 1
+        j = _past_dash_words(rest, 1)
         if j < len(rest):
             j += 1  # skip the container name/id
         if j < len(rest):
@@ -1750,56 +1835,6 @@ for _wi, w in enumerate(windows):
         if argv0 == "find" and any(t.replace(PH, "") == "-delete" for t in rest):
             deny("find -delete detected — destructive delete; " + delete_hint())
 
-        # 2026-09-20 audit: git accepts any unambiguous prefix of a long
-        # option ("--no-veri" for "--no-verify"); the exact-string checks
-        # below missed it -- live-confirmed to actually execute
-        # (--no-veri/--ha/--amen/--forc/--discard-ch/--del all ran for real).
-        # `git push --forc` is NOT exploitable this way: git itself rejects
-        # it as ambiguous with --force-with-lease/--force-if-includes, so
-        # the push check below is untouched.
-        def _is_flag(token, *long_forms):
-            # Checked only against the SPECIFIC long form(s) given at each
-            # call site below, never a global git-flag list -- so this
-            # cannot itself confuse "--force" with an unrelated flag.
-            # Confirmed safe against this file's own documented noisy
-            # neighbors (--find-renames, --format=fuller, --force-with-lease,
-            # --force-if-includes): none is a prefix of any long form checked
-            # here, and a longer arg can never satisfy long_form.startswith().
-            # A false-positive abbreviation only costs an extra deny/
-            # confirmation -- the safe direction for this gate
-            # (operating-model.md's fail-closed principle).
-            #
-            # compliance-audit fix-round 2, 2026-09-20: an independent
-            # verifier flagged this as not "establishing unambiguity" (e.g.
-            # denying `commit --no`, `branch --fo`) and claimed `--n` /
-            # `--force=` slip through unguarded. Empirically re-checked
-            # against real git: `--n` and every 2-3-char `=value`-suffixed
-            # abbreviation tested at the time was ALWAYS rejected by git
-            # itself (ambiguous, or "option takes no value") -- but that
-            # check missed the shorter, plain (no `=`) 2-char-after-`--`
-            # shape entirely, since the len()>3 guard below excluded it from
-            # ever being checked in the first place, regardless of what git
-            # would do with it.
-            #
-            # deep-audit fix-round 3, 2026-09-20: that gap was real and
-            # live -- `git reset --h` and `git clean --f` are BOTH accepted
-            # by real git as unambiguous (only one long option starts with
-            # "h"/"f" for each of those subcommands) and actually executed
-            # destructively, while this gate's old len()>3 guard never even
-            # checked them. Fixed by lowering the guard to len()>2 (still
-            # excludes a bare "--", which has no letters to be an
-            # abbreviation of anything). This does NOT reintroduce the
-            # already-git-rejected forms as a gap: those still fail on the
-            # `long_form.startswith(token)` check itself (git's own
-            # ambiguity has no bearing on that), so lowering the length
-            # floor only newly catches tokens that are BOTH short and an
-            # exact prefix of one specific named long form -- the same
-            # narrow, call-site-scoped match this helper always made, one
-            # character shorter.
-            return token.startswith("--") and len(token) > 2 and any(
-                lf.startswith(token) for lf in long_forms
-            )
-
         if argv0 == "git" and rest:
             # --no-verify skips pre-commit/pre-push hooks; checked per window (a
             # global check over `tokens` only saw the last line). Git-specific
@@ -1815,29 +1850,7 @@ for _wi, w in enumerate(windows):
             # comparison, the captured VALUE keeps its original case. The
             # sibling `config` subcommand branch two arms below already does
             # this; this arm predated it and was missed.
-            hooks_path_val = None
-            for idx, t in enumerate(w):
-                t_pf = t.replace(PH, "")
-                if t_pf == "-c" and idx + 1 < len(w):
-                    nxt = w[idx + 1]
-                    key, _, val = nxt.partition("=")
-                    if key.lower() == "core.hookspath" and val:
-                        hooks_path_val = val
-                elif t_pf.startswith("-c"):
-                    key, _, val = t_pf[2:].partition("=")
-                    if key.lower() == "core.hookspath" and val:
-                        hooks_path_val = val
-                # --config-env=KEY=VAR / --config-env KEY=VAR: git reads the
-                # value from env var VAR, same effect as -c (2026-09-21 audit).
-                elif t_pf == "--config-env" and idx + 1 < len(w):
-                    key, _, val = w[idx + 1].partition("=")
-                    if key.lower() == "core.hookspath" and val:
-                        hooks_path_val = val
-                elif t_pf.startswith("--config-env="):
-                    key, _, val = t_pf[len("--config-env="):].partition("=")
-                    if key.lower() == "core.hookspath" and val:
-                        hooks_path_val = val
-            if hooks_path_val:
+            if _sets_hooks_path(w):
                 deny("-c core.hooksPath=<path> re-points git at a different hooks dir — same bypass as --no-verify")
             # Walk past leading global flags so ` git -C /repo push --force`
             # (or -Cpath, --no-pager) does not set sub="-C" and bypass the gate.
@@ -1861,7 +1874,7 @@ for _wi, w in enumerate(windows):
             # such bound, so a brace-hidden flag after 100 "-C ." is still caught (deep-audit 2026-10-01).
             if _ambig and _ambig[1] is _AMBIG_BROAD_VERB_RE and sub.replace(PH, "") in (
                     "push", "reset", "clean", "checkout", "restore", "switch", "branch", "stash"):
-                deny("ambiguous shell syntax (" + _ambig[0] + ") next to an irrecoverable verb - confirm with user first")
+                _deny_ambiguous()
             # drop the value token after a free-text flag so message content
             # (e.g. "commit -m ...rm -rf...") is never pattern-matched.
             scan_raw, skip = [], False
@@ -1966,20 +1979,6 @@ for _wi, w in enumerate(windows):
                         for t in _opts)
                     if has_pathspec and targets_worktree:
                         deny("git restore discards working-tree changes — confirm with user first")
-                # Bundled short flags: "-qf" means -q -f. Stop scanning a cluster
-                # at a value-taking letter (checkout -b/-B, switch -c/-C) so
-                # "-bfoo" is not misread as -f hiding inside a branch name.
-                # `flag` is the letter looked for (default -f; commit -n, branch
-                # -d, add -A use the same scan).
-                def _bundled_flag(t, stop_chars, flag="f"):
-                    if not (t.startswith("-") and not t.startswith("--")):
-                        return False
-                    for ch in t[1:]:
-                        if ch in stop_chars:
-                            return False
-                        if ch == flag:
-                            return True
-                    return False
                 # checkout: "--"/"." = discard; 2+ nonflag = tree-ish + path
                 # (`git checkout HEAD~1 file` overwrites the worktree). 1 nonflag
                 # stays allowed: it may be a legit branch switch.

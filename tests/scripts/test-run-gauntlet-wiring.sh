@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # test-run-gauntlet-wiring.sh — a test file on disk with no runner ships
-# silently broken. run_hook_tests() uses globs, so this asserts every
-# test-*.sh / test_*.py under tests/ matches one of those globs by running
-# the function with a shim `bash`/`python3` that only records paths.
+# silently broken. hook_test_files() lists the layer's files by glob, so this
+# asserts every test-*.sh / test_*.py under tests/ matches one of those globs.
+# It runs only that listing function, never a test (running the runner from
+# here recurses: a test that runs the gauntlet re-runs itself).
 set -uo pipefail
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
 ROOT="$HERE/../.."
@@ -12,11 +13,11 @@ ok()  { pass=$((pass + 1)); echo "  PASS: $1"; }
 bad() { fail=$((fail + 1)); echo "  FAIL: $1" >&2; }
 
 echo "=== run-gauntlet wiring self-test ==="
-body=$(sed -n '/^run_hook_tests()/,/^}/p' "$GAUNTLET")
+body=$(sed -n '/^hook_test_files()/,/^}/p' "$GAUNTLET")
+[ -n "$body" ] || { echo "  FAIL: hook_test_files() not found in run-gauntlet.sh" >&2; exit 1; }
 ran=$(cd "$ROOT" && bash -c "
-  bash() { echo \"\$1\"; }; python3() { echo \"\$1\"; }
   $body
-  run_hook_tests" | /usr/bin/grep -v '^---')
+  hook_test_files")
 
 missing=()
 while IFS= read -r f; do
@@ -25,9 +26,9 @@ while IFS= read -r f; do
 done < <(find "$ROOT/tests" \( -name "test-*.sh" -o -name "test_*.py" \) | sort)
 
 if [ "${#missing[@]}" -eq 0 ]; then
-  ok "run_hook_tests() picks up every test-*.sh / test_*.py under tests/"
+  ok "hook_test_files() picks up every test-*.sh / test_*.py under tests/"
 else
-  bad "run_hook_tests() does NOT run: ${missing[*]}"
+  bad "hook_test_files() does NOT list: ${missing[*]}"
 fi
 echo "self-test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

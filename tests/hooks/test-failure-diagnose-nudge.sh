@@ -71,6 +71,24 @@ else
   bad "expected hookSpecificOutput.hookEventName == PostToolUseFailure, got: $out"
 fi
 
+# --- a user-interrupted command (is_interrupt: true) is not a failure to
+# diagnose: no nudge, and it must not spend the command's cap (GH #331) ---
+payload=$(posttoolusefailure_payload "interrupted-cmd" "Interrupted by user")
+payload=$(python3 -c 'import json,sys; d=json.loads(sys.argv[1]); d["is_interrupt"]=True; print(json.dumps(d))' "$payload")
+out=$(echo "$payload" | bash "$SENSOR" "$STATE")
+rc=$?
+if [ "$rc" -eq 0 ] && [ -z "$out" ]; then
+  ok "is_interrupt: true -- no nudge, exit 0 (GH #331)"
+else
+  bad "is_interrupt: true should produce no output and exit 0, got rc=$rc out='$out'"
+fi
+out=$(posttoolusefailure_payload "interrupted-cmd" "Command failed" | bash "$SENSOR" "$STATE")
+if echo "$out" | /usr/bin/grep -q 'mh-failure-diagnose-nudge'; then
+  ok "an interrupt does not spend the command's cap -- a later real failure still nudges"
+else
+  bad "a real failure after an interrupt of the same command should still nudge, got '$out'"
+fi
+
 # --- cap enforcement: same command failing repeatedly stops nudging after CAP=1 ---
 trash "$STATE" 2>/dev/null || true
 nudge_count=0

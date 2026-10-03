@@ -218,5 +218,18 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   message stays masked. A `$'..'`/`$".."` piece reads differently per shell (`$'list'` is `$list` in
   dash, `$"show"` is `$show` in dash and zsh), which matters for the `stash list|show` carve-out, so the
   guard runs up to three readings. The spawn anchor also scans the unjoined text when a join changed it
-  (`claude -p"x"` is `-px`). Residue, which `develop` also allows: a second parse level (`eval \"git\"
-  stash`, `eval "git " stash`, an escaped quote inside a `bash -c "..."` body).
+  (`claude -p"x"` is `-px`). Its residue, a second parse level (`eval \"git\" stash`, `eval "git " stash`,
+  an escaped quote inside a `bash -c "..."` body), is GH #327's fix below.
+  GH #327: eval and `sh -c` hand their argument text to a second parse, so a pair that is a literal
+  backslash after the first parse is an escape in the second (`eval g\\\it stash`, `bash -c "g\\it stash"`).
+  The guard's `_read_words` does the first parse's quote removal (one word after `-c`, every word to the
+  statement end after eval, joined with blanks) and checks the result as one more body; the raw quoted body
+  is still checked, so any deny wins. `$'..'` is decoded the bash way and `$".."` read as `".."`; a `$(..)` or
+  backtick span is copied as it is. Fuzz, 4000 cases, two seeds: false-allows 641 and 552 to 0, no new
+  false-deny. A known over-deny: `eval sudo echo "git stash"` now reads as `sudo echo git stash`, which the
+  wrapper walk denies like the plain text (a GH #273 control changed from allow to deny). The copied spans
+  made every substitution body scan twice, so the substitution pass now checks each body string once; that
+  also fixed a develop timeout: `eval ` + 2 million backticks + a late `"$(git stash)"` took 8.3 s (allow),
+  now 3 s. The second-parse body joins the substitution pass only when a `$` or backtick came out of a quote
+  or an escape (`` eval echo '`git' 'stash`' ``), since a copied span is one the raw scan already read. Residue, which `develop` also allows: a substitution that expands to nothing
+  before the word (`eval $(true) g\\\it stash`, like `$(true) git stash`) and a third parse level.

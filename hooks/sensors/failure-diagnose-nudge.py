@@ -16,7 +16,7 @@ METHODOLOGY Rule 13's bounded-retry doctrine ("stop after 3 rounds, the fault
 is then in the plan, not the unit") even though the nudge's own cap is
 tighter than that number.
 
-Fires on every non-zero exit (no denylist of "worth nudging on" patterns) --
+Fires on every non-zero exit except a user interrupt (GH #331; no denylist of "worth nudging on" patterns) --
 a deliberate first cut, narrowing to specific failure shapes is left for a
 follow-up if the noise turns out to matter in practice.
 """
@@ -51,7 +51,9 @@ def is_failure(data):
     # tool_input, tool_use_id, and error (a string). hooks.json now registers
     # this sensor only on PostToolUseFailure, so its mere presence is the
     # signal -- no exit-code inspection needed or possible for that shape.
-    return data.get("hook_event_name") == "PostToolUseFailure"
+    # GH #331: the same event also fires when the user interrupts the command
+    # (is_interrupt: true). That is not a failure to diagnose, so skip it.
+    return data.get("hook_event_name") == "PostToolUseFailure" and data.get("is_interrupt") is not True
 
 
 def extract_command(data):
