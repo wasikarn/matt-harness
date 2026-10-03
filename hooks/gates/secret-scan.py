@@ -90,11 +90,13 @@ def findings(text, tool_name, session_id):
     # per match was quadratic, and 40,000 matches ran past the 8 s hook
     # timeout, which allows the write. Newline offsets are built once, each
     # match finds its line by bisect, and each line is checked for a
-    # suppress marker once.
+    # suppress marker once. Suppressed matches are journaled as one counted
+    # row (GH #378): a row per match took 10.3 s for 199,999 of them.
     seen = []
     seen_keys = set()
     newlines = None
     line_suppressed = {}
+    suppressed = 0
     for label, pattern, has_placeholder_check in PATTERNS:
         for m in pattern.finditer(text):
             if has_placeholder_check and is_placeholder(m.group(1)):
@@ -108,7 +110,7 @@ def findings(text, tool_name, session_id):
                 line_suppressed[k] = any(text.find(marker, line_start, line_end) != -1
                                          for marker in SUPPRESS_MARKERS)
             if line_suppressed[k]:
-                journal(GATE_ID, tool_name, "allow-suppressed", session_id)
+                suppressed += 1
                 continue
             line_no = k + 1
             key = (label, line_no)
@@ -116,6 +118,8 @@ def findings(text, tool_name, session_id):
                 continue
             seen_keys.add(key)
             seen.append(key)
+    if suppressed:
+        journal(GATE_ID, tool_name, "allow-suppressed", session_id, count=suppressed)
     return seen
 
 

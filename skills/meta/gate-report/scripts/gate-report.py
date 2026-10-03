@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Reads ~/.local/share/kbg/metrics/gate-decisions.jsonl (hooks/gates/_journal.py's own
-# log -- non-allow verdicts only: ask/deny/allow-suppressed, plus a shadow rule's
+# log -- non-allow verdicts only: ask/deny/allow-suppressed (one row per write, "count" matches),
+# plus a shadow rule's
 # would_deny/would_ask, GH #337, listed per rule with sample commands) and prints an ask-count
 # report: how often each gate asked or denied, not how long a user took to answer --
 # _journal.py's row has no resolution timestamp, so a wait-time metric isn't derivable
@@ -46,9 +47,14 @@ def main():
             decision = row.get("decision", "(unknown)")
             tool_name = row.get("tool_name", "(unknown)")
             ts = row.get("ts")
-            counts[(gate_id, decision)] += 1
-            tools[tool_name] += 1
-            total += 1
+            # GH #378: one secret-scan allow-suppressed row stands for "count" matches (older
+            # rows, one per match, have none). Anything but a positive int counts as one.
+            n = row.get("count", 1)
+            if type(n) is not int or n < 1:
+                n = 1
+            counts[(gate_id, decision)] += n
+            tools[tool_name] += n
+            total += n
             if str(decision).startswith("would_"):
                 s = shadow.setdefault((gate_id, row.get("rule", "(unknown)")),
                                       {"n": 0, "sessions": set(), "samples": []})
