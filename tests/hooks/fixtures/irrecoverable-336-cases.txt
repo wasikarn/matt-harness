@@ -1,0 +1,92 @@
+# GH #336 cases for hooks/gates/irrecoverable.sh, replayed by tests/hooks/test-gates.sh.
+# DENY <cmd>: exit 2. ALLOW <cmd>: exit 0, empty stdout, no would_* row.
+# WOULD_DENY <rule> <cmd> / WOULD_ASK <rule> <cmd>: a shadow rule (SHADOW_RULES) matches: exit 0,
+# empty stdout, one would_* row naming <rule>. The test also runs every WOULD_* line against a copy
+# with SHADOW_RULES emptied and expects the enforced verdict (deny / ask).
+# Each DENY and WOULD_DENY shape was run in /bin/bash 3.2, bash 5, /bin/dash and /bin/zsh against a logging stub.
+#
+# controls (deny on develop too)
+DENY rm -rf build
+DENY eval "rm -rf build"
+#
+# 1. $IFS read as a blank
+DENY rm${IFS}-rf build
+DENY rm$IFS-rf build
+DENY rm${IFS}-rf${IFS}build
+DENY rm$IFS$9-rf build
+DENY rm${IFS:0:1}-rf build
+DENY git${IFS}push${IFS}--force origin main
+DENY bash -c 'rm${IFS}-rf build'
+DENY ls; rm${IFS}-rf build
+ALLOW while IFS= read -r line; do echo "$line"; done < f.txt
+ALLOW OLDIFS=$IFS; IFS=,; echo a,b; IFS=$OLDIFS
+ALLOW printf '%s' "$IFS" | od -c
+ALLOW echo "rm${IFS}-rf build"
+ALLOW grep 'rm${IFS}-rf' notes.txt
+ALLOW rm${IFS}-v build
+ALLOW IFS=: read -r a b <<< "x:y"; echo "$a"
+# the view's text has an unbalanced quote: a structural deny inside a view only ends the view
+ALLOW sh -c 'printf %s ${IFS:-"}" rm'
+#
+# 2. a verb held in a variable assigned earlier on the line. var-verb ships shadow: in a 55,000-command
+# replay it denied one real command (`git -C $R checkout -- <file>`, a true discard develop misses).
+WOULD_DENY var-verb X=rm; $X -rf build
+WOULD_DENY var-verb X=rm && $X -rf build
+# control: develop already denies a ${..} argv0 (it reads as every dangerous verb)
+DENY X=rm; ${X} -rf build
+WOULD_DENY var-verb X="rm -rf"; $X build
+WOULD_DENY var-verb export X=rm; $X -rf build
+WOULD_DENY var-verb X=git; $X push --force origin main
+WOULD_DENY var-verb F=--force; git push $F origin main
+WOULD_DENY var-verb A=-rf; rm $A build
+WOULD_DENY var-verb X=mkfs.ext4; $X /dev/sda1
+WOULD_DENY var-verb X=rm; bash -c "$X -rf build"
+WOULD_DENY var-verb X=rm; echo hi; $X -rf build
+WOULD_DENY var-verb X=rm; $X -rf build; X=ls
+WOULD_DENY var-verb R=/tmp/repo; git -C $R checkout -- notes.txt
+ALLOW X=1; echo $X
+ALLOW R=/tmp/x; RW=$R/w; git -C $RW remote add origin git@example.com:o/r.git
+ALLOW X=rm; echo $X -rf build
+ALLOW X=rm; "$X" -v build
+ALLOW CMD=ls; $CMD -la
+ALLOW D=build; ls $D && echo $D
+ALLOW X="rm -rf"; echo "$X"
+ALLOW N=3; for i in $(seq $N); do echo $i; done
+ALLOW PY=python3; $PY -m pytest -q
+#
+# 3. a verb known only at run time: ask floor (shadow)
+WOULD_ASK opaque-var-verb $X -rf build
+WOULD_ASK opaque-var-verb "$RUNNER" build
+WOULD_ASK source-file source ./setup.sh
+# a bare `. file` with no candidate word never reaches python (irrecoverable.sh fast path)
+WOULD_ASK source-file . ./setup.sh && git status
+#
+# 4. mkfs, chmod 777 / a+rwx, rm --no-preserve-root
+DENY mkfs.ext4 /dev/sda1
+DENY mkfs -t ext4 /dev/sdb
+DENY mkfs.vfat /dev/disk4s1
+DENY sudo mkfs.ext4 /dev/sda1
+DENY mke2fs /dev/sda1
+DENY chmod -R 777 /
+DENY chmod 777 /
+DENY chmod 777 ~
+DENY chmod -R 777 build
+DENY chmod a+rwx /
+DENY chmod -R a+rwx .
+DENY chmod --recursive 0777 build
+DENY chmod -vR 777 build
+DENY sudo chmod -R 777 /usr/local
+DENY rm -r --no-preserve-root /
+DENY rm --no-preserve-root -r /tmp/x
+DENY rm --no-preserve-r -r /
+ALLOW mkfs.ext4 -V
+ALLOW echo mkfs.ext4 /dev/sda1
+ALLOW chmod +x run.sh
+ALLOW chmod 755 script.sh
+ALLOW chmod -R 755 build
+ALLOW chmod 777 /tmp/scratch.sock
+ALLOW chmod -R u+w build
+ALLOW chmod 644 ~/.ssh/config
+ALLOW chmod 600 ~/.netrc
+ALLOW git diff -- chmod.txt
+ALLOW rm --preserve-root -i x

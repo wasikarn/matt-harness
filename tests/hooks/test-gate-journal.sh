@@ -231,7 +231,7 @@ import ast, re, sys
 src = open(sys.argv[1]).read()
 m = re.search(r"^SHADOW_RULES = frozenset\((.*)\)$", src, re.M)
 ids = ast.literal_eval(m.group(1) or "()")
-sites = set(re.findall(r"rule=\"([^\"]+)\"", src))
+sites = set(re.findall(r"rule=\"([^\"]+)\"", src)) | set(re.findall(r"\(\"([a-z-]+)\", v\)", src))
 print(" ".join(sorted(set(ids) - sites)))' "$1"
 }
 ok=1; [ -z "$(shadow_drift "$ROOT/hooks/gates/irrecoverable.py")" ] && [ -z "$(shadow_drift "$SH_RM/irrecoverable.py")" ] && ok=0
@@ -239,6 +239,28 @@ check "every SHADOW_RULES id names a rule= call site" "$ok"
 SH_BAD="$WORK/shadow-bad"; shadow_copy "$SH_BAD" '"rm-fr"'
 ok=1; [ "$(shadow_drift "$SH_BAD/irrecoverable.py")" = "rm-fr" ] && ok=0
 check "mutation proof: a SHADOW_RULES id with no call site is reported" "$ok"
+
+# --- Case 7: GH #336's views (another reading of the command) carry a rule id of their own. With the
+# view shadowed, a deny found only in that reading is journaled under the view's id and allowed, even
+# though the rule it matched (rm-rf) enforces; the plain command still denies. ---
+for _view in ifs-split var-verb; do
+  SH_V="$WORK/shadow-$_view"; shadow_copy "$SH_V" "\"$_view\""
+  case "$_view" in
+    ifs-split) _vcmd='rm${IFS}-rf build' ;;
+    var-verb) _vcmd='X=rm; $X -rf build' ;;
+  esac
+  J7="$WORK/case7/$_view.jsonl"
+  out=$(payload_bash "$_vcmd" | MH_GATE_JOURNAL_PATH="$J7" bash "$SH_V/irrecoverable.sh" 2>/dev/null); rc=$?
+  ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && [ "$(rows "$J7" would_deny "$_view")" = 1 ] && [ "$(rows "$J7" deny rm-rf)" = 0 ] && ok=0
+  check "shadowed $_view view: its deny is journaled under $_view and allowed" "$ok"
+  payload_bash "rm -rf build" | MH_GATE_JOURNAL_PATH="$J7" bash "$SH_V/irrecoverable.sh" >/dev/null 2>&1; rc=$?
+  ok=1; [ "$rc" -eq 2 ] && ok=0
+  check "shadowed $_view view: the plain rm -rf still denies" "$ok"
+  SH_E="$WORK/enforce-$_view"; shadow_copy "$SH_E" ""
+  payload_bash "$_vcmd" | MH_GATE_JOURNAL_PATH="$J7" bash "$SH_E/irrecoverable.sh" >/dev/null 2>&1; rc=$?
+  ok=1; [ "$rc" -eq 2 ] && [ "$(rows "$J7" deny "$_view")" = 1 ] && ok=0
+  check "enforced $_view view: denies, and the deny row names $_view" "$ok"
+done
 
 echo ""
 echo "=== $pass passed, $fail failed ==="

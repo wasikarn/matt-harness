@@ -2486,6 +2486,15 @@ test_nopython_allow "$IRRECOVERABLE" "irrecoverable: \$@-split argv0 (gi\$@t pus
   "$(bash_payload 'gi$@t push --force origin develop')"
 test_nopython_allow "$IRRECOVERABLE" "irrecoverable: \$*-split argv0 (gi\$*t push --force) still reaches the guard, not fast-path-exited" \
   "$(bash_payload 'gi$*t push --force origin develop')"
+# GH #336: mkfs, chmod and source are candidate words, so they reach python.
+test_nopython_allow "$IRRECOVERABLE" "irrecoverable: mkfs.ext4 reaches the guard, not fast-path-exited (GH #336)" \
+  "$(bash_payload 'mkfs.ext4 /dev/sda1')"
+test_nopython_allow "$IRRECOVERABLE" "irrecoverable: mke2fs reaches the guard, not fast-path-exited (GH #336)" \
+  "$(bash_payload 'mke2fs /dev/sda1')"
+test_nopython_allow "$IRRECOVERABLE" "irrecoverable: chmod -R 777 reaches the guard, not fast-path-exited (GH #336)" \
+  "$(bash_payload 'chmod -R 777 /')"
+test_nopython_allow "$IRRECOVERABLE" "irrecoverable: source reaches the guard, not fast-path-exited (GH #336)" \
+  "$(bash_payload 'source ./setup.sh')"
 # A $ that arrives JSON-\uXXXX-escaped instead of as a literal byte is invisible to the raw
 # _has_subst scan above.
 test_documented_fastpath_allow "$IRRECOVERABLE" "irrecoverable: JSON \\u0024-escaped \$ around a \${x} splice (gi\\u0024{x}t push --force) -- raw scan blind, documented non-live gap" \
@@ -2954,6 +2963,62 @@ test_allow "$IRRECOVERABLE" 'GH #269 F1 control: eval, 100 -C globals, push with
   "$(bash_payload 'eval "$(echo git '"$_many_c"'push origin main)"')"
 test_allow "$IRRECOVERABLE" 'GH #269 F2 control: eval, push with 130 words and no force flag' \
   "$(bash_payload 'eval "$(echo git push origin '"$_pad130"'main)"')"
+
+# GH #336: $IFS splitting, a verb held in a variable, mkfs, chmod 777 and rm --no-preserve-root.
+# Cases (each deny shape checked in real shells) live in a fixture. A WOULD_* line is a shadow rule
+# (GH #337): allowed with a would_* journal row, and enforced once SHADOW_RULES drops it.
+_c336="$ROOT/tests/hooks/fixtures/irrecoverable-336-cases.txt"
+_enf336="$_JOURNAL_TMP/enforced-gates"
+mkdir -p "$_enf336" && cp -R "$ROOT/hooks/gates/." "$_enf336/"
+python3 - "$_enf336/irrecoverable.py" <<'EOF'
+import re, sys
+s, n = re.subn(r"^SHADOW_RULES = .*$", "SHADOW_RULES = frozenset()", open(sys.argv[1]).read(), flags=re.M)
+assert n == 1
+open(sys.argv[1], "w").write(s)
+EOF
+_would336() { # <decision> <rule> <cmd>: shadowed -> allow + one would_* row; enforced copy -> deny/ask
+  local dec="$1" rule="$2" cmd="$3" j="$_JOURNAL_TMP/w336.jsonl" out rc rows
+  : > "$j"
+  out=$(bash_payload "$cmd" | MH_GATE_JOURNAL_PATH="$j" bash "$IRRECOVERABLE" 2>/dev/null); rc=$?
+  rows=$(python3 -c 'import json,sys; print(sum(json.loads(l).get("decision") == "would_" + sys.argv[2] and json.loads(l).get("rule") == sys.argv[3] for l in open(sys.argv[1])))' "$j" "$dec" "$rule")
+  if [[ "$rc" == "0" && -z "$out" && "$rows" == "1" ]]; then
+    echo "  ✅ SHADOW would_$dec $rule: $cmd"; pass=$((pass + 1))
+  else
+    echo "  ❌ SHADOW would_$dec $rule expected (rc=0, no stdout, 1 row), got rc=$rc rows=$rows: $cmd" >&2; fail=$((fail + 1))
+  fi
+  if [[ "$dec" == "deny" ]]; then
+    test_deny "$_enf336/irrecoverable.sh" "GH #336 enforced once promoted: $cmd" "$(bash_payload "$cmd")"
+  else
+    test_ask "$_enf336/irrecoverable.sh" "GH #336 enforced once promoted: $cmd" "$(bash_payload "$cmd")"
+  fi
+}
+_want336=$(/usr/bin/grep -cE '^(DENY|ALLOW|WOULD_DENY|WOULD_ASK) ' "$_c336"); _got336=0
+while IFS= read -r _line; do
+  case "$_line" in
+    DENY\ *) test_deny "$IRRECOVERABLE" "GH #336: ${_line#DENY }" "$(bash_payload "${_line#DENY }")" ;;
+    ALLOW\ *)
+      : > "$_JOURNAL_TMP/a336.jsonl"
+      test_allow "$IRRECOVERABLE" "GH #336 control: ${_line#ALLOW }" "$(bash_payload "${_line#ALLOW }")" "MH_GATE_JOURNAL_PATH=$_JOURNAL_TMP/a336.jsonl"
+      if [ -s "$_JOURNAL_TMP/a336.jsonl" ]; then
+        echo "  ❌ GH #336 control journaled a row (a shadow rule fired): ${_line#ALLOW }" >&2; fail=$((fail + 1))
+      fi ;;
+    WOULD_DENY\ *) _r="${_line#WOULD_DENY }"; _would336 deny "${_r%% *}" "${_r#* }" ;;
+    WOULD_ASK\ *) _r="${_line#WOULD_ASK }"; _would336 ask "${_r%% *}" "${_r#* }" ;;
+    *) continue ;;
+  esac
+  _got336=$((_got336 + 1))
+done < "$_c336"
+# Each view re-reads the whole command (up to _VIEW_LEN_CAP), and a timed-out hook allows.
+_pad336="$(printf 'echo a; %.0s' $(seq 1200))"
+_timed_case "GH #336: var-verb view (shadow), target after 10 KB of statements, read in bounded time" 0 "${_pad336}X=rm; \$X -rf build"
+_timed_case "GH #336: ifs-split view, target after 10 KB of statements, denied in bounded time" 2 "${_pad336}rm\${IFS}-rf build"
+_timed_case "GH #336: var-verb view, 1200 references of one benign variable, allowed in bounded time" 0 "X=ls; $(printf 'echo $X %.0s' $(seq 1200))"
+_timed_case "GH #336: chmod with 4000 a+rw words, allowed in bounded time" 0 "chmod -R $(printf 'a+rw %.0s' $(seq 4000))build"
+if [ "$_want336" -ge 60 ] && [ "$_got336" = "$_want336" ]; then
+  echo "  ✅ GH #336: corpus replayed every case ($_got336)"; pass=$((pass + 1))
+else
+  echo "  ❌ GH #336: corpus replayed $_got336 of $_want336 cases" >&2; fail=$((fail + 1))
+fi
 
 echo ""
 total=$((pass + fail))
