@@ -26,6 +26,19 @@ import json
 import os
 import sys
 
+# The session id names the counter file, so it must pass the shared rule
+# (scripts/_lib/hook_payload.py; cost-tracker.sh mirrors it in bash). Loaded by
+# this file's own path, never from cwd. A missing or broken lib fails open:
+# the nudge still goes out, uncapped, with a diagnostic. No bytecode cache:
+# scripts/_lib stays free of __pycache__ (test-hook-payload.sh checks it).
+sys.dont_write_bytecode = True
+try:
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "scripts", "_lib"))
+    from hook_payload import validate_session_id
+except Exception as _e:  # noqa: BLE001 -- any load failure must fail open
+    validate_session_id = None
+    _LIB_ERROR = repr(_e)[:200]
+
 CAP = 1
 
 NUDGE = (
@@ -133,10 +146,20 @@ def default_state_path(data):
     # session_id is on every documented hook payload (PreToolUse and
     # PostToolUse examples both carry it) -- prefer it over the env var so
     # the cap stays session-scoped even if CLAUDE_CODE_SESSION_ID is ever
-    # unset. ponytail: "unknown" as a last resort would make the cap
-    # global-and-permanent instead of per-session, but that only happens if
-    # neither source is present, which the hook protocol doesn't allow.
-    session = data.get("session_id") or os.environ.get("CLAUDE_CODE_SESSION_ID") or "unknown"
+    # unset. An id that fails validate_session_id ("/", "..", NUL, empty, not
+    # a string) returns None: no counter file, so the caller nudges uncapped.
+    # A "/" and ".." id once wrote outside mh-sensors and a NUL crashed open().
+    # Only the Claude Code host builds the payload (UUIDs), so this is hardening.
+    raw = data.get("session_id") or os.environ.get("CLAUDE_CODE_SESSION_ID")
+    if validate_session_id is None:
+        print(f"[mh:sensor] failure-diagnose-nudge: cannot load scripts/_lib/hook_payload.py ({_LIB_ERROR}); "
+              "nudging without the per-session cap", file=sys.stderr)
+        return None
+    session = validate_session_id(raw)
+    if not session:
+        print(f"[mh:sensor] failure-diagnose-nudge: session_id {repr(raw)[:80]} is not a safe file name; "
+              "nudging without the per-session cap", file=sys.stderr)
+        return None
     tmpdir = os.environ.get("TMPDIR", "/tmp").rstrip("/")
     return f"{tmpdir}/mh-sensors/failure-nudge-{session}.json"
 
@@ -149,21 +172,20 @@ def main(argv):
     if not isinstance(data, dict):
         return 0
 
-    state_path = argv[1] if len(argv) > 1 else default_state_path(data)
-
     if not is_failure(data):
         return 0
 
-    command = extract_command(data)
-    sig = signature(command)
-    with locked(state_path):
-        counts = load_counts(state_path)
-        seen = counts.get(sig, 0)
-        if seen >= CAP:
-            return 0  # capped -- stay silent for this exact command, don't spam
+    state_path = argv[1] if len(argv) > 1 else default_state_path(data)
+    if state_path is not None:
+        sig = signature(extract_command(data))
+        with locked(state_path):
+            counts = load_counts(state_path)
+            seen = counts.get(sig, 0)
+            if seen >= CAP:
+                return 0  # capped -- stay silent for this exact command, don't spam
 
-        counts[sig] = seen + 1
-        save_counts(state_path, counts)
+            counts[sig] = seen + 1
+            save_counts(state_path, counts)
 
     print(json.dumps({
         "hookSpecificOutput": {
