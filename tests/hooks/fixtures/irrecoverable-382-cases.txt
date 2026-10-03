@@ -1,0 +1,108 @@
+# GH #382 cases for hooks/gates/irrecoverable.sh, replayed by tests/hooks/test-gates.sh.
+# DENY <cmd>: exit 2. ALLOW <cmd>: exit 0, empty stdout, no journal row.
+# shlex splits one shell word at a character outside its word characters ($, :, @), and an empty word
+# ("") dropped out, so every walk that skips one token for a value (a wrapper's flag value, timeout's
+# duration, a NAME=value prefix, a wrapper's dash words, docker's container) took the next piece for the
+# command. Each DENY shape in 1-6 was run in /bin/bash 3.2, bash 5, /bin/dash, /bin/zsh and /bin/sh with
+# the variables set, logging stubs for git, rm and mysql (and for sudo, doas, ionice and docker, which
+# parse their options as the real tools do), and ran a destructive argv in at least one of them.
+# `exec -a` is not in dash; `command -p` runs the system git, outside the stub's PATH.
+#
+# 1. the issue's rows
+DENY sudo -u $U git reset --hard
+DENY env -u $X git reset --hard
+DENY timeout $T git reset --hard
+DENY X=$Y rm -rf build
+DENY X=$Y git reset --hard
+DENY git -C "" reset --hard
+# 2. every value-taking wrapper flag, its value split
+DENY doas -u $U git reset --hard
+DENY doas -C $F git reset --hard
+DENY sudo -g $G rm -rf build
+DENY sudo --user $U rm -rf build
+DENY sudo -nu $U rm -rf build
+DENY sudo -u$U git push --force origin main
+DENY sudo -u a@b git reset --hard
+DENY nice -n $N rm -rf build
+DENY ionice -c $C rm -rf build
+DENY stdbuf -o $M git reset --hard
+DENY timeout -s $S 5 git reset --hard
+DENY timeout -k $K 5 rm -rf build
+DENY timeout $T git clean -fd
+DENY gtimeout $T rm -rf build
+DENY exec -a $N git reset --hard
+DENY env -u $X -u $Z rm -rf build
+DENY sudo -u $U env -u $X timeout $T git reset --hard
+DENY nice -n $N git stash drop
+DENY timeout $T git branch -D main
+DENY env -u $X git checkout -- f.txt
+DENY sudo -u $U git commit --amend -m x
+DENY timeout --signal=$S 5 git reset --hard
+DENY sudo -u $U bash -c 'git reset --hard'
+DENY eval sudo -u $U git reset --hard
+# 3. a NAME=value prefix whose value splits
+DENY env X=$Y git reset --hard
+DENY PATH=$PATH:/x rm -rf build
+DENY X=a:b rm -rf build
+DENY X=a@b git reset --hard
+DENY A=$1 B=$2 git push --force
+DENY GIT_DIR=$G/.git git reset --hard
+DENY X=$Y sudo -u $U rm -rf build
+# 4. argv0 itself, and a wrapper's dash words
+DENY $HOME/bin/git reset --hard
+DENY $HOME/bin/rm -rf build
+DENY sudo -u $U $HOME/bin/rm -rf build
+DENY nohup -$DD git reset --hard
+DENY command -$P git reset --hard
+DENY rtk -$V proxy git reset --hard
+# 5. a slice of the window: find -exec, docker exec, statements, redirects
+DENY find . -exec sudo -u $U git reset --hard \;
+DENY docker exec $C mysql -e 'DROP TABLE t'
+DENY R=/tmp/r; sudo -u $U git -C $R reset --hard
+DENY for d in a b; do sudo -u $U git -C $d clean -fd; done
+DENY sudo -u $U git reset --hard 2>$LOG
+DENY >$LOG sudo -u $U git reset --hard
+DENY sudo -u $U $(true) git reset --hard
+DENY sudo${IFS}-u${IFS}$U${IFS}git${IFS}reset${IFS}--hard
+# 6. an empty word
+DENY exec -a "" git reset --hard
+DENY bash -c 'git -C "" reset --hard'
+DENY git -C '' push --force origin main
+# 7. readings that only one copy denies (pins; 7a/7b are not destructive in a real shell)
+# git -C $R reset$E --hard: the word copy reads `reset$E` as the subcommand, the #375 window holds it.
+DENY git -C $R reset$E --hard
+# git reset$E --hard: only the token copy reads `reset` (E empty runs reset --hard).
+DENY git reset$E --hard
+# 7a. "" runs nothing, but develop denies it on the token reading, which stays.
+DENY "" rm -rf x
+DENY git "" reset --hard
+# 8. controls: a split value or an empty word in a command that runs nothing destructive
+# (`X=$Y make` allows too, but the token reading still journals a shadow opaque-var-verb ask, as on develop.)
+ALLOW sudo -u $USER git status
+ALLOW sudo -u $U ls -la
+ALLOW sudo -u $U rm -f build.log
+ALLOW sudo -u $U git -C "" status
+ALLOW env -u X make
+ALLOW env -u $X make test
+ALLOW timeout $T make test
+ALLOW timeout $T git status
+ALLOW timeout 5m git fetch origin
+ALLOW X=$(pwd):$Y git status
+ALLOW PATH=$PATH:/x make
+ALLOW X=a:b:c ls
+ALLOW A=$1 B=$2 make
+ALLOW nice -n $N make
+ALLOW exec -a "" ls
+ALLOW $HOME/bin/tool --flag
+ALLOW docker exec $C ls
+ALLOW find . -name x -exec sudo -u $U ls {} \;
+ALLOW git -C "$d" status
+ALLOW git -C $REPO log --oneline -5
+ALLOW git -C "" status
+ALLOW git -C "" add f.txt
+ALLOW git -C "$R" add f.txt
+ALLOW git commit -m ""
+ALLOW git checkout main ""
+ALLOW git add ""
+ALLOW echo "" rm -rf x
+ALLOW git config user.email a@b.c

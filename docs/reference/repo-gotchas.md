@@ -208,9 +208,14 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   global walk took `PWD` in `git -C $PWD reset --hard` for the subcommand. `_tokens` now returns a token
   cut from the one before it, with no blank between, as `_Glued` (an equal `str`), and the git block
   re-reads its global flags as joined words in a window of its own; the token reading stays, so a deny in
-  either wins. Other value-taking walks (sudo `-u`, env `-u`, `timeout`'s duration, a `X=$Y` prefix)
-  still read one token (GH #382). Replay of 115,308 real commands (main and agent): 3 newly denied, two
+  either wins. Replay of 115,308 real commands (main and agent): 3 newly denied, two
   that run `reset --hard` / `checkout --` and one `git -C $PCR add .` (git-add-all, not data loss).
+  GH #382: every other walk had the same fault (sudo/doas/env/timeout/nice values, a `X=$Y` prefix, a
+  wrapper's dash words, docker's container, `$HOME/bin/git` as argv0), and `_split_ops("")` dropped an
+  empty word, so `git -C "" reset` read `reset` as -C's value. Each statement is now also read as shell
+  words (`_readings`: glued runs joined, `""` kept), queued and checked after every token window, so a
+  develop deny keeps its message. The token reading still drops `""`: keeping it there would allow
+  `"" rm -rf x`, which develop denies. Git ignores an empty argument in its rules (git rejects it).
 - **Oracle:** run the real shells (the system `/bin/sh`, bash 3.2, a current bash, dash, zsh, ksh)
   with argv-logging stubs, never one shell or argv0-based shell guessing: whether `{fd}>` is a
   redirect depends on the binary and version (GH #219).

@@ -3091,6 +3091,42 @@ done
 _timed_case "GH #409: a comma mode after 2000 benign chmod statements, denied in bounded time" 2 \
   "$(printf 'chmod 644 x; %.0s' $(seq 2000))chmod -R u+s,a+rwx x"
 
+# GH #382: the wrapper, assignment and argv0 walks read a split value ($U, a:b) or a dropped empty word
+# ("") one token off. Every statement is also read as shell words (glued runs joined, "" kept).
+_c382="$ROOT/tests/hooks/fixtures/irrecoverable-382-cases.txt"
+_want382=$(/usr/bin/grep -cE '^(DENY|ALLOW) ' "$_c382"); _got382=0
+while IFS= read -r _line; do
+  case "$_line" in
+    DENY\ *) test_deny "$IRRECOVERABLE" "GH #382: ${_line#DENY }" "$(bash_payload "${_line#DENY }")" ;;
+    ALLOW\ *)
+      : > "$_JOURNAL_TMP/a382.jsonl"
+      test_allow "$IRRECOVERABLE" "GH #382 control: ${_line#ALLOW }" "$(bash_payload "${_line#ALLOW }")" "MH_GATE_JOURNAL_PATH=$_JOURNAL_TMP/a382.jsonl"
+      if [ -s "$_JOURNAL_TMP/a382.jsonl" ]; then
+        echo "  ❌ GH #382 control journaled a row: ${_line#ALLOW }" >&2; fail=$((fail + 1))
+      fi ;;
+    *) continue ;;
+  esac
+  _got382=$((_got382 + 1))
+done < "$_c382"
+# The word copy is one more window per statement that holds a split or empty word; a hook timeout allows.
+_timed_case "GH #382: 4000 '-u \$U' sudo flags before git reset --hard, denied in bounded time" 2 \
+  "sudo $(printf -- '-u $U %.0s' $(seq 4000))git reset --hard"
+_timed_case "GH #382: 4000 '-u \$U' sudo flags before git status, allowed in bounded time" 0 \
+  "sudo $(printf -- '-u $U %.0s' $(seq 4000))git status"
+_timed_case "GH #382: rm -rf after 2000 benign 'X=\$Y make' statements, denied in bounded time" 2 \
+  "$(printf 'X=$Y make; %.0s' $(seq 2000))X=\$Y rm -rf build"
+_timed_case "GH #382: 20 KB glued \$a\$a sudo user before git reset --hard, denied in bounded time" 2 \
+  "sudo -u $(printf '$a%.0s' $(seq 10000)) git reset --hard"
+_timed_case "GH #382: 2000 empty -C values before reset --hard, denied in bounded time" 2 \
+  "git $(printf -- '-C \"\" %.0s' $(seq 2000))reset --hard"
+_timed_case "GH #382: 4000 empty words then git status, allowed in bounded time" 0 \
+  "echo $(printf '\"\" %.0s' $(seq 4000)); git status"
+if [ "$_want382" -ge 60 ] && [ "$_got382" = "$_want382" ]; then
+  echo "  ✅ GH #382: corpus replayed every case ($_got382)"; pass=$((pass + 1))
+else
+  echo "  ❌ GH #382: corpus replayed $_got382 of $_want382 cases" >&2; fail=$((fail + 1))
+fi
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="

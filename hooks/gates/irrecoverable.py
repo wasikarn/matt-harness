@@ -1157,16 +1157,49 @@ def _split_ops(tok):
             return [tok]
     return out
 
-def _statements(toks):
+def _statements(toks, keep_empty=False):
     # Yield each non-empty run of tokens between OPERATORS (one statement window).
+    # _split_ops("") is [], so an empty word ("") drops out unless keep_empty (GH #382).
     cur = []
-    for tok in [p for t in toks for p in _split_ops(t)] + [";"]:
+    for tok in [p for t in toks for p in (_split_ops(t) or ([t] if keep_empty else []))] + [";"]:
         if tok in OPERATORS:
             if cur:
                 yield cur
             cur = []
         else:
             cur.append(tok)
+
+# GH #382: every walk below reads one token as one shell word (sudo -u, env -u, timeout's duration,
+# a NAME=value prefix, a wrapper's dash words, find/xargs/docker slices, argv0 itself), so a value
+# shlex split (`sudo -u $U git ...`: "$", "U") shifted the walk onto the variable's name. The same
+# walks also lost an empty word: `git -C "" reset` read -C's value as `reset`. A second reading of
+# each statement, as the shell's words (each glued run joined, an empty word kept), is checked after
+# every token window, by every rule. The token reading stays as it was, so a deny in either wins
+# (`git "" reset --hard` and `"" rm -rf x` deny only in the token reading).
+def _shell_words(cur):
+    out, run = [], []
+    for t in cur:
+        if run and not isinstance(t, _Glued):
+            out.append("".join(run))  # plain str: a word window never re-joins
+            run = []
+        run.append(t)
+    if run:
+        out.append("".join(run))
+    return out
+
+def _readings(toks):
+    # (token window, word window or None when it reads the same) per statement of toks.
+    for cur in _statements(toks, keep_empty=True):
+        tw = [t for t in cur if t != ""]
+        ww = _shell_words(cur)
+        yield tw, (ww if ww != tw else None)
+
+_WORDS, _WORDS_SEEN = [], set()  # word windows (depth, words) waiting for the token windows to finish
+def _queue_words(ww, depth):
+    key = tuple(ww)
+    if key not in _WORDS_SEEN:
+        _WORDS_SEEN.add(key)
+        _WORDS.append((depth, ww))
 
 def _drop_ph_tokens(w):
     # w without its bare-placeholder tokens (a substitution that may expand to nothing).
@@ -1340,8 +1373,10 @@ if "{" in cmd or "}" in cmd:
 windows = []
 _seen_windows = set()  # GH #268: the second copy skips a window the first already holds, so the budget charges it once
 for _i, _toks in enumerate(_token_lists):
-    for cur in _statements(_toks):
-        if not (_i and tuple(cur) in _seen_windows):
+    for cur, _ww in _readings(_toks):
+        if _ww:
+            _queue_words(_ww, 0)
+        if cur and not (_i and tuple(cur) in _seen_windows):
             if not _i:
                 _seen_windows.add(tuple(cur))
             windows.append(cur)
@@ -1513,7 +1548,11 @@ def _scan_body(body):
         # GH #219: "{var}>f" is a redirect in bash 4+/ksh/zsh and a literal word plus a redirect in
         # macOS sh, bash 3.2 and dash, so a body holding "{" is read both ways and every window checked.
         for nf in ((True, False, "zsh") if "{" in body else (True,)):
-            for cur in _statements(_tokens(_blanked(body, nf), whitespace_split=True)):
+            for cur, ww in _readings(_tokens(_blanked(body, nf), whitespace_split=True)):
+                if ww:
+                    _queue_words(ww, _cur_depth + 1)
+                if not cur:
+                    continue
                 _WDEPTH[len(windows)] = _cur_depth + 1
                 windows.append(cur)
                 curc = _drop_ph_tokens(cur)
@@ -2066,6 +2105,8 @@ def _check_window(_wi, w):
                         sub in ("restore", "checkout") or PH in sub or _has_raw_subst(sub)):
                     skip = True
                     continue
+                if t == "":  # only a word window keeps an empty word; git rejects it as a pathspec or ref
+                    continue
                 scan_raw.append(t)
             # "$(true)--force" IS "--force" in bash but blanks to "PH--force";
             # strip PH once here so every sub == "..." branch below sees the
@@ -2250,11 +2291,24 @@ def _run_windows(i):
         _check_window(i, windows[i])
         i += 1
 
+def _run_words():
+    # GH #382: the queued word windows, and whatever their checks queue, once the token windows are done.
+    while _WORDS:
+        i = len(windows)
+        for depth, ww in _WORDS:
+            wc = _drop_ph_tokens(ww)  # a PH-only word is a substitution that may expand to nothing
+            for x in ((ww, wc) if wc != ww else (ww,)):
+                _WDEPTH[len(windows)] = depth
+                windows.append(x)
+        del _WORDS[:]
+        _run_windows(i)
+
 _run_windows(0)
 
 # GH #245: the overlapping spawn scan, last (see _SPAWN_ANCHOR_RES).
 if ("agent_id" in d) and (_nested_spawn(cmd, True) or _nested_spawn(cmd, 2)):
     _deny_nested_spawn()
+_run_words()
 
 # GH #336: two more readings of the command, as the shell runs it, each checked by every rule above and
 # owned by a rule id of its own (so it can ship shadow, GH #337): "ifs-split" reads $IFS / ${IFS} /
@@ -2302,7 +2356,11 @@ def _view_windows(text):
         _DEPTH_BUDGET_BLOWN[0] = False
         return []
     out = []
-    for cur in _statements(toks):
+    for cur, ww in _readings(toks):
+        if ww:
+            _queue_words(ww, 0)
+        if not cur:
+            continue
         out.append(cur)
         curc = _drop_ph_tokens(cur)
         if curc != cur:
@@ -2314,6 +2372,7 @@ for _VIEW[0], _text in _views():
         _start = len(windows)
         windows.extend(_view_windows(_text))
         _run_windows(_start)
+        _run_words()
     except _ViewStop:
-        pass
+        del _WORDS[:]
 sys.exit(0)
