@@ -89,6 +89,9 @@ score not feel. `git-hooks/pre-commit` refuses a `docs/METHODOLOGY.md` over 4096
   eval` command(s) for just the tags you touched (`--run` to execute instead of print).
 - **Stop hooks:** `cost-tracker.sh` (per-session token cost to `~/.local/share/kbg/metrics/costs.jsonl`),
   `memory-audit-commit.sh` (commits a git-backed memory store, opt-in).
+- **Hooks module:** `hooks/mod/cost-ledger.ts` records Claude Code's own cost ledger per turn so
+  `/mh:cost-report` can cross-check its transcript total (CLI 2.1.287+; observer only, no gate) —
+  `docs/reference/cost-ledger-module.md`.
 - **Optional pairing:** `codex@openai-codex`, installed separately and routed to by name for a
   second opinion from a different model family — see below.
 - **Fragments pointer capture:** invoking `/mattpocock-skills:writing-fragments` and then writing

@@ -53,6 +53,10 @@ Quote the script's numbers as printed. Add only what a reader needs to interpret
   difference across that date is a schema change, not a spending change.
 - **Codex invocations are counts.** Codex exposes no local per-call price, so that section
   never has a dollar column; it is absent until a session has used `codex:*`.
+- **`ledger cross-check:` compares, it does not replace.** `total` stays the number to quote.
+  The line sets it against Claude Code's own ledger (what `/cost` shows) for sessions present in
+  both logs; the gap is spend with no transcript line (about 17% on 2026-10-02). `no ledger data`
+  means mh's hooks module was not running (a CLI before 2.1.287, or mods off), not zero spend.
 - **Handoff cost (2026-09-20+ rows) prices reading a subagent's return.** Median/p90 tokens
   main spends per subagent return (`verify_tokens`), plus returns per orchestrator turn. Rows
   before this restore carry no `verify_per_return` and the section is omitted if none do.

@@ -65,7 +65,8 @@ message. Detail: `docs/reference/branching-model.md`.
 Ships as `mh@wasikarn`; Claude Code loads it from `~/.claude/plugins/cache/<marketplace>/mh/<version>/`
 at startup, nothing symlinked. Operating model: deny the irrecoverable set computationally
 (PreToolUse entries in `hooks/hooks.json`), the maker never grades its own work, score not feel. Detail:
-`docs/reference/operating-model.md`. Env vars: `docs/reference/env-vars.md`.
+`docs/reference/operating-model.md`. Env vars: `docs/reference/env-vars.md`. One additive hooks
+module (a mod, never a gate; shell hooks stay the base): `docs/reference/cost-ledger-module.md`.
 
 ## Non-obvious gotchas
 

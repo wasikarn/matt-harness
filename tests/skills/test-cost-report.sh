@@ -353,6 +353,83 @@ row="$(printf '%s\n' "$out" | tail -1)"
 assert "csv mode's header and row both carry cache_write_tokens_1h (100 5m, 900 1h)" "$ok"
 trash "$fake_home" 2>/dev/null || true
 
+# Ledger cross-check (GH #334): cost-ledger.jsonl, written by hooks/mod/cost-ledger.ts beside
+# costs.jsonl, holds Claude Code's own cumulative ledger (`usd`) per main-loop turn. The report
+# recomputes each session's ledger total from the `usd` sequence in file order (a drop restarts
+# the count) and never trusts the stored `delta`, which a module reload resets. Fixture: usd
+# 2, 6, 7 (a reload: stored delta 7), 1 (a new process: reset), 4, 4 (no spend) -> 2+4+1+1+3+0
+# = $11. Wrong answers differ: summed stored deltas $17, last usd $4, max usd $7, summed usd $24,
+# an unchanged reading taken as a reset $15. Transcript
+# side: the deduped latest rows of the same session, $7 + $1 = $8, so the gap is $3 (27.3%).
+# An error row and a non-JSON line are skipped; the error row is counted in a warning.
+fake_home=$(mktemp -d)
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir"
+cat > "$metrics_dir/costs.jsonl" <<'EOF'
+{"timestamp":"2026-10-02T00:00:00Z","session_id":"led-a","transcript_path":"/t","model":"claude-opus-5-5","model_scoped":true,"dedup_usage":true,"usage_pick":"last","stream":"orchestrator","turns":1,"input_tokens":1,"output_tokens":1,"cache_write_tokens":0,"cache_write_tokens_1h":0,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":5.0}
+{"timestamp":"2026-10-02T00:00:09Z","session_id":"led-a","transcript_path":"/t","model":"claude-opus-5-5","model_scoped":true,"dedup_usage":true,"usage_pick":"last","stream":"orchestrator","turns":2,"input_tokens":1,"output_tokens":1,"cache_write_tokens":0,"cache_write_tokens_1h":0,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":7.0}
+{"timestamp":"2026-10-02T00:00:09Z","session_id":"led-a","transcript_path":"/t","model":"claude-haiku-4-5","model_scoped":true,"dedup_usage":true,"usage_pick":"last","stream":"subagent","agent_type":"Explore","turns":2,"input_tokens":1,"output_tokens":1,"cache_write_tokens":0,"cache_write_tokens_1h":0,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":1.0}
+EOF
+cat > "$metrics_dir/cost-ledger.jsonl" <<'EOF'
+{"t":"2026-10-02T00:00:01Z","session_id":"led-a","turn_id":"t1","usd":2,"delta":2,"reset":false}
+{"t":"2026-10-02T00:00:02Z","session_id":"led-a","turn_id":"t2","usd":6,"delta":4,"reset":false}
+{"t":"2026-10-02T00:00:03Z","session_id":"led-a","turn_id":"t3","error":"HooksError: no implementation for session.usage"}
+not json
+{"t":"2026-10-02T00:00:04Z","session_id":"led-a","turn_id":"t4","usd":7,"delta":7,"reset":false}
+{"t":"2026-10-02T00:00:05Z","session_id":"led-a","turn_id":"t5","usd":1,"delta":1,"reset":true}
+{"t":"2026-10-02T00:00:06Z","session_id":"led-a","turn_id":"t6","usd":4,"delta":3,"reset":false}
+{"t":"2026-10-02T00:00:07Z","session_id":"led-a","turn_id":"t7","usd":4,"delta":0,"reset":false}
+EOF
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
+rc=$?
+line=$(printf '%s\n' "$out" | /usr/bin/grep '^ledger cross-check:')
+[[ "$rc" == "0" && "$line" == 'ledger cross-check: transcript $8.0000 vs ledger $11.0000 over 1 sessions; unattributed $3.0000 (27.3% of ledger)' ]] && ok=1 || ok=0
+assert "cross-check recomputes the ledger from the usd sequence across a reload and a reset (\$11), against the deduped transcript total (\$8) (got: ${line:-none})" "$ok"
+printf '%s\n' "$out" | /usr/bin/grep -q '^warning: 1 cost-ledger error rows' && ok=1 || ok=0
+assert "a cost-ledger error row is left out of the ledger total and counted in a warning line" "$ok"
+trash "$fake_home" 2>/dev/null || true
+
+# Data absent: no cost-ledger.jsonl beside costs.jsonl (modules off, an older CLI, no turn yet)
+# must say so, not print zero or crash. A ledger file holding only error rows is the same.
+fake_home=$(mktemp -d)
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir"
+cat > "$metrics_dir/costs.jsonl" <<'EOF'
+{"timestamp":"2026-10-02T00:00:00Z","session_id":"led-none","transcript_path":"/t","model":"claude-opus-5-5","model_scoped":true,"stream":"orchestrator","turns":1,"input_tokens":1,"output_tokens":1,"cache_write_tokens":0,"cache_write_tokens_1h":0,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":5.0}
+EOF
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
+rc=$?
+line=$(printf '%s\n' "$out" | /usr/bin/grep '^ledger cross-check:')
+[[ "$rc" == "0" && "$line" == 'ledger cross-check: no ledger data'* ]] && ok=1 || ok=0
+assert "no cost-ledger.jsonl prints 'ledger cross-check: no ledger data' and exits 0 (got: ${line:-none})" "$ok"
+printf '%s\n' '{"t":"2026-10-02T00:00:01Z","session_id":"led-none","turn_id":"t1","error":"x"}' > "$metrics_dir/cost-ledger.jsonl"
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
+line=$(printf '%s\n' "$out" | /usr/bin/grep '^ledger cross-check:')
+[[ "$line" == 'ledger cross-check: no ledger data'* ]] && ok=1 || ok=0
+assert "a cost-ledger.jsonl with only error rows also reads 'no ledger data' (got: ${line:-none})" "$ok"
+trash "$fake_home" 2>/dev/null || true
+
+# Partial: led-p has both sides, led-t only transcript rows (ended before the module loaded),
+# led-l only ledger rows (Stop never ran). Only led-p is compared ($5 vs $6); the others are
+# counted, not added, so the gap is not inflated by $4 or deflated by $9.
+fake_home=$(mktemp -d)
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir"
+cat > "$metrics_dir/costs.jsonl" <<'EOF'
+{"timestamp":"2026-10-02T00:00:00Z","session_id":"led-p","transcript_path":"/t","model":"claude-opus-5-5","model_scoped":true,"stream":"orchestrator","turns":1,"input_tokens":1,"output_tokens":1,"cache_write_tokens":0,"cache_write_tokens_1h":0,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":5.0}
+{"timestamp":"2026-10-02T00:00:00Z","session_id":"led-t","transcript_path":"/t","model":"claude-opus-5-5","model_scoped":true,"stream":"orchestrator","turns":1,"input_tokens":1,"output_tokens":1,"cache_write_tokens":0,"cache_write_tokens_1h":0,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":9.0}
+EOF
+cat > "$metrics_dir/cost-ledger.jsonl" <<'EOF'
+{"t":"2026-10-02T00:00:01Z","session_id":"led-p","turn_id":"t1","usd":6,"delta":6,"reset":false}
+{"t":"2026-10-02T00:00:01Z","session_id":"led-l","turn_id":"t1","usd":4,"delta":4,"reset":false}
+EOF
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
+rc=$?
+line=$(printf '%s\n' "$out" | /usr/bin/grep '^ledger cross-check:')
+[[ "$rc" == "0" && "$line" == 'ledger cross-check: transcript $5.0000 vs ledger $6.0000 over 1 sessions; unattributed $1.0000 (16.7% of ledger); left out: 1 transcript-only, 1 ledger-only' ]] && ok=1 || ok=0
+assert "partial data compares only sessions on both sides and counts the rest (got: ${line:-none})" "$ok"
+trash "$fake_home" 2>/dev/null || true
+
 echo ""
 total_t=$((pass + fail))
 echo "=== $pass/$total_t passed ==="

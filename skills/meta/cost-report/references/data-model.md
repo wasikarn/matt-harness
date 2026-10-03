@@ -1,6 +1,7 @@
 # cost-report data model
 
-Read when changing `../scripts/cost-report-dedup.js` or `hooks/stop/cost-tracker.sh`.
+Read when changing `../scripts/cost-report-dedup.js`, `hooks/stop/cost-tracker.sh` or
+`hooks/mod/cost-ledger.ts`.
 The report itself needs none of this.
 
 ## Rows
@@ -141,10 +142,33 @@ The transcript was priced with this tracker's rate table, all cache writes at th
   per session before #324. A small negative "other" (3ee810d0, -$2.6, 1.5%) is within the
   cache-write pricing approximation above.
 
-**Decision: open.** Whether cost-report should treat the ledger total as the authoritative
-session cost, and keep the transcript rows for per-model, per-stream and per-agent detail, is a
-pricing-policy call left to the operator (GH #334). Until it is made, rows stay
-transcript-only and capture about 83% of the ledger.
+**Decision (GH #334, option A plus a cross-check).** The transcript rows stay the authoritative
+session cost: every per-model, per-stream and per-agent figure comes from them, and they capture
+about 83% of the ledger since #324. cost-tracker and `costs.jsonl` are unchanged. The ledger is
+read live instead, as a cross-check, by mh's hooks module (`hooks/mod/cost-ledger.ts`,
+`docs/reference/cost-ledger-module.md`).
+
+### Ledger rows and the cross-check line
+
+The module appends `{ t, session_id, turn_id, usd, delta, reset }` to `cost-ledger.jsonl` beside
+`costs.jsonl` after each main-loop turn; `usd` is `$.session.usage().cost.usd`, the running total
+`/cost` shows. A row with `error` marks a turn whose reading failed.
+
+The report recomputes each session's ledger total from the `usd` sequence in file order: the
+first reading counts in full, growth adds the difference, and a drop (a new process) adds the new
+reading in full. The stored `delta` is not used, because it restarts when the module reloads. The
+report then prints one line after `total:`:
+
+- **Data on both sides:** `ledger cross-check: transcript $X vs ledger $Y over N sessions;
+  unattributed $Z (P% of ledger)`. Only sessions present in both files count; sessions on one
+  side only are listed as `left out: A transcript-only, B ledger-only`, never added.
+- **No ledger rows** (no file, or only `error` rows): `ledger cross-check: no ledger data (...)`.
+  Modules were off, the CLI is older than 2.1.287, or no turn has ended yet. Not zero.
+- **Error rows** add a `warning:` line with their count; the ledger total may then run low.
+
+`tests/skills/test-cost-report.sh` pins the three cases and the recompute rule with fixtures whose
+wrong answers (summed stored deltas, last or max `usd`, an unchanged reading taken as a reset)
+differ from the right one.
 
 ## Aggregation rule
 
