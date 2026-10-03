@@ -61,8 +61,9 @@ SHA_RE = re.compile(r"^[0-9a-f]{7,40}$")
 # layouts). KEEP THIS IN SYNC with that file's CITATION_RE by
 # hand -- a compliance-audit follow-up (2026-09-20) found this copy had
 # drifted stale after idea-audit's own numeric-ratio fix (LOW batch) added
-# the letter-requiring lookahead here but not there; nothing catches a future
-# re-drift automatically, so check both files on any edit to either.
+# the letter-requiring lookahead here but not there.
+# tests/skills/test-check-verdict-drift.sh now fails on a re-drift, and on drift
+# in the three helpers this file shares with the other two check-verdict.py copies.
 CITATION_RE = re.compile(r"`[^`]+`|(?=[^\s:`]*[A-Za-z])[^\s:`]*[./][^\s:`]*:\d+")
 
 
