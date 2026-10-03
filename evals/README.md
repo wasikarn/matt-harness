@@ -65,6 +65,18 @@ byte-identical. Graders check the skill and a checker agent fired, git and the t
 (`tool_used: Bash` anchored on the command), the fix and its test landed in the named files, and
 the report opens with the Final Verdict line. Needs `--allow-tools Bash,Edit,Write`.
 
+The six `deep-audit-step6-*` cases (the step-6 whole-picture trigger) use the same shape: a
+`scaffold.sh` builds a two-commit history, the latest commit is the session, and the prompt only
+states the task. Until GH #389 the subject typed that history itself from the prompt, which also
+told it the answer ("no bugs", "nothing else imports this"). Rule for every case here: a case
+prompt states the task, never the expected verdict or the trigger fact. Fixture history goes in
+`scaffold.sh`, never in a narrative the subject types itself. `tests/evals/test-eval-cases.sh`
+fails on a narrow word list (`planted`, `rubric`, `grader`, `no bug(s)`, `accurate`, `correctly
+implemented`) in a prompt body; a paraphrased tell still gets past it. Tradeoff: without the tell,
+a subject that "fixes" a non-bug now fails `zero-fixes-skip`, so that case also measures false
+fixes and overlaps `deep-audit-clean`. The pilot numbers in `c182ffc6` were taken with the tells
+in place, so the two should-not-fire results there are not clean measurements.
+
 Two for `cost-report` (tag `cost-report`): a planted log with a session whose two rows must
 collapse to the newer one (latest row per key, then sum: $10, where a hand sum gives $15) and one
 legacy-era row that makes the script print a `note:` line the read-back must carry; and a
