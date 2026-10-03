@@ -5,7 +5,7 @@ under `env`, never in a committed file.
 
 | Variable | Read by | Purpose |
 |---|---|---|
-| `MH_PLUGIN_ROOT` | `skills/workflow/ideate/references/provenance.md` (doc reads only) | Exported at SessionStart by `hooks/session/command-root-anchor.sh` from `CLAUDE_PLUGIN_ROOT`. No skill runs a script through it any more; an eval sandbox may not run the hook. Not a user knob. |
+| `MH_PLUGIN_ROOT` | `agents/ideate-critic.md` (runs `skills/workflow/ideate/scripts/rank.py`), `skills/workflow/ideate/references/provenance.md` (doc reads) | Exported at SessionStart by `hooks/session/command-root-anchor.sh` from `CLAUDE_PLUGIN_ROOT`. One live script call goes through it: the ideate critic's `rank.py` step; an eval sandbox may not run the hook. Not a user knob. |
 | `MH_COSTS_FILE` | `skills/meta/cost-report/scripts/cost-report-dedup.js` | Overrides the cost log path (default `~/.local/share/kbg/metrics/costs.jsonl`); tests and evals plant a fixture through it. |
 | `MH_COST_TRACKER_SETTLE_S` | `hooks/stop/cost-tracker.sh` | Seconds the Stop hook waits for the transcript to stop growing before it reads it (default `1`, GH #329). Tests set `0` so fixtures written up front cost no wait. |
 | `MH_GATE_JOURNAL_PATH` | `hooks/gates/_journal.py` | Overrides the gate-verdict journal path (default `~/.local/share/kbg/metrics/gate-decisions.jsonl`); `scripts/run-gauntlet.sh` and every standalone-runnable gate test suite set it to an isolated tmp path so local test runs don't pollute the operator's real journal. |
