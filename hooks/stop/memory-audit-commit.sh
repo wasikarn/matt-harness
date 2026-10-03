@@ -40,10 +40,12 @@ _MEMDIR_RESOLVER="${CLAUDE_PLUGIN_ROOT:-}/scripts/_lib/memory-dir.py"
 [ -r "$_MEMDIR_RESOLVER" ] || exit 0
 MEMDIR="$(python3 "$_MEMDIR_RESOLVER" 2>/dev/null)" || exit 0
 [ -n "$MEMDIR" ] || exit 0
-ENC="$(python3 "$_MEMDIR_RESOLVER" --enc 2>/dev/null)" || exit 0
-[ -n "$ENC" ] || exit 0
 
 [ -d "$MEMDIR/.git" ] || exit 0   # not opted in — nothing to do
+
+# After the opt-in check: a store without .git never pays for this second resolver run (GH #379).
+ENC="$(python3 "$_MEMDIR_RESOLVER" --enc 2>/dev/null)" || exit 0
+[ -n "$ENC" ] || exit 0
 
 mkdir -p "$HOME/.claude/state" 2>/dev/null
 
