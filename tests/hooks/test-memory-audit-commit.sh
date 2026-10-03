@@ -137,6 +137,34 @@ ok=1; [ -z "$OUT" ] && ok=0
 check "clean tree (nothing to commit) -> silent no-op" "$ok"
 
 echo ""
+echo "--- GH #379: not opted in -> the resolver runs once (memory dir), never for --enc ---"
+# A logging stub stands in for the resolver: it records each call's args, then runs the real one.
+STUB_ROOT="$TMP/stub-root"
+RESOLVER_LOG="$TMP/resolver-calls.log"
+mkdir -p "$STUB_ROOT/scripts/_lib"
+cat > "$STUB_ROOT/scripts/_lib/memory-dir.py" <<EOF
+import runpy, sys
+with open("$RESOLVER_LOG", "a") as f:
+    f.write(" ".join(["call"] + sys.argv[1:]) + "\n")
+runpy.run_path("$ROOT/scripts/_lib/memory-dir.py", run_name="__main__")
+EOF
+run_hook_stub() {
+  : > "$RESOLVER_LOG"
+  ( cd "$PROJECT_DIR" && HOME="$FAKE_HOME" CLAUDE_PLUGIN_ROOT="$STUB_ROOT" bash "$HOOK" )
+}
+trash "$MEMDIR/.git" 2>/dev/null || true
+clear_state
+run_hook_stub
+ok=1; [ "$(cat "$RESOLVER_LOG")" = "call" ] && ok=0
+check "store without .git: one resolver call, no --enc call (log: $(tr '\n' '|' < "$RESOLVER_LOG"))" "$ok"
+init_memdir
+echo "n/a" > "$MEMDIR/stub-case.md"
+run_hook_stub
+ok=1; [ "$(cat "$RESOLVER_LOG")" = "call"$'\n'"call --enc" ] \
+  && [ -z "$(git -C "$MEMDIR" status --porcelain)" ] && ok=0
+check "opted-in store: resolver called for the dir then --enc, and the commit lands" "$ok"
+
+echo ""
 echo "--- a fabricated OLD marker is swept by a later successful invocation ---"
 init_memdir
 clear_state
