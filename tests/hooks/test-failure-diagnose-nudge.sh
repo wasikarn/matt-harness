@@ -161,6 +161,87 @@ else
   bad "expected state file at $expected_state, got rc=$rc out='$out'"
 fi
 
+# --- a session_id that is not a safe file-name part never reaches a path ---
+# The id names the counter file, so `x/../../../victim` once wrote outside
+# $TMPDIR/mh-sensors (it added a key to victim.json) and an embedded NUL
+# crashed the sensor with a traceback. The id goes through the shared
+# validate_session_id (scripts/_lib/hook_payload.py); a bad one fails open:
+# the nudge still goes out, uncapped, a [mh:sensor] line says why, and no file
+# is written anywhere. Only the Claude Code host builds this payload, and it
+# sends UUIDs, so this is hardening.
+SID_ROOT="$STATE_DIR/sid"
+SID_TMP="$SID_ROOT/a/tmp"
+mkdir -p "$SID_TMP"
+printf '{"keep": 1}' > "$SID_ROOT/a/victim.json"
+sid_payload() { # $1 command, $2 session_id as a JSON literal ("" for no key)
+  python3 -c '
+import json, sys
+d = {"hook_event_name": "PostToolUseFailure", "tool_name": "Bash",
+     "tool_input": {"command": sys.argv[1]}, "tool_use_id": "toolu_test", "error": "Command failed"}
+if sys.argv[2]:
+    d["session_id"] = json.loads(sys.argv[2])
+print(json.dumps(d))' "$1" "$2"
+}
+sid_run() { # $1 command, $2 session_id JSON literal, $3 CLAUDE_CODE_SESSION_ID (empty = unset)
+  sid_payload "$1" "$2" > "$STATE_DIR/sid-payload.json"
+  if [ -n "$3" ]; then
+    out=$(env CLAUDE_CODE_SESSION_ID="$3" TMPDIR="$SID_TMP" bash "$SENSOR" < "$STATE_DIR/sid-payload.json" 2>"$STATE_DIR/sid-err.txt")
+  else
+    out=$(env -u CLAUDE_CODE_SESSION_ID TMPDIR="$SID_TMP" bash "$SENSOR" < "$STATE_DIR/sid-payload.json" 2>"$STATE_DIR/sid-err.txt")
+  fi
+  rc=$?
+  err=$(cat "$STATE_DIR/sid-err.txt")
+}
+sid_tree() { (cd "$SID_ROOT" && find . | LC_ALL=C sort && cat a/victim.json); }
+i=0
+for sid in '"x/../../../victim"' '"a\u0000b"' '""' '["/../../../victim"]' '42' 'null' 'ENV:x/../../../victim'; do
+  i=$((i + 1))
+  before=$(sid_tree)
+  case "$sid" in
+    ENV:*) sid_run "bad-sid-cmd-$i" "" "${sid#ENV:}"; label="CLAUDE_CODE_SESSION_ID=${sid#ENV:} (payload has none)" ;;
+    *) sid_run "bad-sid-cmd-$i" "$sid" ""; label="session_id $sid" ;;
+  esac
+  after=$(sid_tree)
+  if [ "$rc" -eq 0 ] && echo "$out" | /usr/bin/grep -q 'mh-failure-diagnose-nudge' \
+     && printf '%s' "$err" | /usr/bin/grep -q '\[mh:sensor\]' \
+     && ! printf '%s' "$err" | /usr/bin/grep -q 'Traceback' \
+     && [ "$after" = "$before" ]; then
+    ok "$label -- nudge still sent, [mh:sensor] diagnostic, no traceback, no file written anywhere"
+  else
+    bad "$label -- expected rc 0 + nudge + [mh:sensor] diagnostic + no traceback + unchanged tree; got rc=$rc out='$out' err='$err' tree diff: $(diff <(echo "$before") <(echo "$after") | tr '\n' ' ')"
+  fi
+done
+UUID="3f2b6c1e-8a4d-4b7e-9c2a-1d5e6f7a8b9c"
+sid_run "good-sid-cmd" "\"$UUID\"" ""
+if [ "$rc" -eq 0 ] && echo "$out" | /usr/bin/grep -q 'mh-failure-diagnose-nudge' \
+   && [ -f "$SID_TMP/mh-sensors/failure-nudge-$UUID.json" ] && [ -z "$err" ]; then
+  ok "a UUID session_id still gets its own counter file under mh-sensors, no diagnostic"
+else
+  bad "a UUID session_id should write $SID_TMP/mh-sensors/failure-nudge-$UUID.json silently; got rc=$rc out='$out' err='$err'"
+fi
+sid_run "good-env-cmd" "" "$UUID-env"
+if [ "$rc" -eq 0 ] && [ -f "$SID_TMP/mh-sensors/failure-nudge-$UUID-env.json" ] && [ -z "$err" ]; then
+  ok "a valid CLAUDE_CODE_SESSION_ID is still the fallback when the payload has no session_id"
+else
+  bad "a valid CLAUDE_CODE_SESSION_ID fallback should name the counter file; got rc=$rc err='$err'"
+fi
+# A sensor copy with no scripts/_lib beside it: the validator cannot load, so
+# it fails open with a diagnostic and still nudges.
+NOLIB="$STATE_DIR/nolib/hooks/sensors"
+mkdir -p "$NOLIB"
+cp "$ROOT/hooks/sensors/failure-diagnose-nudge.sh" "$ROOT/hooks/sensors/failure-diagnose-nudge.py" "$NOLIB/"
+sid_payload "no-lib-cmd" "\"$UUID\"" > "$STATE_DIR/sid-payload.json"
+out=$(env -u CLAUDE_CODE_SESSION_ID TMPDIR="$SID_TMP" bash "$NOLIB/failure-diagnose-nudge.sh" < "$STATE_DIR/sid-payload.json" 2>"$STATE_DIR/sid-err.txt")
+rc=$?
+err=$(cat "$STATE_DIR/sid-err.txt")
+if [ "$rc" -eq 0 ] && echo "$out" | /usr/bin/grep -q 'mh-failure-diagnose-nudge' \
+   && printf '%s' "$err" | /usr/bin/grep -q '\[mh:sensor\].*cannot load scripts/_lib/hook_payload.py' \
+   && ! printf '%s' "$err" | /usr/bin/grep -q 'Traceback'; then
+  ok "missing scripts/_lib/hook_payload.py -- nudge still sent, [mh:sensor] diagnostic, no traceback"
+else
+  bad "missing hook_payload.py should fail open with a diagnostic; got rc=$rc out='$out' err='$err'"
+fi
+
 # --- locked() must actually provide mutual exclusion (Deep-audit 2026-09-07:
 # load_counts/save_counts used to run as two separate, uncoordinated file
 # opens, letting concurrent Bash completions interleave their read-modify-

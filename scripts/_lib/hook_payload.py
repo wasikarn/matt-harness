@@ -1,7 +1,9 @@
 """hook_payload.py -- shared session_id validation for hook payloads.
 
 Imported BY PATH (sys.path[0] = this file's own directory) by
-scripts/_lib/fragments_arm_parse.py and fragments_capture_parse.py. (Also
+scripts/_lib/fragments_arm_parse.py and fragments_capture_parse.py, and by
+hooks/sensors/failure-diagnose-nudge.py, which names its counter file with the
+id (it inserts this directory into sys.path by its own file path). (Also
 run as a standalone script by hooks/session/handoff-nudge.sh, which needed
 only the session id and nothing else from the payload -- that hook and the
 mh:handoff skill it belonged to were removed; see git history.) One
