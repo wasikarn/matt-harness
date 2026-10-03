@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, re, sys
+import bisect, json, re, sys
 
 # GH #156: raise the int-string digit limit before parsing so an oversized
 # unquoted int literal doesn't crash json.load() into this gate's fail-open
@@ -85,26 +85,32 @@ def is_placeholder(body):
     return (best / n) >= 0.90
 
 
-def suppressed(text, start):
-    line_start = text.rfind("\n", 0, start) + 1
-    line_end = text.find("\n", start)
-    if line_end == -1:
-        line_end = len(text)
-    line = text[line_start:line_end]
-    return any(marker in line for marker in SUPPRESS_MARKERS)
-
-
 def findings(text, tool_name, session_id):
+    # Linear in the text: a rescan from the start (or across the whole line)
+    # per match was quadratic, and 40,000 matches ran past the 8 s hook
+    # timeout, which allows the write. Newline offsets are built once, each
+    # match finds its line by bisect, and each line is checked for a
+    # suppress marker once.
     seen = []
     seen_keys = set()
+    newlines = None
+    line_suppressed = {}
     for label, pattern, has_placeholder_check in PATTERNS:
         for m in pattern.finditer(text):
             if has_placeholder_check and is_placeholder(m.group(1)):
                 continue
-            if suppressed(text, m.start()):
+            if newlines is None:
+                newlines = [n.start() for n in re.finditer("\n", text)]
+            k = bisect.bisect_left(newlines, m.start())  # newlines before the match
+            if k not in line_suppressed:
+                line_start = newlines[k - 1] + 1 if k else 0
+                line_end = newlines[k] if k < len(newlines) else len(text)
+                line_suppressed[k] = any(text.find(marker, line_start, line_end) != -1
+                                         for marker in SUPPRESS_MARKERS)
+            if line_suppressed[k]:
                 journal(GATE_ID, tool_name, "allow-suppressed", session_id)
                 continue
-            line_no = text.count("\n", 0, m.start()) + 1
+            line_no = k + 1
             key = (label, line_no)
             if key in seen_keys:
                 continue
