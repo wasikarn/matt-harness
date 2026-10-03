@@ -2,7 +2,7 @@
 # Runs the hooks module's unit tests (tests/mods/*.test.ts, for hooks/mod/cost-ledger.ts) with
 # Claude Code's own mods test kit: `claude plugin test <plugin root>` runs every *.test.ts under
 # it against the engine, the plugin loaded from hooks/hooks.json's "modules" entry.
-# A CLI without `plugin test` (before mods, e.g. CI's pin at 2.1.261) prints the parent help and
+# A CLI without `plugin test` (before mods, e.g. 2.1.261) prints the parent help and
 # exits 0, so the subcommand is detected by its own help text; without it this suite says it
 # skipped, loudly, rather than passing as if it ran. Reference: docs/reference/cost-ledger-module.md.
 set -uo pipefail

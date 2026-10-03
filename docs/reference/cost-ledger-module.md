@@ -62,8 +62,7 @@ it.
 
 The module needs Claude Code 2.1.287 or later (code.claude.com `plugins/mods/overview`). This is
 documentation only: `plugin.json` has no field for a minimum version. On older CLIs the
-`modules` key is harmless: `claude plugin validate` 2.1.261 (CI's pin at the time of writing)
-accepts it, and a 2.1.240 runtime ran the command hooks and ignored the module (#323).
+`modules` key is harmless: `claude plugin validate` 2.1.261 accepts it (checked 2026-10-03), and a 2.1.240 runtime ran the command hooks and ignored the module (#323).
 
 ## Rules for this file
 
