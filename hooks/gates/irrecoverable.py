@@ -662,221 +662,213 @@ PSUB = "\x03"
 # never reset across the primary and fallback calls.
 _DEPTH_BUDGET_BLOWN = [False]
 _DEPTH_SCAN_BUDGET = 2_000_000
+def _close_bracket(s, j, opener, closer, depth_work_used):
+    # The "$(...)" / "${...}" closer search: from s[j] (just past the opener), count same-type
+    # brackets until the matching closer, charging one budget unit per char. Returns the index just
+    # past the closer, or None when there is none (end of text, or the budget ran out, which also
+    # sets _DEPTH_BUDGET_BLOWN). Quotes inside the span are not tracked (GH #184).
+    n, depth = len(s), 1
+    while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
+        depth_work_used[0] += 1
+        if s[j] == opener:
+            depth += 1
+        elif s[j] == closer:
+            depth -= 1
+        j += 1
+    if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
+        _DEPTH_BUDGET_BLOWN[0] = True
+    return None if depth else j
+
+def _close_psub(s, j, depth_work_used):
+    # The "<(...)" / ">(...)" closer search, same contract as _close_bracket but quote-aware, unlike
+    # the "$(...)"/"${...}" one: a ")" inside a quoted string in the body
+    # ("<(echo \")\"; rm -rf x)") is not a real closer, and the
+    # naive count-every-paren approach those siblings use closes
+    # the span early on it, leaving the real dangerous tail as
+    # unblanked literal text (a real regression, caught by an
+    # adversarial pass; the identical gap in "$(...)" itself is
+    # pre-existing and unrelated -- filed as GH #184, not fixed
+    # here). Each step (one char, or an escaped pair) charges one budget unit.
+    n, depth = len(s), 1
+    tsq = tdq = False
+    while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
+        depth_work_used[0] += 1
+        tc = s[j]
+        if tsq:
+            if tc == SQ:
+                tsq = False
+            j += 1
+            continue
+        if tdq:
+            if tc == "\\" and j + 1 < n and s[j + 1] in (DQ, "\\", "$", "`"):
+                j += 2
+                continue
+            if tc == DQ:
+                tdq = False
+            j += 1
+            continue
+        if tc == SQ:
+            tsq = True; j += 1; continue
+        if tc == DQ:
+            tdq = True; j += 1; continue
+        if tc == "\\" and j + 1 < n:
+            j += 2
+            continue
+        if tc == "(":
+            depth += 1
+        elif tc == ")":
+            depth -= 1
+        j += 1
+    if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
+        _DEPTH_BUDGET_BLOWN[0] = True
+    return None if depth else j
+
+def _substitution_at(s, i, in_dquote, bodies, depth_work_used, _depth):
+    # The substitution that starts at s[i] (a backtick, "$(", "${", or an unquoted "<(" / ">("):
+    # (placeholder, index just past it), its command body appended to `bodies`. None when s[i]
+    # starts none, or its closer is missing.
+    c, nxt = s[i], s[i + 1:i + 2]
+    if c == "`":
+        j = s.find("`", i + 1)
+        if j == -1:
+            return None
+        bodies.append(s[i + 1:j])
+        return PH, j + 1
+    if c == "$" and nxt == "(":
+        j = _close_bracket(s, i + 2, "(", ")", depth_work_used)
+        if j is None:
+            return None
+        bodies.append(s[i + 2:j - 1])
+        return PH, j
+    if c == "$" and nxt == "{":
+        j = _close_bracket(s, i + 2, "{", "}", depth_work_used)
+        return None if j is None else (PH, j)
+    if c in ("<", ">") and not in_dquote and nxt == "(":
+        # Process substitution (GH #181): "<(cmd)"/">(cmd)" is a WORD,
+        # never a real redirect (a real "<"/">" redirect target can't
+        # start with "(" unescaped), so it must be blanked here, the
+        # same as "$(...)", BEFORE _blank_redirections ever sees the
+        # "<"/">" -- otherwise that bare "<"/">" is misread as an input/
+        # output redirect operator, and the body's own closing ")"
+        # (never a real word boundary here) reaches the "#"-boundary
+        # check as a bare character.
+        # "not in_dquote": unlike "$(...)"/backtick (live inside double
+        # quotes in real bash, correctly recognized either way by the
+        # sibling branches above), "<(...)"/">(...)" is INERT text
+        # inside double quotes -- "echo \"<(rm -rf x)\"" must stay a
+        # harmless literal string, not get its quoted body extracted
+        # and re-scanned as a real command (an adversarial pass caught
+        # this as an over-deny regression).
+        j = _close_psub(s, i + 2, depth_work_used)
+        if j is None:
+            return None
+        # The extracted body is spliced back as its own top-level
+        # statement ("\n; " + body) only once, after the whole
+        # _blank_substitutions call returns -- never re-examined by the scan
+        # loop again. A DIFFERENT-type substitution nested inside it
+        # (a backtick inside "<(...)") would otherwise survive
+        # unblanked all the way to shlex, still glued to its
+        # neighbor characters and evading exact-match dispatch
+        # (an adversarial pass caught this live: "<(echo `rm -rf
+        # x`)" reached shlex as "`rm", never matching "rm").
+        # Recursively re-scanning it here (this branch only --
+        # the sibling "$(...)"/"${...}" branches above share the
+        # identical gap, confirmed pre-existing, filed as GH
+        # #185, not fixed here) closes that while a shared
+        # depth_work_used bounds the total work across every
+        # recursion level to one budget; _depth caps the
+        # recursion itself, since a budget check alone doesn't
+        # stop Python's own RecursionError on a deep chain of
+        # cheap, properly-closed spans.
+        body = s[i + 2:j - 1]
+        if _depth < 50:
+            body = _scan_once(body, bodies, depth_work_used, _depth + 1)
+        else:
+            _DEPTH_BUDGET_BLOWN[0] = True
+        bodies.append(body)
+        return PSUB, j
+    return None
+
+# One left-to-right pass with real quote/comment state; collects
+# backtick/$(...) bodies (never ${...}) into the shared `bodies` list.
+# `depth_work_used`/`_depth`: only the <(...)/>(...) branch (GH #181)
+# passes these, to recursively re-scan ITS OWN extracted body for a
+# nested different-type substitution before splicing it back in verbatim
+# (a backtick nested inside "<(...)" was found live/unscanned by an
+# adversarial pass -- see the GH #181 comment on that branch). The
+# top-level fixed-point loop below never passes them, so its own budget
+# and depth are unchanged from before. Sharing one `depth_work_used`
+# list across the whole recursion (never a fresh one per call) keeps the
+# total work bounded by one _DEPTH_SCAN_BUDGET regardless of nesting
+# depth; `_depth` caps the recursion itself, since a budget check alone
+# does not stop Python's own RecursionError on ~1000 properly-closed,
+# budget-cheap nested spans.
+def _scan_once(s, bodies, depth_work_used=None, _depth=0):
+    if depth_work_used is None:
+        depth_work_used = [0]
+    out = []
+    in_dquote = False
+    # See _newlines_to_seps's own comment: an escaped separator is still a
+    # literal char in bash, not a real word break, so a "#" right after it
+    # is mid-word -- out[-1] alone can't tell the two apart.
+    last_escaped = False
+    i, n = 0, len(s)
+    while i < n:
+        c = s[i]
+        if in_dquote:
+            if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`"):
+                out.append(c); out.append(s[i + 1])
+                last_escaped = False
+                i += 2
+                continue
+            if c == DQ:
+                out.append(c)
+                in_dquote = False
+                last_escaped = False
+                i += 1
+                continue
+            # else: fall through -- substitutions ARE live inside double quotes
+        else:
+            if c == SQ:
+                out.append(c)
+                i = _copy_squote(s, i + 1, out)
+                last_escaped = False
+                continue
+            if c == DQ:
+                in_dquote = True
+                out.append(c); i += 1
+                last_escaped = False
+                continue
+            if c == "\\" and i + 1 < n:
+                out.append(c); out.append(s[i + 1])
+                i += 2
+                last_escaped = True
+                continue
+            if c == "#" and not last_escaped and (not out or out[-1] in _REDIRECT_TARGET_STOP):
+                out.append(c)
+                i = _copy_comment(s, i + 1, out, "\n")
+                last_escaped = False
+                continue
+            if c == "#":
+                out.append(HASH_LIT); i += 1
+                last_escaped = False
+                continue
+        if c in "`$<>":
+            sub = _substitution_at(s, i, in_dquote, bodies, depth_work_used, _depth)
+            if sub:
+                out.append(sub[0])
+                i = sub[1]
+                last_escaped = False
+                continue
+        out.append(c)
+        i += 1
+        last_escaped = False
+    return "".join(out)
+
 def _blank_substitutions(s):
     bodies = []
-
-    # One left-to-right pass with real quote/comment state; collects
-    # backtick/$(...) bodies (never ${...}) into the shared `bodies` list.
-    # `depth_work_used`/`_depth`: only the <(...)/>(...) branch (GH #181)
-    # passes these, to recursively re-scan ITS OWN extracted body for a
-    # nested different-type substitution before splicing it back in verbatim
-    # (a backtick nested inside "<(...)" was found live/unscanned by an
-    # adversarial pass -- see the GH #181 comment on that branch). The
-    # top-level fixed-point loop below never passes them, so its own budget
-    # and depth are unchanged from before. Sharing one `depth_work_used`
-    # list across the whole recursion (never a fresh one per call) keeps the
-    # total work bounded by one _DEPTH_SCAN_BUDGET regardless of nesting
-    # depth; `_depth` caps the recursion itself, since a budget check alone
-    # does not stop Python's own RecursionError on ~1000 properly-closed,
-    # budget-cheap nested spans.
-    def _scan_once(s, depth_work_used=None, _depth=0):
-        if depth_work_used is None:
-            depth_work_used = [0]
-        out = []
-        in_squote = in_dquote = in_comment = False
-        # See _newlines_to_seps's own comment: an escaped separator is still a
-        # literal char in bash, not a real word break, so a "#" right after it
-        # is mid-word -- out[-1] alone can't tell the two apart.
-        last_escaped = False
-        i, n = 0, len(s)
-        while i < n:
-            c = s[i]
-            if in_comment:
-                if c == "\n":
-                    in_comment = False
-                out.append(c)
-                last_escaped = False
-                i += 1
-                continue
-            if in_squote:
-                out.append(c)
-                if c == SQ:
-                    in_squote = False
-                last_escaped = False
-                i += 1
-                continue
-            if in_dquote:
-                if c == "\\" and i + 1 < n and s[i + 1] in (DQ, "\\", "$", "`"):
-                    out.append(c); out.append(s[i + 1])
-                    last_escaped = False
-                    i += 2
-                    continue
-                if c == DQ:
-                    out.append(c)
-                    in_dquote = False
-                    last_escaped = False
-                    i += 1
-                    continue
-                # else: fall through -- substitutions ARE live inside double quotes
-            else:
-                if c == SQ:
-                    in_squote = True
-                    out.append(c); i += 1
-                    last_escaped = False
-                    continue
-                if c == DQ:
-                    in_dquote = True
-                    out.append(c); i += 1
-                    last_escaped = False
-                    continue
-                if c == "\\" and i + 1 < n:
-                    out.append(c); out.append(s[i + 1])
-                    i += 2
-                    last_escaped = True
-                    continue
-                if c == "#" and not last_escaped and (not out or out[-1] in _REDIRECT_TARGET_STOP):
-                    in_comment = True
-                    out.append(c); i += 1
-                    last_escaped = False
-                    continue
-                if c == "#":
-                    out.append(HASH_LIT); i += 1
-                    last_escaped = False
-                    continue
-            if c == "`":
-                j = s.find("`", i + 1)
-                if j != -1:
-                    bodies.append(s[i + 1:j])
-                    out.append(PH)
-                    i = j + 1
-                    last_escaped = False
-                    continue
-            elif c == "$" and s[i + 1:i + 2] == "(":
-                depth, j = 1, i + 2
-                while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
-                    depth_work_used[0] += 1
-                    if s[j] == "(":
-                        depth += 1
-                    elif s[j] == ")":
-                        depth -= 1
-                    j += 1
-                if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
-                    _DEPTH_BUDGET_BLOWN[0] = True
-                if not depth:
-                    bodies.append(s[i + 2:j - 1])
-                    out.append(PH)
-                    i = j
-                    last_escaped = False
-                    continue
-            elif c == "$" and s[i + 1:i + 2] == "{":
-                depth, j = 1, i + 2
-                while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
-                    depth_work_used[0] += 1
-                    if s[j] == "{":
-                        depth += 1
-                    elif s[j] == "}":
-                        depth -= 1
-                    j += 1
-                if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
-                    _DEPTH_BUDGET_BLOWN[0] = True
-                if not depth:
-                    out.append(PH)
-                    i = j
-                    last_escaped = False
-                    continue
-            elif c in ("<", ">") and not in_dquote and s[i + 1:i + 2] == "(":
-                # Process substitution (GH #181): "<(cmd)"/">(cmd)" is a WORD,
-                # never a real redirect (a real "<"/">" redirect target can't
-                # start with "(" unescaped), so it must be blanked here, the
-                # same as "$(...)", BEFORE _blank_redirections ever sees the
-                # "<"/">" -- otherwise that bare "<"/">" is misread as an input/
-                # output redirect operator, and the body's own closing ")"
-                # (never a real word boundary here) reaches the "#"-boundary
-                # check as a bare character.
-                # "not in_dquote": unlike "$(...)"/backtick (live inside double
-                # quotes in real bash, correctly recognized either way by the
-                # sibling branches above), "<(...)"/">(...)" is INERT text
-                # inside double quotes -- "echo \"<(rm -rf x)\"" must stay a
-                # harmless literal string, not get its quoted body extracted
-                # and re-scanned as a real command (an adversarial pass caught
-                # this as an over-deny regression).
-                # Quote-aware, unlike the sibling "$(...)"/"${...}" closer-
-                # searches above: a ")" inside a quoted string in the body
-                # ("<(echo \")\"; rm -rf x)") is not a real closer, and the
-                # naive count-every-paren approach those siblings use closes
-                # the span early on it, leaving the real dangerous tail as
-                # unblanked literal text (a real regression, caught by an
-                # adversarial pass; the identical gap in "$(...)" itself is
-                # pre-existing and unrelated -- filed as GH #184, not fixed
-                # here).
-                depth, j = 1, i + 2
-                tsq = tdq = False
-                while j < n and depth and depth_work_used[0] <= _DEPTH_SCAN_BUDGET:
-                    depth_work_used[0] += 1
-                    tc = s[j]
-                    if tsq:
-                        if tc == SQ:
-                            tsq = False
-                        j += 1
-                        continue
-                    if tdq:
-                        if tc == "\\" and j + 1 < n and s[j + 1] in (DQ, "\\", "$", "`"):
-                            j += 2
-                            continue
-                        if tc == DQ:
-                            tdq = False
-                        j += 1
-                        continue
-                    if tc == SQ:
-                        tsq = True; j += 1; continue
-                    if tc == DQ:
-                        tdq = True; j += 1; continue
-                    if tc == "\\" and j + 1 < n:
-                        j += 2
-                        continue
-                    if tc == "(":
-                        depth += 1
-                    elif tc == ")":
-                        depth -= 1
-                    j += 1
-                if depth and depth_work_used[0] > _DEPTH_SCAN_BUDGET:
-                    _DEPTH_BUDGET_BLOWN[0] = True
-                if not depth:
-                    # The extracted body is spliced back as its own top-level
-                    # statement ("\n; " + body) only once, after this whole
-                    # function returns -- never re-examined by this scan loop
-                    # again. A DIFFERENT-type substitution nested inside it
-                    # (a backtick inside "<(...)") would otherwise survive
-                    # unblanked all the way to shlex, still glued to its
-                    # neighbor characters and evading exact-match dispatch
-                    # (an adversarial pass caught this live: "<(echo `rm -rf
-                    # x`)" reached shlex as "`rm", never matching "rm").
-                    # Recursively re-scanning it here (this branch only --
-                    # the sibling "$(...)"/"${...}" branches above share the
-                    # identical gap, confirmed pre-existing, filed as GH
-                    # #185, not fixed here) closes that while a shared
-                    # depth_work_used bounds the total work across every
-                    # recursion level to one budget; _depth caps the
-                    # recursion itself, since a budget check alone doesn't
-                    # stop Python's own RecursionError on a deep chain of
-                    # cheap, properly-closed spans.
-                    body = s[i + 2:j - 1]
-                    if _depth < 50:
-                        body = _scan_once(body, depth_work_used, _depth + 1)
-                    else:
-                        _DEPTH_BUDGET_BLOWN[0] = True
-                    bodies.append(body)
-                    out.append(PSUB)
-                    i = j
-                    last_escaped = False
-                    continue
-            out.append(c)
-            i += 1
-            last_escaped = False
-        return "".join(out)
-
     for _ in range(5):
-        new = _scan_once(s)
+        new = _scan_once(s, bodies)
         if new == s:
             break
         s = new
