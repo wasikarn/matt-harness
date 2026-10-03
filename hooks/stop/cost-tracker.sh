@@ -79,21 +79,45 @@ sonnet_rate='{"i":2.0,"o":10.0,"cw":2.50,"cw1h":4.00,"cr":0.20}'
 # on top of the two more full scans emit_rows and emit_codex_invocations did
 # independently. Measured 9.5s/Stop-call against a real 158MB/42,838-line
 # transcript before this fix (docs/research/cost-tracker-single-scan-perf-2026-09-22.md).
+#
+# Two jq calls in all, not 2-3 per file (GH #379: 6.5 s per Stop at 193 subagents). The first
+# reads every meta at once and prints one line per file: its agentType when that is a non-empty
+# one-line string, else "". A "" line (no meta, an unreadable one, any other shape) takes the
+# per-file path below, so every type is the one that path would give. The second builds the map.
+# ponytail: the second call takes 3 args per file (~400 bytes), so macOS ARG_MAX (1 MB) is near
+# 2,000 subagents (the max seen is 193; raw_records' --argjson typemap has the same ceiling). Past
+# it the map falls back to {} (agent_type null); feed the triples on stdin if that ever happens.
 build_type_map() {
-  local parent_map="$1" vmap="$2" out='{}' f meta t tu id; shift 2
+  local parent_map="$1" vmap="$2" f meta t tu id i=0 rf=() fast types=() args=(); shift 2
   for f in "$@"; do
-    id=$(basename "$f" .jsonl); id="${id#agent-}"
     meta="${f%.jsonl}.meta.json"
-    t=$([[ -f "$meta" ]] && jq -r '.agentType // empty' "$meta" 2>/dev/null)
-    if [[ -z "$t" && -f "$meta" ]]; then
-      tu=$(jq -r '.toolUseId // empty' "$meta" 2>/dev/null)
-      [[ -n "$tu" ]] && t=$(printf '%s' "$parent_map" | jq -r --arg k "$tu" '.[$k] // empty' 2>/dev/null)
-    fi
-    [[ -z "$t" ]] && t="unknown"
-    out=$(printf '%s' "$out" | jq -c --arg f "$f" --arg t "$t" --arg id "$id" --argjson vmap "$vmap" \
-      '. + {($f): {t: $t, v: ($vmap[$id] // [])}}' 2>/dev/null) || out='{}'
+    [[ -f "$meta" ]] && rf+=(--rawfile "m$i" "$meta")
+    i=$((i + 1))
   done
-  printf '%s' "$out"
+  fast=$(jq -nr ${rf[@]+"${rf[@]}"} --argjson n "$#" '
+    range(0; $n) as $i | ($ARGS.named["m\($i)"] // null)
+    | if . == null then "" else (try (fromjson | .agentType) catch null)
+      | if type == "string" and . != "" and (test("[\n\u0000]") | not) then . else "" end end' 2>/dev/null) || fast=""
+  while IFS= read -r t; do types+=("$t"); done <<< "$fast"
+  i=0
+  for f in "$@"; do
+    id=${f##*/}; id=${id%.jsonl}; id=${id#agent-}
+    t=${types[$i]:-}
+    if [[ -z "$t" ]]; then
+      meta="${f%.jsonl}.meta.json"
+      t=$([[ -f "$meta" ]] && jq -r '.agentType // empty' "$meta" 2>/dev/null)
+      if [[ -z "$t" && -f "$meta" ]]; then
+        tu=$(jq -r '.toolUseId // empty' "$meta" 2>/dev/null)
+        [[ -n "$tu" ]] && t=$(printf '%s' "$parent_map" | jq -r --arg k "$tu" '.[$k] // empty' 2>/dev/null)
+      fi
+      [[ -z "$t" ]] && t="unknown"
+    fi
+    args+=(--arg "f$i" "$f" --arg "i$i" "$id" --arg "t$i" "$t")
+    i=$((i + 1))
+  done
+  jq -nc ${args[@]+"${args[@]}"} --argjson n "$#" --argjson vmap "$vmap" '$ARGS.named as $a
+    | reduce range(0; $n) as $i ({}; . + {($a["f\($i)"]): {t: $a["t\($i)"], v: ($vmap[$a["i\($i)"]] // [])}})' \
+    2>/dev/null || printf '{}'
 }
 
 # The third handoff cost (docs/research/delegation-criteria-field-survey-2026-09-04.md
@@ -425,7 +449,7 @@ emit_rows() {
 scan_transcript() {
   local _d="${1%.jsonl}/subagents" _f _ids=()
   shopt -s nullglob
-  for _f in "$_d"/agent-*.jsonl; do _f=$(basename "$_f" .jsonl); _ids+=("${_f#agent-}"); done
+  for _f in "$_d"/agent-*.jsonl; do _f=${_f##*/}; _f=${_f%.jsonl}; _ids+=("${_f#agent-}"); done
   shopt -u nullglob
   # ponytail: [inputs|try fromjson] materializes the whole parsed transcript
   # in jq's heap (the original code streamed `inputs` directly through each
