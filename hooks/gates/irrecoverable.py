@@ -472,11 +472,20 @@ if ("agent_id" in d) and _nested_spawn(cmd, False):
 # source, never an env var, so a project's settings.json cannot shadow an enforced rule. Only a
 # pattern rule (a `rule=` id at its call site) can be shadowed: a structural deny (length cap,
 # unparsable text, budget, depth) has no id, since returning from it would run the very code it guards.
-SHADOW_RULES = frozenset()
+SHADOW_RULES = frozenset({"var-verb", "opaque-var-verb", "source-file"})
 _SHADOW_LOGGED = set()  # (rule, decision) already journaled this run: window copies re-match a rule
+# GH #336: the rule id of the view (another reading of the command, see _views) now being checked.
+# Inside a view a verdict belongs to the matched rule and to the view's rule: either one being
+# shadowed shadows it, journaled under the matched rule when that one is shadowed. A shadowed deny
+# ends the view (_ViewStop). A structural deny (no rule id) never fires in a view: it is an artifact
+# of the substituted text, so it ends the view too.
+_VIEW = [None]
+class _ViewStop(Exception):
+    pass
 
 def _shadowed(rule, decision):
-    if rule not in SHADOW_RULES:
+    rule = next((r for r in (rule, _VIEW[0]) if r in SHADOW_RULES), None)
+    if rule is None:
         return False
     if (rule, decision) not in _SHADOW_LOGGED:
         _SHADOW_LOGGED.add((rule, decision))
@@ -485,10 +494,14 @@ def _shadowed(rule, decision):
     return True
 
 def deny(reason, rule=None):
+    if _VIEW[0] and rule is None:
+        raise _ViewStop
     if _shadowed(rule, "deny"):
+        if _VIEW[0]:
+            raise _ViewStop
         return
     print("[mh:gate] BLOCKED: " + reason, file=sys.stderr)
-    journal(GATE_ID, d.get("tool_name"), "deny", d.get("session_id"), rule=rule)
+    journal(GATE_ID, d.get("tool_name"), "deny", d.get("session_id"), rule=_VIEW[0] or rule)
     sys.exit(2)
 
 _ASKED = []
@@ -500,13 +513,14 @@ def ask(reason, rule=None):
     # window can be checked in several copies (compacted, brace-joined), and two
     # JSON objects on stdout are not valid JSON (GH #254 validator).
     # A shadowed ask is checked first and never touches _ASKED, so a later real ask still emits.
-    if _shadowed(rule, "ask") or _ASKED:
+    # In a view (GH #336) an ask adds nothing once the command already asks.
+    if (_VIEW[0] and _ASKED) or _shadowed(rule, "ask") or _ASKED:
         return
     _ASKED.append(reason)
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
                                              "permissionDecision": "ask",
                                              "permissionDecisionReason": reason}}))
-    journal(GATE_ID, d.get("tool_name"), "ask", d.get("session_id"), rule=rule)
+    journal(GATE_ID, d.get("tool_name"), "ask", d.get("session_id"), rule=_VIEW[0] or rule)
 
 def delete_hint():
     # trash is not stock on macOS or Linux -- offer whichever CLI exists.
@@ -1650,12 +1664,34 @@ def _sets_hooks_path(w):
             return True
     return False
 
-for _wi, w in enumerate(windows):
+# GH #336: chmod making files world-writable (777 / a+rwx) recursively or on / or ~.
+# The tokenizer splits `+` out of a word (`a+rwx` is "a", "+", "rwx"), so the mode is read on the
+# joined words.
+_CHMOD_WORLD_RE = re.compile(r"(?:^| )(?:0*[0-7]?777|(?:a|[ugo]{3}) ?[+=] ?rwx)(?: |$)")
+_ROOT_OR_HOME = ("/", "/*", "/.", "~", "~/", "~/*", "~/.")
+def _chmod_world(rest):
+    toks = [t.replace(PH, "") for t in rest]
+    return bool(_CHMOD_WORLD_RE.search(" ".join(toks))) and any(
+        t in _ROOT_OR_HOME or _is_flag(t, "--recursive")
+        or (t.startswith("-") and not t.startswith("--") and "R" in t) for t in toks)
+
+# GH #336: a program known only at run time -- a `$NAME` argv0 with no `NAME=` anywhere in the
+# command (the var-verb view below reads a visible one back) -- or a sourced file.
+_VAR_NAME_RE = re.compile(r"[A-Za-z_]\w*")
+_ASSIGNED_NAMES = set(re.findall(r"(?<![\w$])([A-Za-z_]\w*)\+?=", cmd))
+def _opaque_var(argv0, rest):
+    # shlex splits an unquoted `$X` into "$" and "X"; a quoted "$X" stays one word.
+    name = rest[0] if argv0 == "$" and rest else argv0[1:] if argv0.startswith("$") else ""
+    return bool(_VAR_NAME_RE.fullmatch(name)) and name not in _ASSIGNED_NAMES
+
+# One window's checks. A function, not the loop body, so the GH #336 views below rerun it.
+def _check_window(_wi, w):
+    global _cur_depth
     _cur_depth = _WDEPTH.get(_wi, 0)
     while w and (w[0] in SHELL_KEYWORDS or _assignment(w[0])):
         w = w[1:]
     if not w:
-        continue
+        return
     argv0, rest = basename(w[0]), w[1:]
     # A window can start at `-exec` (a second -exec after an escaped `;`) or `--`
     # (xargs -I{} -- CMD splits at the `{}` operator): the command follows.
@@ -1834,6 +1870,21 @@ for _wi, w in enumerate(windows):
         if j < len(rest):
             argv0, rest = basename(rest[j]), rest[j + 1:]
 
+    # GH #336. Outside the candidate loop below: a PH argv0 (`${EDITOR} f`) must not read as mkfs.
+    # PH is stripped instead, so a splice inside the word (`mk$(true)fs.ext4`) still matches.
+    _a0 = argv0.replace(PH, "")
+    if (_a0 in ("mkfs", "mke2fs") or _a0.startswith("mkfs.")) and any(
+            not t.replace(PH, "").startswith("-") for t in rest):
+        deny("mkfs formats a filesystem — irrecoverable disk-level destruction", rule="mkfs")
+    if _a0 == "chmod" and _chmod_world(rest):
+        deny("chmod 777 / a+rwx recursively or on / or ~ makes files world-writable — confirm with user first",
+             rule="chmod-world")
+    if _opaque_var(argv0, rest):
+        ask("the program this runs is a variable with no visible assignment — confirm what it runs",
+            rule="opaque-var-verb")
+    if argv0 in ("source", ".") and rest:
+        ask("source runs a file's commands in this shell, unchecked — confirm what it runs", rule="source-file")
+
     for argv0 in (KNOWN_DANGEROUS if (PH in argv0 or _has_raw_subst(argv0)) else (argv0,)):
         if argv0 == "rm":
             # Lowercase so "rm -Rf" matches. A SHORT bundled cluster counts
@@ -1855,6 +1906,9 @@ for _wi, w in enumerate(windows):
                     has_f = has_f or "f" in body
             if has_r and has_f:
                 deny("rm -rf detected — " + delete_hint(), rule="rm-rf")
+            # GH #336: GNU rm takes any unambiguous prefix (`--n` is the only `--n...` option).
+            if any(_is_flag(t.replace(PH, ""), "--no-preserve-root") for t in rest):
+                deny("rm --no-preserve-root lifts rm's guard on / — " + delete_hint(), rule="rm-no-preserve-root")
 
         # Same PH-erases-flag-shape fix as the rm block ("find $(true)-exec").
         if argv0 == "find" and any(t.replace(PH, "") in ("-exec", "-execdir") for t in rest) and "rm" in [basename(t) for t in rest]:
@@ -2096,7 +2150,75 @@ for _wi, w in enumerate(windows):
                          " ".join(rest).replace(PH, ""), re.IGNORECASE):
                 deny("destructive SQL (DROP TABLE/DATABASE/SCHEMA or TRUNCATE) detected — confirm with user first", rule="sql-drop")
 
+def _run_windows(i):
+    while i < len(windows):  # a window's checks may append more (bash -c / eval bodies, find, xargs)
+        _check_window(i, windows[i])
+        i += 1
+
+_run_windows(0)
+
 # GH #245: the overlapping spawn scan, last (see _SPAWN_ANCHOR_RES).
 if ("agent_id" in d) and (_nested_spawn(cmd, True) or _nested_spawn(cmd, 2)):
     _deny_nested_spawn()
+
+# GH #336: two more readings of the command, as the shell runs it, each checked by every rule above and
+# owned by a rule id of its own (so it can ship shadow, GH #337): "ifs-split" reads $IFS / ${IFS} /
+# ${IFS:..} as a blank and drops the empty positionals ($9, $@) used as word ends; "var-verb" reads back
+# `$NAME` / `${NAME}` where the command assigns NAME a plain value (`X=rm; $X -rf x`; the last value,
+# then the first). Views run only after the command passed every check, and only up to
+# _VIEW_LEN_CAP: each one re-reads the whole text, and a timed-out hook allows.
+# ponytail: one substitution per view, not every combination of values or of the two readings.
+_IFS_RE = re.compile(r"\$(?:\{IFS(?:[:%#/^,][^}]{0,40})?\}|IFS(?![A-Za-z0-9_]))")
+_EMPTY_POS_RE = re.compile(r"\$(?:[1-9@*]|\{[1-9@*]\})")
+_VAR_REF_RE = re.compile(r"\$(?:\{([A-Za-z_]\w*)\}|([A-Za-z_]\w*))")
+# NAME=value whose value the text alone gives: '...', "..." without $ ` \, or a bare word without them,
+# ended by a blank or a separator. Read from the raw text (bash -c / eval bodies count too), not from the
+# tokens: they split `RW=$R/x` into "RW=", "$", "R/x", which reads as RW assigned nothing.
+_PLAIN_ASSIGN_RE = re.compile(
+    r"(?<![\w$])([A-Za-z_]\w*)=(?:'([^']*)'|\"([^\"$`\\]*)\"|([^\s;&|()<>'\"$`\\]*))(?=[\s;&|()]|$)")
+_VIEW_LEN_CAP = 20_000
+
+def _views():
+    if len(cmd) > _VIEW_LEN_CAP:
+        return []
+    out = []
+    if "IFS" in cmd:
+        v = _EMPTY_POS_RE.sub("", _IFS_RE.sub(" ", cmd))
+        if v != cmd:
+            out.append(("ifs-split", v))
+    vals = {}
+    for m in _PLAIN_ASSIGN_RE.finditer(cmd):
+        vals.setdefault(m.group(1), []).append(next(g for g in m.groups()[1:] if g is not None))
+    for pick in (-1, 0):
+        def _sub(m, pick=pick):
+            name = m.group(1) or m.group(2)
+            return vals[name][pick] if name in vals else m.group(0)
+        v = _VAR_REF_RE.sub(_sub, cmd) if vals else cmd
+        if v != cmd and ("var-verb", v) not in out:
+            out.append(("var-verb", v))
+    return out
+
+def _view_windows(text):
+    try:
+        toks = _tokens(_blanked(text))
+    except ValueError:
+        return []  # a value that unbalances a quote: the view is not a command
+    if _DEPTH_BUDGET_BLOWN[0]:
+        _DEPTH_BUDGET_BLOWN[0] = False
+        return []
+    out = []
+    for cur in _statements(toks):
+        out.append(cur)
+        curc = _drop_ph_tokens(cur)
+        if curc != cur:
+            out.append(curc)
+    return out
+
+for _VIEW[0], _text in _views():
+    try:
+        _start = len(windows)
+        windows.extend(_view_windows(_text))
+        _run_windows(_start)
+    except _ViewStop:
+        pass
 sys.exit(0)
