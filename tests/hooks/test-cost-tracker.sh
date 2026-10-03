@@ -437,7 +437,57 @@ fi
 trash "$fx" 2>/dev/null || true
 echo "$pass4 passed, $fail4 failed (phase 4)"
 
-pass=$((pass + pass2 + pass3 + pass4))
-fail=$((fail + fail2 + fail3 + fail4))
+# Phase 5 -- build_type_map (GH #379). Failure class: per-file data misattributed
+# by a batched rewrite. Five subagents, one row each: two plain types, a type
+# that starts with "--" (it must reach jq as an option value, never as a
+# positional arg), a meta holding only toolUseId (resolved through the parent's
+# Agent tool_use), and no meta at all ("unknown"). Two return windows (a1, a3)
+# must land on their own file's row, keyed by the id from the file name.
+echo "=== typemap: each subagent row carries its own type and its own return windows ==="
+source "$ROOT/tests/_lib/harness.sh"
+trap _cleanup_trash EXIT
+pass5=0
+fail5=0
+tm_dir=$(fresh_tmpdir)
+tm_home=$(fresh_tmpdir)
+mkdir -p "$tm_dir/s/subagents"
+python3 - "$tm_dir" <<'PY'
+import json, sys
+d = sys.argv[1]
+def use(mid, inp, content=None):
+    m = {"model": "claude-sonnet-5", "id": mid, "usage": {"input_tokens": inp, "output_tokens": 0,
+         "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}}
+    if content:
+        m["content"] = content
+    return json.dumps({"type": "assistant", "message": m})
+def ret(i):
+    return json.dumps({"type": "user", "message": {"role": "user",
+                       "content": "<task-notification>\n<task-id>%s</task-id>\n</task-notification>" % i}})
+spawn = [{"type": "tool_use", "name": "Agent", "id": "tu1", "input": {"subagent_type": "mh:reviewer"}}]
+with open(d + "/s.jsonl", "w") as f:
+    f.write("\n".join([use("m0", 1, spawn), ret("a1"), use("m1", 100), ret("a3"), use("m2", 40)]) + "\n")
+metas = {"a1": {"agentType": "Explore"}, "a2": {"agentType": "--help"}, "a3": {"toolUseId": "tu1"},
+         "a4": None, "a5": {"agentType": "general-purpose"}}
+for n, (i, meta) in enumerate(metas.items()):
+    with open("%s/s/subagents/agent-%s.jsonl" % (d, i), "w") as f:
+        f.write(use("s" + i, 2 ** n) + "\n")
+    if meta is not None:
+        with open("%s/s/subagents/agent-%s.meta.json" % (d, i), "w") as f:
+            json.dump(meta, f)
+PY
+tm_payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "t379"}))' "$tm_dir/s.jsonl")
+printf '%s' "$tm_payload" | HOME="$tm_home" MH_COST_TRACKER_SETTLE_S=0 bash "$SCRIPT" >/dev/null 2>/dev/null
+got=$(jq -r 'select(.stream == "subagent") | [.agent_type, .input_tokens, .returns, (.verify_tokens | tostring)] | @tsv' \
+  "$tm_home/.local/share/kbg/metrics/costs.jsonl" 2>/dev/null | LC_ALL=C sort)
+want=$'--help\t2\t0\tnull\nExplore\t1\t1\t100\ngeneral-purpose\t16\t0\tnull\nmh:reviewer\t4\t1\t40\nunknown\t8\t0\tnull'
+if [[ "$got" == "$want" ]]; then
+  pass5=$((pass5 + 1)); echo "PASS: 5 subagents -> 5 rows, each with its own type (meta, --help, toolUseId, none) and its own return window"
+else
+  fail5=$((fail5 + 1)); echo "FAIL: subagent rows (type, in, returns, verify) were:"$'\n'"$got"$'\n'"expected:"$'\n'"$want" >&2
+fi
+echo "$pass5 passed, $fail5 failed (phase 5)"
+
+pass=$((pass + pass2 + pass3 + pass4 + pass5))
+fail=$((fail + fail2 + fail3 + fail4 + fail5))
 echo "TOTAL: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]
