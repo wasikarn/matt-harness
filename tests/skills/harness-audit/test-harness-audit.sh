@@ -4,7 +4,7 @@
 # audit.sh's fragment integrity guard catches LOST checks, not SILENT ones. Each
 # known-bad fixture below is paired with a clean one; the matching check must
 # FIRE on bad and stay SILENT on good. Per-check fixtures cover 04, 05, 20, 22, 28, 29, 54,
-# 70, 71, 72, 73, 74 (five fixtures, two added 2026-09-21), 75, 76, 77, 78; the fleet-bad / fleet-good pair covers the other sixteen with at
+# 70, 71, 72, 73, 74 (five fixtures, two added 2026-09-21), 75, 76, 77, 78, 79; the fleet-bad / fleet-good pair covers the other sixteen with at
 # least one defect per check (43 is driven by the env ceiling, not a planted defect).
 # check-73-bad-missing-command-field and check-73-bad-args-fingerprint-mismatch (below) are
 # deep-audit fixes, 2026-09-10: a Codex-primary fresh-context checker found the original check
@@ -262,6 +262,18 @@ expect_crit   78 check-78-bad-too-deep
 expect_crit   78 check-78-bad-marketplace-skills
 expect_silent 78 check-78-good-marketplace-plain
 expect_crit   78 check-78-bad-under-skill-entry
+
+# Check 79: prose facts pinned to the tree (GH #388). Each bad fixture is the good one with one
+# defect; the regex names the fact so a WARN from a different row cannot pass the assert.
+expect_silent     79 check-79-good-facts-match
+expect_warn_match 79 check-79-bad-gate-table-missing-row 'README.md gate table lacks gate:x:b'
+expect_warn_match 79 check-79-bad-skill-count 'Skills \(2\).*tree has 1'
+expect_warn_match 79 check-79-bad-agent-count '2-agent fleet.*tree has 1'
+expect_warn_match 79 check-79-bad-phrase-vanished 'pinned phrase vanished.*Agents'
+expect_warn_match 79 check-79-bad-version-mismatch 'version 1.0.1.*1.0.0'
+expect_warn_match 79 check-79-bad-gate-count 'gate count 3.*registry has 2'
+expect_warn_match 79 check-79-bad-check-table 'check table lacks 03'
+expect_info_only  79 check-79-info-no-sources 'README.md absent, skill count pin skipped'
 
 # Check 76: measurement coverage status freshness (harness gap-audit M14,
 # 2026-09-20). Shallow on purpose -- WARN, not CRIT -- for the retired

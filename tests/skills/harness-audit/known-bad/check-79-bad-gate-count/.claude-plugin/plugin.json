@@ -1,0 +1,5 @@
+{
+  "name": "mh",
+  "version": "1.0.0",
+  "description": "Two computational deny/ask gates (a) plus a SubagentStop verdict-check gate, and more."
+}

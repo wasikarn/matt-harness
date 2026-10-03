@@ -1,0 +1,8 @@
+{
+  "hooks": [
+    {"id": "gate:x:a"},
+    {"id": "gate:x:b-handback"},
+    {"id": "sensor:x:c"},
+    {"id": "gate:x:b"}
+  ]
+}

@@ -1,1 +1,1 @@
-{"skills": ["./skills/meta/"]}
+{"skills": ["./skills/meta/"], "description": "Zero computational deny/ask gates () plus a SubagentStop verdict-check gate (check 79's gate-count pin)."}
