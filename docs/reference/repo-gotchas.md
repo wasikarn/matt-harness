@@ -34,7 +34,10 @@ required status checks, so a red run blocks merge.
   reported clean while 29 hits sat in exactly those dirs.
 - **Never `rm -rf`.** Use `trash` (`trash-put` on Linux; neither installed means ask the user).
   Enforced by `gate:bash:irrecoverable`. Validate the argument is non-empty before any `trash`
-  call: an empty glob result once trashed the whole repo.
+  call: an empty glob result once trashed the whole repo. A template `mktemp -d "${TMPDIR:-/tmp}/x.XXXXXX"`
+  prints "" when TMPDIR names a missing directory (a plain `mktemp -d` falls back on macOS), and `set -u`
+  does not catch an empty variable, so a test hands such a path to `track_trash` from
+  `tests/_lib/harness.sh`, never to `trash` (`tests/scripts/test-trash-empty-guard-lint.sh`).
 - **Never `--no-verify`.** Enforced by `gate:bash:irrecoverable`.
 - **Stage by name.** Never `git add -A` or `git add .` outside a mid-merge state. Enforced by
   `gate:bash:irrecoverable`.

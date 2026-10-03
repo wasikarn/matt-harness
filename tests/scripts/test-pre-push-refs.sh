@@ -18,9 +18,12 @@ bad() { fail=$((fail + 1)); echo "  FAIL: $1" >&2; }
 
 echo "=== pre-push: refuse a direct push to refs/heads/develop ==="
 
-FIXTURE=$(mktemp -d "${TMPDIR:-/tmp}/pre-push-fixture.XXXXXX")
-cleanup() { trash "$FIXTURE" 2>/dev/null || true; }
-trap cleanup EXIT
+source "$ROOT/tests/_lib/harness.sh"
+trap _cleanup_trash EXIT
+# A missing TMPDIR makes mktemp print "" and `trash ""` trashes the cwd: stop, and let
+# _cleanup_trash (which drops empties) do the trashing.
+FIXTURE=$(mktemp -d "${TMPDIR:-/tmp}/pre-push-fixture.XXXXXX") || exit 1
+track_trash "$FIXTURE"
 
 ( cd "$FIXTURE" && git init -q . ) >/dev/null 2>&1
 mkdir -p "$FIXTURE/scripts"

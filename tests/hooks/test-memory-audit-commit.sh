@@ -12,8 +12,12 @@ unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OB
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 HOOK="$ROOT/hooks/stop/memory-audit-commit.sh"
 
-TMP=$(mktemp -d "${TMPDIR:-/tmp}/kbg-memory-audit-commit-test.XXXXXX")
-trap 'trash "$TMP" 2>/dev/null || true' EXIT
+source "$ROOT/tests/_lib/harness.sh"
+trap _cleanup_trash EXIT
+# A missing TMPDIR makes mktemp print "" and `trash ""` trashes the cwd: stop before FAKE_HOME and the
+# rest are built on "", and let _cleanup_trash (which drops empties) do the trashing.
+TMP=$(mktemp -d "${TMPDIR:-/tmp}/kbg-memory-audit-commit-test.XXXXXX") || exit 1
+track_trash "$TMP"
 
 pass=0
 fail=0
