@@ -39,6 +39,11 @@ Quote the script's counts as printed.
 - **`allow-suppressed` isn't a block.** `secret-scan.py` logs this decision when a same-line
   suppression marker (`gitleaks:allow` etc.) let a match through — it's informational, not a
   friction event, so don't fold it into an "interruptions" total without saying so.
+- **`would_deny`/`would_ask` rows are not blocks.** A rule listed in a gate's `SHADOW_RULES`
+  (GH #337) only journals a match and allows the call. The "Shadow rules" section lists each
+  such rule's count, session count and up to 3 sample commands. Read the samples: a rule is
+  ready to enforce (delete its id from `SHADOW_RULES`) when its matches over several sessions
+  are all real hits, with no false positive among them.
 - **A high count for one gate isn't automatically a problem.** It says a gate fired often, not
   that it was wrong to; compare against that gate's own false-positive history if one exists
   before recommending a change to it.

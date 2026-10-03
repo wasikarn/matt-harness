@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Reads ~/.local/share/kbg/metrics/gate-decisions.jsonl (hooks/gates/_journal.py's own
-# log -- non-allow verdicts only: ask/deny/allow-suppressed) and prints an ask-count
+# log -- non-allow verdicts only: ask/deny/allow-suppressed, plus a shadow rule's
+# would_deny/would_ask, GH #337, listed per rule with sample commands) and prints an ask-count
 # report: how often each gate asked or denied, not how long a user took to answer --
 # _journal.py's row has no resolution timestamp, so a wait-time metric isn't derivable
 # from this log (docs/research/ai-native-sdlc-playbook-audit-2026-08-28.md Round 4).
@@ -27,6 +28,7 @@ def main():
 
     counts = Counter()  # (gate_id, decision) -> count
     tools = Counter()   # tool_name -> count
+    shadow = {}         # (gate_id, rule) -> {"n", "sessions", "samples"}: GH #337 would_* rows
     first_ts = last_ts = None
     total = 0
     skipped = 0
@@ -47,6 +49,14 @@ def main():
             counts[(gate_id, decision)] += 1
             tools[tool_name] += 1
             total += 1
+            if str(decision).startswith("would_"):
+                s = shadow.setdefault((gate_id, row.get("rule", "(unknown)")),
+                                      {"n": 0, "sessions": set(), "samples": []})
+                s["n"] += 1
+                s["sessions"].add(row.get("session_id"))
+                cmd = row.get("command")
+                if cmd and cmd not in s["samples"] and len(s["samples"]) < 3:
+                    s["samples"].append(cmd)
             if ts:
                 first_ts = ts if first_ts is None or ts < first_ts else first_ts
                 last_ts = ts if last_ts is None or ts > last_ts else last_ts
@@ -67,6 +77,13 @@ def main():
     print("By tool:")
     for tool_name, n in sorted(tools.items(), key=lambda kv: -kv[1]):
         print(f"  {n:5d}  {tool_name}")
+    if shadow:
+        print()
+        print("Shadow rules (matched but allowed; check the samples for false positives before promoting):")
+        for (gate_id, rule), s in sorted(shadow.items(), key=lambda kv: -kv[1]["n"]):
+            print(f"  {s['n']:5d}  {gate_id}  {rule}  ({len(s['sessions'])} session(s))")
+            for cmd in s["samples"]:
+                print("         e.g. " + " ".join(cmd.split())[:160])
     return 0
 
 

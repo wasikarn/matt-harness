@@ -466,26 +466,47 @@ def _deny_nested_spawn():
 if ("agent_id" in d) and _nested_spawn(cmd, False):
     _deny_nested_spawn()
 
-def deny(reason):
+# GH #337 shadow mode: a rule whose id is listed here only journals "would_deny"/"would_ask" (with
+# the id and the command) and lets the call through, so a new rule can be measured on real work
+# (/mh:gate-report) before it enforces; promote it by deleting its id. A constant in the gate's own
+# source, never an env var, so a project's settings.json cannot shadow an enforced rule. Only a
+# pattern rule (a `rule=` id at its call site) can be shadowed: a structural deny (length cap,
+# unparsable text, budget, depth) has no id, since returning from it would run the very code it guards.
+SHADOW_RULES = frozenset()
+_SHADOW_LOGGED = set()  # (rule, decision) already journaled this run: window copies re-match a rule
+
+def _shadowed(rule, decision):
+    if rule not in SHADOW_RULES:
+        return False
+    if (rule, decision) not in _SHADOW_LOGGED:
+        _SHADOW_LOGGED.add((rule, decision))
+        journal(GATE_ID, d.get("tool_name"), "would_" + decision, d.get("session_id"),
+                rule=rule, command=cmd[:300])
+    return True
+
+def deny(reason, rule=None):
+    if _shadowed(rule, "deny"):
+        return
     print("[mh:gate] BLOCKED: " + reason, file=sys.stderr)
-    journal(GATE_ID, d.get("tool_name"), "deny", d.get("session_id"))
+    journal(GATE_ID, d.get("tool_name"), "deny", d.get("session_id"), rule=rule)
     sys.exit(2)
 
 _ASKED = []
-def ask(reason):
+def ask(reason, rule=None):
     # Unlike deny(), doesn't exit immediately -- a later, more severe check in
     # the same run can still escalate to deny() (which does exit right away),
     # same "ask now, a worse finding can still override" shape config-write-guard.py
     # and codex-setup-guard.py's own emit_ask() already use. Emits at most once: a
     # window can be checked in several copies (compacted, brace-joined), and two
     # JSON objects on stdout are not valid JSON (GH #254 validator).
-    if _ASKED:
+    # A shadowed ask is checked first and never touches _ASKED, so a later real ask still emits.
+    if _shadowed(rule, "ask") or _ASKED:
         return
     _ASKED.append(reason)
     print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
                                              "permissionDecision": "ask",
                                              "permissionDecisionReason": reason}}))
-    journal(GATE_ID, d.get("tool_name"), "ask", d.get("session_id"))
+    journal(GATE_ID, d.get("tool_name"), "ask", d.get("session_id"), rule=rule)
 
 def delete_hint():
     # trash is not stock on macOS or Linux -- offer whichever CLI exists.
@@ -1539,7 +1560,7 @@ def _assignment(t):
         return None
     if (key == "GIT_CONFIG_PARAMETERS" or key.startswith("GIT_CONFIG_KEY_")) \
             and "core.hookspath" in val.lower():
-        deny("-c core.hooksPath=<path> re-points git at a different hooks dir — same bypass as --no-verify")
+        deny("-c core.hooksPath=<path> re-points git at a different hooks dir — same bypass as --no-verify", rule="git-hooks-path")
     return key, val
 
 # 2026-09-20 audit: git accepts any unambiguous prefix of a long
@@ -1833,20 +1854,20 @@ for _wi, w in enumerate(windows):
                     has_r = has_r or "r" in body
                     has_f = has_f or "f" in body
             if has_r and has_f:
-                deny("rm -rf detected — " + delete_hint())
+                deny("rm -rf detected — " + delete_hint(), rule="rm-rf")
 
         # Same PH-erases-flag-shape fix as the rm block ("find $(true)-exec").
         if argv0 == "find" and any(t.replace(PH, "") in ("-exec", "-execdir") for t in rest) and "rm" in [basename(t) for t in rest]:
-            deny("find -exec/-execdir rm detected — destructive delete; " + delete_hint())
+            deny("find -exec/-execdir rm detected — destructive delete; " + delete_hint(), rule="find-exec-rm")
         if argv0 == "find" and any(t.replace(PH, "") == "-delete" for t in rest):
-            deny("find -delete detected — destructive delete; " + delete_hint())
+            deny("find -delete detected — destructive delete; " + delete_hint(), rule="find-delete")
 
         if argv0 == "git" and rest:
             # --no-verify skips pre-commit/pre-push hooks; checked per window (a
             # global check over `tokens` only saw the last line). Git-specific
             # so `echo "--no-verify"` does not false-positive.
             if any(_is_flag(t.replace(PH, ""), "--no-verify") for t in w):
-                deny("--no-verify bypasses safety hooks")
+                deny("--no-verify bypasses safety hooks", rule="git-no-verify")
             # -c core.hooksPath=<path> (split or joined "-ccore.hooksPath=X")
             # re-points git at a different hooks dir -- same bypass as
             # --no-verify. Only a non-empty value trips it.
@@ -1857,7 +1878,7 @@ for _wi, w in enumerate(windows):
             # sibling `config` subcommand branch two arms below already does
             # this; this arm predated it and was missed.
             if _sets_hooks_path(w):
-                deny("-c core.hooksPath=<path> re-points git at a different hooks dir — same bypass as --no-verify")
+                deny("-c core.hooksPath=<path> re-points git at a different hooks dir — same bypass as --no-verify", rule="git-hooks-path")
             # Walk past leading global flags so ` git -C /repo push --force`
             # (or -Cpath, --no-pager) does not set sub="-C" and bypass the gate.
             i = 0
@@ -1916,14 +1937,14 @@ for _wi, w in enumerate(windows):
                     or t.startswith("+")  # "+refspec" force-pushes without a -f/--force flag
                     for t in scan
                 ):
-                    deny("git push --force overwrites remote history — needs explicit user approval (use --force-with-lease for the safe variant)")
+                    deny("git push --force overwrites remote history — needs explicit user approval (use --force-with-lease for the safe variant)", rule="git-push-force")
                 # `git config core.hooksPath X` / --unset disables pre-commit and
                 # pre-push (same bypass class as --no-verify). The documented
                 # wiring value `git-hooks` stays allowed.
                 if sub == "config" and any(t.lower() == "core.hookspath" for t in scan) and "git-hooks" not in scan:
-                    deny("git config core.hooksPath rewires/disables the repo git hooks — only `git config core.hooksPath git-hooks` is allowed")
+                    deny("git config core.hooksPath rewires/disables the repo git hooks — only `git config core.hooksPath git-hooks` is allowed", rule="git-config-hooks-path")
                 if sub == "reset" and any(_is_flag(t, "--hard") for t in scan):
-                    deny("git reset --hard discards uncommitted work — confirm with user first")
+                    deny("git reset --hard discards uncommitted work — confirm with user first", rule="git-reset-hard")
                 # SHORT bundled cluster counts per-character, LONG option via
                 # _is_flag's prefix match (bare containment false-positived on
                 # "--find-renames" / "--format=fuller" under candidate duplication --
@@ -1932,7 +1953,7 @@ for _wi, w in enumerate(windows):
                     _is_flag(t, "--force") or (t.startswith("-") and not t.startswith("--") and "f" in t)
                     for t in scan
                 ):
-                    deny("git clean -f deletes untracked files — confirm with user first")
+                    deny("git clean -f deletes untracked files — confirm with user first", rule="git-clean-force")
                 # git restore: default mode and --worktree target the WORKTREE
                 # (unrecoverable); --staged alone targets the INDEX (recoverable,
                 # allowed). Unlike checkout, a restore pathspec is never a branch
@@ -1984,7 +2005,7 @@ for _wi, w in enumerate(windows):
                         or (t.startswith("-") and not t.startswith("--") and "W" in t.split("s", 1)[0])
                         for t in _opts)
                     if has_pathspec and targets_worktree:
-                        deny("git restore discards working-tree changes — confirm with user first")
+                        deny("git restore discards working-tree changes — confirm with user first", rule="git-restore")
                 # checkout: "--"/"." = discard; 2+ nonflag = tree-ish + path
                 # (`git checkout HEAD~1 file` overwrites the worktree). 1 nonflag
                 # stays allowed: it may be a legit branch switch.
@@ -2009,9 +2030,9 @@ for _wi, w in enumerate(windows):
                                             _co_nonflag >= 2 or
                                             any(_is_flag(t.split("=", 1)[0], "--pathspec-from-file") for t in scan) or
                                             any(t == "-f" or _is_flag(t, "--force") or _bundled_flag(t, ("b", "B")) for t in scan)):
-                    deny("git checkout -- / git checkout . / git checkout -f / git checkout <tree> <file> discards working-tree changes — confirm with user first")
+                    deny("git checkout -- / git checkout . / git checkout -f / git checkout <tree> <file> discards working-tree changes — confirm with user first", rule="git-checkout-discard")
                 if sub == "switch" and any(t == "-f" or _is_flag(t, "--force", "--discard-changes") or _bundled_flag(t, ("c", "C")) for t in scan):
-                    deny("git switch --force discards working-tree changes — confirm with user first")
+                    deny("git switch --force discards working-tree changes — confirm with user first", rule="git-switch-force")
                 # A force-delete is allowed only for a whole command of the plain shape
                 # "git [-C <path>] branch <flags and names>" in which no name's last path part
                 # is main/master/develop in any case ("origin/main", "Main" on a case-
@@ -2028,16 +2049,16 @@ for _wi, w in enumerate(windows):
                     _m = _BRANCH_D_PLAIN_RE.fullmatch(cmd.strip())
                     _names = [t for t in (_m.group(1).split() if _m else []) if not t.startswith("-")]
                     if not _names or any(t.rstrip("/").rsplit("/", 1)[-1].lower() in ("main", "master", "develop") for t in _names):
-                        deny("git branch -D is allowed only as a plain `git branch -D <names>` without main/master/develop — confirm with user first")
+                        deny("git branch -D is allowed only as a plain `git branch -D <names>` without main/master/develop — confirm with user first", rule="git-branch-force-delete")
                 if sub == "stash" and args and args[0].replace(PH, "") in ("drop", "clear"):
-                    deny("git stash drop/clear discards stashed changes — confirm with user first")
+                    deny("git stash drop/clear discards stashed changes — confirm with user first", rule="git-stash-drop")
                 if sub == "commit" and any(_is_flag(t, "--amend") for t in scan):
-                    deny("git commit --amend rewrites history — confirm with user first")
+                    deny("git commit --amend rewrites history — confirm with user first", rule="git-commit-amend")
                 # `commit -n` is --no-verify (push -n is --dry-run, merge -n --no-stat, so
                 # commit only). Cluster stops at a value-taking letter: -mnew is a message,
                 # -Fnotes.txt a file, -tnotes a template, -uno the untracked-files mode.
                 if sub == "commit" and any(_bundled_flag(t, "mFtu", "n") for t in scan):
-                    deny("git commit -n is --no-verify, it bypasses safety hooks")
+                    deny("git commit -n is --no-verify, it bypasses safety hooks", rule="git-commit-n")
                 # -A also arrives bundled (-Af, -fA, -vA); add has no value-taking short flag.
                 # --pathspec-from-file's value is a pathspec list the gate cannot read
                 # (GH #200), so any use denies, as in restore/checkout above.
@@ -2045,7 +2066,7 @@ for _wi, w in enumerate(windows):
                                         or _is_flag(t.split("=", 1)[0], "--pathspec-from-file")
                                         for t, nxt in zip(scan, scan[1:] + [""]))) and not _mid_merge():
                     deny("git add -A/. stages everything — stage files by name instead "
-                         "(allowed only while a merge is in progress, i.e. MERGE_HEAD exists)")
+                         "(allowed only while a merge is in progress, i.e. MERGE_HEAD exists)", rule="git-add-all")
 
         # Phase B (2026-09-28): local, interactive-session-only defense-in-depth
         # for this repo's PR-review flow -- ask, never deny, since a merge can be
@@ -2058,14 +2079,14 @@ for _wi, w in enumerate(windows):
             if gh_scan[0] == "pr" and "merge" in gh_scan[1:]:
                 ask("gh pr merge would merge a pull request into this repo — the PR-review "
                     "flow (docs/reference/branching-model.md) expects a human to do this. "
-                    "Confirm this is intentional.")
+                    "Confirm this is intentional.", rule="gh-pr-merge")
             if gh_scan[0] == "api" and any("/merge" in t for t in gh_scan[1:]):
                 ask("gh api .../merge calls the GitHub merge endpoint directly — the "
                     "PR-review flow (docs/reference/branching-model.md) expects a human to "
-                    "do this. Confirm this is intentional.")
+                    "do this. Confirm this is intentional.", rule="gh-api-merge")
 
         if argv0 == "dd" and any(t.replace(PH, "").startswith("of=/dev/") for t in rest):
-            deny("dd writing to a raw device — irrecoverable disk-level destruction")
+            deny("dd writing to a raw device — irrecoverable disk-level destruction", rule="dd-device")
 
         if argv0 in ("mysql", "psql", "sqlite3", "mariadb"):
             # SQL genuinely lives inside -e/-c values, so DO scan them, but only
@@ -2073,7 +2094,7 @@ for _wi, w in enumerate(windows):
             # grammar. Full PH removal: a splice can land mid-keyword (DR$(true)OP).
             if re.search(r"DROP\s+(TABLE|DATABASE|SCHEMA)|TRUNCATE\s+(TABLE\s+)?\w",
                          " ".join(rest).replace(PH, ""), re.IGNORECASE):
-                deny("destructive SQL (DROP TABLE/DATABASE/SCHEMA or TRUNCATE) detected — confirm with user first")
+                deny("destructive SQL (DROP TABLE/DATABASE/SCHEMA or TRUNCATE) detected — confirm with user first", rule="sql-drop")
 
 # GH #245: the overlapping spawn scan, last (see _SPAWN_ANCHOR_RES).
 if ("agent_id" in d) and (_nested_spawn(cmd, True) or _nested_spawn(cmd, 2)):
