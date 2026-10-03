@@ -1,6 +1,6 @@
 ---
 name: compliance-audit
-description: "Compliance-audit: verify a finished implementation against its plan via one fresh-context, Codex-primary verifier that reruns the gauntlet itself."
+description: "Compliance-audit: verify a finished implementation against its plan; a fresh-context verifier reruns the gauntlet. Not for claim audits (/mh:deep-audit)."
 argument-hint: "[plan-path|pr-number|commit-range]"
 disable-model-invocation: true
 disable-model-invocation-reason: a done-declaration gate — the user decides when compliance is checked and what counts as compliant, not the model
