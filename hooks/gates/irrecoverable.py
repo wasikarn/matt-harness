@@ -1660,11 +1660,16 @@ def _bundled_flag(t, stop_chars, flag="f"):
             return True
     return False
 
-def _git_words(rest):
+def _git_words(rest, ph_value=False):
     # GH #375: git's leading global flags with each glued token run (_Glued) joined into one shell
     # word, then the subcommand and its arguments unchanged; None when no flag or value was glued.
     # The same walk as the git block: a value-taking global takes the next word.
-    out, i, n, joined = [], 0, len(rest), False
+    # GH #405: a substitution blanked inside the flag's own word (-C${R}, -C$(pwd)) is one token,
+    # never glued, and both walks read it empty: a bare -C takes the next word. With ph_value it
+    # holds the value instead (a word-split " /repo" does this), so the next word is the subcommand;
+    # None when no flag carries one. "$" stands in, as in -C$R: a kept PH would match again in the
+    # appended window and append it forever.
+    out, i, n, joined, hit = [], 0, len(rest), False, False
     def word():
         nonlocal i, joined
         j = i + 1
@@ -1683,9 +1688,12 @@ def _git_words(rest):
             i, joined = start, was_joined
             break
         out.append(t)
-        if t.replace(PH, "") in GIT_VALUE_GLOBALS and i < n:
-            out.append(word())
-    return out + rest[i:] if joined else None
+        if t.replace(PH, "") in GIT_VALUE_GLOBALS:
+            if ph_value and t != t.replace(PH, ""):
+                out[-1], hit = t.replace(PH, "$"), True
+            elif i < n:
+                out.append(word())
+    return out + rest[i:] if (hit if ph_value else joined) else None
 
 def _sets_hooks_path(w):
     # Does a `-c KEY=VAL` / `-cKEY=VAL` / `--config-env KEY=VAR` / `--config-env=KEY=VAR` word in
@@ -1716,7 +1724,10 @@ _CHMOD_WORLD_RE = re.compile(r"(?:^| )(?:0*[0-7]?777|(?:a|[ugo]{3}) ?[+=] ?rwx)(
 _ROOT_OR_HOME = ("/", "/*", "/.", "~", "~/", "~/*", "~/.")
 def _chmod_world(rest):
     toks = [t.replace(PH, "") for t in rest]
-    return bool(_CHMOD_WORLD_RE.search(" ".join(toks))) and any(
+    # GH #405: only the mode word is read (the first word that is not an option; the compacted
+    # copy drops an empty substitution before it), so a file named 777 or a+rwx is not a mode.
+    k = next((j for j, t in enumerate(toks) if not t.startswith("-")), len(toks))
+    return bool(_CHMOD_WORLD_RE.match(" ".join(toks[k:]))) and any(
         t in _ROOT_OR_HOME or _is_flag(t, "--recursive")
         or (t.startswith("-") and not t.startswith("--") and "R" in t) for t in toks)
 
@@ -1981,10 +1992,11 @@ def _check_window(_wi, w):
             # GH #375: the global flags re-read as shell words (glued tokens joined), so `-C $R`,
             # `-C$R`, `--git-dir=$G` and `-c k=a@b` hold one value, are checked as a window of their
             # own. This window keeps the token reading below: a deny in either wins.
-            _gw = _git_words(rest)
-            if _gw:
-                _WDEPTH[len(windows)] = _cur_depth
-                windows.append(["git"] + _gw)
+            for _pv in (False, True):
+                _gw = _git_words(rest, _pv)
+                if _gw:
+                    _WDEPTH[len(windows)] = _cur_depth
+                    windows.append(["git"] + _gw)
             # Walk past leading global flags so ` git -C /repo push --force`
             # (or -Cpath, --no-pager) does not set sub="-C" and bypass the gate.
             i = 0

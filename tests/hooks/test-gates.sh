@@ -3054,6 +3054,23 @@ else
   echo "  ❌ GH #375: corpus replayed $_got375 of $_want375 cases" >&2; fail=$((fail + 1))
 fi
 
+# GH #405 F1: a ${...} or $(...) glued to a git global blanks into the same word (-C<PH>), which
+# read only as a bare -C taking the subcommand as its value. Either expansion (empty or word-split
+# " /repo") must be read; `-C${D} $R` checks the empty reading of the GH #375 window stays.
+# F2: chmod reads its mode word only, so a file named 777 is not a mode.
+for _c405 in 'git -C${R} reset --hard' 'git -C${R} push --force origin main' 'git -C${R:-.} reset --hard' \
+    'git -C$(pwd) reset --hard' 'git --git-dir${G} reset --hard' 'git -C${D} /repo reset --hard' \
+    'git -C${D} $R reset --hard' 'chmod -R 777 x' 'chmod -R a+rwx x' 'chmod 777 /' 'chmod a+rwx ~' 'chmod -R $(m) 777 x' 'chmod -R -- 777 x'; do
+  test_deny "$IRRECOVERABLE" "GH #405: $_c405" "$(bash_payload "$_c405")"
+done
+# chmod 777 on one plain path is out of the rule's scope (GH #336: recursive, / or ~ only).
+for _c405 in 'git -C${R} status' 'git -C$(pwd) log --oneline' 'chmod -R 755 777' 'chmod -R 755 a+rwx' \
+    'chmod 755 / 777' 'chmod 777 x' 'chmod a+rwx x'; do
+  test_allow "$IRRECOVERABLE" "GH #405 control: $_c405" "$(bash_payload "$_c405")"
+done
+_timed_case "GH #405: reset --hard after 2000 benign '-C\${R}' git statements, denied in bounded time" 2 \
+  "$(printf 'git -C${R} status; %.0s' $(seq 2000))git -C\${R} reset --hard"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
