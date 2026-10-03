@@ -487,7 +487,60 @@ else
 fi
 echo "$pass5 passed, $fail5 failed (phase 5)"
 
-pass=$((pass + pass2 + pass3 + pass4 + pass5))
-fail=$((fail + fail2 + fail3 + fail4 + fail5))
+# Phase 6 -- one usage-record def and one sentinel row for both streams (GH #379).
+# Failure class: two copies of the same logic drift (a past cw1h fix had to edit
+# both). The same two-iteration line (1h writes 300 + 400, flat 1000) in the main
+# transcript and in a subagent file must give both rows cw 300 / cw1h 700, and a
+# line jq cannot read must give each stream the same sentinel shape.
+echo "=== shared defs: both streams split cache writes and write sentinels alike ==="
+pass6=0
+fail6=0
+sd_dir=$(fresh_tmpdir)
+mkdir -p "$sd_dir/ok/subagents" "$sd_dir/bad/subagents"
+python3 - "$sd_dir" <<'PY'
+import json, sys
+d = sys.argv[1]
+u = {"input_tokens": 10, "output_tokens": 20, "cache_creation_input_tokens": 1000, "cache_read_input_tokens": 5,
+     "cache_creation": {"ephemeral_5m_input_tokens": 700, "ephemeral_1h_input_tokens": 300},
+     "iterations": [{"type": "message", "cache_creation": {"ephemeral_1h_input_tokens": 300}},
+                    {"type": "message", "cache_creation": {"ephemeral_1h_input_tokens": 400}}]}
+def line(mid, usage):
+    return json.dumps({"type": "assistant", "message": {"model": "claude-opus-5-5", "id": mid, "usage": usage}}) + "\n"
+for name, usage in (("ok", u), ("bad", "not-an-object")):
+    open("%s/%s.jsonl" % (d, name), "w").write(line("m_main", usage))
+    open("%s/%s/subagents/agent-a1.jsonl" % (d, name), "w").write(line("m_sub", usage))
+    open("%s/%s/subagents/agent-a1.meta.json" % (d, name), "w").write('{"agentType":"Explore"}')
+PY
+# sd_rows <name>: run the hook on $sd_dir/<name>.jsonl, print its rows without timestamps, stderr to $sd_dir/<name>.err
+sd_rows() {
+  local home payload
+  home=$(fresh_tmpdir)
+  payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "t379"}))' "$sd_dir/$1.jsonl")
+  printf '%s' "$payload" | HOME="$home" MH_COST_TRACKER_SETTLE_S=0 bash "$SCRIPT" >/dev/null 2>"$sd_dir/$1.err"
+  jq -c 'del(.timestamp)' "$home/.local/share/kbg/metrics/costs.jsonl" 2>/dev/null
+}
+got=$(sd_rows ok | jq -r '[.stream, .cache_write_tokens, .cache_write_tokens_1h, .input_tokens, .output_tokens, .cache_read_tokens] | @tsv')
+if [[ "$got" == $'orchestrator\t300\t700\t10\t20\t5\nsubagent\t300\t700\t10\t20\t5' ]]; then
+  pass6=$((pass6 + 1)); echo "PASS: a two-iteration 1h line splits cw 300 / cw1h 700 in both the orchestrator and the subagent row"
+else
+  fail6=$((fail6 + 1)); echo "FAIL: cache-write split differs by stream or is wrong (stream, cw, cw1h, in, out, cr):"$'\n'"$got" >&2
+fi
+got=$(sd_rows bad)
+want=$(python3 -c '
+import json, sys
+d = sys.argv[1]
+row = lambda s, f: json.dumps({"session_id": "t379", "transcript_path": d + "/bad.jsonl", "stream": s,
+                               "error": "jq_failed", "files": f}, separators=(",", ":"))
+print(row("orchestrator", d + "/bad.jsonl")); print(row("subagent", d + "/bad/subagents/agent-a1.jsonl"))' "$sd_dir")
+if [[ "$got" == "$want" ]] && /usr/bin/grep -q 'emit_rows(subagent): jq failed' "$sd_dir/bad.err" \
+   && /usr/bin/grep -q 'emit_rows(orchestrator): jq failed' "$sd_dir/bad.err"; then
+  pass6=$((pass6 + 1)); echo "PASS: an unreadable usage line gives each stream the same jq_failed sentinel row, named on stderr"
+else
+  fail6=$((fail6 + 1)); echo "FAIL: sentinel rows were:"$'\n'"$got"$'\n'"expected:"$'\n'"$want"$'\n'"stderr: $(cat "$sd_dir/bad.err")" >&2
+fi
+echo "$pass6 passed, $fail6 failed (phase 6)"
+
+pass=$((pass + pass2 + pass3 + pass4 + pass5 + pass6))
+fail=$((fail + fail2 + fail3 + fail4 + fail5 + fail6))
 echo "TOTAL: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]

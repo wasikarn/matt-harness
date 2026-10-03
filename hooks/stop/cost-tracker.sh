@@ -265,30 +265,46 @@ adv_def='def adv_recs($t; $f):
       id: (if $mid == null then null else "adv:\($mid):\($k)" end), f: $f };'
 adv_seen='[]'
 
+# usage_rec($t; $f): one executor usage record from an assistant line, the
+# iterations-aware cw/cw1h split described above. One definition for both
+# readers: raw_records (subagent files, $t from the type map) and
+# scan_transcript (main transcript, $t null). A past fix had to edit two copies.
+usage_def='def usage_rec($t; $f):
+  (.message.usage.iterations // []) as $its
+  | (.message.usage.cache_creation_input_tokens // 0) as $flat
+  | { in: (.message.usage.input_tokens // 0),
+      out: (.message.usage.output_tokens // 0),
+      cw: (if ($its | length) > 0
+           then ($flat - ([($its | map(.cache_creation.ephemeral_1h_input_tokens // 0) | add), $flat] | min))
+           else ($flat - ([(.message.usage.cache_creation.ephemeral_1h_input_tokens // 0), $flat] | min)) end),
+      cw1h: (if ($its | length) > 0
+             then ([($its | map(.cache_creation.ephemeral_1h_input_tokens // 0) | add), $flat] | min)
+             else ([(.message.usage.cache_creation.ephemeral_1h_input_tokens // 0), $flat] | min) end),
+      cr: (.message.usage.cache_read_input_tokens // 0),
+      m: (.message.model // "unknown"),
+      t: $t,
+      id: (.message.id // null),
+      f: $f };'
+
+# jq_failed_row <stream> <files>: the sentinel row for a stream whose usage
+# records jq could not read, so mh:cost-report shows a gap, not zero spend.
+jq_failed_row() {
+  jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg sid "$session_id" \
+    --arg tp "$transcript" --arg stream "$1" --arg files "$2" \
+    '{timestamp: $ts, session_id: $sid, transcript_path: $tp, stream: $stream,
+      error: "jq_failed", files: $files}' 2>/dev/null
+}
+
 raw_records() {
   local typemap="$1"; shift
-  jq -nRc --argjson typemap "$typemap" --argjson seen "$adv_seen" "$adv_def"'
+  jq -nRc --argjson typemap "$typemap" --argjson seen "$adv_seen" "$adv_def$usage_def"'
     ($seen | map({(.): true}) | add // {}) as $s
     | [ inputs | try fromjson |
       select(.type == "assistant") |
       select((.message // {}).usage != null) |
       select((.message.model // "") | ascii_downcase | test("^claude")) |
       adv_recs($typemap[input_filename].t // null; input_filename),
-      ((.message.usage.iterations // []) as $its |
-      (.message.usage.cache_creation_input_tokens // 0) as $flat |
-      { in: (.message.usage.input_tokens // 0),
-        out: (.message.usage.output_tokens // 0),
-        cw: (if ($its | length) > 0
-             then ($flat - ([($its | map(.cache_creation.ephemeral_1h_input_tokens // 0) | add), $flat] | min))
-             else ($flat - ([(.message.usage.cache_creation.ephemeral_1h_input_tokens // 0), $flat] | min)) end),
-        cw1h: (if ($its | length) > 0
-               then ([($its | map(.cache_creation.ephemeral_1h_input_tokens // 0) | add), $flat] | min)
-               else ([(.message.usage.cache_creation.ephemeral_1h_input_tokens // 0), $flat] | min) end),
-        cr: (.message.usage.cache_read_input_tokens // 0),
-        m: (.message.model // "unknown"),
-        t: ($typemap[input_filename].t // null),
-        id: (.message.id // null),
-        f: input_filename }) ]
+      usage_rec($typemap[input_filename].t // null; input_filename) ]
     | reduce .[] as $x ({byid: {}, out: []};
         if $x.id == null then .out += [$x]
         elif $x.adv then .byid[$x.id] = $x
@@ -410,10 +426,7 @@ emit_rows() {
     echo "[mh:cost-tracker] emit_rows($stream): jq failed rc=$jq_rc on: $*" >&2
     cat "$jq_err" >&2 2>/dev/null
     rm -f "$jq_err" 2>/dev/null
-    jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg sid "$session_id" \
-      --arg tp "$transcript" --arg stream "$stream" --arg files "$*" \
-      '{timestamp: $ts, session_id: $sid, transcript_path: $tp, stream: $stream,
-        error: "jq_failed", files: $files}' 2>/dev/null
+    jq_failed_row "$stream" "$*"
     return 0
   fi
   rm -f "$jq_err" 2>/dev/null
@@ -458,7 +471,7 @@ scan_transcript() {
   # much larger than that ever shows up is a single streaming `reduce (inputs
   # | try fromjson) as $l (...)` computing all four accumulators together
   # instead of materializing $lines first.
-  jq -nRc --arg tp "$1" --argjson ids "$(jq -nc '$ARGS.positional' --args ${_ids[@]+"${_ids[@]}"})" "$adv_def"'
+  jq -nRc --arg tp "$1" --argjson ids "$(jq -nc '$ARGS.positional' --args ${_ids[@]+"${_ids[@]}"})" "$adv_def$usage_def"'
     [inputs | try fromjson] as $lines
     | {
         verify_map: ( try (
@@ -482,29 +495,13 @@ scan_transcript() {
             | {(.id): (.input.subagent_type // empty)}] | add // {}
         ) catch {} ),
         usages: ( try (
-          # cw/cw1h: same iterations-aware extraction as raw_records above
-          # (see its own comment for why) -- a second, independent copy of
-          # the same logic for this in-memory fast path.
+          # The same usage_rec def raw_records uses (usage_def, above).
           [ $lines[] |
             select(.type == "assistant") |
             select((.message // {}).usage != null) |
             select((.message.model // "") | ascii_downcase | test("^claude")) |
             adv_recs(null; $tp),
-            ((.message.usage.iterations // []) as $its |
-            (.message.usage.cache_creation_input_tokens // 0) as $flat |
-            { in: (.message.usage.input_tokens // 0),
-              out: (.message.usage.output_tokens // 0),
-              cw: (if ($its | length) > 0
-                   then ($flat - ([($its | map(.cache_creation.ephemeral_1h_input_tokens // 0) | add), $flat] | min))
-                   else ($flat - ([(.message.usage.cache_creation.ephemeral_1h_input_tokens // 0), $flat] | min)) end),
-              cw1h: (if ($its | length) > 0
-                     then ([($its | map(.cache_creation.ephemeral_1h_input_tokens // 0) | add), $flat] | min)
-                     else ([(.message.usage.cache_creation.ephemeral_1h_input_tokens // 0), $flat] | min) end),
-              cr: (.message.usage.cache_read_input_tokens // 0),
-              m: (.message.model // "unknown"),
-              t: null,
-              id: (.message.id // null),
-              f: $tp }) ]
+            usage_rec(null; $tp) ]
           | reduce .[] as $x ({byid: {}, out: []};
               if $x.id == null then .out += [$x]
               else .byid[$x.id] = $x end)
@@ -655,10 +652,7 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
   if [[ $usages_failed -eq 1 ]]; then
     usages_msg=$(printf '%s' "$main_usages" | jq -r '.msg // empty' 2>/dev/null)
     echo "[mh:cost-tracker] emit_rows(orchestrator): jq failed extracting usage records on: $transcript${usages_msg:+ -- $usages_msg}" >&2
-    rows=$(jq -nc --arg ts "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --arg sid "$session_id" \
-      --arg tp "$transcript" --arg stream orchestrator --arg files "$transcript" \
-      '{timestamp: $ts, session_id: $sid, transcript_path: $tp, stream: $stream,
-        error: "jq_failed", files: $files}' 2>/dev/null)
+    rows=$(jq_failed_row orchestrator "$transcript")
   else
     rows=$(group_and_price "$orch_typemap" orchestrator "$main_usages")
   fi
