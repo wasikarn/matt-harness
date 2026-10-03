@@ -1093,13 +1093,31 @@ def _blanked(c, named_fd=True):
     # charges a fresh depth-scan budget and may set _DEPTH_BUDGET_BLOWN.
     return _blank_redirections(_blank_substitutions(_newlines_to_seps(_normalize_ansi_c_quotes(c))), named_fd)
 
+# GH #375: shlex splits one shell word at each character outside its wordchars ($, :, @, a Thai
+# letter): `$PWD` is "$", "PWD". A token that shlex cut from the one before it, with no blank
+# between them, comes back as _Glued (an equal str, so every other check reads it unchanged).
+class _Glued(str):
+    __slots__ = ()
+
 def _tokens(src, extra_wordchars="", whitespace_split=False):
     # shlex tokens of a _blanked() text; the placeholders are word characters. Raises ValueError.
     lex = shlex.shlex(src, posix=True, punctuation_chars=True)
     lex.wordchars += PH + HASH_LIT + PSUB + extra_wordchars
     if whitespace_split:
         lex.whitespace_split = True
-    return list(lex)
+        return list(lex)
+    out, glued = [], False
+    while True:
+        tok = lex.get_token()
+        if tok is None:
+            return out
+        out.append(_Glued(tok) if glued else tok)
+        # A token cut at a non-word character pushes that character back; a one-character token
+        # ("$") ends without reading on. Either way the next token is glued unless a blank comes first.
+        back = getattr(lex, "_pushback_chars", ())
+        end = lex.instream.tell() - len(back)
+        glued = bool(back) or (end < len(src) and src[end - 1] not in lex.whitespace
+                               and src[end] not in lex.whitespace)
 
 # shlex.split() only recognizes ;/&&/||/|/& as separators when whitespace
 # surrounds them ("echo hi;rm -rf x" glued "hi;rm"); punctuation_chars=True
@@ -1642,6 +1660,33 @@ def _bundled_flag(t, stop_chars, flag="f"):
             return True
     return False
 
+def _git_words(rest):
+    # GH #375: git's leading global flags with each glued token run (_Glued) joined into one shell
+    # word, then the subcommand and its arguments unchanged; None when no flag or value was glued.
+    # The same walk as the git block: a value-taking global takes the next word.
+    out, i, n, joined = [], 0, len(rest), False
+    def word():
+        nonlocal i, joined
+        j = i + 1
+        while j < n and isinstance(rest[j], _Glued):
+            j += 1
+        if j - i > 1:
+            joined = True
+        t, i = "".join(rest[i:j]) if j - i > 1 else rest[i], j  # join once: a long glued run stays linear
+        return t
+    while i < n:
+        start, was_joined = i, joined
+        t = word()
+        if not t.replace(PH, "").startswith("-"):
+            # The subcommand stays as tokens and its own glue does not count: the window this
+            # returns would be the same window again, appended forever.
+            i, joined = start, was_joined
+            break
+        out.append(t)
+        if t.replace(PH, "") in GIT_VALUE_GLOBALS and i < n:
+            out.append(word())
+    return out + rest[i:] if joined else None
+
 def _sets_hooks_path(w):
     # Does a `-c KEY=VAL` / `-cKEY=VAL` / `--config-env KEY=VAR` / `--config-env=KEY=VAR` word in
     # window w set core.hooksPath (key case-insensitive) to a non-empty value?
@@ -1933,6 +1978,13 @@ def _check_window(_wi, w):
             # this; this arm predated it and was missed.
             if _sets_hooks_path(w):
                 deny("-c core.hooksPath=<path> re-points git at a different hooks dir — same bypass as --no-verify", rule="git-hooks-path")
+            # GH #375: the global flags re-read as shell words (glued tokens joined), so `-C $R`,
+            # `-C$R`, `--git-dir=$G` and `-c k=a@b` hold one value, are checked as a window of their
+            # own. This window keeps the token reading below: a deny in either wins.
+            _gw = _git_words(rest)
+            if _gw:
+                _WDEPTH[len(windows)] = _cur_depth
+                windows.append(["git"] + _gw)
             # Walk past leading global flags so ` git -C /repo push --force`
             # (or -Cpath, --no-pager) does not set sub="-C" and bypass the gate.
             i = 0

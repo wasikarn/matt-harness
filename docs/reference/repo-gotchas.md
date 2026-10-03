@@ -197,6 +197,13 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   `opaque-var-verb` asks and 98 `source-file` asks. Those three ship shadow. Residue: zsh does not split
   $IFS (bash and dash do); `. file` with no candidate word never reaches python; `mk$(true)fs` matches,
   `${X}` as argv0 does not read as mkfs.
+- **shlex cuts one shell word into several tokens** (GH #375). With `punctuation_chars` and no
+  `whitespace_split`, a character outside its wordchars ends the token: `$PWD` is `$`, `PWD`, and `a:b`,
+  `a@b.c` and a Thai path split too. A check that takes "the next token" as one word misreads it: the git
+  global walk took `PWD` in `git -C $PWD reset --hard` for the subcommand. `_tokens` now returns a token
+  cut from the one before it, with no blank between, as `_Glued` (an equal `str`), and the git block
+  re-reads its global flags as joined words in a window of its own; the token reading stays, so a deny in
+  either wins. Other value-taking walks (sudo `-u`, env `-u`, `timeout`'s duration) still read one token.
 - **Oracle:** run the real shells (the system `/bin/sh`, bash 3.2, a current bash, dash, zsh, ksh)
   with argv-logging stubs, never one shell or argv0-based shell guessing: whether `{fd}>` is a
   redirect depends on the binary and version (GH #219).
