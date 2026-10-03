@@ -27,6 +27,9 @@ Enforcement layers, weakest to strongest:
   and a write-access credential. "Review" here is this repo's own operating custom, not something
   branch protection mechanically enforces. An admin editing the protection rule itself is a
   separate, named, accepted residual risk, not something any of the above closes.
+  Required checks are not `strict` (the up-to-date requirement was turned off 2026-10-03: it forced a
+  re-run of every open PR after each merge, about 5 min each); the push-to-`develop` CI run catches
+  a bad combination of two PRs that each passed alone.
 
 The former `git worktree add -b` deny predates this and was removed in the v1.0.0 rebuild;
 `claude --worktree` and `/branch` never routed through it anyway. `/branch` and

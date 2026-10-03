@@ -3,6 +3,10 @@
 All notable changes to `mh` are documented here. Format loosely follows
 [Keep a Changelog](https://keepachangelog.com/); versions follow [SemVer](https://semver.org/).
 
+> **Frozen at 1.1.153 (2026-10-03, GH #396).** Later versions are not listed here: each release is a
+> `chore(release): bump to <version>` commit, so `git log --grep '^chore(release)'` is the record.
+> Nothing checks this file against the manifests.
+
 ## [1.1.153] — 2026-09-28
 
 `mh:deep-audit` on PRs #167-#170 (baseline 6.8/10, fail): an independent Codex checker found the
