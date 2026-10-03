@@ -1374,6 +1374,98 @@ for _c in \
   check "GH #339 padded chain allow shape finishes inside 8 s (rc $rc, ${#_c} bytes): ${_c:0:24}" "$ok"
 done
 
+# --- GH #326: the wrapper skips python3 only when it can prove python would allow
+# silently (no literal agent_id, no \u escape, a plain ASCII JSON object). A python3
+# stub on PATH touches a marker, so each row asserts whether python ran, not just the
+# verdict. Payloads are built before PATH changes, so only the gate call can trip it.
+_PYREAL="$(command -v python3)"
+_STUB="$_JOURNAL_TMP/pystub"; mkdir -p "$_STUB"
+printf '#!/bin/sh\n: >> "$PYSTUB_MARK"\nexec "%s" "$@"\n' "$_PYREAL" > "$_STUB/python3"
+chmod +x "$_STUB/python3"
+export PYSTUB_MARK="$_JOURNAL_TMP/python-ran"
+fp_run() { # fp_run <payload> -> sets fp_rc, fp_err, fp_py (yes|no)
+  trash "$PYSTUB_MARK" 2>/dev/null || true
+  fp_err=$(printf '%s' "$1" | PATH="$_STUB:$PATH" bash "$GATE" 2>&1 >/dev/null); fp_rc=$?
+  if [ -e "$PYSTUB_MARK" ]; then fp_py=yes; else fp_py=no; fi
+}
+cc_payload() { # cc_payload <command> [agent_id] [ensure_ascii 1|0]: the full shape Claude Code sends
+  python3 -c '
+import json, sys
+d = {"session_id": "s1", "transcript_path": "/t/x.jsonl", "cwd": "/w", "permission_mode": "default",
+     "hook_event_name": "PreToolUse", "tool_name": "Bash",
+     "tool_input": {"command": sys.argv[1], "description": "d", "timeout": 120000}, "tool_use_id": "toolu_1"}
+if sys.argv[2]:
+    d["agent_id"] = sys.argv[2]
+    d["agent_type"] = "general-purpose"
+print(json.dumps(d, ensure_ascii=sys.argv[3] == "1", separators=(",", ":")))
+' "$1" "${2:-}" "${3:-1}"
+}
+
+fp_run "$(cc_payload 'ls -la src && npm test')"
+ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = no ] && [ -z "$fp_err" ] && ok=0
+check "GH #326 main session, benign command: allowed with no python3 run (rc $fp_rc, python $fp_py)" "$ok"
+fp_run "$(cc_payload 'git stash')"
+ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = no ] && ok=0
+check "GH #326 main session, git stash: allowed with no python3 run (no agent_id key)" "$ok"
+fp_run "$(cc_payload 'grep -rn agent_id hooks')"
+ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = yes ] && ok=0
+check "GH #326 main session, command text holds agent_id: still reaches python3 (python $fp_py)" "$ok"
+fp_run "$(cc_payload 'ls' agent1)"
+ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = yes ] && ok=0
+check "GH #326 subagent, benign command: reaches python3 (python $fp_py)" "$ok"
+fp_run "$(cc_payload 'git stash' agent1)"
+ok=1; [ "$fp_rc" -eq 2 ] && [ "$fp_py" = yes ] && ok=0
+check "GH #326 subagent, git stash: reaches python3 and denies (rc $fp_rc)" "$ok"
+# GH #154 shape: the key spelled with a JSON \u escape decodes to agent_id but the raw
+# text never holds that substring. Built with chr(92) so no transport decodes it first.
+fp_run "$(python3 -c '
+import json
+d = {"tool_name": "Bash", "tool_input": {"command": "git stash"}, "XKEYX": "agent-1"}
+print(json.dumps(d).replace("XKEYX", "agent" + chr(92) + "u005fid"))
+')"
+ok=1; [ "$fp_rc" -eq 2 ] && [ "$fp_py" = yes ] && ok=0
+check "GH #154/#326 escaped agent_id key (\\u005f) + git stash: reaches python3 and denies (rc $fp_rc)" "$ok"
+# @ stands for the backslash (chr(92)), for the same transport reason.
+for _k in 'agent@u005fid' '@u0061gent_id' 'a@u0067ent@u005F@u0069d'; do
+  fp_run "$(python3 -c '
+import json, sys
+k = sys.argv[1].replace("@", chr(92))
+print(json.dumps({"tool_name": "Bash", "tool_input": {"command": "git stash"}, "XKEYX": None}).replace("XKEYX", k))
+' "$_k")"
+  ok=1; [ "$fp_rc" -eq 2 ] && [ "$fp_py" = yes ] && ok=0
+  check "GH #154/#326 escaped key spelling $_k (@ = backslash), null value + git stash: denies (rc $fp_rc)" "$ok"
+done
+fp_run "$(cc_payload 'echo café')"
+ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = yes ] && ok=0
+check "GH #326 any \\u escape (ensure_ascii é) reaches python3 (python $fp_py)" "$ok"
+fp_run "$(cc_payload 'echo สวัสดี' '' 0)"
+ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = yes ] && ok=0
+check "GH #326 raw non-ASCII payload reaches python3 (the shape proof is ASCII-only; python $fp_py)" "$ok"
+# Malformed and non-object payloads keep python3's stderr diagnostic (identical output).
+for _p in '{"tool_name":"Bash","tool_input":{"command":"ls"}' '[{"tool_name":"Bash"}]' \
+  '{"tool_name":"Bash","tool_input":{"command":"ls"}}x' '{"a":01}' '{"a":"x\q"}' ''; do
+  fp_run "$_p"
+  ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = yes ] && [ -n "$fp_err" ] && ok=0
+  check "GH #326 malformed/non-object payload reaches python3 and keeps its diagnostic: ${_p:0:40}" "$ok"
+done
+# Invalid JSON the regex must refuse: raw control bytes inside a string, a [ opening an object body.
+for _p in "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"a$(printf '\t')b\"}}" \
+  "{\"tool_name\":\"Bash\",\"tool_input\":{\"command\":\"a$(printf '\001')b\"}}" \
+  '["tool_name":"Bash","tool_input":{"command":"ls"}}'; do
+  fp_run "$_p"
+  ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = yes ] && [ -n "$fp_err" ] && ok=0
+  check "GH #326 invalid JSON (raw control byte in a string / [ before an object body) reaches python3" "$ok"
+done
+fp_run '{"tool_name":"Bash","tool_input":{"command":"ls","x":{"y":1}}}'
+ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = yes ] && ok=0
+check "GH #326 object nested past depth 2 is outside the proof, reaches python3" "$ok"
+fp_run '{"tool_name":"Bash","tool_input":{"command":"ls","x":[1]}}'
+ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = yes ] && ok=0
+check "GH #326 array value is outside the proof, reaches python3" "$ok"
+fp_run '{"tool_name":"Bash","tool_input":{"command":"ls","t":-1.5e3,"b":true,"n":null}, "x" : "a\"b\\/\n"}'
+ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = no ] && ok=0
+check "GH #326 numbers, literals, spaces and \\\" \\\\ \\/ \\n escapes stay inside the proof (python $fp_py)" "$ok"
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

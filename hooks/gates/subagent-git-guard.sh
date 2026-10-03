@@ -15,13 +15,13 @@
 # or a substitution that builds the word "git" is a non-goal, and a
 # heredoc BODY line starting with "git stash" over-blocks (no heredoc parsing).
 #
-# No bash-level fast path on the agent_id key (2026-09-20 audit, same GH #154
-# gap already fixed in subagent-spawn-guard.sh): a raw-text substring check
-# ran before any JSON parsing and could be bypassed by writing that key with
-# a JSON unicode escape instead of a literal underscore -- valid JSON, same
-# decoded key, but absent from the raw text the substring check saw --
-# live-confirmed. Every payload now always reaches python3, matching the
-# sibling gates' convention.
+# Fast path (GH #326) skips python3 only on proof it would allow in silence. A bare "no agent_id
+# substring" check is a bypass (GH #154: the key can be written with a \u escape). JSON's other
+# escapes (\" \\ \/ \b \f \n \r \t) cannot make a letter or "_", so with neither agent_id nor \u
+# in the raw text, a payload that also matches the plain-object regex below (ASCII, depth 2, no
+# arrays) parses to a dict with no agent_id key: python exits 0, no output. Anything else runs
+# python3 (malformed JSON keeps its stderr line). Keep `_input=$(cat)` on line 33: bash's NUL-byte
+# warning names it. No "no git substring" shortcut: g\it serializes as g\\it (GH #317).
 set -uo pipefail
 
 # Portability guard (#93): announced fail-open when python3 is missing.
@@ -32,11 +32,25 @@ fi
 
 _input=$(cat)
 
-_py="$(dirname "$0")/subagent-git-guard.py"
+# ${0%/*}, not $(dirname), saves a fork on every call.
+case $0 in */*) _py="${0%/*}/subagent-git-guard.py" ;; *) _py=subagent-git-guard.py ;; esac
 if [ ! -r "$_py" ]; then
   echo "[mh:gate] internal error: sibling script subagent-git-guard.py missing or unreadable — allowing (fail-safe = allow, same posture as this gate's own parse-error path)" >&2
   exit 0
 fi
+
+_s='"([ !#-[]|[]-~]|\\["\\/bfnrt])*"'                   # ASCII string, no \u
+_w=$'[ \t\n\r]*'                                         # JSON whitespace only
+_v="($_s|-?(0|[1-9][0-9]*)([.][0-9]+)?([eE][-+]?[0-9]+)?|true|false|null)"
+_o="[{]$_w($_s$_w:$_w$_v$_w(,$_w$_s$_w:$_w$_v$_w)*)?[}]"  # object of scalars
+_v="($_v|$_o)"
+_re="^${_w}[{]$_w($_s$_w:$_w$_v$_w(,$_w$_s$_w:$_w$_v$_w)*)?[}]$_w\$"
+_no_agent_id() {
+  local LC_ALL=C  # byte-wise match: ranges are ASCII, non-ASCII bytes fail
+  case $_input in *agent_id*|*'\u'*) return 1 ;; esac
+  [[ $_input =~ $_re ]]
+}
+_no_agent_id && exit 0
 
 printf '%s' "$_input" | python3 "$_py"
 exit $?

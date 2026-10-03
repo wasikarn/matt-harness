@@ -10,9 +10,18 @@ if ! command -v python3 >/dev/null 2>&1; then
   exit 0
 fi
 
-_py="$(dirname "$0")/codex-quota-advisory.py"
+# ${0%/*}, not $(dirname), saves a fork on every call.
+case $0 in */*) _py="${0%/*}/codex-quota-advisory.py" ;; *) _py=codex-quota-advisory.py ;; esac
 if [ ! -r "$_py" ]; then
   echo "[mh:sensor] internal error: sibling script codex-quota-advisory.py missing or unreadable — allowing" >&2
+  exit 0
+fi
+
+# Fast path (GH #326): python acts only when its state file exists (argv path,
+# else MH_CODEX_QUOTA_STATE_FILE, else the default; empty counts as unset, as
+# in default_state_path). No file means python opens nothing and stays silent.
+# HOME unset: python reads the passwd home instead, so leave that case to it.
+if [ -n "${HOME+set}" ] && [ ! -e "${1-${MH_CODEX_QUOTA_STATE_FILE:-$HOME/.cache/mh/codex-quota-state.json}}" ]; then
   exit 0
 fi
 
