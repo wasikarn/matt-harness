@@ -3020,6 +3020,40 @@ else
   echo "  ❌ GH #336: corpus replayed $_got336 of $_want336 cases" >&2; fail=$((fail + 1))
 fi
 
+# GH #375: a git global's value split by shlex at $, :, @ or a non-ASCII letter (-C $R) took the
+# variable's name for the subcommand. Cases (each deny shape checked in real shells) live in a fixture.
+_c375="$ROOT/tests/hooks/fixtures/irrecoverable-375-cases.txt"
+_want375=$(/usr/bin/grep -cE '^(DENY|ALLOW) ' "$_c375"); _got375=0
+while IFS= read -r _line; do
+  case "$_line" in
+    DENY\ *) test_deny "$IRRECOVERABLE" "GH #375: ${_line#DENY }" "$(bash_payload "${_line#DENY }")" ;;
+    ALLOW\ *)
+      : > "$_JOURNAL_TMP/a375.jsonl"
+      test_allow "$IRRECOVERABLE" "GH #375 control: ${_line#ALLOW }" "$(bash_payload "${_line#ALLOW }")" "MH_GATE_JOURNAL_PATH=$_JOURNAL_TMP/a375.jsonl"
+      if [ -s "$_JOURNAL_TMP/a375.jsonl" ]; then
+        echo "  ❌ GH #375 control journaled a row: ${_line#ALLOW }" >&2; fail=$((fail + 1))
+      fi ;;
+    *) continue ;;
+  esac
+  _got375=$((_got375 + 1))
+done < "$_c375"
+# The re-read global part is one more window per git window; a hook timeout allows.
+_timed_case "GH #375: 4000 '-C \$R' globals before reset --hard, denied in bounded time" 2 \
+  "git $(printf -- '-C $R %.0s' $(seq 4000))reset --hard"
+_timed_case "GH #375: 4000 '-C \$R' globals before status, allowed in bounded time" 0 \
+  "git $(printf -- '-C $R %.0s' $(seq 4000))status"
+_timed_case "GH #375: reset --hard after 2000 benign '-C \$R' git statements, denied in bounded time" 2 \
+  "$(printf 'git -C $R status; %.0s' $(seq 2000))git -C \$R reset --hard"
+_timed_case "GH #375: glue only inside the subcommand word appends no window, allowed in bounded time" 0 \
+  "git -C \$R status\$X"
+_timed_case "GH #375: 20 KB value of glued \$a\$b words before reset --hard, denied in bounded time" 2 \
+  "git -C $(printf '$a%.0s' $(seq 10000)) reset --hard"
+if [ "$_want375" -ge 50 ] && [ "$_got375" = "$_want375" ]; then
+  echo "  ✅ GH #375: corpus replayed every case ($_got375)"; pass=$((pass + 1))
+else
+  echo "  ❌ GH #375: corpus replayed $_got375 of $_want375 cases" >&2; fail=$((fail + 1))
+fi
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
