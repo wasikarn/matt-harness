@@ -119,6 +119,48 @@ else
   bad "expected an advisory for the next companion command, got out='$out'"
 fi
 
+# --- GH #326: the advisory skips python3 when no state file exists (the common path).
+# A python3 stub on PATH touches a marker, so each row asserts whether python ran.
+_PYREAL="$(command -v python3)"
+mkdir -p "$STATE_DIR/stub"
+printf '#!/bin/sh\n: >> "$PYSTUB_MARK"\nexec "%s" "$@"\n' "$_PYREAL" > "$STATE_DIR/stub/python3"
+chmod +x "$STATE_DIR/stub/python3"
+export PYSTUB_MARK="$STATE_DIR/python-ran"
+adv() { # adv <payload> [args...] -> out, py (yes|no); env passes through from the caller
+  local p="$1"; shift
+  rm -f "$PYSTUB_MARK"
+  out=$(printf '%s' "$p" | PATH="$STATE_DIR/stub:$PATH" bash "$ADVISORY" "$@" 2>&1)
+  if [ -e "$PYSTUB_MARK" ]; then py=yes; else py=no; fi
+}
+fresh_state() { printf '{"recorded_at": %s, "message": "Usage limit reached"}' "$(date +%s)" > "$1"; }
+CODEX_P=$(pretooluse_payload "codex exec 'go'")
+FAKE_HOME="$STATE_DIR/home"; mkdir -p "$FAKE_HOME/.cache/mh"
+
+rm -f "$STATE"
+MH_CODEX_QUOTA_STATE_FILE="$STATE" adv "$CODEX_P"
+if [ -z "$out" ] && [ "$py" = no ]; then ok "GH #326 no state file (env path): silent, python3 never starts"
+else bad "expected silence and no python3 run, got out='$out' python=$py"; fi
+
+HOME="$FAKE_HOME" MH_CODEX_QUOTA_STATE_FILE='' adv "$CODEX_P"
+if [ -z "$out" ] && [ "$py" = no ]; then ok "GH #326 no state file (default HOME path): silent, python3 never starts"
+else bad "expected silence and no python3 run at the default path, got out='$out' python=$py"; fi
+
+fresh_state "$FAKE_HOME/.cache/mh/codex-quota-state.json"
+HOME="$FAKE_HOME" MH_CODEX_QUOTA_STATE_FILE='' adv "$CODEX_P"
+if [ "$py" = yes ] && echo "$out" | /usr/bin/grep -q 'mh-codex-quota-advisory'; then
+  ok "GH #326 empty MH_CODEX_QUOTA_STATE_FILE falls back to the HOME default, as python does"
+else bad "expected an advisory from the HOME default state file, got out='$out' python=$py"; fi
+
+fresh_state "$STATE"
+MH_CODEX_QUOTA_STATE_FILE="$STATE" adv "$CODEX_P" "$STATE_DIR/absent.json"
+if [ -z "$out" ] && [ "$py" = no ]; then ok "GH #326 an argv state path wins over the env path (absent argv file: silent, no python3)"
+else bad "expected the argv path to decide, got out='$out' python=$py"; fi
+
+MH_CODEX_QUOTA_STATE_FILE="$STATE_DIR/absent.json" adv "$CODEX_P" "$STATE"
+if [ "$py" = yes ] && echo "$out" | /usr/bin/grep -q 'mh-codex-quota-advisory'; then
+  ok "GH #326 a present argv state file reaches python3 and warns"
+else bad "expected python3 and an advisory from the argv state file, got out='$out' python=$py"; fi
+
 echo
 echo "codex-quota tests: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
