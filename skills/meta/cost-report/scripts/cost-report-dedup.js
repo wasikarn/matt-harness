@@ -82,6 +82,32 @@ console.log("today:     "+f4(sum(latest.filter(r=>day(r)===today))));
 console.log("yesterday: "+f4(sum(latest.filter(r=>day(r)===d))));
 const sessionIds=new Set(latest.map(r=>r.session_id||r.transcript_path||r.timestamp));
 console.log("total:     "+f4(sum(latest))+"  ("+sessionIds.size+" sessions)");
+// Ledger cross-check (GH #334): cost-ledger.jsonl beside the costs file holds Claude Code's own
+// cumulative ledger per main-loop turn (hooks/mod/cost-ledger.ts). Each session's ledger total is
+// recomputed from the `usd` sequence in file order, a drop restarting the count (a new process);
+// the stored `delta` is ignored because a module reload resets it. Only sessions on both sides
+// are compared. The transcript total stays the authoritative number above.
+{
+  const lf=path.join(path.dirname(f),"cost-ledger.jsonl");
+  const led=new Map();let lerr=0;
+  if(fs.existsSync(lf))for(const l of fs.readFileSync(lf,"utf8").split(/\r?\n/)){
+    let r;try{r=JSON.parse(l)}catch{continue}
+    if(!r||!r.session_id)continue;
+    if(r.error!==undefined){lerr++;continue;}
+    const usd=Number(r.usd);if(!Number.isFinite(usd))continue;
+    const p=led.get(r.session_id)||{prev:undefined,total:0};
+    p.total+=p.prev===undefined||usd>=p.prev?usd-(p.prev??0):usd;p.prev=usd;led.set(r.session_id,p);
+  }
+  if(lerr)console.log("warning: "+lerr+" cost-ledger error rows (the module could not read or write the ledger on those turns) — the ledger total below may run low");
+  if(!led.size)console.log("ledger cross-check: no ledger data (the mh cost-ledger module writes it; it is off when modules are, on CLIs before 2.1.287, or before a session's first turn ends)");
+  else{
+    const tBy=new Map();for(const r of latest){const k=r.session_id||r.transcript_path||r.timestamp;tBy.set(k,(tBy.get(k)||0)+cost(r));}
+    let t=0,lg=0,n=0;for(const [k,v] of led)if(tBy.has(k)){t+=tBy.get(k);lg+=v.total;n++;}
+    const tOnly=[...tBy.keys()].filter(k=>!led.has(k)).length,lOnly=led.size-n;
+    const gap=lg-t;
+    console.log("ledger cross-check: "+(n?"transcript "+f4(t)+" vs ledger "+f4(lg)+" over "+n+" sessions; unattributed "+f4(gap)+" ("+(lg?(100*gap/lg).toFixed(1):"0.0")+"% of ledger)":"no session on both sides")+(tOnly||lOnly?"; left out: "+tOnly+" transcript-only, "+lOnly+" ledger-only":""));
+  }
+}
 const by=(key)=>{const m=new Map();for(const r of latest){const k=key(r)||"(unknown)";m.set(k,(m.get(k)||0)+cost(r));}return [...m.entries()].sort((a,b)=>b[1]-a[1]);};
 const unverified=new Set(latest.filter(r=>r.rate_verified===false).map(r=>r.model||"(unknown)"));
 console.log("\n=== By model ===");for(const [k,v] of by(r=>r.model))console.log(f4(v).padStart(12)+"  "+k+(unverified.has(k)?"  (rate unverified)":""));
