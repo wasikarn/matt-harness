@@ -22,7 +22,11 @@ Since GH #159 (v1.1.87), `.github/workflows/validate.yml`'s `gauntlet` job also 
 gauntlet silently never runs at all; CI still surfaces it, on the PR run, as a normal red
 job (confirmed green on a real run 2026-09-12, no `continue-on-error` left). Since `develop`
 became protected (2026-09-28, `docs/reference/branching-model.md`), that job is one of the 3
-required status checks, so a red run blocks merge.
+required status checks, so a red run blocks merge. Since GH #400 the tests run as 5
+`gauntlet shard` matrix jobs (`GAUNTLET_SHARD=i/N`, files split by byte size, validate + lint
+in shard 1 only), and the `gauntlet (run-gauntlet.sh)` job is an `if: always()` aggregator
+that goes red unless every shard succeeded. A new heavy test file can unbalance the split:
+re-time the shards from `gh run view` if one grows well past the others.
 
 ## Repo and commit hygiene
 

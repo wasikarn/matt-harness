@@ -21,6 +21,22 @@ cd "$ROOT" || exit 1
 # in its env, which hijacks those git-init calls onto the real repo instead
 # of the fixture dir. Clear them before the test layer runs.
 unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES GIT_COMMON_DIR GIT_NAMESPACE
+# GAUNTLET_SHARD=i/N (GH #400): CI runs N copies of this script, one per runner,
+# each with 1/N of the test files; validate and lint run only in shard 1. Unset
+# runs everything, as before. Read into a plain var and unset, so the test files
+# themselves never see it.
+shard="${GAUNTLET_SHARD:-}"
+unset GAUNTLET_SHARD
+check_shard() {
+  case "$shard" in
+    "") return 0 ;;
+    *[!0-9/]*|*/*/*) ;;
+    [0-9]*/[0-9]*) [ "${shard%/*}" -ge 1 ] && [ "${shard%/*}" -le "${shard#*/}" ] && return 0 ;;
+  esac
+  echo "gauntlet: GAUNTLET_SHARD must be i/N with 1 <= i <= N, got '$shard'" >&2
+  return 1
+}
+check_shard || exit 2
 LOG="$(mktemp -d)" && [ -d "$LOG" ] || { echo "gauntlet: mktemp -d failed, refusing to run with an empty log dir" >&2; exit 1; }
 # Keep $LOG on a failing run instead of trashing it unconditionally (GH #158):
 # the old unconditional trap deleted the only copy of a flaky failure's full
@@ -71,10 +87,24 @@ run_lint() {
 # tests/scripts/test-run-gauntlet-wiring.sh can check the globs without running
 # anything (it once ran the whole layer through a shim, which xargs bypasses).
 hook_test_files() {
-  local t
+  local t n
   for t in tests/hooks/*.sh tests/skills/test*.sh tests/skills/*/test*.sh tests/scripts/test*.sh tests/evals/test*.sh tests/skills/memory-lint/test_*.py; do
     [ -f "$t" ] && printf '%s\n' "$t"
-  done
+  done | if [ -z "${shard:-}" ]; then cat; else
+    # Shard i/N: greedy bin-packing by byte size, largest file first, each to the
+    # lightest shard (lowest index on a tie), so test-gates.sh and
+    # test-subagent-git-guard.sh (~half of all test time) land apart. Byte size is
+    # a rough proxy for run time, but needs no timing table to keep current.
+    # Same input gives the same split on every runner; output keeps glob order.
+    n=0
+    while IFS= read -r t; do
+      n=$((n + 1)); printf '%s %s %s\n' "$(wc -c <"$t" | tr -d ' ')" "$n" "$t"
+    done | LC_ALL=C sort -k1,1nr -k3,3 |
+      awk -v i="${shard%/*}" -v n="${shard#*/}" '
+        { b = 1; for (k = 2; k <= n; k++) if (sum[k] < sum[b]) b = k
+          sum[b] += $1; if (b == i) print $2, $3 }' |
+      sort -n | cut -d' ' -f2
+  fi
   return 0
 }
 
@@ -122,14 +152,19 @@ run_hook_tests() {
   return "$rc"
 }
 
-run_validate >"$LOG/validate" 2>&1 & p1=$!
-run_lint >"$LOG/lint" 2>&1 & p2=$!
+p1="" p2=""
+if [ -z "$shard" ] || [ "${shard%/*}" -eq 1 ]; then
+  run_validate >"$LOG/validate" 2>&1 & p1=$!
+  run_lint >"$LOG/lint" 2>&1 & p2=$!
+fi
 run_hook_tests >"$LOG/tests" 2>&1 & p3=$!
 
 fail=0
 report() {
   local name="$1" pid="$2"
-  if wait "$pid"; then
+  if [ -z "$pid" ]; then
+    echo "SKIP  $name (runs in shard 1, this is shard $shard)"
+  elif wait "$pid"; then
     echo "PASS  $name"
   else
     echo "FAIL  $name"; fail=1
