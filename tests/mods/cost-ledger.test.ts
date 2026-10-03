@@ -86,6 +86,28 @@ test('a throwing usage read becomes an error row, core still runs', async ($, on
   expect(h.completes).toBe(2)
 })
 
+// JSON.stringify writes NaN and both infinities as null, which the report once read as a $0 reset.
+test('a non-finite reading becomes an error row and leaves the baseline alone', async ($, on) => {
+  const { h, turn } = setup($, on)
+  h.usage = { cost: { usd: 1 } }
+  await turn('t1')
+  h.usage = { cost: { usd: NaN } }
+  expect(await turn('t2')).toEqual({ text: 'core' })
+  h.usage = { cost: { usd: Infinity } }
+  expect(await turn('t3')).toEqual({ text: 'core' })
+  h.usage = { cost: { usd: 1.5 } }
+  await turn('t4')
+  expect(h.rows.map(r => [r.turn_id, r.usd, r.delta, r.reset])).toEqual([
+    ['t1', 1, 1, false],
+    ['t2', undefined, undefined, undefined],
+    ['t3', undefined, undefined, undefined],
+    ['t4', 1.5, 0.5, false],
+  ])
+  expect(String(h.rows[1].error)).toContain('non-finite')
+  expect(String(h.rows[2].error)).toContain('non-finite')
+  expect(h.completes).toBe(4)
+})
+
 test('a failed append is logged, never thrown, and core still runs', async ($, on) => {
   const { h, turn } = setup($, on)
   h.usage = { cost: { usd: 0.5 } }

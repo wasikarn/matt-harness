@@ -89,16 +89,19 @@ console.log("total:     "+f4(sum(latest))+"  ("+sessionIds.size+" sessions)");
 // are compared. The transcript total stays the authoritative number above.
 {
   const lf=path.join(path.dirname(f),"cost-ledger.jsonl");
-  const led=new Map();let lerr=0;
+  const led=new Map();let lerr=0,lbad=0;
   if(fs.existsSync(lf))for(const l of fs.readFileSync(lf,"utf8").split(/\r?\n/)){
     let r;try{r=JSON.parse(l)}catch{continue}
     if(!r||!r.session_id)continue;
     if(r.error!==undefined){lerr++;continue;}
-    const usd=Number(r.usd);if(!Number.isFinite(usd))continue;
+    // A finite number only (Number.isFinite never coerces): Number(null) and Number("") are 0,
+    // which would read as a reset and add the next reading whole.
+    const usd=r.usd;if(!Number.isFinite(usd)){lbad++;continue;}
     const p=led.get(r.session_id)||{prev:undefined,total:0};
     p.total+=p.prev===undefined||usd>=p.prev?usd-(p.prev??0):usd;p.prev=usd;led.set(r.session_id,p);
   }
   if(lerr)console.log("warning: "+lerr+" cost-ledger error rows (the module could not read or write the ledger on those turns) — the ledger total below may run low");
+  if(lbad)console.log("warning: "+lbad+" cost-ledger rows with no finite usd were skipped (not read as $0) — the ledger total below may run low");
   if(!led.size)console.log("ledger cross-check: no ledger data (the mh cost-ledger module writes it; it is off when modules are, on CLIs before 2.1.287, or before a session's first turn ends)");
   else{
     const tBy=new Map();for(const r of latest){const k=r.session_id||r.transcript_path||r.timestamp;tBy.set(k,(tBy.get(k)||0)+cost(r));}

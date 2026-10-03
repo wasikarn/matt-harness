@@ -152,7 +152,7 @@ read live instead, as a cross-check, by mh's hooks module (`hooks/mod/cost-ledge
 
 The module appends `{ t, session_id, turn_id, usd, delta, reset }` to `cost-ledger.jsonl` beside
 `costs.jsonl` after each main-loop turn; `usd` is `$.session.usage().cost.usd`, the running total
-`/cost` shows. A row with `error` marks a turn whose reading failed.
+`/cost` shows. A row with `error` marks a turn whose reading failed or was not a finite number.
 
 The report recomputes each session's ledger total from the `usd` sequence in file order: the
 first reading counts in full, growth adds the difference, and a drop (a new process) adds the new
@@ -165,6 +165,9 @@ report then prints one line after `total:`:
 - **No ledger rows** (no file, or only `error` rows): `ledger cross-check: no ledger data (...)`.
   Modules were off, the CLI is older than 2.1.287, or no turn has ended yet. Not zero.
 - **Error rows** add a `warning:` line with their count; the ledger total may then run low.
+- **Rows whose `usd` is not a finite number** (`null`, a string, missing; `null` is how JSON writes
+  NaN and Infinity) are skipped and counted in their own `warning:` line. They are never read as
+  $0: a $0 reading is a reset, which adds the next reading in full.
 
 `tests/skills/test-cost-report.sh` pins the three cases and the recompute rule with fixtures whose
 wrong answers (summed stored deltas, last or max `usd`, an unchanged reading taken as a reset)

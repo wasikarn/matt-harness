@@ -36,7 +36,11 @@ export const register: Register = on => {
     let usd: number | undefined
     try {
       session = await $.session.id()
-      usd = (await $.session.usage()).cost?.usd
+      const u = (await $.session.usage()).cost?.usd
+      // JSON.stringify writes NaN/Infinity as null; throwing here makes it an error row and keeps
+      // `usd` undefined, so the baseline below is not set to NaN.
+      if (typeof u === 'number' && !Number.isFinite(u)) throw new Error(`non-finite ledger usd: ${u}`)
+      usd = u
       if (typeof usd === 'number') {
         const { delta, reset } = ledgerDelta(prev, usd)
         row = JSON.stringify({ t: new Date().toISOString(), session_id: session, turn_id: e.turnId, usd, delta, reset })
