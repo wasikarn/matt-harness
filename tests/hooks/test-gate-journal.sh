@@ -164,6 +164,82 @@ ok=1
 [ -f "$OVERRIDE_PATH" ] && /usr/bin/grep -q '"decision": "deny"' "$OVERRIDE_PATH" && ok=0
 check "MH_GATE_JOURNAL_PATH override is honored, ignoring HOME entirely" "$ok"
 
+# --- Case 6: GH #337 shadow mode. A rule id listed in irrecoverable.py's SHADOW_RULES journals
+# would_deny/would_ask and allows. The list is a constant in the gate's source (no env var), so the
+# test marks a rule shadowed in a copy of hooks/gates/, as case 4b does. ---
+shadow_copy() { # shadow_copy <dir> <comma-separated quoted ids>
+  mkdir -p "$1" && cp -R "$ROOT/hooks/gates/." "$1/"
+  python3 - "$1/irrecoverable.py" "$2" <<'EOF'
+import re, sys
+p = sys.argv[1]
+s, n = re.subn(r"^SHADOW_RULES = .*$", "SHADOW_RULES = frozenset({" + sys.argv[2] + "})", open(p).read(), flags=re.M)
+assert n == 1, "SHADOW_RULES line not found exactly once"
+open(p, "w").write(s)
+EOF
+}
+rows() { # rows <journal> <decision> <rule> -> count of matching rows
+  python3 -c '
+import json, sys
+n = 0
+for line in open(sys.argv[1]):
+    r = json.loads(line)
+    n += r.get("decision") == sys.argv[2] and r.get("rule") == sys.argv[3]
+print(n)' "$1" "$2" "$3" 2>/dev/null || echo 0
+}
+SH_RM="$WORK/shadow-rm"; shadow_copy "$SH_RM" '"rm-rf"'
+SH_GH="$WORK/shadow-gh"; shadow_copy "$SH_GH" '"gh-pr-merge"'
+
+J6="$WORK/case6/plain.jsonl"
+payload_bash "rm -rf build" | MH_GATE_JOURNAL_PATH="$J6" bash hooks/gates/irrecoverable.sh >/dev/null 2>&1; rc=$?
+ok=1; [ "$rc" -eq 2 ] && [ "$(rows "$J6" deny rm-rf)" = 1 ] && ok=0
+check "unshadowed: rm -rf denies (rc=2) and the deny row carries rule rm-rf" "$ok"
+
+J6="$WORK/case6/shadow.jsonl"
+out=$(payload_bash "rm -rf build" | MH_GATE_JOURNAL_PATH="$J6" bash "$SH_RM/irrecoverable.sh" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && [ "$(rows "$J6" would_deny rm-rf)" = 1 ] && [ "$(rows "$J6" deny rm-rf)" = 0 ] && ok=0
+check "shadowed rm-rf: same command allowed (rc=0, no stdout), one would_deny row, no deny row" "$ok"
+ok=1; /usr/bin/grep -q '"command": "rm -rf build"' "$J6" && ok=0
+check "the would_deny row carries the command for gate-report's samples" "$ok"
+
+J6="$WORK/case6/dedupe.jsonl"
+payload_bash "rm -rf a; rm -rf b{1}" | MH_GATE_JOURNAL_PATH="$J6" bash "$SH_RM/irrecoverable.sh" >/dev/null 2>&1; rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ "$(rows "$J6" would_deny rm-rf)" = 1 ] && ok=0
+check "shadowed rule matching in several windows and copies journals once per run" "$ok"
+
+J6="$WORK/case6/later.jsonl"
+payload_bash "rm -rf build && git push --force origin main" | MH_GATE_JOURNAL_PATH="$J6" bash "$SH_RM/irrecoverable.sh" >/dev/null 2>&1; rc=$?
+ok=1; [ "$rc" -eq 2 ] && [ "$(rows "$J6" would_deny rm-rf)" = 1 ] && [ "$(rows "$J6" deny git-push-force)" = 1 ] && ok=0
+check "a shadowed match does not end the scan: a later enforced rule still denies" "$ok"
+
+J6="$WORK/case6/ask.jsonl"
+out=$(payload_bash "gh pr merge 5" | MH_GATE_JOURNAL_PATH="$J6" bash "$SH_GH/irrecoverable.sh" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && [ -z "$out" ] && [ "$(rows "$J6" would_ask gh-pr-merge)" = 1 ] && ok=0
+check "shadowed ask rule: no ask JSON on stdout, one would_ask row" "$ok"
+out=$(payload_bash "gh pr merge 5 && gh api repos/o/r/pulls/5/merge -X PUT" | MH_GATE_JOURNAL_PATH="$J6" bash "$SH_GH/irrecoverable.sh" 2>/dev/null); rc=$?
+ok=1; [ "$rc" -eq 0 ] && printf '%s' "$out" | python3 -c 'import json,sys; assert json.load(sys.stdin)["hookSpecificOutput"]["permissionDecision"] == "ask"' 2>/dev/null && ok=0
+check "a shadowed ask does not swallow a later enforced ask in the same run" "$ok"
+
+payload_bash "rm -rf build" | HOME="$BROKEN_HOME" bash "$SH_RM/irrecoverable.sh" >/dev/null 2>&1; rc=$?
+ok=1; [ "$rc" -eq 0 ] && ok=0
+check "shadowed match with an unwritable journal (ENOTDIR) still allows (rc=0)" "$ok"
+
+# Every id in SHADOW_RULES must name a rule="..." call site, or a typo shadows nothing and the new
+# rule enforces silently. Mutation proof: an id with no call site is caught.
+shadow_drift() { # shadow_drift <irrecoverable.py> -> ids in SHADOW_RULES with no rule="<id>" call site
+  python3 -c '
+import ast, re, sys
+src = open(sys.argv[1]).read()
+m = re.search(r"^SHADOW_RULES = frozenset\((.*)\)$", src, re.M)
+ids = ast.literal_eval(m.group(1) or "()")
+sites = set(re.findall(r"rule=\"([^\"]+)\"", src))
+print(" ".join(sorted(set(ids) - sites)))' "$1"
+}
+ok=1; [ -z "$(shadow_drift "$ROOT/hooks/gates/irrecoverable.py")" ] && [ -z "$(shadow_drift "$SH_RM/irrecoverable.py")" ] && ok=0
+check "every SHADOW_RULES id names a rule= call site" "$ok"
+SH_BAD="$WORK/shadow-bad"; shadow_copy "$SH_BAD" '"rm-fr"'
+ok=1; [ "$(shadow_drift "$SH_BAD/irrecoverable.py")" = "rm-fr" ] && ok=0
+check "mutation proof: a SHADOW_RULES id with no call site is reported" "$ok"
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

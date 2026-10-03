@@ -178,6 +178,13 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   A `builtin ...` timing row must name `claude` or `git`: the `.sh` fast path never starts python for `ls`.
   A chain run with `exec -a x` units now charges the budget, so `eval ` + `exec -a x ` x 500 (5 KB) is
   refused as too dense, as `command rtk proxy ` x 200 already was.
+- **A broad new rule ships shadow first** (GH #337). Give its `deny()`/`ask()` call a `rule="<id>"` and
+  list the id in `irrecoverable.py`'s `SHADOW_RULES`: a match then journals `would_deny`/`would_ask` with
+  the id and the command, and the call goes through. `/mh:gate-report` lists the hits per rule with
+  sample commands; delete the id to enforce once they hold no false positive. The list is source, not an
+  env var, so a project `settings.json` cannot shadow an enforced rule. A structural deny (length cap,
+  unparsable text, budget, depth) takes no id: returning from it would run the code it guards. A rule
+  that denies commands from a replay of real transcripts ships shadow, not enforcing.
 - **Oracle:** run the real shells (the system `/bin/sh`, bash 3.2, a current bash, dash, zsh, ksh)
   with argv-logging stubs, never one shell or argv0-based shell guessing: whether `{fd}>` is a
   redirect depends on the binary and version (GH #219).

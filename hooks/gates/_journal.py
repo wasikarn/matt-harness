@@ -9,9 +9,10 @@
 import json, os
 
 
-def journal(gate_id, tool_name, decision, session_id=None):
+def journal(gate_id, tool_name, decision, session_id=None, rule=None, command=None):
     # Non-allow verdicts only ("ask"/"deny", plus secret-scan.py's own
-    # "allow-suppressed" for a same-line-marker-suppressed match) -- matches
+    # "allow-suppressed" for a same-line-marker-suppressed match, and a shadow
+    # rule's "would_deny"/"would_ask", GH #337) -- matches
     # the actual need ("how often did gate X block/ask") and avoids the
     # write-rate of logging every allow. Must NEVER affect the calling
     # gate's own exit code or verdict: every failure mode below is
@@ -51,6 +52,12 @@ def journal(gate_id, tool_name, decision, session_id=None):
             "session_id": session_id,
             "mh_version": mh_version,
         }
+        # GH #337: the rule id of a gate's pattern rule, and for a shadow rule's
+        # "would_deny"/"would_ask" row a sample of the command; absent otherwise.
+        if rule is not None:
+            row["rule"] = rule
+        if command is not None:
+            row["command"] = command
         with open(path, "a") as f:
             f.write(json.dumps(row) + "\n")
     except Exception:

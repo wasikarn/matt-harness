@@ -73,6 +73,26 @@ out_empty="$(MH_GATE_JOURNAL_PATH="$EMPTY" python3 "$REPORT_PY")"
 assert "empty journal reports empty, not a divide-by-zero" \
   "$(grep -q '^Gate journal is empty' <<<"$out_empty" && echo 1 || echo 0)"
 
+# GH #337: a shadow rule's would_deny rows are listed per rule with sample commands.
+SHADOW="$TMPDIR_TEST/shadow.jsonl"
+cat > "$SHADOW" <<'EOF'
+{"ts": "2026-10-01T10:00:00Z", "id": "gate:bash:irrecoverable", "tool_name": "Bash", "decision": "would_deny", "session_id": "s1", "rule": "mkfs", "command": "mkfs.ext4 /dev/sdz1"}
+{"ts": "2026-10-01T10:01:00Z", "id": "gate:bash:irrecoverable", "tool_name": "Bash", "decision": "would_deny", "session_id": "s2", "rule": "mkfs", "command": "mkfs.vfat /dev/sdz2"}
+{"ts": "2026-10-01T10:02:00Z", "id": "gate:bash:irrecoverable", "tool_name": "Bash", "decision": "would_ask", "session_id": "s2", "rule": "opaque-verb", "command": "$RUNNER build"}
+{"ts": "2026-10-01T10:03:00Z", "id": "gate:bash:irrecoverable", "tool_name": "Bash", "decision": "deny", "session_id": "s2", "rule": "rm-rf"}
+EOF
+out_shadow="$(MH_GATE_JOURNAL_PATH="$SHADOW" python3 "$REPORT_PY")"
+assert "shadow section lists the mkfs rule with 2 hits over 2 sessions" \
+  "$(grep -qE '^ *2  gate:bash:irrecoverable  mkfs  \(2 session\(s\)\)$' <<<"$out_shadow" && echo 1 || echo 0)"
+assert "shadow section shows a sample command per rule" \
+  "$(grep -qF 'e.g. mkfs.vfat /dev/sdz2' <<<"$out_shadow" && echo 1 || echo 0)"
+assert "a would_ask rule is listed too" \
+  "$(grep -qE '^ *1  gate:bash:irrecoverable  opaque-verb  \(1 session\(s\)\)$' <<<"$out_shadow" && echo 1 || echo 0)"
+assert "an enforced deny with a rule id is not listed as a shadow rule" \
+  "$(grep -qE '  rm-rf  \(' <<<"$out_shadow" && echo 0 || echo 1)"
+assert "no shadow section when the journal has no would_* row" \
+  "$(grep -q '^Shadow rules' <<<"$out" && echo 0 || echo 1)"
+
 echo
 echo "=== $pass passed, $fail failed ==="
 [[ $fail -eq 0 ]]
