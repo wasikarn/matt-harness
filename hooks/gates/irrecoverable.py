@@ -1688,8 +1688,9 @@ def _git_words(rest, ph_value=False):
             i, joined = start, was_joined
             break
         out.append(t)
-        if t.replace(PH, "") in GIT_VALUE_GLOBALS:
-            if ph_value and t != t.replace(PH, ""):
+        st = t.replace(PH, "")
+        if st in GIT_VALUE_GLOBALS:
+            if ph_value and t != st and t.startswith(st):  # the substitution comes after the flag
                 out[-1], hit = t.replace(PH, "$"), True
             elif i < n:
                 out.append(word())
@@ -1724,8 +1725,9 @@ _CHMOD_WORLD_RE = re.compile(r"(?:^| )(?:0*[0-7]?777|(?:a|[ugo]{3}) ?[+=] ?rwx)(
 _ROOT_OR_HOME = ("/", "/*", "/.", "~", "~/", "~/*", "~/.")
 def _chmod_world(rest):
     toks = [t.replace(PH, "") for t in rest]
-    # GH #405: only the mode word is read (the first word that is not an option; the compacted
-    # copy drops an empty substitution before it), so a file named 777 or a+rwx is not a mode.
+    # GH #405: only the mode word is read (the first word that is not an option; an empty
+    # substitution before it joins as a leading blank, which the regex allows), so a file named
+    # 777 or a+rwx is not a mode.
     k = next((j for j, t in enumerate(toks) if not t.startswith("-")), len(toks))
     return bool(_CHMOD_WORLD_RE.match(" ".join(toks[k:]))) and any(
         t in _ROOT_OR_HOME or _is_flag(t, "--recursive")

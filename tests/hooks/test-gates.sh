@@ -3063,8 +3063,10 @@ for _c405 in 'git -C${R} reset --hard' 'git -C${R} push --force origin main' 'gi
     'git -C${D} $R reset --hard' 'chmod -R 777 x' 'chmod -R a+rwx x' 'chmod 777 /' 'chmod a+rwx ~' 'chmod -R $(m) 777 x' 'chmod -R -- 777 x'; do
   test_deny "$IRRECOVERABLE" "GH #405: $_c405" "$(bash_payload "$_c405")"
 done
-# chmod 777 on one plain path is out of the rule's scope (GH #336: recursive, / or ~ only).
-for _c405 in 'git -C${R} status' 'git -C$(pwd) log --oneline' 'chmod -R 755 777' 'chmod -R 755 a+rwx' \
+# A substitution inside the flag name (-${X}C) is not its value, as on develop. chmod 777 on one
+# plain path is out of the rule's scope (GH #336: recursive, / or ~ only).
+for _c405 in 'git -C${R} status' 'git -C$(pwd) log --oneline' 'git -${X}C reset --hard' \
+    'chmod -R 755 777' 'chmod -R 755 a+rwx' \
     'chmod 755 / 777' 'chmod 777 x' 'chmod a+rwx x'; do
   test_allow "$IRRECOVERABLE" "GH #405 control: $_c405" "$(bash_payload "$_c405")"
 done
