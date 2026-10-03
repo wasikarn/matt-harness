@@ -17,10 +17,14 @@ bad() { fail=$((fail + 1)); echo "  FAIL: $1" >&2; }
 
 echo "=== gauntlet GIT_DIR isolation ==="
 
-DECOY=$(mktemp -d "${TMPDIR:-/tmp}/gauntlet-decoy.XXXXXX")
-FIXTURE=$(mktemp -d "${TMPDIR:-/tmp}/gauntlet-fixture.XXXXXX")
-cleanup() { trash "$DECOY" "$FIXTURE" 2>/dev/null || true; }
-trap cleanup EXIT
+source "$ROOT/tests/_lib/harness.sh"
+trap _cleanup_trash EXIT
+# A missing TMPDIR makes mktemp print "" and `trash ""` trashes the cwd: stop, and let
+# _cleanup_trash (which drops empties) do the trashing.
+DECOY=$(mktemp -d "${TMPDIR:-/tmp}/gauntlet-decoy.XXXXXX") || exit 1
+track_trash "$DECOY"
+FIXTURE=$(mktemp -d "${TMPDIR:-/tmp}/gauntlet-fixture.XXXXXX") || exit 1
+track_trash "$FIXTURE"
 
 ( cd "$DECOY" && git init -q -b decoy-original . \
   && git -c user.email=t@t -c user.name=t commit -q --allow-empty -m decoy-canary ) >/dev/null 2>&1

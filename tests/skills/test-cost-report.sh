@@ -430,6 +430,32 @@ line=$(printf '%s\n' "$out" | /usr/bin/grep '^ledger cross-check:')
 assert "partial data compares only sessions on both sides and counts the rest (got: ${line:-none})" "$ok"
 trash "$fake_home" 2>/dev/null || true
 
+# A `usd` that is not a finite number (null is what JSON.stringify writes for NaN/Infinity; "",
+# a numeric string, a missing key) is skipped and counted, never read as $0. As $0 it is a reset,
+# so the next 1.5 is added whole: rows 1, null, "", "1.2", (none), 1.5 then read $2.50, not $1.50.
+fake_home=$(mktemp -d)
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir"
+cat > "$metrics_dir/costs.jsonl" <<'EOF'
+{"timestamp":"2026-10-02T00:00:00Z","session_id":"led-nf","transcript_path":"/t","model":"claude-opus-5-5","model_scoped":true,"stream":"orchestrator","turns":1,"input_tokens":1,"output_tokens":1,"cache_write_tokens":0,"cache_write_tokens_1h":0,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":1.5}
+EOF
+cat > "$metrics_dir/cost-ledger.jsonl" <<'EOF'
+{"t":"2026-10-02T00:00:01Z","session_id":"led-nf","turn_id":"t1","usd":1,"delta":1,"reset":false}
+{"t":"2026-10-02T00:00:02Z","session_id":"led-nf","turn_id":"t2","usd":null,"delta":null,"reset":true}
+{"t":"2026-10-02T00:00:03Z","session_id":"led-nf","turn_id":"t3","usd":""}
+{"t":"2026-10-02T00:00:04Z","session_id":"led-nf","turn_id":"t4","usd":"1.2"}
+{"t":"2026-10-02T00:00:05Z","session_id":"led-nf","turn_id":"t5"}
+{"t":"2026-10-02T00:00:06Z","session_id":"led-nf","turn_id":"t6","usd":1.5,"delta":1.5,"reset":true}
+EOF
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
+rc=$?
+line=$(printf '%s\n' "$out" | /usr/bin/grep '^ledger cross-check:')
+[[ "$rc" == "0" && "$line" == 'ledger cross-check: transcript $1.5000 vs ledger $1.5000 over 1 sessions; unattributed $0.0000 (0.0% of ledger)' ]] && ok=1 || ok=0
+assert "a null, empty, string or missing usd is skipped, not read as a \$0 reset (\$1.50, not \$2.50) (got: ${line:-none})" "$ok"
+printf '%s\n' "$out" | /usr/bin/grep -q '^warning: 4 cost-ledger rows with no finite usd were skipped' && ok=1 || ok=0
+assert "the skipped non-finite usd rows are counted in a warning line" "$ok"
+trash "$fake_home" 2>/dev/null || true
+
 echo ""
 total_t=$((pass + fail))
 echo "=== $pass/$total_t passed ==="

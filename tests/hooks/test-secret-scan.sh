@@ -227,6 +227,25 @@ out=$(asks $'# gitleaks:allow\n'"${markerTok}")
 ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
 check "marker on the PREVIOUS line (not the match's own line) -> still asks" "$ok"
 
+nextTok="AKIA$(rnd 16 "$UPPER36" 40)"
+out=$(asks "${nextTok}"$'\n# gitleaks:allow')
+ok=1; echo "$out" | /usr/bin/grep -q '"permissionDecision": "ask"' && ok=0
+check "marker on the NEXT line (not the match's own line) -> still asks" "$ok"
+
+lineTok1="AKIA$(rnd 16 "$UPPER36" 41)"; lineTok2="AKIA$(rnd 16 "$UPPER36" 42)"
+out=$(asks $'a\r\nb\n\n'"x ${lineTok1}"$'\n'"${lineTok2} # gitleaks:allow"$'\n'"${lineTok1}")
+ok=1; echo "$out" | /usr/bin/grep -q 'AWS access/session key (line 4); AWS access/session key (line 6)\.' && ok=0
+check "line numbers count CRLF and blank lines, skip the suppressed line (4 and 6)" "$ok"
+
+out=$(asks $'x\n'"$pem")
+ok=1; echo "$out" | /usr/bin/grep -q 'Private key (line 2)\.' && ok=0
+check "a PEM key spanning lines 2-3 is reported at its first line (2)" "$ok"
+
+# The marker check is cached per line: a suppressed line 2 must not leak onto line 1 for a later pattern.
+out=$(asks "${aws1} ${npmtok}"$'\n'"${ghp} # gitleaks:allow")
+ok=1; echo "$out" | /usr/bin/grep -q 'AWS access/session key (line 1); npm (line 1)\.' && ok=0
+check "per-line marker check: line 1 stays unsuppressed for every pattern when line 2 is suppressed" "$ok"
+
 # --- reason hygiene: the ask reason never contains the actual token -------
 
 hygieneTok="AKIA$(rnd 16 "$UPPER36" 38)"
@@ -235,6 +254,38 @@ if echo "$out" | /usr/bin/grep -qF "$hygieneTok"; then ok=1; else ok=0; fi
 check "ask reason never contains the actual matched token" "$ok"
 ok=1; echo "$out" | /usr/bin/grep -q "AWS access/session key" && ok=0
 check "ask reason names the vendor label" "$ok"
+
+# --- timing: line numbering stays linear ----------------------------------
+# A timed-out hook allows the write. Line numbers were counted from the start of the text for
+# every match, and the suppress-marker check read the whole line for every match, so 40,000
+# matches in 2 MB ran past the 8 s hook timeout on 40,000 lines and on one line alike (M3 Pro).
+# Linear now: well under 1 s. The 4 s limit leaves room for a CI runner about 1.5x slower.
+timed_scan() { # timed_scan <lines|oneline> -- prints "<seconds> <stdout>" for a 40,000-match Write
+  python3 - "$GATE" "$1" "$UPPER36" <<'PY'
+import json, random, subprocess, sys, time
+gate, shape, cs = sys.argv[1], sys.argv[2], sys.argv[3]
+r = random.Random(40000)
+toks = ["AKIA" + "".join(r.choice(cs) for _ in range(16)) for _ in range(40000)]
+pad = "x" * 24  # about 2 MB either way
+if shape == "lines":
+    text = "\n".join("k = " + t + " # " + pad for t in toks)
+else:
+    text = " ".join(t + " " + pad + "yyyyy" for t in toks)
+p = json.dumps({"tool_name": "Write", "tool_input": {"file_path": "/x/big.txt", "content": text}})
+t = time.time()
+try:
+    out = subprocess.run(["bash", gate], input=p.encode(), capture_output=True, timeout=8).stdout.decode()
+except subprocess.TimeoutExpired:
+    out = "TIMEOUT"
+print("%.2f %s" % (time.time() - t, out))
+PY
+}
+res=$(timed_scan lines); secs=${res%% *}
+ok=1; awk -v s="$secs" 'BEGIN { exit !(s < 4) }' && echo "$res" | /usr/bin/grep -q '(line 5); plus 39995 more' && ok=0
+check "40,000 matches on 40,000 lines (2 MB): asks with exact line numbers in ${secs}s (< 4 s)" "$ok"
+res=$(timed_scan oneline); secs=${res%% *}
+ok=1; awk -v s="$secs" 'BEGIN { exit !(s < 4) }' && echo "$res" | /usr/bin/grep -q 'AWS access/session key (line 1)\.' && ok=0
+check "40,000 matches on one 2 MB line: asks, line 1, in ${secs}s (< 4 s)" "$ok"
 
 # --- error path / canary sanity -------------------------------------------
 

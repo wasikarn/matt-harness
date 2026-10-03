@@ -20,9 +20,11 @@ After each main-loop turn (`turn.complete` with no `agentId`), it reads
 - `delta`: `usd` minus the previous reading in this module load. The first reading counts in
   full. A drop means a new process took over the session id and its ledger started from zero, so
   `delta = usd` and `reset: true`.
-- A failed read becomes `{ t, session_id, turn_id, error }`. A failed append is a `$.ui.log` line
-  (debug log outside a hot-reload session) and the row is lost; the next row's `delta` carries the
-  growth.
+- A failed read becomes `{ t, session_id, turn_id, error }`, and so does a reading that is not a
+  finite number (NaN or Infinity, which JSON would write as `null`); the baseline is left alone,
+  so the next row's `delta` is still measured from the last good reading. A failed append is a
+  `$.ui.log` line (debug log outside a hot-reload session) and the row is lost; the next row's
+  `delta` carries the growth.
 - `usage()` with no `cost` (a host that keeps no ledger) writes nothing.
 
 Subagent turns write no row; their spend shows up in the enclosing main turn's `delta`, because
@@ -85,3 +87,10 @@ documentation only: `plugin.json` has no field for a minimum version. On older C
   ledger total runs low for that session.
 - The baseline lives in a module variable, so after a reload the first row's `delta` equals
   `usd`. The report's recomputation is unaffected.
+- The report skips a row whose `usd` is not a finite number (a hand edit, a file from before the
+  writer refused NaN/Infinity) and says how many in a `warning:` line. If that row was the
+  session's last, the spend since the previous reading is missing from the ledger total.
+- Two live processes writing rows under one session id at once (not verified to happen; a double
+  `--resume` is the likely shape) interleave their `usd` sequences. A switch to the lower one reads
+  as a reset and a switch back as growth from it, so the ledger total runs high: rows
+  `1.0, 0.2, 1.1, 0.3` read $2.40 where the two processes' finals sum to $1.40.
