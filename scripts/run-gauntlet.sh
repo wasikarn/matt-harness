@@ -110,12 +110,15 @@ run_hook_tests() {
     xargs -P "${GAUNTLET_JOBS:-$([ -n "${CI:-}" ] && echo 1 || echo 4)}" -I{} bash -c \
       'o="$1/${2//\//_}"; case "$2" in *.py) interp=python3;; *) interp=bash;; esac
        MH_GATE_JOURNAL_PATH="$o.jsonl" "$interp" "$2" >"$o.out" 2>&1; echo $? >"$o.rc"' _ "$TDIR" {}
+  local failed=""
   for t in $(hook_test_files); do
     o="$TDIR/${t//\//_}"
     echo "--- $t"
     cat "$o.out"
-    [ "$(cat "$o.rc" 2>/dev/null)" = 0 ] || rc=1
+    [ "$(cat "$o.rc" 2>/dev/null)" = 0 ] || { rc=1; failed="$failed $t"; }
   done
+  # Name the culprits (GH #387): a red CI log runs to thousands of lines.
+  [ -z "$failed" ] || echo "failing:$failed"
   return "$rc"
 }
 
@@ -140,5 +143,6 @@ if [ "$fail" -eq 0 ]; then
   echo "gauntlet: all layers passed"
 else
   echo "gauntlet: FAILED (full logs kept at $LOG)" >&2
+  /usr/bin/grep '^failing:' "$LOG/tests" >&2
 fi
 exit "$fail"
