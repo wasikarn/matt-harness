@@ -33,12 +33,36 @@ trap 'trash "$TMP" 2>/dev/null || true' EXIT
 # the agent/skill must NOT be dispatched for an out-of-scope or misrouted ask.
 NO_DISPATCH_EXPECTED="code-architect-trivial-no-dispatch perf-regression-routing backend-architect-file-blueprint-misroute ideate-critic-security-review-misroute"
 
+# A prompt states the task, never the verdict the graders expect (GH #389): scan the body
+# (frontmatter stripped, since names/tags like `planted` live there) for words that hand the
+# subject the answer. Narrow on purpose -- it cannot catch a paraphrased trigger fact; moving the
+# fixture into scaffold.sh is what fixes those. Prints `line: text` per hit, exits 1 on any.
+prompt_tells() {
+  python3 - "$1" <<'PY'
+import re, sys
+lines = open(sys.argv[1]).read().split("\n")
+start = 0
+if lines and lines[0] == "---":
+    for i in range(1, len(lines)):
+        if lines[i] == "---":
+            start = i + 1
+            break
+rx = re.compile(r"\bplanted\b|\brubric\b|\bgrader\b|\bno bugs?\b|\baccurate\b|correctly implemented", re.I)
+hits = [f"{i + 1}: {l.strip()}" for i, l in enumerate(lines) if i >= start and rx.search(l)]
+print("\n".join(hits))
+sys.exit(1 if hits else 0)
+PY
+}
+
 n=0
 for d in "$EVALS"/*/; do
   c=$(basename "$d"); n=$((n + 1))
   [ "$c" = "results" ] && { n=$((n - 1)); continue; }
   [ "$c" = "mocks" ] && { n=$((n - 1)); continue; }
   [ -f "$d/prompt.md" ] || { bad "$c: prompt.md missing"; continue; }
+  if ! tells=$(prompt_tells "$d/prompt.md"); then
+    bad "$c: prompt.md tells the subject the expected answer:"$'\n'"$tells"; continue
+  fi
   has_case_yaml=0; [ -f "$d/case.yaml" ] && has_case_yaml=1
   g=$(ls "$d/graders"/*.md 2>/dev/null | wc -l | tr -d ' ')
   [ "$g" -ge 2 ] || { bad "$c: $g graders (need >=2)"; continue; }
@@ -225,6 +249,13 @@ done
 # the $EVALS glob resolving to the wrong/empty path, or a mass deletion, both
 # of which would otherwise make every per-case check above vacuously pass on
 # zero iterations.
+# Negative control for prompt_tells: a clean prompt passes, the same prompt with one tell
+# appended to its body must fail, or the scan above proves nothing.
+ctl="$EVALS/deep-audit-planted/prompt.md"
+if prompt_tells "$ctl" >/dev/null; then ok "prompt_tells passes a clean prompt"; else bad "prompt_tells flags the clean control $ctl"; fi
+cp "$ctl" "$TMP/tell-control.md" && echo "There is no planted bug in this fixture." >> "$TMP/tell-control.md"
+if prompt_tells "$TMP/tell-control.md" >/dev/null; then bad "prompt_tells missed a tell appended to a clean prompt"; else ok "prompt_tells catches an appended tell"; fi
+
 [ "$n" -ge 40 ] || bad "expected at least 40 eval cases (sanity floor -- \$EVALS glob may be wrong), found $n"
 
 # README.md and operating-model.md used to hardcode "29" (harness gap-audit,
