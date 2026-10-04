@@ -70,6 +70,24 @@ printf '%s\n' "$out" | /usr/bin/grep -qF 'safety classifiers' \
   && bad "opus-4-8 vs sonnet: content-fallback caveat printed for models without it" \
   || ok "opus-4-8 vs sonnet: no content-fallback caveat"
 
+# --- arm/judge same family (#391): a judge grading its own family's output skews the delta ---
+# clean fixtures' judgeModel is "sonnet"; mismatch-b.json's is "haiku". Each arm is checked
+# against its own file's judge.
+out=$(python3 "$DIFF_PY" --label-a sonnet@high --label-b claude-opus-5-5 \
+  "$FIXTURES/clean-a.json" "$FIXTURES/clean-b.json" 2>&1)
+printf '%s\n' "$out" | /usr/bin/grep -qF 'sonnet@high: arm shares the judge model family (sonnet)' \
+  && ok "same-family arm: WARN names the arm and the shared family" \
+  || bad "same-family arm: no WARN for sonnet arm judged by sonnet"
+printf '%s\n' "$out" | /usr/bin/grep -qF 'claude-opus-5-5: arm shares' \
+  && bad "same-family arm: WARN fired for the opus arm against a sonnet judge" \
+  || ok "same-family arm: no WARN for an arm of a different family"
+out=$(python3 "$DIFF_PY" --label-a claude-sonnet-5 --label-b claude-haiku-4-5 \
+  "$FIXTURES/clean-a.json" "$FIXTURES/mismatch-b.json" 2>&1)
+printf '%s\n' "$out" | /usr/bin/grep -qF 'claude-haiku-4-5: arm shares the judge model family (haiku)' \
+  && printf '%s\n' "$out" | /usr/bin/grep -qF 'claude-sonnet-5: arm shares the judge model family (sonnet)' \
+  && ok "same-family arm: each arm checked against its own file's judge" \
+  || bad "same-family arm: per-arm judge not used (haiku arm/haiku judge, sonnet arm/sonnet judge)"
+
 # --- mismatched pair: judgeModel + caseFilter differ, must WARN not hard-fail ---
 out=$(python3 "$DIFF_PY" --label-a fixture-a --label-b fixture-b \
   "$FIXTURES/clean-a.json" "$FIXTURES/mismatch-b.json" 2>&1)

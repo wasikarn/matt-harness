@@ -108,7 +108,9 @@ bash "${CLAUDE_SKILL_DIR}/scripts/model-bench.sh" --diff-only \
   short — its score covers a different, smaller case set and isn't comparable).
 - **WARN, but still compared**: a mismatch in judge model, case filter, ablation mode, Claude
   Code version, or plugin version between the two sides. Read the warning before trusting the
-  delta — it means the two runs aren't apples-to-apples on that axis.
+  delta — it means the two runs aren't apples-to-apples on that axis. It also warns when an arm's
+  model family (from its label) matches its own run's judge family, since a judge may favor its
+  own family.
 - **Not comparable section**: any case name present on only one side (different `--tag`/`--case`
   filters between the two arms, most often).
 
