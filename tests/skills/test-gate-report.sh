@@ -107,6 +107,15 @@ assert "a would_ask rule is listed too" \
   "$(grep -qE '^ *1  gate:bash:irrecoverable  opaque-verb  \(1 session\(s\)\)$' <<<"$out_shadow" && echo 1 || echo 0)"
 assert "an enforced deny with a rule id is not listed as a shadow rule" \
   "$(grep -qE '  rm-rf  \(' <<<"$out_shadow" && echo 0 || echo 1)"
+assert "would_* rows are not blocks: 1 deny + 3 shadow rows prints 1 in the headline" \
+  "$(grep -q '^Gate journal: 1 ask/deny event(s)$' <<<"$out_shadow" && echo 1 || echo 0)"
+assert "would_* rows stay out of the By-tool table (Bash 1, not 4)" \
+  "$(grep -qE '^ *1  Bash$' <<<"$(sed -n '/^By tool/,/^$/p' <<<"$out_shadow")" && echo 1 || echo 0)"
+ONLY_SHADOW="$TMPDIR_TEST/only-shadow.jsonl"
+head -2 "$SHADOW" > "$ONLY_SHADOW"
+out_os="$(MH_GATE_JOURNAL_PATH="$ONLY_SHADOW" python3 "$REPORT_PY")"
+assert "a journal of only would_* rows still prints the shadow section, not 'empty'" \
+  "$(grep -q '^Gate journal: 0 ask/deny event(s)$' <<<"$out_os" && grep -qE '^ *2  gate:bash:irrecoverable  mkfs' <<<"$out_os" && echo 1 || echo 0)"
 assert "no shadow section when the journal has no would_* row" \
   "$(grep -q '^Shadow rules' <<<"$out" && echo 0 || echo 1)"
 

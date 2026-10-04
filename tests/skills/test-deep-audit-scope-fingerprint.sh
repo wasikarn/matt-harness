@@ -43,6 +43,9 @@ check "changed file inside a scoped directory flagged" 1 "changed: $T/d"
 reset; snap; touch "$T/a"
 check "mtime-only touch is not a change" 0 ""
 
+out=$(printf '' | python3 "$FP" snapshot "$T/empty.json" 2>&1); code=$?
+[ "$code" -eq 2 ] && [ -n "$out" ] && echo "ok: snapshot of no paths is a usage error (2)" || { echo "FAIL: snapshot of no paths exit $code: $out"; fail=1; }
+
 out=$(python3 "$FP" compare "$T/nope.json" 2>&1); code=$?
 [ "$code" -eq 2 ] && echo "ok: missing manifest is a usage error (2)" || { echo "FAIL: missing manifest exit $code: $out"; fail=1; }
 

@@ -8,6 +8,9 @@ if [ $# -ne 2 ] || [ -z "$1" ] || [ -z "$2" ]; then
   echo "usage: check-head.sh <audited-sha> <ref>" >&2
   exit 2
 fi
+# The pin must be a SHA (same shape as check-verdict.py's SHA_RE): a ref like HEAD would
+# resolve alongside <ref> and always match.
+[[ "$1" =~ ^[0-9a-f]{7,40}$ ]] || { echo "check-head: audited SHA '$1' is not a commit SHA (7-40 lowercase hex)" >&2; exit 2; }
 audited=$(git rev-parse --verify --quiet "$1^{commit}") || { echo "check-head: audited SHA '$1' does not resolve" >&2; exit 2; }
 now=$(git rev-parse --verify --quiet "$2^{commit}") || { echo "check-head: ref '$2' does not resolve" >&2; exit 2; }
 if [ "$audited" = "$now" ]; then
