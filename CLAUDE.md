@@ -11,13 +11,9 @@ bash scripts/run-gauntlet.sh                       # plugin-validate (manifest o
 ```
 
 Pre-push runs the gauntlet; pre-commit runs lint + audit + a 4096-byte cap on `docs/METHODOLOGY.md` +
-a benign-payload canary on staged gates (`scripts/gate-canary.sh`). CI also runs the gauntlet
-(`.github/workflows/validate.yml`, on every push/PR against `develop`), split over 5
-`gauntlet shard` runners by `GAUNTLET_SHARD=i/N`; the `gauntlet` job only collects their
-results. Branch
-protection (`docs/reference/branching-model.md`) requires the 3 check-name contexts
-(`claude plugin validate ...`, `harness-audit (0 CRIT)`, `gauntlet (run-gauntlet.sh)`), so a red
-run blocks merge.
+a benign-payload canary on staged gates (`scripts/gate-canary.sh`). There is no CI: GitHub Actions
+was removed 2026-10-03, so the two local hooks are the only gates. Branch protection
+(`docs/reference/branching-model.md`) requires a PR but no status checks.
 
 ## Git hooks
 

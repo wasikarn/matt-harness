@@ -19,17 +19,17 @@ Enforcement layers, weakest to strongest:
   raw API call, or any credential used outside such a session (a cloud Routine, notably —
   `docs/adr/0004-operator-authorized-routine-self-launch.md`, `status: proposed`, is where that
   threat model is actually being worked through; mh has no self-launch path shipped today).
-- GitHub branch protection on `develop` (required status checks, `enforce_admins`, live-applied
-  2026-09-28) is the real enforcement of the checks themselves; a single-maintainer repo means
+- GitHub branch protection on `develop` (PR required, `enforce_admins`, live-applied 2026-09-28;
+  required status checks removed 2026-10-03 along with GitHub Actions) enforces the PR flow only; a single-maintainer repo means
   `required_pull_request_reviews.required_approving_review_count` stays at **0** (GitHub refuses to
   let a PR author approve their own PR, so any higher count would make every PR permanently
-  unmergeable with only one account) — merging still requires nothing more than the checks passing
-  and a write-access credential. "Review" here is this repo's own operating custom, not something
+  unmergeable with only one account) — merging still requires nothing more than a write-access
+  credential. "Review" here is this repo's own operating custom, not something
   branch protection mechanically enforces. An admin editing the protection rule itself is a
   separate, named, accepted residual risk, not something any of the above closes.
-  Required checks are not `strict` (the up-to-date requirement was turned off 2026-10-03: it forced a
-  re-run of every open PR after each merge, about 5 min each); the push-to-`develop` CI run catches
-  a bad combination of two PRs that each passed alone.
+  There is no CI (2026-10-03): the pre-commit and pre-push hooks are the only gates, so a clone with
+  `core.hooksPath` unset, or a push from another machine, skips them. Re-add a workflow and the
+  required contexts together if that stops being acceptable.
 
 The former `git worktree add -b` deny predates this and was removed in the v1.0.0 rebuild;
 `claude --worktree` and `/branch` never routed through it anyway. `/branch` and
