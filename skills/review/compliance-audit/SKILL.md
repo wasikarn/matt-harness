@@ -68,7 +68,9 @@ verifier budget.
    a diff checked at one revision while tests run against another silently produces a wrong
    verdict. Create an isolated, non-moving checkout: `git worktree add --detach <path> <head-sha>`
    (cleaned up after Phase 2). If the pinned SHA can't be cleanly checked out, the verdict is
-   "cannot verify" (`scope_ok: false`), never a silent pass/fail against the wrong tree.
+   "cannot verify" (`scope_ok: false`), never a silent pass/fail against the wrong tree. Keep
+   this head SHA: the verdict covers only it, and Phase 3's ship step re-checks it with
+   `scripts/check-head.sh`.
 5. Present the requirement checklist in prose, plus any deviation you're already aware of. Gate
    with `AskUserQuestion` **only when the plan source is genuinely ambiguous** (multi-repo, no
    conversation context, no user-named path) — otherwise proceed; a wrong scope with one verifier
@@ -212,7 +214,11 @@ fix.
    later invocation, not an automatic loop.
 4. **Suggested next step**, read straight from step 1's Phase-3 re-run of `check-verdict.py`'s
    computed `pass` — never re-derived by eye here:
-   - `pass` true → done; ship/merge if not already.
+   - `pass` true → done; ship/merge if not already, but only after
+     `bash "${CLAUDE_SKILL_DIR}/scripts/check-head.sh" <pinned-sha> <branch>` exits 0 (fetch
+     first for a remote branch; for a PR, also pass `gh pr merge --match-head-commit
+     <pinned-sha>`). Exit 1 = the branch moved since the audit: the verdict does not cover the
+     new head, so re-run `/mh:compliance-audit` before shipping.
    - `pass` false for any reason — an open requirement, a failed gauntlet, `scope_ok: false`, or
      a non-empty `unexpected_files[]` —
      blocks "done," even with a clean requirement table. Consider `mh:post-mortem` only if a gap
