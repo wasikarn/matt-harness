@@ -29,5 +29,14 @@ while IFS= read -r _line; do
   fi
 done
 
+# GH #158: queue behind any other gauntlet on this machine; its timing rows fail when several
+# run at once. The library lives beside this hook (not under $ROOT) so a fixture repo still works.
+HOOK_DIR="$(cd -P "$(dirname "$0")" && pwd)"
+# shellcheck source=../scripts/_lib/gauntlet-lock.sh
+. "$HOOK_DIR/../scripts/_lib/gauntlet-lock.sh"
+gauntlet_lock_acquire
+trap gauntlet_lock_release EXIT
+trap 'exit 130' INT TERM HUP
+
 echo "pre-push: running validation gauntlet..."
 bash "$ROOT/scripts/run-gauntlet.sh"
