@@ -46,6 +46,10 @@ Quote the script's counts as printed.
   such rule's count, session count and up to 3 sample commands. Read the samples: a rule is
   ready to enforce (delete its id from `SHADOW_RULES`) when its matches over several sessions
   are all real hits, with no false positive among them.
+- **Session-less rows are left out.** A row with no `session_id` came from a test or a direct
+  gate run, not a live hook call; the report skips it and prints `Ignored N session-less row(s)`.
+  A large N means something is writing to the real journal without `MH_GATE_JOURNAL_PATH`
+  (the real log once held 268,206 of them beside ~800 live rows); say so instead of folding them in.
 - **A high count for one gate isn't automatically a problem.** It says a gate fired often, not
   that it was wrong to; compare against that gate's own false-positive history if one exists
   before recommending a change to it.

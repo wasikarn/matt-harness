@@ -33,6 +33,7 @@ def main():
     first_ts = last_ts = None
     total = 0
     skipped = 0
+    sessionless = 0     # rows with no session_id: test fixtures / direct gate runs, not live hooks
     with open(path) as f:
         for line in f:
             line = line.strip()
@@ -43,15 +44,21 @@ def main():
             except ValueError:
                 skipped += 1
                 continue
-            gate_id = row.get("id", "(unknown)")
-            decision = row.get("decision", "(unknown)")
-            tool_name = row.get("tool_name", "(unknown)")
-            ts = row.get("ts")
             # GH #378: one secret-scan allow-suppressed row stands for "count" matches (older
             # rows, one per match, have none). Anything but a positive int counts as one.
             n = row.get("count", 1)
             if type(n) is not int or n < 1:
                 n = 1
+            # Live hook calls always carry a session_id. A row without one came from a test or a
+            # direct gate run (the real journal held 268,206 of them beside ~800 live rows,
+            # drowning every count), so it is tallied apart and kept out of the report.
+            if row.get("session_id") is None:
+                sessionless += n
+                continue
+            gate_id = row.get("id", "(unknown)")
+            decision = row.get("decision", "(unknown)")
+            tool_name = row.get("tool_name", "(unknown)")
+            ts = row.get("ts")
             counts[(gate_id, decision)] += n
             tools[tool_name] += n
             total += n
@@ -67,6 +74,11 @@ def main():
                 first_ts = ts if first_ts is None or ts < first_ts else first_ts
                 last_ts = ts if last_ts is None or ts > last_ts else last_ts
 
+    ignored = f"Ignored {sessionless} session-less row(s) (no session_id: test or direct gate runs, not live hook calls)."
+    if total == 0 and sessionless:
+        print("Gate journal has no live-session event(s).")
+        print(ignored)
+        return 0
     if total == 0:
         print("Gate journal is empty — no ask/deny events logged yet.")
         return 0
@@ -74,6 +86,8 @@ def main():
     print(f"Gate journal: {total} ask/deny event(s)" + (f", {skipped} unparsable line(s) skipped" if skipped else ""))
     if first_ts and last_ts:
         print(f"Range: {first_ts} .. {last_ts}")
+    if sessionless:
+        print(ignored)
     print()
     print("By gate x decision (ask-count only — no resolution timestamp is logged, so this")
     print("is never a wait-time metric):")

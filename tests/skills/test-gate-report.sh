@@ -110,6 +110,30 @@ assert "an enforced deny with a rule id is not listed as a shadow rule" \
 assert "no shadow section when the journal has no would_* row" \
   "$(grep -q '^Shadow rules' <<<"$out" && echo 0 || echo 1)"
 
+# Session-less rows (no session_id: test fixtures or direct gate runs, not live hook
+# calls) must not count. The real journal once held 268,206 of them beside ~800 real rows.
+SESSIONLESS="$TMPDIR_TEST/sessionless.jsonl"
+cat > "$SESSIONLESS" <<'EOF2'
+{"ts": "2026-09-29T01:00:00Z", "id": "gate:bash:irrecoverable", "tool_name": "Bash", "decision": "deny", "session_id": null, "mh_version": null}
+{"ts": "2026-09-29T01:00:01Z", "id": "gate:bash:irrecoverable", "tool_name": "Bash", "decision": "deny", "mh_version": null}
+{"ts": "2026-09-29T01:00:02Z", "id": "gate:bash:subagent-git-guard", "tool_name": "Bash", "decision": "deny", "session_id": null}
+{"ts": "2026-10-01T09:00:00Z", "id": "gate:write:test-integrity", "tool_name": "Edit", "decision": "ask", "session_id": "real1"}
+EOF2
+out_sl="$(MH_GATE_JOURNAL_PATH="$SESSIONLESS" python3 "$REPORT_PY")"
+assert "session-less rows are left out of the event total" \
+  "$(grep -q '^Gate journal: 1 ask/deny event(s)$' <<<"$out_sl" && echo 1 || echo 0)"
+assert "a session-less gate (null or missing session_id) does not appear in the gate table" \
+  "$(grep -qE 'irrecoverable|subagent-git-guard' <<<"$(sed -n '/^By gate/,/^By tool/p' <<<"$out_sl")" && echo 0 || echo 1)"
+assert "the ignored session-less count is reported, not hidden" \
+  "$(grep -q 'Ignored 3 session-less row(s)' <<<"$out_sl" && echo 1 || echo 0)"
+assert "range spans only the real row" \
+  "$(grep -q '^Range: 2026-10-01T09:00:00Z .. 2026-10-01T09:00:00Z$' <<<"$out_sl" && echo 1 || echo 0)"
+ONLY_SL="$TMPDIR_TEST/only-sessionless.jsonl"
+head -2 "$SESSIONLESS" > "$ONLY_SL"
+out_only="$(MH_GATE_JOURNAL_PATH="$ONLY_SL" python3 "$REPORT_PY")"
+assert "a journal of only session-less rows says so instead of printing zero-count tables" \
+  "$(grep -q 'no live-session event' <<<"$out_only" && grep -q 'Ignored 2 session-less row(s)' <<<"$out_only" && echo 1 || echo 0)"
+
 echo
 echo "=== $pass passed, $fail failed ==="
 [[ $fail -eq 0 ]]
