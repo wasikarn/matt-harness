@@ -45,8 +45,7 @@ if command -v python3 >/dev/null 2>&1 && [ -r "$_MEMDIR_RESOLVER" ]; then
 fi
 _MARKER_ENC="$ENC"
 if [ -z "$_MARKER_ENC" ]; then
-  _MARKER_ENC="$(pwd -P)"
-  _MARKER_ENC="${_MARKER_ENC//\//-}"
+  _MARKER_ENC="$(pwd -P | LC_ALL=C sed 's/[^A-Za-z0-9]/-/g')"
 fi
 FAILMARKERS=("$HOME"/.claude/state/memory-audit-commit-fail-"$_MARKER_ENC"-*)
 if [ -e "${FAILMARKERS[0]}" ]; then

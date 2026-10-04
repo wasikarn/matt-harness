@@ -26,7 +26,7 @@ FAKE_HOME="$TMP/home"
 mkdir -p "$PROJECT_DIR" "$FAKE_HOME/.claude/state"
 
 PHYSPWD=$(cd "$PROJECT_DIR" && pwd -P)
-ENC="${PHYSPWD//\//-}"
+ENC=$(printf '%s' "$PHYSPWD" | LC_ALL=C sed 's/[^A-Za-z0-9]/-/g')
 MEMDIR="$FAKE_HOME/.claude/projects/$ENC/memory"
 
 init_memdir() {
@@ -277,7 +277,7 @@ git init -q "$WT_REPO"
 git -C "$WT_REPO" -c user.name=t -c user.email=t@example.invalid commit -q --allow-empty -m init
 git -C "$WT_REPO" worktree add -q "$WT_DIR" 2>/dev/null
 WT_ENC=$(cd "$WT_DIR" && env -u CLAUDE_CONFIG_DIR -u CLAUDE_CODE_PROJECT_DIR_NAME HOME="$FAKE_HOME" python3 "$ROOT/scripts/_lib/memory-dir.py" --enc)
-WT_PWD_ENC=$(cd "$WT_DIR" && pwd -P); WT_PWD_ENC="${WT_PWD_ENC//\//-}"
+WT_PWD_ENC=$(cd "$WT_DIR" && pwd -P | LC_ALL=C sed 's/[^A-Za-z0-9]/-/g')
 if [ -n "$WT_ENC" ] && [ "$WT_ENC" != "$WT_PWD_ENC" ]; then
   echo "  ✅ fixture: the resolver's ENC differs from the worktree's pwd -P encoding"; pass=$((pass + 1))
 else

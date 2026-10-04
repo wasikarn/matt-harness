@@ -27,7 +27,7 @@ FAKE_HOME="$TMP/home"
 mkdir -p "$PROJECT_DIR" "$FAKE_HOME/.claude/state"
 
 PHYSPWD=$(cd "$PROJECT_DIR" && pwd -P)
-ENC="${PHYSPWD//\//-}"
+ENC=$(printf '%s' "$PHYSPWD" | LC_ALL=C sed 's/[^A-Za-z0-9]/-/g')
 MEMDIR="$FAKE_HOME/.claude/projects/$ENC/memory"
 LOCKDIR="$FAKE_HOME/.claude/state/memory-audit-commit-lock-$ENC"
 MARKER_GLOB="$FAKE_HOME/.claude/state/memory-audit-commit-fail-$ENC-"
@@ -302,8 +302,7 @@ WT="$TMP/gitrepo-wt"
 # /var -> /private/var) $GITREPO string -- git itself resolves symlinks when
 # deriving --git-common-dir, so the hook's own ENC would otherwise never
 # match one computed from the logical path.
-MAIN_ENC="$(cd "$GITREPO" && pwd -P)"
-MAIN_ENC="${MAIN_ENC//\//-}"
+MAIN_ENC="$(cd "$GITREPO" && pwd -P | LC_ALL=C sed 's/[^A-Za-z0-9]/-/g')"
 MAIN_MEMDIR="$FAKE_HOME/.claude/projects/$MAIN_ENC/memory"
 mkdir -p "$MAIN_MEMDIR"
 ( cd "$MAIN_MEMDIR" && git init -q && git config user.email "t@example.com" && git config user.name "t" )
