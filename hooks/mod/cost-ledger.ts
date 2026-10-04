@@ -92,9 +92,11 @@ export const register: Register = on => {
       const repo = (await mhRepo($))?.manifest
       const cache = repo?.version ? await readManifest($, $.plugin.root) : undefined
       if (cache?.version && repo?.version)
+        // GH #458: the engine styles every plugin status line as a warning, so only a stale cache
+        // speaks; a match clears any earlier line (the ledger's load row proves the load).
         $.ui.status(
           cache.version === repo.version
-            ? `${$.plugin.name} ${cache.version}: cache = repo version (same-version edits still need a bump)`
+            ? undefined
             : `${$.plugin.name}: cache ${cache.version} is stale, repo ${repo.version} (bump + claude plugin update)`,
         )
     } catch (err) {

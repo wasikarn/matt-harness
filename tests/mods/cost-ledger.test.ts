@@ -120,12 +120,12 @@ test('session.start: cached and repo versions differ -> a status line naming bot
   expect(h.statuses[0]).toContain('stale')
 })
 
-test('session.start: same version -> a status line that says so, not stale', async ($, on) => {
+// GH #458: the engine draws every plugin status line warning-styled, so a healthy session says
+// nothing (the load-proof row in the ledger covers "it loaded"); a leftover stale line is cleared.
+test('session.start: same version -> no status line, any earlier one cleared', async ($, on) => {
   const { h, start } = setup($, on)
   await start()
-  expect(h.statuses.length).toBe(1)
-  expect(h.statuses[0]).toContain('1.1.174')
-  expect(h.statuses[0]).not.toContain('stale')
+  expect(h.statuses).toEqual([undefined])
 })
 
 test('session.start: not an mh checkout, or unreadable manifests -> no status, core still runs', async ($, on) => {
