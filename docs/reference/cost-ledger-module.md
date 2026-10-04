@@ -162,7 +162,7 @@ documentation only: `plugin.json` has no field for a minimum version. On older C
 when the module stops being an observer. It reads `claude plugin validate --json`, whose notes on
 the `hooks/hooks.json` entry list what the module hooks and which `$.` calls it makes
 (`./mod/cost-ledger.ts hooks: turn.complete`, `... calls: $.process.run, ...`; shape checked on
-2.1.289). Every hook must be `turn.complete`, and no call may be an ask/deny/permission surface
+2.1.289). Every hook must be an observer event (`turn.complete`, `session.start`, `skill.prompt`), and no call may be an ask/deny/permission surface
 (`$.ui.ask`). Deny and rewrite are return values (`{ deny }`, `next({ ...e })`), which the notes
 cannot show, so a static scan of the source (comments stripped) covers them. A missing hooks note
 fails, so a CLI output change shows up instead of passing silently. Without the `claude` CLI only
