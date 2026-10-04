@@ -540,7 +540,50 @@ else
 fi
 echo "$pass6 passed, $fail6 failed (phase 6)"
 
-pass=$((pass + pass2 + pass3 + pass4 + pass5 + pass6))
-fail=$((fail + fail2 + fail3 + fail4 + fail5 + fail6))
+# Phase 7 -- argv edge cases (GH #397, #398). Runs under /bin/bash, which is 3.2 on macOS:
+# there "${a[@]}" on an empty array is an unbound-variable error under set -u. #397: a session
+# with no subagent files must not print that. #398: a subagent file named agent--x.jsonl gives
+# the id "-x", which must not reach jq as an option and fail the main-transcript scan.
+echo "=== argv edge cases: no subagent files, a subagent id starting with - ==="
+pass7=0
+fail7=0
+ae_dir=$(fresh_tmpdir)
+mkdir -p "$ae_dir/dash/subagents"
+python3 - "$ae_dir" <<'PY'
+import json, sys
+d = sys.argv[1]
+line = json.dumps({"type": "assistant", "message": {"model": "claude-opus-5-5", "id": "m1",
+                   "usage": {"input_tokens": 10, "output_tokens": 20}}}) + "\n"
+open(d + "/none.jsonl", "w").write(line)
+open(d + "/dash.jsonl", "w").write(line)
+open(d + "/dash/subagents/agent--x.jsonl", "w").write(line.replace("m1", "m2"))
+PY
+# ae_run <name>: run the hook under /bin/bash on $ae_dir/<name>.jsonl, print the orchestrator row, stderr to <name>.err
+ae_run() {
+  local home payload
+  home=$(fresh_tmpdir)
+  payload=$(python3 -c 'import json,sys; print(json.dumps({"transcript_path": sys.argv[1], "session_id": "t397"}))' "$ae_dir/$1.jsonl")
+  printf '%s' "$payload" | HOME="$home" MH_COST_TRACKER_SETTLE_S=0 /bin/bash "$SCRIPT" >/dev/null 2>"$ae_dir/$1.err"
+  jq -c 'select(.stream == "orchestrator")' "$home/.local/share/kbg/metrics/costs.jsonl" 2>/dev/null
+}
+got=$(ae_run none)
+if [[ -s "$ae_dir/none.err" ]]; then
+  fail7=$((fail7 + 1)); echo "FAIL: no subagent files printed stderr: $(cat "$ae_dir/none.err")" >&2
+elif [[ "$(jq -r .input_tokens <<<"$got" 2>/dev/null)" != "10" ]]; then
+  fail7=$((fail7 + 1)); echo "FAIL: no subagent files gave orchestrator row: $got" >&2
+else
+  pass7=$((pass7 + 1)); echo "PASS: no subagent files: clean stderr and an orchestrator row"
+fi
+got=$(ae_run dash)
+if [[ "$(jq -r '.error // .input_tokens' <<<"$got" 2>/dev/null)" == "10" ]] \
+   && ! /usr/bin/grep -q 'Unknown option' "$ae_dir/dash.err"; then
+  pass7=$((pass7 + 1)); echo "PASS: subagent id '-x' does not break the main-transcript scan"
+else
+  fail7=$((fail7 + 1)); echo "FAIL: subagent id '-x' gave orchestrator row: $got"$'\n'"stderr: $(cat "$ae_dir/dash.err")" >&2
+fi
+echo "$pass7 passed, $fail7 failed (phase 7)"
+
+pass=$((pass + pass2 + pass3 + pass4 + pass5 + pass6 + pass7))
+fail=$((fail + fail2 + fail3 + fail4 + fail5 + fail6 + fail7))
 echo "TOTAL: $pass passed, $fail failed"
 [[ "$fail" -eq 0 ]]
