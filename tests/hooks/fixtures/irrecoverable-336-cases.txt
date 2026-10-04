@@ -80,6 +80,29 @@ DENY sudo chmod -R 777 /usr/local
 DENY rm -r --no-preserve-root /
 DENY rm --no-preserve-root -r /tmp/x
 DENY rm --no-preserve-r -r /
+# the 777 permission set in any letter order, with X, or granted to u, g and o clause by clause
+DENY chmod -R a+rwX ./x
+DENY chmod -R a+wrx ./x
+DENY chmod -R ugo=xwr ./x
+DENY chmod a+Xrw /
+DENY chmod -R u+rwx,g+rwx,o+rwx ./x
+DENY chmod -R u=rwX,go+rwX ./x
+ALLOW chmod -R u+rwX ./x
+ALLOW chmod a+r ./x
+ALLOW chmod -R a+rX ./x
+ALLOW chmod -R go+rX ./x
+ALLOW chmod -R u+rwx,g+rx,o+rx ./x
+ALLOW chmod 644 a+wrx
+# GNU rm takes an unambiguous long-option prefix: --r only names --recursive, --f only --force
+DENY rm --rec --force ./build
+DENY rm -r --forc ./build
+DENY rm --r --f ./build
+DENY rm --recursive --fo ./build
+ALLOW rm --dir --force ./build
+ALLOW rm -r --forcex ./build
+ALLOW rm --rec --verbose ./build
+DENY echo `date` $(rm --rec --forc ./build)
+ALLOW echo `date` $(rm --verbose ./build)
 ALLOW mkfs.ext4 -V
 ALLOW echo mkfs.ext4 /dev/sda1
 ALLOW chmod +x run.sh

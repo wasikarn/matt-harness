@@ -3014,6 +3014,18 @@ _timed_case "GH #336: var-verb view (shadow), target after 10 KB of statements, 
 _timed_case "GH #336: ifs-split view, target after 10 KB of statements, denied in bounded time" 2 "${_pad336}rm\${IFS}-rf build"
 _timed_case "GH #336: var-verb view, 1200 references of one benign variable, allowed in bounded time" 0 "X=ls; $(printf 'echo $X %.0s' $(seq 1200))"
 _timed_case "GH #336: chmod with 4000 a+rw words, allowed in bounded time" 0 "chmod -R $(printf 'a+rw %.0s' $(seq 4000))build"
+# Padding past _VIEW_LEN_CAP (20,000) used to drop the enforced ifs-split view while the parser ran up
+# to _CMD_LEN_CAP (150,000), so a 21 KB word in front of rm${IFS}-rf allowed it.
+_big336="$(printf 'a%.0s' $(seq 21000))"
+_timed_case "GH #336: ifs-split view, target after a 21 KB word, denied in bounded time" 2 "echo ${_big336}; rm\${IFS}-rf\${IFS}./build"
+_timed_case "GH #336: ifs-split view, target after 48 KB of statements, denied in bounded time" 2 \
+  "$(printf 'echo a; %.0s' $(seq 6000))rm\${IFS}-rf\${IFS}./build"
+_timed_case "GH #336 control: a 21 KB heredoc is allowed in bounded time" 0 "cat > notes.txt <<'EOF'
+${_big336}
+EOF"
+_timed_case "GH #336 control: a 21 KB heredoc with a plain assignment is allowed in bounded time" 0 "X=1; cat > notes.txt <<'EOF'
+\$X ${_big336}
+EOF"
 if [ "$_want336" -ge 60 ] && [ "$_got336" = "$_want336" ]; then
   echo "  ✅ GH #336: corpus replayed every case ($_got336)"; pass=$((pass + 1))
 else
