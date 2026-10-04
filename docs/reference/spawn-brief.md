@@ -26,9 +26,12 @@ done it — the fresh-context validator still independently re-verifies every cl
 never narrowed on the strength of "already self-checked."
 
 Validator/re-validator: return `{pass, findings[], checked[], scope_ok, unexpected_files[]}` and
-nothing else; `checked[]` holds ≥1 `{claim, evidence}` even on a clean pass — this is where
+nothing else (bar the `not_checked:` line below); `checked[]` holds ≥1 `{claim, evidence}` even on a clean pass — this is where
 Rule 13's "one checkable fact" lands, and an empty `checked[]` is not verified, same as a missing
 field. `scope_ok` fails on either an unexpected file or an owned file the diff never touches.
+Scope the validator had no access to goes on one `not_checked:` prose line outside the JSON (the
+`mh:plan-reviewer` `not_reviewed` pattern), never inside it. A Done-when assertion it could not
+verify is never listed there: that is `pass: false` or `NEEDS-DECISION`.
 Dispatching `mh:plan-reviewer` specifically: it has no calling skill of its own to embed this in
 as a mandatory step, so the dispatcher must remember it here — pipe
 `{"findings": [{"severity": ...}, ...], "top_blockers_count": <int>, "verdict": "..."}` through
