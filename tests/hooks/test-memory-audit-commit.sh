@@ -186,6 +186,18 @@ check "a marker at/after this run's own acquisition time survives (ordering, not
 rm -f "${MARKER_GLOB}99992"
 
 echo ""
+echo "--- the sweep never deletes a marker of a project whose ENC extends this one (proj vs proj-v2) ---"
+init_memdir
+clear_state
+OLD_TS=$(( $(date +%s) - 1000 ))
+OTHER_MARKER="${MARKER_GLOB}v2-99993"   # = memory-audit-commit-fail-<ENC>-v2-<pid>, another store's marker
+printf 'acquisition_ts=%s\nother project failure\n' "$OLD_TS" > "$OTHER_MARKER"
+run_hook   # clean tree -> success path, sweep runs
+ok=1; [ -f "$OTHER_MARKER" ] && ok=0
+check "an older marker of ENC-v2 survives this ENC's sweep" "$ok"
+rm -f "$OTHER_MARKER"
+
+echo ""
 echo "--- real concurrent invocations: lock serializes, both changes land, no residue ---"
 init_memdir
 clear_state
