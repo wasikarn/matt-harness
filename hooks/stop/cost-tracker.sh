@@ -460,10 +460,12 @@ emit_rows() {
 # combined object construction and silently dropped everything -- caught via
 # a dedicated fixture, see docs/research/cost-tracker-single-scan-perf-2026-09-22.md.
 scan_transcript() {
-  local _d="${1%.jsonl}/subagents" _f _ids=()
+  local _d="${1%.jsonl}/subagents" _f _ids=() _ids_json='[]'
   shopt -s nullglob
   for _f in "$_d"/agent-*.jsonl; do _f=${_f##*/}; _f=${_f%.jsonl}; _ids+=("${_f#agent-}"); done
   shopt -u nullglob
+  # Ids go to jq on stdin, not argv: an id like "-x" (agent--x.jsonl) is read as a jq option (GH #398).
+  (( ${#_ids[@]} )) && _ids_json=$(printf '%s\n' "${_ids[@]}" | jq -Rnc '[inputs]')
   # ponytail: [inputs|try fromjson] materializes the whole parsed transcript
   # in jq's heap (the original code streamed `inputs` directly through each
   # separate reduce, never holding more than one parsed line at a time).
@@ -471,7 +473,7 @@ scan_transcript() {
   # much larger than that ever shows up is a single streaming `reduce (inputs
   # | try fromjson) as $l (...)` computing all four accumulators together
   # instead of materializing $lines first.
-  jq -nRc --arg tp "$1" --argjson ids "$(jq -nc '$ARGS.positional' --args ${_ids[@]+"${_ids[@]}"})" "$adv_def$usage_def"'
+  jq -nRc --arg tp "$1" --argjson ids "$_ids_json" "$adv_def$usage_def"'
     [inputs | try fromjson] as $lines
     | {
         verify_map: ( try (
@@ -682,7 +684,7 @@ if [[ -n "$transcript" && -f "$transcript" ]]; then
   # still scanned here. The two are summed per-key, not overwritten — the
   # original single combined call effectively did the same summation by
   # tallying tool_use blocks across every file's lines together.
-  sub_codex=$(emit_codex_invocations "${sub_files[@]}"); [[ -z "$sub_codex" ]] && sub_codex='{}'
+  sub_codex=$(emit_codex_invocations ${sub_files[@]+"${sub_files[@]}"}); [[ -z "$sub_codex" ]] && sub_codex='{}'
   codex_counts=$(jq -nc --argjson a "$main_codex" --argjson b "$sub_codex" \
     'reduce (($b | keys_unsorted)[]) as $k ($a; .[$k] = ((.[$k] // 0) + $b[$k]))' 2>/dev/null)
   [[ "$codex_counts" == "{}" ]] && codex_counts=''
