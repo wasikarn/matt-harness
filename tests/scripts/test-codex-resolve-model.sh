@@ -70,19 +70,14 @@ JSON
 t "a boolean priority and a retiring model (upgrade.model set) are not chosen" got gpt-ok-sol sol
 
 # "retiring" means upgrade.model is a non-empty string; the live catalog carries "upgrade": null
-cat > "$T/models_cache.json" <<'JSON'
-{"models": [
- {"slug":"gpt-a-sol","priority":1,"visibility":"list","upgrade":null,"supported_reasoning_levels":[{"effort":"medium"}]},
- {"slug":"gpt-b-sol","priority":2,"visibility":"list","upgrade":{},"supported_reasoning_levels":[{"effort":"medium"}]},
- {"slug":"gpt-c-sol","priority":3,"visibility":"list","upgrade":"","supported_reasoning_levels":[{"effort":"medium"}]}]}
-JSON
-t "upgrade null is not retiring (live catalog shape)" got gpt-a-sol sol
-cat > "$T/models_cache.json" <<'JSON'
-{"models": [
- {"slug":"gpt-b-sol","priority":2,"visibility":"list","upgrade":{"model":""},"supported_reasoning_levels":[{"effort":"medium"}]},
- {"slug":"gpt-c-sol","priority":3,"visibility":"list","upgrade":"","supported_reasoning_levels":[{"effort":"medium"}]}]}
-JSON
-t "upgrade {\"model\": \"\"} and \"\" are not retiring either" got gpt-b-sol sol
+for u in 'null' '{}' '""' '{"model":""}'; do
+  # a single entry, so only the retiring rule can make it unresolvable
+  printf '{"models": [{"slug":"gpt-only-sol","priority":1,"visibility":"list","upgrade":%s,"supported_reasoning_levels":[{"effort":"medium"}]}]}' "$u" > "$T/models_cache.json"
+  t "upgrade $u is not retiring" got gpt-only-sol sol
+done
+printf '{"models": [{"slug":"gpt-only-sol","priority":1,"visibility":"list","upgrade":{"model":"x-nova"},"supported_reasoning_levels":[{"effort":"medium"}]}]}' > "$T/models_cache.json"
+out="$(python3 "$RESOLVE" sol 2>"$T/err")"; rc=$?
+t "a lone entry with upgrade.model set is retiring: refused" fails_with "$rc" "$out" "$T/err" sol
 
 # an empty tier must not match a slug that ends in "-"
 cat > "$T/models_cache.json" <<'JSON'
