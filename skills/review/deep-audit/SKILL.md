@@ -79,8 +79,8 @@ brief in the `docs/reference/spawn-brief.md` shape, with **only step 1's scope l
 changed paths and the commit range/diff to review) and this task's framing: assume the session
 is complacent; find what it missed across correctness, edge cases, failure modes, hidden
 assumptions, regressions, missing checks, consistency between files (doc versus code, two docs
-disagreeing), and drift between intent and code; every finding cites one checkable fact (a path,
-a command, a line). **Withhold step 1's own per-file claims/notes and step 2's rubric scores** —
+disagreeing), and drift between intent and code; every finding cites one checkable fact (a
+`path:line`, or a backticked command). **Withhold step 1's own per-file claims/notes and step 2's rubric scores** —
 the checker re-derives its own read of the diff from the artifact itself, never from the
 orchestrator's already-formed opinion of it. Handing the checker the maker's own claims is the
 CoVe "joint" failure mode: a same-session check that shares the generator's own trace tends to
@@ -178,7 +178,8 @@ the contract: exact key-set equality (not merely all six keys present — an ext
 is rejected too), `pass`/`scope_ok` as real booleans, every `findings[]` item as exactly
 `{summary, evidence}` with string values, **`checked[]` non-empty, every item exactly `{claim,
 evidence}` with string values** — required even on a clean pass, closing the same vacuous-accept
-gap the Codex path's schema now closes — `unexpected_files[]` as a list of strings. Exactly one
+gap the Codex path's schema now closes — every `evidence` in citation shape (a backticked command
+or `path:line`, the regex idea-audit's `check-citations.py` uses), `unexpected_files[]` as a list of strings. Exactly one
 valid candidate is required — two or more *distinct* schema-valid objects (a decoy example quoted
 ahead of the agent's real, differently-valued verdict) reject as ambiguous rather than silently
 picking the first or last. Exit 0 with the validated JSON on stdout means accept; exit 1 with a

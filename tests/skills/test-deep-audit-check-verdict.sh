@@ -13,7 +13,7 @@ source "$ROOT/tests/_lib/verdict-assert.sh"
 
 run_selftest
 
-checked='[{"claim": "c", "evidence": "e"}]'
+checked='[{"claim": "c", "evidence": "skills/foo.py:12"}]'
 good='{"contract_version": 1, "pass": true, "findings": [], "checked": '"$checked"', "scope_ok": true, "unexpected_files": []}'
 assert_exit "well-formed verdict accepted" 0 "$good"
 assert_exit "extra invented field rejected" 1 '{"contract_version": 1, "pass": true, "findings": [], "checked": '"$checked"', "scope_ok": true, "unexpected_files": [], "notes": "x"}'
@@ -25,7 +25,7 @@ assert_exit "NEEDS-DECISION escalation, not malformed" 2 "I can't tell safely.
 NEEDS-DECISION does gate X apply to Y?"
 
 decoy='{"contract_version": 1, "pass": false, "findings": [], "checked": '"$checked"', "scope_ok": false, "unexpected_files": []}'
-real='{"contract_version": 1, "pass": true, "findings": [{"summary": "s", "evidence": "e"}], "checked": '"$checked"', "scope_ok": true, "unexpected_files": []}'
+real='{"contract_version": 1, "pass": true, "findings": [{"summary": "s", "evidence": "ran `git log -1`"}], "checked": '"$checked"', "scope_ok": true, "unexpected_files": []}'
 assert_exit "decoy verdict ahead of the real one rejected as ambiguous" 1 "Example shape: $decoy
 Actual result: $real"
 
@@ -43,5 +43,10 @@ assert_exit "pass:false over scope_ok:false still accepted (a legit failing run)
 # M6: blank summary/evidence/claim strings are schema-valid non-empty-type but carry no content.
 assert_exit "blank findings.summary rejected" 1 '{"contract_version": 1, "pass": false, "findings": [{"summary": "  ", "evidence": "e"}], "checked": '"$checked"', "scope_ok": true, "unexpected_files": []}'
 assert_exit "blank checked.evidence rejected" 1 '{"contract_version": 1, "pass": true, "findings": [], "checked": [{"claim": "c", "evidence": ""}], "scope_ok": true, "unexpected_files": []}'
+
+# #392: evidence must carry the citation shape idea-audit's check-citations.py enforces.
+assert_exit "non-citation checked.evidence rejected" 1 '{"contract_version": 1, "pass": true, "findings": [], "checked": [{"claim": "c", "evidence": "x"}], "scope_ok": true, "unexpected_files": []}'
+assert_exit "non-citation findings.evidence rejected" 1 '{"contract_version": 1, "pass": false, "findings": [{"summary": "s", "evidence": "looks wrong to me"}], "checked": '"$checked"', "scope_ok": true, "unexpected_files": []}'
+assert_exit "numeric ratio is not a citation" 1 '{"contract_version": 1, "pass": true, "findings": [], "checked": [{"claim": "c", "evidence": "ratio 2.5:1"}], "scope_ok": true, "unexpected_files": []}'
 
 report_verdict "test-deep-audit-check-verdict"

@@ -46,7 +46,10 @@ Behavior:
     findings: []` is schema-valid but shows no verification work happened
     (found by mh:deep-audit 2026-09-19: a checker primed with 3 known-suspect
     items addressed 0 of them; mirrors mh:idea-audit's identical `checked[]`
-    guard). `unexpected_files[]` must be a list of strings.
+    guard). Every `evidence` must carry a citation shape (CITATION_RE: a
+    backticked command, or path:line), the same one mh:idea-audit's
+    check-citations.py enforces (#392). `unexpected_files[]` must be a list
+    of strings.
 
 Exit codes: 0 = exactly one valid verdict (printed to stdout as JSON); 1 =
 malformed, rejected, or ambiguous (reason on stderr, nothing on stdout --
@@ -61,6 +64,11 @@ CONTRACT_VERSION = 1
 REQUIRED_KEYS = {"contract_version", "pass", "findings", "checked", "scope_ok", "unexpected_files"}
 FINDING_KEYS = {"summary", "evidence"}
 CHECKED_KEYS = {"claim", "evidence"}
+# Mirrors skills/workflow/idea-audit/scripts/check-citations.py's CITATION_RE
+# exactly (#392): a backticked command, or a path:line cite. A hand copy, not a
+# cross-skill import (that would couple the skills' install layouts);
+# tests/skills/test-check-verdict-drift.sh fails if it drifts.
+CITATION_RE = re.compile(r"`[^`]+`|(?=[^\s:`]*[A-Za-z])[^\s:`]*[./][^\s:`]*:\d+")
 
 
 def mask_json_spans(text):
@@ -151,6 +159,9 @@ def validate(obj):
             return False, f"findings[{idx}].summary/evidence must be strings: {f!r}"
         if not f["summary"].strip() or not f["evidence"].strip():
             return False, f"findings[{idx}].summary/evidence must not be blank: {f!r}"
+        if not CITATION_RE.search(f["evidence"]):
+            return False, (f"findings[{idx}].evidence has no citation shape "
+                           f"(backticked command, or path:line): {f!r}")
     if not isinstance(obj["checked"], list):
         return False, "'checked' is not a list"
     if len(obj["checked"]) == 0:
@@ -162,6 +173,9 @@ def validate(obj):
             return False, f"checked[{idx}].claim/evidence must be strings: {c!r}"
         if not c["claim"].strip() or not c["evidence"].strip():
             return False, f"checked[{idx}].claim/evidence must not be blank: {c!r}"
+        if not CITATION_RE.search(c["evidence"]):
+            return False, (f"checked[{idx}].evidence has no citation shape "
+                           f"(backticked command, or path:line): {c!r}")
     if not isinstance(obj["unexpected_files"], list) or not all(
         isinstance(x, str) for x in obj["unexpected_files"]
     ):
@@ -234,7 +248,7 @@ def _selftest():
                 sys.stdin = old_stdin
         return code, buf_out.getvalue(), buf_err.getvalue()
 
-    checked = [{"claim": "c", "evidence": "e"}]
+    checked = [{"claim": "c", "evidence": "skills/foo.py:12"}]
     good = json.dumps({"contract_version": 1, "pass": True, "findings": [], "checked": checked,
                         "scope_ok": True, "unexpected_files": []})
     code, out, err = run(good)
@@ -337,11 +351,18 @@ def _selftest():
     # second candidate -- neither carries the other required top-level keys,
     # so it can never validate on its own.
     with_finding = json.dumps({"contract_version": 1, "pass": False,
-                                "findings": [{"summary": "s", "evidence": "e"}],
+                                "findings": [{"summary": "s", "evidence": "ran `git log -1`"}],
                                 "checked": checked,
                                 "scope_ok": True, "unexpected_files": []})
     code, out, err = run(with_finding)
     assert code == 0 and json.loads(out) == json.loads(with_finding), (code, out, err)
+
+    # #392: evidence must be a citation, not just a non-blank string.
+    for where, bad_ev in (("checked", "x"), ("findings", "looks wrong to me"), ("checked", "ratio 2.5:1")):
+        obj = json.loads(with_finding)
+        obj[where][0]["evidence"] = bad_ev
+        code, out, err = run(json.dumps(obj))
+        assert code == 1 and "no citation shape" in err, (where, bad_ev, code, out, err)
 
     # Decoy bypass: a fully schema-valid example quoted in narration ahead of
     # the agent's real, differently-valued verdict must be rejected as
@@ -349,7 +370,7 @@ def _selftest():
     decoy = json.dumps({"contract_version": 1, "pass": False, "findings": [], "checked": checked,
                          "scope_ok": False, "unexpected_files": []})
     real = json.dumps({"contract_version": 1, "pass": True,
-                        "findings": [{"summary": "s", "evidence": "e"}],
+                        "findings": [{"summary": "s", "evidence": "ran `git log -1`"}],
                         "checked": checked,
                         "scope_ok": True, "unexpected_files": []})
     code, out, err = run(f"Example shape: {decoy}\nActual result: {real}")
