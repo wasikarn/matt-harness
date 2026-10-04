@@ -107,5 +107,43 @@ else
   bad "expected non-zero exit naming the 200-char limit, got rc=$rc stderr=$(cat "$LONG_STDERR")"
 fi
 
+# --- GH #478: a session that started in another cwd keeps its transcript under that
+# cwd's project folder; the session id is unique, so look for it in every project folder ---
+MOVED_ID="55555555-5555-5555-5555-555555555555"
+MOVED_DIR="$FAKE_HOME/.claude/projects/-fake-started-elsewhere"
+mkdir -p "$MOVED_DIR"
+printf 'moved session content\n' > "$MOVED_DIR/$MOVED_ID.jsonl"
+out=$(HOME="$FAKE_HOME" CLAUDE_CODE_SESSION_ID="$MOVED_ID" bash "$SCRIPT" "$CWD" 2>/dev/null)
+rc=$?
+if [ "$rc" -eq 0 ] && [ "$(echo "$out" | awk '{print $1}')" = "$MOVED_DIR/$MOVED_ID.jsonl" ]; then
+  ok "finds a transcript under another project folder when the cwd folder has none"
+else
+  bad "expected $MOVED_DIR/$MOVED_ID.jsonl, got '$out' (rc=$rc)"
+fi
+
+# the cwd folder still wins when it holds the id too
+printf 'cwd copy\n' > "$DIR/$MOVED_ID.jsonl"
+out=$(HOME="$FAKE_HOME" CLAUDE_CODE_SESSION_ID="$MOVED_ID" bash "$SCRIPT" "$CWD" 2>/dev/null)
+if [ "$(echo "$out" | awk '{print $1}')" = "$DIR/$MOVED_ID.jsonl" ]; then
+  ok "the current project's folder wins over a search of the others"
+else
+  bad "expected the cwd folder copy, got '$out'"
+fi
+trash "$DIR/$MOVED_ID.jsonl"
+
+# the same id in two other folders is ambiguous: fail loud and list both
+TWIN_ID="66666666-6666-6666-6666-666666666666"
+mkdir -p "$FAKE_HOME/.claude/projects/-fake-twin-a" "$FAKE_HOME/.claude/projects/-fake-twin-b"
+printf 'a\n' > "$FAKE_HOME/.claude/projects/-fake-twin-a/$TWIN_ID.jsonl"
+printf 'b\n' > "$FAKE_HOME/.claude/projects/-fake-twin-b/$TWIN_ID.jsonl"
+TWIN_ERR="$FAKE_HOME/twin.stderr"
+out=$(HOME="$FAKE_HOME" CLAUDE_CODE_SESSION_ID="$TWIN_ID" bash "$SCRIPT" "$CWD" 2>"$TWIN_ERR")
+rc=$?
+if [ "$rc" -ne 0 ] && [ -z "$out" ] && /usr/bin/grep -q 'twin-a' "$TWIN_ERR" && /usr/bin/grep -q 'twin-b' "$TWIN_ERR"; then
+  ok "the same session id in two project folders fails loud and names both"
+else
+  bad "expected non-zero exit naming both folders, got rc=$rc out='$out' stderr=$(cat "$TWIN_ERR")"
+fi
+
 echo "learn/find-transcript: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

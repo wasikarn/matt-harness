@@ -35,6 +35,24 @@ TARGET="$DIR/$SESSION_ID.jsonl"
 # activity (settings.json `cleanupPeriodDays`, default 30). A not-found here
 # on an old session may just mean it was already swept, not a lookup bug —
 # say so if the skill surfaces this to the user.
+# GH #478: a session that started in another cwd (an Orca worktree, then a move into the
+# repo) keeps its transcript under the starting directory's folder. The session id is
+# unique, so look for it in every project folder: one hit is this session, several is
+# ambiguous (fail loud, never pick by mtime).
+if [ ! -f "$TARGET" ]; then
+  hits=()
+  for f in "$HOME"/.claude/projects/*/"$SESSION_ID.jsonl"; do
+    [ -f "$f" ] && hits+=("$f")
+  done
+  if [ "${#hits[@]}" -eq 1 ]; then
+    TARGET="${hits[0]}"
+  elif [ "${#hits[@]}" -gt 1 ]; then
+    echo "find-transcript: session $SESSION_ID has a transcript in more than one project folder; ask the operator which:" >&2
+    printf '  %s\n' "${hits[@]}" >&2
+    exit 1
+  fi
+fi
+
 [ -f "$TARGET" ] || { echo "find-transcript: no transcript at $TARGET (session may be new, or already swept)" >&2; exit 1; }
 
 size=$(wc -c < "$TARGET" | tr -d ' ')
