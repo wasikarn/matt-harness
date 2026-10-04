@@ -456,6 +456,41 @@ printf '%s\n' "$out" | /usr/bin/grep -q '^warning: 4 cost-ledger rows with no fi
 assert "the skipped non-finite usd rows are counted in a warning line" "$ok"
 trash "$fake_home" 2>/dev/null || true
 
+# Load markers (GH #444): the module writes one `loaded` row per session (per module load) to
+# cost-ledger.jsonl, so a session with spend and no marker ran with modules off. The rate counts
+# only sessions whose last costs row is at or after the first marker (older sessions predate the
+# marker). Fixture: led-old predates it, mk-a has a marker (twice: a reload), mk-b has none ->
+# 1 of 2. A marker row has no usd and must not trip the no-finite-usd warning. A marker-only file
+# still reads "no ledger data" for the cross-check.
+fake_home=$(mktemp -d)
+metrics_dir="$fake_home/.local/share/kbg/metrics"
+mkdir -p "$metrics_dir"
+cat > "$metrics_dir/costs.jsonl" <<'EOF'
+{"timestamp":"2026-10-01T00:00:00Z","session_id":"led-old","transcript_path":"/t","model":"claude-opus-5-5","model_scoped":true,"stream":"orchestrator","turns":1,"input_tokens":1,"output_tokens":1,"cache_write_tokens":0,"cache_write_tokens_1h":0,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":1.0}
+{"timestamp":"2026-10-03T00:00:10Z","session_id":"mk-a","transcript_path":"/t","model":"claude-opus-5-5","model_scoped":true,"stream":"orchestrator","turns":1,"input_tokens":1,"output_tokens":1,"cache_write_tokens":0,"cache_write_tokens_1h":0,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":1.0}
+{"timestamp":"2026-10-03T00:00:20Z","session_id":"mk-b","transcript_path":"/t","model":"claude-opus-5-5","model_scoped":true,"stream":"orchestrator","turns":1,"input_tokens":1,"output_tokens":1,"cache_write_tokens":0,"cache_write_tokens_1h":0,"cache_read_tokens":0,"rate_verified":true,"estimated_cost_usd":1.0}
+EOF
+cat > "$metrics_dir/cost-ledger.jsonl" <<'EOF'
+{"t":"2026-10-03T00:00:00Z","session_id":"mk-a","loaded":true,"cli":"2.1.289","mh":"1.1.175"}
+{"t":"2026-10-03T00:00:05Z","session_id":"mk-a","loaded":true,"cli":"2.1.289","mh":"1.1.175"}
+EOF
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
+rc=$?
+line=$(printf '%s\n' "$out" | /usr/bin/grep '^module loaded:')
+[[ "$rc" == "0" && "$line" == 'module loaded: 1 of 2 sessions since the first load marker'* ]] && ok=1 || ok=0
+assert "module loaded counts sessions with a load marker over sessions since the first marker (got: ${line:-none})" "$ok"
+printf '%s\n' "$out" | /usr/bin/grep -q 'no finite usd' && ok=0 || ok=1
+assert "a load marker row is not counted as a row with no finite usd" "$ok"
+printf '%s\n' "$out" | /usr/bin/grep -q '^ledger cross-check: no ledger data' && ok=1 || ok=0
+assert "a marker-only ledger file still reads 'no ledger data' for the cross-check" "$ok"
+# No marker at all (modules off since the module change, or an older mh): say so, never 0 of N.
+printf '%s\n' '{"t":"2026-10-03T00:00:01Z","session_id":"mk-a","turn_id":"t1","usd":1,"delta":1,"reset":false}' > "$metrics_dir/cost-ledger.jsonl"
+out=$(HOME="$fake_home" node "$REPORT_JS" 2>&1)
+line=$(printf '%s\n' "$out" | /usr/bin/grep '^module loaded:')
+[[ "$line" == 'module loaded: no load marker'* ]] && ok=1 || ok=0
+assert "no load marker prints 'module loaded: no load marker' (got: ${line:-none})" "$ok"
+trash "$fake_home" 2>/dev/null || true
+
 echo ""
 total_t=$((pass + fail))
 echo "=== $pass/$total_t passed ==="
