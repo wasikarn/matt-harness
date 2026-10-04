@@ -36,7 +36,8 @@ The former `git worktree add -b` deny predates this and was removed in the v1.0.
 `claude --continue --fork-session` are session branches, not git branches: they fork the
 conversation without touching the working tree.
 
-**Never run `mattpocock-skills:git-guardrails-claude-code`'s setup here.** It wires a PreToolUse
+**Never run upstream's `git-guardrails-claude-code` setup here** (`skills/misc/` in
+mattpocock/skills, not in the plugin's skills list). It wires a PreToolUse
 hook blocking *all* `git push`, not just `--force`. `gate:write:config-guard` asks on exactly
 that settings edit shape (any change to `hooks` or `enabledPlugins`), so there is a backstop;
 the instruction still stands.

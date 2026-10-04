@@ -34,7 +34,7 @@ which implies mh sequences or supervises Codex's work.
 
 **Fragments pointer**:
 The durable JSON record `sensor:write:fragments-capture` writes at `$HOME/.claude/state/
-mh-fragments/` when a write plausibly targets a `mattpocock-skills:writing-fragments` document —
+mh-fragments/` when a write plausibly targets a document from upstream's `writing-fragments` skill —
 a path, a capture timestamp, and a surfaced-snapshot, never the document's own content.
 `docs/adr/0003-writing-fragments-pointer-capture.md`.
 _Avoid_: "fragments cache" or "fragments backup," which imply mh stores a copy of the content; it

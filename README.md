@@ -95,10 +95,11 @@ score not feel. `git-hooks/pre-commit` refuses a `docs/METHODOLOGY.md` over 4096
   `docs/reference/cost-ledger-module.md`.
 - **Optional pairing:** `codex@openai-codex`, installed separately and routed to by name for a
   second opinion from a different model family — see below.
-- **Fragments pointer capture:** invoking `/mattpocock-skills:writing-fragments` and then writing
-  to the chosen file records a path pointer (never the content) at `$HOME/.claude/state/
-  mh-fragments/`, surfaced at the start of a later session. No mute command — delete the record's
-  JSON file by hand to forget it. `docs/adr/0003-writing-fragments-pointer-capture.md`.
+- **Fragments pointer capture:** invoking upstream's `writing-fragments` skill (in-progress,
+  not in the mattpocock-skills plugin's skills list) and then writing to the chosen file records
+  a path pointer (never the content) at `$HOME/.claude/state/mh-fragments/`,
+  surfaced at the start of a later session. No mute command — delete the record's JSON file by
+  hand to forget it. `docs/adr/0003-writing-fragments-pointer-capture.md`.
 
 ## Architecture: the 6-layer harness
 
