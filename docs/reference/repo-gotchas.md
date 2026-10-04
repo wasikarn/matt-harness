@@ -78,6 +78,12 @@ never runs at all and nothing server-side notices. Run the verify command above 
   about whether a CLAUDE.md or rule file is in context.
 - **Two user-level rules load every session:** `~/.claude/rules/{test-honesty,code-review-graph}.md`
   (dotfiles-owned). `test-honesty.md` fires on any `.py` read, not just tests.
+- **Piping a payload into a gate by hand writes to the real journal.** A denying gate appends to
+  `~/.local/share/kbg/metrics/gate-decisions.jsonl` unless `MH_GATE_JOURNAL_PATH` is set, and a
+  made-up `session_id` (`s`, `t`, `test-session`) passes `gate-report`'s session filter, so it is
+  counted as a live event (159 of 161 `subagent-verdict-check` denies were these). Probe with
+  `MH_GATE_JOURNAL_PATH=/dev/null` (or a scratch file when you want to read the row back), and
+  use `scripts/gate-differential.sh` for old-vs-new comparisons, which already isolates it.
 
 ## Research: check qmd before web search
 
