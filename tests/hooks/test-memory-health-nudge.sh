@@ -267,6 +267,28 @@ assert_not_contains "marker cleared (by memory-audit-commit.sh) -> nudge stops f
   "auto-commit failed" "$OUT"
 
 echo ""
+echo "--- a marker of a project whose ENC extends this one (proj vs proj-v2) never surfaces here ---"
+OTHER_MARKER="$FAKE_HOME/.claude/state/memory-audit-commit-fail-$ENC-v2-999903"
+printf 'acquisition_ts=0\ngit commit failed (exit 1): other project marker\n' > "$OTHER_MARKER"
+OUT=$(run_hook)
+assert_not_contains "ENC-v2's marker is not shown in ENC's session" \
+  "auto-commit failed" "$OUT"
+rm -f "$OTHER_MARKER"
+
+echo ""
+echo "--- autoMemoryDirectory: the nudge lints the configured store, not the default path ---"
+AMD_PROJECT="$TMP/amdproject"
+AMD_MEMDIR="$TMP/amd-memory"
+mkdir -p "$AMD_PROJECT/.claude" "$AMD_MEMDIR"
+printf '{"autoMemoryDirectory": "%s"}\n' "$AMD_MEMDIR" > "$AMD_PROJECT/.claude/settings.json"
+printf -- '---\nname: amd-orphan\ndescription: "unindexed"\nmetadata:\n  type: project\n---\nn/a\n' > "$AMD_MEMDIR/amd-orphan.md"
+: > "$AMD_MEMDIR/MEMORY.md"
+rm -f "$FAKE_HOME/.claude/state"/memory-lint-cache-* 2>/dev/null
+OUT=$( cd "$AMD_PROJECT" && env -u CLAUDE_CONFIG_DIR -u CLAUDE_CODE_PROJECT_DIR_NAME CLAUDE_PLUGIN_ROOT="$ROOT" HOME="$FAKE_HOME" bash "$HOOK" 2>&1 )
+assert_contains "configured autoMemoryDirectory store is linted" \
+  "UNINDEXED: amd-orphan.md" "$OUT"
+
+echo ""
 echo "--- GH #328: from a linked worktree, the marker named with the resolver's ENC still surfaces ---"
 # memory-audit-commit.sh names markers with memory-dir.py --enc, which keys off
 # git-common-dir, so every linked worktree shares the main checkout's ENC. The
