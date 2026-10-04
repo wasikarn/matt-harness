@@ -219,6 +219,10 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   A joined word holds more text, so in a word window a substitution word only stands for the names
   its literal text allows (`_candidates`: `g$(..)t` may be git, `x:$(date)` names nothing); before
   that, prose read as shell (python heredocs, a PR body) denied 8 replayed commands as `git restore`.
+  `scripts/gate-differential.sh` against develop (2026-10-04, after #405/#409): 20,000 and 40,000
+  replayed commands plus fixtures and fuzz; every exit change is a fixture or fuzz row, and the real
+  commands gained only 2 shadow asks (`PATH=/a:/b command -v $t`: opaque-var-verb;
+  `X=$F bash -c '. x.sh'`: source-file), each what develop already says without the split prefix.
 - **Oracle:** run the real shells (the system `/bin/sh`, bash 3.2, a current bash, dash, zsh, ksh)
   with argv-logging stubs, never one shell or argv0-based shell guessing: whether `{fd}>` is a
   redirect depends on the binary and version (GH #219).
