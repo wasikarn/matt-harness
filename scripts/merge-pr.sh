@@ -15,9 +15,15 @@ fi
 
 git fetch origin
 
-head=$(gh pr view "$pr" --json headRefOid -q .headRefOid)
-if [ -z "$head" ]; then
-  echo "merge-pr: could not read the head sha of PR $pr" >&2
+info=$(gh pr view "$pr" --json headRefOid,baseRefName -q '.headRefOid + " " + .baseRefName')
+head=${info% *}
+base=${info#* }
+if [ -z "$head" ] || [ "$head" = "$info" ]; then
+  echo "merge-pr: could not read the head sha and base branch of PR $pr" >&2
+  exit 1
+fi
+if [ "$base" != "develop" ]; then
+  echo "merge-pr: PR $pr targets '$base', not develop; the origin/develop check would prove nothing." >&2
   exit 1
 fi
 

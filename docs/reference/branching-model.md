@@ -44,8 +44,8 @@ will merge, and the pinned sha makes GitHub refuse a head that moved after the c
 The checks are local-only. The script narrows the gap; it does not close it: a push to `develop`
 from another clone between the check and the merge can still race, and nothing stops a merge made
 outside the script. The script's own `gh pr merge` call runs inside the script, so
-`gate:bash:irrecoverable`'s ask on that command does not see it.
-A gate that executes PR content before it decides makes `tests/` unsafe to allowlist.
+`gate:bash:irrecoverable`'s ask on that command does not see it. It also refuses a PR whose base is
+not `develop`.
 
 The former `git worktree add -b` deny predates this and was removed in the v1.0.0 rebuild;
 `claude --worktree` and `/branch` never routed through it anyway. `/branch` and

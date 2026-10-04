@@ -30,6 +30,7 @@ case "$*" in
     for a in "$@"; do [ "$prev" = "--match-head-commit" ] && want="$a"; prev="$a"; done
     [ "$want" = "$STUB_REMOTE_HEAD" ] || { echo "head branch was modified" >&2; exit 1; }
     exit 0 ;;
+  *baseRefName*) echo "$STUB_HEAD ${STUB_BASE:-develop}" ;;
   *headRefOid*) echo "$STUB_HEAD" ;;
   *mergeCommit*) echo "mergesha000" ;;
   *) exit 2 ;;
@@ -91,6 +92,12 @@ run 0 headsha111 7.25
 if [ "$rc" -ne 0 ]; then ok "high load exits non-zero (rc=$rc)"; else bad "high load exited 0"; fi
 if merged; then bad "high load still reached gh pr merge"; else ok "high load never calls gh pr merge"; fi
 if printf '%s' "$out" | /usr/bin/grep -q '7.25'; then ok "high load message carries the figure"; else bad "no load figure: $out"; fi
+
+# 4b. PR targets another branch: the develop ancestry check proves nothing, so refuse.
+out=$(PATH="$STUB:$PATH" STUB_LOG="$LOG" STUB_HEAD=headsha111 STUB_BASE=main \
+  STUB_ANCESTOR=0 STUB_REMOTE_HEAD=headsha111 STUB_LOAD=1.50 bash "$SCRIPT" 451 2>&1); rc=$?
+if [ "$rc" -ne 0 ]; then ok "non-develop base exits non-zero (rc=$rc)"; else bad "non-develop base exited 0"; fi
+if merged; then bad "non-develop base still reached gh pr merge"; else ok "non-develop base never calls gh pr merge"; fi
 
 # 5. no PR argument: usage error.
 out=$(PATH="$STUB:$PATH" STUB_LOG="$LOG" bash "$SCRIPT" 2>&1); rc=$?
