@@ -3073,6 +3073,24 @@ done
 _timed_case "GH #405: reset --hard after 2000 benign '-C\${R}' git statements, denied in bounded time" 2 \
   "$(printf 'git -C${R} status; %.0s' $(seq 2000))git -C\${R} reset --hard"
 
+# GH #409 R1: a comma mode is one shell word whose clauses are each a mode (the tokenizer cuts it at
+# + and ,). R2: a word that is only an expansion ($V, "$V", $1) may be empty, so it is not the mode
+# word. R3: a substitution before a git global's flag letters (${E}-C${R}) still carries its value.
+for _c409 in 'chmod -R u+s,a+rwx x' 'chmod -R g+w,a+rwx /tmp/x' 'chmod -R a-x,a+rwx x' \
+    'chmod -R +t,a+rwx x' 'chmod -R u=rwx,ugo=rwx x' 'chmod u+s,a+rwx /' 'chmod -R -x,a+rwx x' 'chmod -R x -x,a+rwx' \
+    'chmod -R $V 777 /tmp/x' 'chmod $V 777 /' 'chmod $F -v 777 /' 'chmod -R $1 777 x' \
+    'chmod -R $V a+rwx x' 'chmod -R "$V" 777 x' \
+    'git ${E}-C${R} reset --hard' 'git $(true)-C$(pwd) reset --hard' 'git -${E}C${R} reset --hard' \
+    'git ${E}-c${X} reset --hard' 'git ${E}-C${R} push --force'; do
+  test_deny "$IRRECOVERABLE" "GH #409: $_c409" "$(bash_payload "$_c409")"
+done
+for _c409 in 'git -${X}C reset --hard' 'chmod -R 755 777' 'chmod -R 755 a+rwx' 'chmod 755 / 777' \
+    'chmod 777 x' 'git -C${R} status' 'chmod -R u+s,g+w x' 'chmod -R $V 755 x'; do
+  test_allow "$IRRECOVERABLE" "GH #409 control: $_c409" "$(bash_payload "$_c409")"
+done
+_timed_case "GH #409: a comma mode after 2000 benign chmod statements, denied in bounded time" 2 \
+  "$(printf 'chmod 644 x; %.0s' $(seq 2000))chmod -R u+s,a+rwx x"
+
 echo ""
 total=$((pass + fail))
 echo "=== $pass/$total passed ==="
