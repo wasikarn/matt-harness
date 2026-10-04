@@ -203,6 +203,9 @@ fi
 # success path, since it's only written on a failure/timeout above).
 shopt -s nullglob
 for _m in "$HOME"/.claude/state/memory-audit-commit-fail-"$ENC"-*; do
+  # The glob also matches a longer ENC's markers (proj vs proj-v2); only a
+  # pure-digit tail (the pid) is this store's. Same acceptance as the nudge.
+  [[ "${_m##*/memory-audit-commit-fail-"$ENC"-}" =~ ^[0-9]+$ ]] || continue
   _ts_line="$(head -1 "$_m" 2>/dev/null)"
   _ts="${_ts_line#acquisition_ts=}"
   if [[ "$_ts" =~ ^[0-9]+(\.[0-9]+)?$ ]] \
