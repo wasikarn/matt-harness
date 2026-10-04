@@ -4,7 +4,8 @@
 # module hooks and which `$.` calls it makes, as notes on the hooks.json entry:
 #   "./mod/cost-ledger.ts hooks: turn.complete"
 #   "./mod/cost-ledger.ts calls: $.process.run, $.session.id, ..."
-#   1. validate notes: every hook must be turn.complete, and no call may be an ask/deny/permission
+#   1. validate notes: every hook must be an observer event (turn.complete, session.start,
+#      skill.prompt; #442/#444 added the last two), and no call may be an ask/deny/permission
 #      surface ($.ui.ask is the one this build has). A missing hooks note fails: the shape changed.
 #   2. static scan of the source: a deny/ask/allow result (`{ deny: ... }`) and a rewrite
 #      (`next({ ...e, x })`) are return values, which the notes cannot show.
@@ -30,9 +31,11 @@ calls = [n.split(" calls: ", 1)[1] for n in mod if " calls: " in n]
 bad = []
 if not hooks:
     bad.append("no \"cost-ledger.ts hooks:\" note in validate --json (CLI output shape changed?)")
+observers = ("turn.complete", "session.start", "skill.prompt")
+allowed = ", ".join(observers)
 for h in (x.strip() for line in hooks for x in line.split(",")):
-    if h != "turn.complete":
-        bad.append(f"registers {h}; only turn.complete observers are allowed")
+    if h not in observers:
+        bad.append(f"registers {h}; only observer events ({allowed}) are allowed")
 for c in (x.strip() for line in calls for x in line.split(",")):
     if re.search(r"ask|deny|allow|permission|decision", c, re.I):
         bad.append(f"calls {c}, a decision surface")
