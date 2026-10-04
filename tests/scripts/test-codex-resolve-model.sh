@@ -44,5 +44,29 @@ trash "$T/models_cache.json"
 out="$(python3 "$RESOLVE" sol 2>"$T/err")"; rc=$?
 t "missing catalog: clean error" fails_with "$rc" "$out" "$T/err" catalog
 
-echo "=== $pass passed, $fail failed ==="
+# fail closed on odd input
+cat > "$T/models_cache.json" <<'JSON'
+{"models": [{"slug":"gpt-9-sol","priority":1,"visibility":"list","supported_reasoning_levels":[{"effort":"medium"}]}]}
+JSON
+out="$(python3 "$RESOLVE" sol --effort "" 2>"$T/err")"; rc=$?
+t "empty --effort is refused, not treated as no effort" fails_with "$rc" "$out" "$T/err" effort
+for body in '{"models": null}' '{"models": 3}' '[1,2]'; do
+  printf '%s' "$body" > "$T/models_cache.json"
+  out="$(python3 "$RESOLVE" sol 2>"$T/err")"; rc=$?
+  t "catalog $body: clean error, no traceback" clean_error "$rc" "$out" "$T/err"
+done
+cat > "$T/models_cache.json" <<'JSON'
+{"models": [{"slug":"gpt-9-sol","priority":1,"visibility":"list","supported_reasoning_levels":3}]}
+JSON
+out="$(python3 "$RESOLVE" sol --effort medium 2>"$T/err")"; rc=$?
+t "supported_reasoning_levels of the wrong type: clean error, no traceback" clean_error "$rc" "$out" "$T/err"
+cat > "$T/models_cache.json" <<'JSON'
+{"models": [
+ {"slug":"gpt-bool-sol","priority":false,"visibility":"list","supported_reasoning_levels":[{"effort":"medium"}]},
+ {"slug":"gpt-retiring-sol","priority":0,"visibility":"list","upgrade":{"model":"gpt-ok-sol"},"supported_reasoning_levels":[{"effort":"medium"}]},
+ {"slug":"gpt-ok-sol","priority":2,"visibility":"list","supported_reasoning_levels":[{"effort":"medium"}]}]}
+JSON
+t "a boolean priority and a model with an upgrade field are not chosen" eq "$(python3 "$RESOLVE" sol)" gpt-ok-sol
+
+echo "===$pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

@@ -27,6 +27,8 @@ def main(argv):
         if i + 1 >= len(args):
             return fail("--effort needs a value")
         effort = args[i + 1]
+        if not effort:
+            return fail("--effort needs a non-empty value")
         del args[i:i + 2]
     if len(args) != 1:
         return fail("usage: codex-resolve-model.py <tier> [--effort E]")
@@ -35,20 +37,27 @@ def main(argv):
     path = os.path.join(os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex"), "models_cache.json")
     try:
         with open(path) as f:
-            models = json.load(f).get("models", [])
+            data = json.load(f)
     except OSError:
         return fail(f"no catalog at {path}")
-    except (ValueError, AttributeError) as e:
+    except ValueError as e:
         return fail(f"catalog at {path} is not usable: {e}")
+    models = data.get("models") if isinstance(data, dict) else None
+    if not isinstance(models, list):
+        return fail(f"catalog at {path} has no 'models' list")
 
+    # Skip a model with a non-int (or bool) priority, and one the catalog is retiring (`upgrade`).
     cands = [m for m in models
              if isinstance(m, dict) and str(m.get("slug", "")).endswith("-" + tier)
-             and m.get("visibility") == "list" and isinstance(m.get("priority"), int)]
+             and m.get("visibility") == "list" and type(m.get("priority")) is int
+             and not m.get("upgrade")]
     if not cands:
         return fail(f"no visible '{tier}' model in the catalog")
     if effort:
-        cands = [m for m in cands
-                 if effort in [l.get("effort") for l in m.get("supported_reasoning_levels") or [] if isinstance(l, dict)]]
+        def lists_effort(m):
+            levels = m.get("supported_reasoning_levels")
+            return isinstance(levels, list) and effort in [l.get("effort") for l in levels if isinstance(l, dict)]
+        cands = [m for m in cands if lists_effort(m)]
         if not cands:
             return fail(f"no visible '{tier}' model lists effort '{effort}'")
     print(min(cands, key=lambda m: m["priority"])["slug"])
