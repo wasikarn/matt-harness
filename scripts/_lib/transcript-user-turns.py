@@ -23,9 +23,16 @@ shapes (`<local-command-stdout>`, `<bash-stdout>`, `<bash-input>`,
 "[Request interrupted...]") are not filtered here -- out of scope until a
 caller actually needs them excluded.
 
-Usage: python3 transcript-user-turns.py <path-to-session.jsonl>
+A turn must also carry nonblank text: a blank string, an empty text block,
+or an image-only turn is dropped. `message.role` is not checked -- the event's
+own `"type": "user"` already says it. (skills/meta/learn/SKILL.md carried its
+own inline filter until #413; it differed on exactly those two points, pinned
+in tests/scripts/test-transcript-user-turns.sh.)
+
+Usage: python3 transcript-user-turns.py [--json] <path-to-session.jsonl>
 Prints each human turn's text to stdout, separated by a "--- turn N ---"
-marker line and a blank line.
+marker line and a blank line. With --json, prints one JSON object per turn
+per line instead: {"turn", "uuid", "timestamp", "text"}.
 """
 import json
 import sys
@@ -48,6 +55,12 @@ def turn_text(content):
 def human_turns(lines):
     """Yield each human turn's text, in order, from an iterable of raw
     JSONL lines."""
+    for _event, text in human_turn_events(lines):
+        yield text
+
+
+def human_turn_events(lines):
+    """Yield (event, text) for each human turn, in order."""
     for line in lines:
         line = line.strip()
         if not line:
@@ -65,7 +78,7 @@ def human_turns(lines):
             continue
         text = turn_text(message.get("content"))
         if text.strip():
-            yield text
+            yield event, text
 
 
 def _selftest():
@@ -95,11 +108,18 @@ if __name__ == "__main__":
     if "--selftest" in sys.argv:
         _selftest()
         sys.exit(0)
-    if len(sys.argv) != 2:
-        print("usage: transcript-user-turns.py <path-to-session.jsonl>", file=sys.stderr)
+    args = [a for a in sys.argv[1:] if a != "--json"]
+    as_json = len(args) != len(sys.argv) - 1
+    if len(args) != 1:
+        print("usage: transcript-user-turns.py [--json] <path-to-session.jsonl>", file=sys.stderr)
         sys.exit(1)
-    with open(sys.argv[1], encoding="utf-8") as f:
-        for n, text in enumerate(human_turns(f), start=1):
+    with open(args[0], encoding="utf-8") as f:
+        for n, (event, text) in enumerate(human_turn_events(f), start=1):
+            if as_json:
+                print(json.dumps({"turn": n, "uuid": event.get("uuid"),
+                                  "timestamp": event.get("timestamp"), "text": text},
+                                 ensure_ascii=False))
+                continue
             print(f"--- turn {n} ---")
             print(text)
             print()
