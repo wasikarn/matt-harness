@@ -225,6 +225,45 @@ if [ "$rc" -eq 0 ] && [ -f "$SID_TMP/mh-sensors/failure-nudge-$UUID-env.json" ] 
 else
   bad "a valid CLAUDE_CODE_SESSION_ID fallback should name the counter file; got rc=$rc err='$err'"
 fi
+# --- a subagent shares its parent's session_id, so the counter also keys on
+# agent_id (GH #463): the parent's spent cap must not silence a subagent, and
+# one subagent's cap must not silence another ---
+agent_run() { # $1 command, $2 agent_id JSON literal ("" for no key)
+  python3 -c '
+import json, sys
+d = {"hook_event_name": "PostToolUseFailure", "tool_name": "Bash", "session_id": sys.argv[3],
+     "tool_input": {"command": sys.argv[1]}, "tool_use_id": "toolu_test", "error": "Command failed"}
+if sys.argv[2]:
+    d["agent_id"] = json.loads(sys.argv[2])
+print(json.dumps(d))' "$1" "$2" "$UUID" > "$STATE_DIR/agent-payload.json"
+  out=$(env -u CLAUDE_CODE_SESSION_ID TMPDIR="$SID_TMP" bash "$SENSOR" < "$STATE_DIR/agent-payload.json" 2>"$STATE_DIR/agent-err.txt")
+  rc=$?
+  err=$(cat "$STATE_DIR/agent-err.txt")
+}
+nudged() { echo "$out" | /usr/bin/grep -q 'mh-failure-diagnose-nudge'; }
+agent_run "shared-cmd" ""
+main1=0; nudged && main1=1
+agent_run "shared-cmd" ""
+main2=0; nudged && main2=1
+agent_run "shared-cmd" '"agent-aaa"'
+a1=0; nudged && a1=1
+agent_run "shared-cmd" '"agent-aaa"'
+a2=0; nudged && a2=1
+agent_run "shared-cmd" '"agent-bbb"'
+b1=0; nudged && b1=1
+if [ "$main1$main2$a1$a2$b1" = "10101" ]; then
+  ok "counter keys on agent_id: parent, each subagent get one nudge per command, repeats are capped"
+else
+  bad "expected main/main/aaa/aaa/bbb nudges 1/0/1/0/1, got $main1/$main2/$a1/$a2/$b1"
+fi
+for aid in 'null' '""' '"x/../../../victim"'; do
+  agent_run "bad-agent-cmd-$aid" "$aid"
+  if [ "$rc" -eq 0 ] && nudged && printf '%s' "$err" | /usr/bin/grep -q '\[mh:sensor\]'; then
+    ok "agent_id $aid present but not a safe id -- nudge still sent, [mh:sensor] diagnostic"
+  else
+    bad "agent_id $aid should fail open with a diagnostic; got rc=$rc out='$out' err='$err'"
+  fi
+done
 # A sensor copy with no scripts/_lib beside it: the validator cannot load, so
 # it fails open with a diagnostic and still nudges.
 NOLIB="$STATE_DIR/nolib/hooks/sensors"

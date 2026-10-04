@@ -160,6 +160,18 @@ def default_state_path(data):
         print(f"[mh:sensor] failure-diagnose-nudge: session_id {repr(raw)[:80]} is not a safe file name; "
               "nudging without the per-session cap", file=sys.stderr)
         return None
+    # A subagent shares its parent's session_id (GH #463), so it gets its own
+    # counter, keyed on agent_id. agent_id is present ONLY inside a subagent:
+    # test presence, not truthiness (same as subagent-git-guard.py), so a null
+    # or empty one is a bad id and nudges uncapped rather than sharing the
+    # parent's counter.
+    if "agent_id" in data:
+        agent = validate_session_id(data["agent_id"])
+        if not agent:
+            print(f"[mh:sensor] failure-diagnose-nudge: agent_id {repr(data['agent_id'])[:80]} is not a safe file name; "
+                  "nudging without the per-session cap", file=sys.stderr)
+            return None
+        session = f"{session}-{agent}"
     tmpdir = os.environ.get("TMPDIR", "/tmp").rstrip("/")
     return f"{tmpdir}/mh-sensors/failure-nudge-{session}.json"
 
