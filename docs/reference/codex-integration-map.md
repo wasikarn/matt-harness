@@ -78,8 +78,9 @@ hard break. `gpt-5.5` carries an upgrade to `gpt-5.6-sol` and retires 2026-10-14
 GPT-6 variant yet. **Re-checked 2026-10-04** (`models_cache.json`, CLI 0.160.0): `gpt-6.1-sol`
 now leads the Sol tier (`priority` 1, ahead of `gpt-6-astra` 2 and `gpt-6-sol` 3), lists `medium`
 effort but defaults to `low` (`gpt-6-sol` defaults to `medium`), and is now the `gpt-5.5`
-upgrade target. The catalog has no price field and the rates below have no `gpt-6.1-sol` entry,
-so its rate is unconfirmed: check the pricing page before relying on it for a long run. Credit rates (public docs, 2026-09-23): `gpt-6-sol` and `gpt-6-luna` cost
+upgrade target. The catalog has no price field; the pricing page (fetched 2026-10-04) lists
+`gpt-6.1-sol` at 50/2.5/250, the same as `gpt-6-sol` except cached input at half (2.5 vs 5), so
+the switch costs no more per token (it says nothing about how many tokens a run uses). Credit rates (public docs, 2026-09-23): `gpt-6-sol` and `gpt-6-luna` cost
 roughly half the prior rate on input and cached-input tokens (exactly half for Sol on every
 column; Luna's output-token rate is cut further, to ~0.42x — see the exact numbers below).
 Re-verify this note the next time this table is touched.
@@ -123,7 +124,8 @@ The plugin accepts up to `xhigh`, not `max`/`ultra`.
 Plus consumes included usage before purchased credits; API dollar rates are not the account's
 invoice. Published credit rates per 1M input/cached-input/output tokens, fetched live from
 `learn.chatgpt.com/docs/pricing` 2026-09-23: `gpt-6-luna` 2.5/0.25/12.5, `gpt-5.6-terra`
-50/5/300, `gpt-6-sol` 50/5/250, `gpt-6-astra` 250/25/1250. The superseded `gpt-5.6-sol` and
+50/5/300, `gpt-6-sol` 50/5/250, `gpt-6.1-sol` 50/2.5/250 (re-fetched 2026-10-04, all rows above
+unchanged), `gpt-6-astra` 250/25/1250. The superseded `gpt-5.6-sol` and
 `gpt-5.6-luna` rates (100/10/500 and 5/0.5/30, unchanged since 2026-09-14) still apply if a
 dispatch falls back to either during the rollout. These compare credit usage; they do not price
 included quota or prove actual spend. Recheck current pricing when the account, plan, or catalog
