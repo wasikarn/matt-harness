@@ -99,6 +99,15 @@ merge. Unit tests alone missed every bypass on the 2026-09-29 `irrecoverable.py`
 #185, #188, #189): three plans failed, PR #192 was closed after 3 validator rounds, and a
 builder's self-check ("0 bypasses in 4032") was wrong each time.
 
+- **Tool:** `scripts/gate-differential.sh OLD [NEW] GATE` (GH #411; OLD a gates dir or a git ref such as
+  `origin/develop`, GATE `irrecoverable`, `subagent-git-guard` or `secret-scan`) replays the committed
+  fixtures, `--replay N` real commands from this project's transcripts only (secret-scan reads
+  Write/Edit text) and `--fuzz-seed S` mutations through both copies. It compares exit, stdout,
+  stderr and journal rows and prints diff classes with counts and 3 redacted samples, never raw
+  transcript text. Both sides journal to a temp file under a temp HOME: earlier hand-built replays
+  that did not isolate it left 268k session-less rows in the real journal. The fuzz is a few fixed
+  rewrites; the real-shell oracle and a validator's own generator below still apply.
+
 - **Acceptance:** 0 commands that `develop` denies and the branch allows, apart from a category
   the PR names as intended. Over-denies are the safe direction and are reported, not blocking.
   A timeout counts as allow: a hook past its `hooks.json` timeout (8 s) lets the call through, so

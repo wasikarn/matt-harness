@@ -1,0 +1,226 @@
+#!/usr/bin/env python3
+# Engine for scripts/gate-differential.sh (GH #411); call it through that wrapper, which
+# resolves OLD, checks the slug and owns the temp dir. Python 3.9.
+#
+# Prints only diff classes, counts and up to 3 redacted, truncated sample commands per class:
+# transcripts can hold secrets, so no other command text is ever printed.
+import argparse, glob, io, json, os, random, re, subprocess, sys
+
+TIMEOUT = 8  # hooks.json's timeout: a gate past it lets the call through, so a timeout is its own class
+SAMPLES, WIDTH = 3, 100
+
+
+def secret_patterns(gates_dir):
+    # Reuse the live PATTERNS list: run secret-scan.py with an empty payload and read its globals.
+    src_path = os.path.join(gates_dir, "secret-scan.py")
+    ns = {"__name__": "secret_scan_patterns", "__file__": src_path}
+    saved = sys.stdin
+    sys.stdin = io.StringIO("{}")
+    try:
+        with open(src_path) as f:
+            exec(compile(f.read(), src_path, "exec"), ns)
+    except SystemExit:
+        pass
+    finally:
+        sys.stdin = saved
+    return [p for _, p, _ in ns["PATTERNS"]]
+
+
+def redact(text, patterns, home):
+    for p in patterns:
+        text = p.sub("[REDACTED]", text)
+    if home:
+        text = text.replace(home, "~")
+    text = text.replace("\n", "\\n")
+    return text[:WIDTH] + ("..." if len(text) > WIDTH else "")
+
+
+def fixture_cases(fixtures, gate):
+    out = []
+    for path in sorted(glob.glob(os.path.join(fixtures, gate + "-*.txt"))):
+        with open(path) as f:
+            lines = f.read().splitlines()
+        if "%%" in lines:  # block format: "VERB ID desc", body lines, "%%"
+            body, header = [], None
+            for line in lines + ["%%"]:
+                if line == "%%":
+                    if body:
+                        out.append("\n".join(body))
+                    body, header = [], None
+                elif header is None:
+                    if line and not line.startswith("#"):
+                        header = line
+                else:
+                    body.append(line)
+        else:  # line format: "VERB cmd" or "WOULD_X rule cmd"
+            for line in lines:
+                if not line.strip() or line.startswith("#"):
+                    continue
+                n = 2 if line.startswith("WOULD_") else 1
+                parts = line.split(None, n)
+                if len(parts) > n:
+                    out.append(parts[n])
+    return out
+
+
+def secret_seed(rng):
+    # Built at run time, so this file never holds a live-shaped token.
+    an = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789"
+    def r(n, chars=an):
+        return "".join(rng.choice(chars) for _ in range(n))
+    toks = ["AKIA" + r(16, "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"), "sk-ant-api03-" + r(40),
+            "sk-proj-" + r(20) + "T3Blbk" + "FJ" + r(20), "gh" + "p_" + r(36), "github_" + "pat_" + r(82),
+            "gl" + "pat-" + r(20), "hf_" + r(34), "xo" + "xb-" + r(12, "0123456789") + "-" + r(12, "0123456789") + "-" + r(24),
+            "sk_" + "live_" + r(24), "AI" + "za" + r(35), "np" + "m_" + r(36), "pypi-AgEIcHlwaS5vcmc" + r(50)]
+    cases = ["token=" + t for t in toks]
+    cases += ["AKIA" + "IOSFODNN7EXAMPLE", "token=" + toks[3] + "  # gitleaks:allow", "plain text, no token"]
+    return cases
+
+
+def replay_cases(projects, own_slug, slug, gate):
+    dirs = [os.path.join(projects, slug)] if slug else [
+        os.path.join(projects, d) for d in sorted(os.listdir(projects))
+        if d == own_slug or d.startswith(own_slug + "--claude-worktrees-")] if os.path.isdir(projects) else []
+    seen, bad = set(), 0
+    for d in dirs:
+        for path in glob.glob(os.path.join(d, "**", "*.jsonl"), recursive=True):
+            try:
+                f = open(path, errors="replace")
+            except OSError:
+                bad += 1
+                continue
+            with f:
+                for line in f:
+                    if '"tool_use"' not in line:
+                        continue
+                    try:
+                        content = json.loads(line).get("message", {}).get("content")
+                    except ValueError:
+                        bad += 1
+                        continue
+                    if not isinstance(content, list):
+                        continue
+                    for b in content:
+                        if not isinstance(b, dict) or b.get("type") != "tool_use":
+                            continue
+                        inp = b.get("input") or {}
+                        if gate == "secret-scan":
+                            text = inp.get("content") if b.get("name") == "Write" else (
+                                inp.get("new_string") if b.get("name") == "Edit" else None)
+                        else:
+                            text = inp.get("command") if b.get("name") == "Bash" else None
+                        if isinstance(text, str) and text:
+                            seen.add(text)
+    return sorted(seen), len(dirs), bad
+
+
+def fuzz(corpus, seed):
+    # ponytail: a handful of fixed shell rewrites, not a grammar fuzzer; write a generator per shape
+    # (repo-gotchas "Changing a deny heuristic") when a change needs more than these.
+    rng = random.Random(seed)
+    ops = [lambda c: "sudo " + c, lambda c: "env X=1 " + c, lambda c: "{ " + c + "; }",
+           lambda c: c.replace(" ", "${IFS}", 1), lambda c: c.replace(" ", "  \\\n  ", 1),
+           lambda c: "''" + c, lambda c: c[:1] + "''" + c[1:], lambda c: "eval '" + c.replace("'", "'\\''") + "'",
+           lambda c: "echo \"$(" + c + ")\"", lambda c: "true && " + c, lambda c: c + " # " + c[::-1]]
+    if not corpus:
+        return []
+    return [rng.choice(ops)(rng.choice(corpus)) for _ in range(200)]
+
+
+def payload(gate, text):
+    if gate == "secret-scan":
+        return {"tool_name": "Write", "tool_input": {"file_path": "differential.txt", "content": text},
+                "session_id": "gate-differential"}
+    d = {"tool_name": "Bash", "tool_input": {"command": text}, "session_id": "gate-differential"}
+    if gate == "subagent-git-guard":
+        d["agent_id"], d["agent_type"] = "gate-differential", "general-purpose"
+    return d
+
+
+def run(gates_dir, gate, data, env, journal):
+    open(journal, "w").close()
+    try:
+        p = subprocess.run(["bash", os.path.join(gates_dir, gate + ".sh")], input=data,
+                           capture_output=True, env=env, timeout=TIMEOUT)
+        code, out, err = str(p.returncode), p.stdout, p.stderr
+    except subprocess.TimeoutExpired:
+        code, out, err = "timeout", b"", b""
+    rows = []
+    with open(journal) as f:
+        for line in f:
+            row = json.loads(line)
+            row.pop("ts", None)
+            row.pop("mh_version", None)
+            rows.append(row)
+    err = err.replace(gates_dir.encode(), b"<GATES>")
+    return code, out, err, rows
+
+
+def journal_sig(rows):
+    return ",".join(r.get("decision", "?") + (":" + r["rule"] if r.get("rule") else "") for r in rows) or "none"
+
+
+def main():
+    ap = argparse.ArgumentParser()
+    for a in ("--old", "--new", "--gate", "--tmp", "--projects", "--own-slug", "--fixtures"):
+        ap.add_argument(a, required=True)
+    ap.add_argument("--replay", type=int, default=0)
+    ap.add_argument("--cases")
+    ap.add_argument("--slug")
+    ap.add_argument("--fuzz-seed")
+    a = ap.parse_args()
+
+    if a.cases:
+        with open(a.cases) as f:
+            base = [line for line in f.read().splitlines() if line.strip()]
+    elif a.gate == "secret-scan":
+        base = secret_seed(random.Random(0))
+    else:
+        base = fixture_cases(a.fixtures, a.gate)
+    replay, ndirs, bad = [], 0, 0
+    if a.replay:
+        pool, ndirs, bad = replay_cases(a.projects, a.own_slug, a.slug, a.gate)
+        replay = random.Random(a.fuzz_seed or 0).sample(pool, min(a.replay, len(pool)))
+    fz = fuzz(base + replay, a.fuzz_seed) if a.fuzz_seed is not None else []
+    corpus = list(dict.fromkeys(base + replay + fz))
+
+    home = os.path.join(a.tmp, "home")
+    os.makedirs(home, exist_ok=True)
+    env = dict(os.environ, HOME=home)
+    env.pop("CLAUDE_PLUGIN_ROOT", None)
+    jo, jn = os.path.join(a.tmp, "old.jsonl"), os.path.join(a.tmp, "new.jsonl")
+    # Both sides: a change that drops a pattern must not unredact the commands it now misses.
+    patterns = secret_patterns(a.old) + secret_patterns(a.new)
+    real_home = os.environ.get("HOME", "")
+
+    classes = {}
+    for text in corpus:
+        data = json.dumps(payload(a.gate, text)).encode()
+        o = run(a.old, a.gate, data, dict(env, MH_GATE_JOURNAL_PATH=jo), jo)
+        n = run(a.new, a.gate, data, dict(env, MH_GATE_JOURNAL_PATH=jn), jn)
+        parts = []
+        if o[0] != n[0]:
+            parts.append("exit %s->%s" % (o[0], n[0]))
+        if o[1] != n[1]:
+            parts.append("stdout")
+        if o[2] != n[2]:
+            parts.append("stderr")
+        if o[3] != n[3]:
+            parts.append("journal %s->%s" % (journal_sig(o[3]), journal_sig(n[3])))
+        if parts:
+            classes.setdefault(" | ".join(parts), []).append(text)
+
+    total = sum(len(v) for v in classes.values())
+    print("gate-differential: %s corpus=%d (base=%d replay=%d fuzz=%d) diffs=%d classes=%d"
+          % (a.gate, len(corpus), len(base), len(replay), len(fz), total, len(classes)))
+    if a.replay:
+        print("  transcript dirs read: %d, unreadable lines/files skipped: %d" % (ndirs, bad))
+    for name, texts in sorted(classes.items(), key=lambda kv: -len(kv[1])):
+        print("  [%d] %s" % (len(texts), name))
+        for t in texts[:SAMPLES]:
+            print("      - " + redact(t, patterns, real_home))
+    return 1 if classes else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
