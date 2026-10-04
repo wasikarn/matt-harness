@@ -45,6 +45,10 @@ report findings only in your final message.>
    single checked instance is not verification — if more than one instance of the claim's subject
    exists (e.g. multiple sessions, multiple files), check more than one before calling it settled
    or falsified.
+   Spot-check the "Yes — observed directly" claims too: that tag is the analyst's own label, not
+   proof. Re-check at least 2 of them yourself (all of them if fewer than 2), picking the ones the
+   recommendation leans on most, and list each in `checked` with your own evidence. A sampled
+   claim that fails your re-check is a finding, and a reason to distrust the rest of that tag.
 2. When matching a claim against the saved source's text, match on distinctive substrings or
    entity-normalized text — a raw-fetched file may contain HTML entities (curly quotes as
    `&#8217;`, `&amp;`, etc.) that make an exact-string match fail even when the claim is true.
