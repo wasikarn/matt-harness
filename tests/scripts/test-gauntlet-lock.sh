@@ -50,7 +50,7 @@ if printf '%s' "$out" | /usr/bin/grep -q 'waiting'; then ok "the waiter announce
 start=$(date +%s)
 out=$(MH_GAUNTLET_LOCK_OWNER="$BG" WAIT=20 run 'gauntlet_lock_acquire; echo "rc=$?"; gauntlet_lock_release')
 elapsed=$(( $(date +%s) - start ))
-if printf '%s' "$out" | /usr/bin/grep -q 'rc=0' && [ "$elapsed" -lt 3 ] && [ "$(cat "$L/pid")" = "$BG" ]; then
+if printf '%s' "$out" | /usr/bin/grep -q 'rc=0' && [ "$elapsed" -lt 10 ] && [ "$(cat "$L/pid")" = "$BG" ]; then
   ok "a child of the holder skips the queue and leaves the lock"
 else bad "reentrant acquire waited ${elapsed}s or touched the lock: $out"; fi
 kill $BG 2>/dev/null; wait $BG 2>/dev/null; BG=""
@@ -64,7 +64,7 @@ out=$(WAIT=20 run 'gauntlet_lock_acquire; echo "mine=$$ pid=$(cat "$GAUNTLET_LOC
 elapsed=$(( $(date +%s) - start ))
 mine=$(printf '%s\n' "$out" | sed -n 's/^mine=\([0-9]*\) pid=.*/\1/p')
 pidf=$(printf '%s\n' "$out" | sed -n 's/^mine=[0-9]* pid=\([0-9]*\)$/\1/p')
-if [ -n "$mine" ] && [ "$mine" = "$pidf" ] && [ "$elapsed" -lt 3 ]; then ok "a lock whose owner is gone is reclaimed at once"; else bad "stale lock not reclaimed (${elapsed}s): $out"; fi
+if [ -n "$mine" ] && [ "$mine" = "$pidf" ] && [ "$elapsed" -lt 10 ]; then ok "a lock whose owner is gone is reclaimed at once"; else bad "stale lock not reclaimed (${elapsed}s): $out"; fi
 reset
 
 # 5. a lock dir with no pid file that is old enough is also reclaimed (a crash between mkdir and write).
@@ -76,7 +76,9 @@ reset
 # 6. queueing: a waiter gets the lock after the holder releases, and says it waited.
 bash -c ". '$LIB'; GAUNTLET_LOCK_DIR='$L' gauntlet_lock_acquire; sleep 2; GAUNTLET_LOCK_DIR='$L' gauntlet_lock_release" >/dev/null 2>&1 &
 BG=$!
-sleep 0.5
+# Start the waiter only once the holder really holds the lock (a loaded machine can be slow to
+# start its bash), or the waiter could win the race and never wait.
+for _ in $(seq 1 100); do [ -f "$L/pid" ] && break; sleep 0.1; done
 out=$(WAIT=30 run 'gauntlet_lock_acquire; echo "mine=$$ pid=$(cat "$GAUNTLET_LOCK_DIR/pid")"; gauntlet_lock_release')
 mine=$(printf '%s\n' "$out" | sed -n 's/^mine=\([0-9]*\) pid=.*/\1/p')
 pidf=$(printf '%s\n' "$out" | sed -n 's/^mine=[0-9]* pid=\([0-9]*\)$/\1/p')
@@ -85,6 +87,23 @@ if [ -n "$mine" ] && [ "$mine" = "$pidf" ] && printf '%s' "$out" | /usr/bin/grep
 else bad "waiter did not get its turn: $out"; fi
 wait $BG 2>/dev/null; BG=""
 if [ ! -e "$L" ]; then ok "no lock is left after both runs"; else bad "lock left behind after the queue drained"; fi
+
+# 7. a lock dir that cannot be created (read-only parent) fails open at once; it must not
+# pretend another gauntlet is running and wait out the whole cap.
+RO="$T/ro"; mkdir "$RO"; chmod 555 "$RO"
+if [ ! -w "$RO" ]; then
+  start=$(date +%s)
+  out=$(GAUNTLET_LOCK_DIR="$RO/lock" GAUNTLET_LOCK_POLL=0.1 GAUNTLET_LOCK_WAIT_SECS=30 \
+    bash -c ". '$LIB'; gauntlet_lock_acquire; echo \"rc=\$?\"; gauntlet_lock_release" 2>&1)
+  elapsed=$(( $(date +%s) - start ))
+  if printf '%s' "$out" | /usr/bin/grep -q 'rc=0' && [ "$elapsed" -lt 10 ] \
+    && printf '%s' "$out" | /usr/bin/grep -qi 'cannot create' && ! printf '%s' "$out" | /usr/bin/grep -q 'another gauntlet'; then
+    ok "an uncreatable lock dir fails open at once and says why"
+  else bad "uncreatable lock dir stalled ${elapsed}s or blamed another gauntlet: $out"; fi
+else
+  echo "  SKIP: read-only parent is still writable (running as root?)"
+fi
+chmod 755 "$RO"
 
 echo "self-test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

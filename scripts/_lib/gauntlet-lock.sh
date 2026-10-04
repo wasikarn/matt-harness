@@ -41,6 +41,15 @@ _gl_stale() {
   [ "$age" -ge "${GAUNTLET_LOCK_NOPID_SECS:-60}" ]
 }
 
+# Take the lock at $1: an atomic mkdir, then record this process as the owner.
+_gl_take() {
+  mkdir "$1" 2>/dev/null || return 1
+  printf '%s\n' "$$" >"$1/pid"
+  GAUNTLET_LOCK_HELD=1
+  export MH_GAUNTLET_LOCK_OWNER=$$
+  return 0
+}
+
 gauntlet_lock_acquire() {
   local d max poll start owner announced=0
   d=$(_gl_dir)
@@ -59,25 +68,32 @@ gauntlet_lock_acquire() {
 
   start=$(date +%s)
   while :; do
-    if mkdir "$d" 2>/dev/null; then
-      printf '%s\n' "$$" >"$d/pid"
-      GAUNTLET_LOCK_HELD=1
-      export MH_GAUNTLET_LOCK_OWNER=$$
-      return 0
+    _gl_take "$d" && return 0
+    if [ ! -d "$d" ]; then
+      # No lock dir to wait on: it was released just now, or it cannot be created (read-only
+      # parent, full disk). One more try tells the two apart; do not wait out the cap for the latter.
+      _gl_take "$d" && return 0
+      if [ ! -d "$d" ]; then
+        echo "gauntlet-lock: cannot create $d; running without the lock" >&2
+        return 0
+      fi
     fi
     if _gl_stale "$d" && mv "$d" "$d.stale.$$" 2>/dev/null; then
+      # ponytail: a waiter that judged the old lock stale can still rename a new owner's fresh
+      # lock away if another waiter reclaimed and re-took it in between; worst case two gauntlets
+      # overlap, which is today's behaviour. A claim file per reclaimer closes it if that bites.
       rm -f "$d.stale.$$/pid"
       rmdir "$d.stale.$$" 2>/dev/null
       continue
-    fi
-    if [ $(( $(date +%s) - start )) -ge "$max" ]; then
-      echo "gauntlet-lock: waited ${max}s for the gauntlet lock at $d; running without the lock (timing rows may flake under load, GH #158)" >&2
-      return 0
     fi
     if [ "$announced" -eq 0 ]; then
       owner=$(cat "$d/pid" 2>/dev/null || true)
       echo "gauntlet-lock: another gauntlet (pid ${owner:-unknown}) is running; waiting up to ${max}s for my turn" >&2
       announced=1
+    fi
+    if [ $(( $(date +%s) - start )) -ge "$max" ]; then
+      echo "gauntlet-lock: waited ${max}s for the gauntlet lock at $d; running without the lock (timing rows may flake under load, GH #158)" >&2
+      return 0
     fi
     sleep "$(awk -v p="$poll" -v r="$RANDOM" 'BEGIN { printf "%.2f", p * (1 + (r % 50) / 100) }')"
   done
