@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # test-check-verdict-drift.sh — the three check-verdict.py scripts (idea-audit, deep-audit,
 # compliance-audit) each keep their own copy of mask_json_spans, extract_object and
-# extract_valid_candidates, and compliance-audit's CITATION_RE is a hand copy of idea-audit's
-# check-citations.py one (it drifted once: 2026-09-20). They stay copies on purpose (a cross-skill
+# extract_valid_candidates, and compliance-audit's and deep-audit's CITATION_RE are hand copies of
+# idea-audit's check-citations.py one (it drifted once: 2026-09-20; deep-audit lacked it: #392). They stay copies on purpose (a cross-skill
 # import would couple the skills' install layouts), so this fails when one copy's code diverges.
 # Compared as AST with the docstring dropped: comments and docstrings may differ, code may not.
 # The checker is run on planted edits too, so it cannot pass by comparing nothing.
@@ -19,7 +19,7 @@ VERDICTS = ["skills/workflow/idea-audit/scripts/check-verdict.py",
             "skills/review/deep-audit/scripts/check-verdict.py",
             "skills/review/compliance-audit/scripts/check-verdict.py"]
 CITATIONS = "skills/workflow/idea-audit/scripts/check-citations.py"
-CITATION_COPY = VERDICTS[2]
+CITATION_COPIES = (VERDICTS[1], VERDICTS[2])
 FUNCS = ("mask_json_spans", "extract_object", "extract_valid_candidates")
 passed = failed = 0
 
@@ -56,7 +56,7 @@ def drift(srcs):
         if None in vals or len(set(vals)) != 1:
             bad.append(f)
     c = defs(srcs[CITATIONS]).get("CITATION_RE")
-    if c is None or c != defs(srcs[CITATION_COPY]).get("CITATION_RE"):
+    if c is None or any(c != defs(srcs[p]).get("CITATION_RE") for p in CITATION_COPIES):
         bad.append("CITATION_RE")
     return bad
 
@@ -108,7 +108,7 @@ for path in VERDICTS:
             probes += 1
             check("planted %s edit in %s:%s is caught" % (how, path.split("/")[2], name), name in drift(m))
 
-for path in (CITATIONS, CITATION_COPY):
+for path in (CITATIONS,) + CITATION_COPIES:
     m = dict(srcs)
     lines = srcs[path].splitlines(True)
     landed = False
@@ -119,13 +119,14 @@ for path in (CITATIONS, CITATION_COPY):
             break
     m[path] = "".join(lines)
     probes += landed
-    check("planted CITATION_RE edit in %s is caught" % path.split("/")[-1], landed and "CITATION_RE" in drift(m))
+    check("planted CITATION_RE edit in %s is caught" % path,landed and "CITATION_RE" in drift(m))
 
-m = dict(srcs)
-m[CITATION_COPY] = m[CITATION_COPY].replace("CITATION_RE = ", "CITATION_RX = ", 1)
-check("a renamed-away CITATION_RE copy is caught", "CITATION_RE" in drift(m))
+for path in CITATION_COPIES:
+    m = dict(srcs)
+    m[path] = m[path].replace("CITATION_RE = ", "CITATION_RX = ", 1)
+    check("a renamed-away CITATION_RE copy in %s is caught" % path.split("/")[2], "CITATION_RE" in drift(m))
 
-check("%d planted edits ran (not vacuous)" % probes, probes == 3 * 3 * 2 + 2)
+check("%d planted edits ran (not vacuous)" % probes, probes == 3 * 3 * 2 + 1 + len(CITATION_COPIES))
 print("=== Summary: %d passed, %d failed ===" % (passed, failed))
 sys.exit(1 if failed else 0)
 PY
