@@ -11,7 +11,10 @@
 #   lint      bash -n (+shellcheck if installed) on tracked .sh,
 #             py_compile on tracked .py, JSON parse on tracked .json
 #   tests     every tests/hooks/*.sh on disk + tests/skills/**/test*.sh
-#             + tests/scripts/*.sh + tests/evals/*.sh + tests/skills/memory-lint python tests
+#             + tests/scripts/*.sh + tests/evals/*.sh + tests/skills/memory-lint python tests;
+#             tests/mods/*.test.ts run via tests/hooks/test-cost-ledger-module.sh
+#             (`claude plugin test`). test-run-gauntlet-wiring.sh fails on a tests/<dir>
+#             no layer runs (GH #448).
 # Wired to git-hooks/pre-push. harness-audit runs in pre-commit, not here.
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
