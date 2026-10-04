@@ -228,7 +228,7 @@ echo ""
 
 trap 'mv "$QM.disabled-test" "$QM" 2>/dev/null || true' EXIT
 mv "$QM" "$QM.disabled-test"
-OUT=$(printf '%s' '{"tool_name":"Bash","agent_id":"x","tool_input":{"command":"git reset --hard"}}' | python3 "$ROOT/hooks/gates/subagent-git-guard.py" 2>/dev/null; echo "rc=$?")
+OUT=$(printf '%s' '{"tool_name":"Bash","agent_id":"x","tool_input":{"command":"git reset --hard"}}' | MH_GATE_JOURNAL_PATH=/dev/null python3 "$ROOT/hooks/gates/subagent-git-guard.py" 2>/dev/null; echo "rc=$?")
 mv "$QM.disabled-test" "$QM"
 ok=1; [[ "$OUT" == *"rc=2"* ]] && ok=0
 check "subagent-git-guard.py still denies via its inline fallback when _quotemask.py is missing" "$ok"
