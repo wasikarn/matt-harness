@@ -90,15 +90,26 @@ console.log("total:     "+f4(sum(latest))+"  ("+sessionIds.size+" sessions)");
 {
   const lf=path.join(path.dirname(f),"cost-ledger.jsonl");
   const led=new Map();let lerr=0,lbad=0;
+  // Load markers (GH #444): one `loaded` row per module load, carrying no usd.
+  const marked=new Set();let firstMark;
   if(fs.existsSync(lf))for(const l of fs.readFileSync(lf,"utf8").split(/\r?\n/)){
     let r;try{r=JSON.parse(l)}catch{continue}
     if(!r||!r.session_id)continue;
+    if(r.loaded===true){marked.add(r.session_id);if(!firstMark||String(r.t)<firstMark)firstMark=String(r.t);continue;}
     if(r.error!==undefined){lerr++;continue;}
     // A finite number only (Number.isFinite never coerces): Number(null) and Number("") are 0,
     // which would read as a reset and add the next reading whole.
     const usd=r.usd;if(!Number.isFinite(usd)){lbad++;continue;}
     const p=led.get(r.session_id)||{prev:undefined,total:0};
     p.total+=p.prev===undefined||usd>=p.prev?usd-(p.prev??0):usd;p.prev=usd;led.set(r.session_id,p);
+  }
+  // Load rate: sessions with spend since the first marker that carry one. A session without one ran
+  // with modules off (kill switch, --bare, an old CLI); older sessions predate the marker.
+  if(!firstMark)console.log("module loaded: no load marker (modules off since the marker shipped, or an mh older than it)");
+  else{
+    const lastTs=new Map();for(const r of latest){const k=r.session_id||r.transcript_path||r.timestamp,ts=String(r.timestamp);if(!lastTs.has(k)||ts>lastTs.get(k))lastTs.set(k,ts);}
+    const since=[...lastTs].filter(([,ts])=>ts>=firstMark).map(([k])=>k);
+    console.log("module loaded: "+since.filter(k=>marked.has(k)).length+" of "+since.length+" sessions since the first load marker ("+firstMark.slice(0,10)+"); one without ran with modules off");
   }
   if(lerr)console.log("warning: "+lerr+" cost-ledger error rows (the module could not read or write the ledger on those turns) — the ledger total below may run low");
   if(lbad)console.log("warning: "+lbad+" cost-ledger rows with no finite usd were skipped (not read as $0) — the ledger total below may run low");

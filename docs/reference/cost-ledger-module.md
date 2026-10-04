@@ -3,8 +3,9 @@
 `hooks/mod/cost-ledger.ts` is mh's one hooks module (a Claude Code mod, GH #323). It is an
 observer: it never denies, asks, rewrites or answers for core. The shell hooks stay the base:
 `cost-tracker.sh`, `costs.jsonl` and every gate are unchanged, and the transcript-priced total in
-`costs.jsonl` stays the authoritative session cost (GH #334, option A). The module adds one
-thing: a cross-check against Claude Code's own cost ledger.
+`costs.jsonl` stays the authoritative session cost (GH #334, option A). The module adds three
+things: a cross-check against Claude Code's own cost ledger, a per-load marker row (#444), and
+in an mh checkout a cached-vs-repo version status and stale-skill toast (#442).
 
 ## What it records
 
@@ -36,6 +37,59 @@ Names verified against the `claude-code.d.ts` that CLI 2.1.288 writes: `turn.com
 streaming event per model request, not per turn. `session.measure` also carries `cost` and fires
 after each main-thread turn, but has no turn id and was not probed under `claude -p`.
 
+## Load marker (GH #444)
+
+The first hook call of each module load (`session.start`, `skill.prompt` or `turn.complete`,
+whichever runs first) appends one row to the same `cost-ledger.jsonl`:
+
+```
+{ t, session_id, loaded: true, cli, mh }
+```
+
+`cli` is `$.session.version().version`; `mh` is the version in `$.plugin.root`'s
+`.claude-plugin/plugin.json`, the copy that actually runs. A field that cannot be read is left
+out; a failed append is a `$.ui.log` line. A reload writes a second marker for the same session.
+It goes to the ledger file, not `$.ui.log`, because under `claude -p` the UI log only reaches the
+debug log. With modules off nothing is written, and that absence is the signal: "the kill switch
+served off" reads apart from "loaded but idle" (a marker and no `usd` rows).
+
+## Cached-vs-repo status (GH #442)
+
+Only when the session's project root (`$.session.root()`) holds a `.claude-plugin/plugin.json`
+whose `name` matches `$.plugin.name`, i.e. an mh checkout or worktree. Anywhere else it does
+nothing.
+
+- **`session.start`:** one `$.ui.status` line comparing the cached version (`$.plugin.root`) with
+  the repo manifest's: `mh 1.1.174: cache = repo version (...)` or `mh: cache 1.1.173 is stale,
+  repo 1.1.174 (...)`. Equal versions do not prove equal content (same-version edits are no-ops),
+  which is what the skill check is for.
+- **`skill.prompt`:** finds the skill's `SKILL.md` through the cached manifest's `skills` entries
+  (`<entry>/<name>/SKILL.md`, or `<entry>/SKILL.md` when the entry is the skill's own folder; a
+  `plugin:` prefix on the name is dropped) and compares it byte for byte with the same path in
+  the repo. A difference is one `$.ui.toast` per skill per module load saying the cached copy runs.
+  A skill not in mh, or missing from the repo, gets nothing. The prompt text passes through
+  untouched.
+
+This is the in-session answer to "which mh copy runs" (`docs/reference/repo-gotchas.md`); a
+`Skill()` call alone runs the cached copy and cannot confirm a repo edit.
+
+Names verified against the `claude-code.d.ts` that CLI 2.1.289 writes, and listed by
+`claude plugin validate .` 2.1.289 as the module's calls: `session.start` (`SessionStartInput`),
+`skill.prompt` (`SkillPromptInput`: `skill`, `text`; result `{ text }`), `$.plugin.root` /
+`$.plugin.name`, `$.session.root()`, `$.session.version()` (`SessionVersion.version`),
+`$.fs.read(path)`, `$.ui.status(text)`, `$.ui.toast(text, { timeoutMs })`.
+
+**Live probe: not run.** A dispatched subagent cannot start `claude -p` (mh's
+`gate:bash:irrecoverable` blocks nested sessions), so three things rest on the d.ts alone: that
+`$.plugin.root` is the folder above `.claude-plugin/` (the d.ts example
+`${$.plugin.root}/hooks/weights.bin` implies it; if wrong, every read misses and the module shows
+nothing, marker `mh` field absent), whether `skill.prompt`'s `skill` carries the `mh:` prefix
+(both forms are handled), and that `session.start` fires under `-p`. To probe from a main
+session: copy the repo to a scratch folder, set its `plugin.json` version to `0.0.1` and edit one
+`SKILL.md`, run `claude -p "/mh:cost-report" --plugin-dir <copy> --debug-file <log>` from the
+repo, then check for a `loaded` row in `cost-ledger.jsonl` with `mh: "0.0.1"` and the status and
+toast text in the debug log.
+
 ## How cost-report reads it
 
 `skills/meta/cost-report/scripts/cost-report-dedup.js` prints one `ledger cross-check:` line: the
@@ -45,10 +99,17 @@ and ignores the stored `delta`, which restarts when the module reloads. The rule
 three cases are in `skills/meta/cost-report/references/data-model.md`, section
 "Gap to Claude Code's own ledger".
 
+It also prints one `module loaded:` line from the load markers: `module loaded: N of M sessions
+since the first load marker (<date>); ...`, where M counts the `costs.jsonl` sessions whose last
+row is at or after the first marker (older sessions predate it) and N those with a marker. With no
+marker at all it prints `module loaded: no load marker (...)`. Marker rows carry no `usd` and are
+not counted in the no-finite-usd warning.
+
 ## When modules are off
 
-Nothing is written, and the only loss is the cross-check line: cost-report prints
-`ledger cross-check: no ledger data (...)`, not zero and not an error. Modules are off on CLIs
+Nothing is written, and nothing else changes: no status line, no toast, no marker. cost-report
+prints `ledger cross-check: no ledger data (...)`, not zero and not an error, and the session is
+missing from the `module loaded:` count. Modules are off on CLIs
 before 2.1.287, under `--bare`, `--safe-mode`, `disableAllHooks`, `allowManagedHooksOnly`,
 `allowManagedModsOnly`, in an untrusted workspace, and when Anthropic's remote switch serves off.
 A reload after such a flip drops the module mid-session.

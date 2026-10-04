@@ -55,7 +55,8 @@ never runs at all and nothing server-side notices. Run the verify command above 
   Read `mh_version` in this session's last row of `~/.local/share/kbg/metrics/costs.jsonl` that has
   one (a Codex row has none), or the version in the hook path Claude Code prints around a gate deny. `~/.claude/metrics/costs.jsonl` is a stale
   file with no `mh_version`. A wrong probe gave a wrong answer twice: the env var (2026-09-21) and the
-  stale file (2026-09-30).
+  stale file (2026-09-30). In an mh checkout with modules on, the hooks module's status line and
+  stale-skill toast say it too (`docs/reference/cost-ledger-module.md`, GH #442).
 - **A brand-new skill or agent no longer fails checks 02 and 03.** The plugin cache is built from
   committed state, so a component added after the commit the cache was built from cannot be in it.
   Checks 02 (skill loadability) and 03 (agent loadability) report such a component as INFO when its

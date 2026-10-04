@@ -15,15 +15,41 @@ test('ledgerDelta: first reading, growth, no change, drop', () => {
 
 type Usage = { cost?: { usd: number } } | 'throw'
 
+// Files the module reads: `cache` under $.plugin.root (the installed copy that runs), keyed by
+// the path below it; `repo` under the session root, stubbed as /repo. A missing key rejects.
+const manifest = (version: string, name = 'mh') =>
+  JSON.stringify({ name, version, skills: ['./skills/meta/', './skills/workflow/ideate/'] })
+
 const setup = (...[$, on]: Parameters<TestBody>) => {
   const h = {
     rows: [] as Record<string, unknown>[],
+    markers: [] as Record<string, unknown>[],
     logs: [] as string[],
+    statuses: [] as (string | undefined)[],
+    toasts: [] as string[],
+    cache: { '.claude-plugin/plugin.json': manifest('1.1.174') } as Record<string, string>,
+    repo: { '.claude-plugin/plugin.json': manifest('1.1.174') } as Record<string, string>,
     usage: { cost: { usd: 0 } } as Usage,
     fail: undefined as 'exit' | 'throw' | undefined,
+    noVersion: false,
     completes: 0,
   }
   on('session.id', () => ({ value: 's1' }))
+  on('session.version', () => {
+    if (h.noVersion) throw new Error('version broke')
+    return { value: { version: '2.1.289', base: '2.1.289' } }
+  })
+  on('session.root', () => ({ value: '/repo' }))
+  on('fs.read', (_$, e) => {
+    const p = e.path
+    const text = p.startsWith('/repo/')
+      ? h.repo[p.slice(6)]
+      : Object.entries(h.cache).find(([rel]) => p.endsWith('/' + rel))?.[1]
+    if (text === undefined) throw new Error(`ENOENT: ${p}`)
+    return { value: text }
+  })
+  on('ui.status', (_$, e) => (h.statuses.push(e.text), { value: undefined }))
+  on('ui.toast', (_$, e) => (h.toasts.push(e.text), { value: undefined }))
   on('session.usage', () => {
     if (h.usage === 'throw') throw new Error('usage broke')
     return { value: { startedAt: 0, context: { window: 200000 }, rateLimits: [], ...h.usage } }
@@ -32,16 +58,116 @@ const setup = (...[$, on]: Parameters<TestBody>) => {
     const mode = h.fail
     h.fail = undefined
     if (mode === 'throw') throw new Error('timed out')
-    if (mode === undefined) for (const a of e.argv.slice(4)) h.rows.push(JSON.parse(String(a)))
+    if (mode === undefined)
+      for (const a of e.argv.slice(4)) {
+        const r = JSON.parse(String(a))
+        ;(r.loaded ? h.markers : h.rows).push(r)
+      }
     const exitCode = mode === 'exit' ? 1 : 0
     return { value: { exitCode, stdout: '', stderr: exitCode ? 'disk full' : '', isStdoutTruncated: false, isStderrTruncated: false } }
   })
   on('ui.log', (_$, e) => (h.logs.push(e.text), { value: undefined }))
   on('turn.complete', () => (h.completes++, { text: 'core' }))
+  on('session.start', () => ({ cwd: '/core' }))
+  on('skill.prompt', (_$, e) => ({ text: `core:${e.text}` }))
   const turn = (turnId: string, agentId?: string) =>
     $.turn.complete({ turnId, answer: '', durationMs: 0, isAborted: false, agentId, reason: 'answer' })
-  return { h, turn }
+  const start = () => $.session.start({ cwd: '/repo', surface: null, isInteractive: false })
+  const skill = (name: string) => $.skill.prompt({ skill: name, text: 'body' })
+  return { h, turn, start, skill }
 }
+
+// GH #444: one load marker per module load, from whichever hook runs first, so "modules off" (no
+// marker) can be told apart from "loaded but idle" (a marker, no ledger rows).
+test('load marker: written once, by the first hook call, with the CLI and mh versions', async ($, on) => {
+  const { h, turn } = setup($, on)
+  h.cache['.claude-plugin/plugin.json'] = manifest('1.1.173')
+  await turn('t1')
+  await turn('t2')
+  expect(h.markers.map(r => [r.session_id, r.loaded, r.cli, r.mh])).toEqual([['s1', true, '2.1.289', '1.1.173']])
+  expect(typeof h.markers[0].t).toBe('string')
+  expect(h.rows.map(r => r.turn_id)).toEqual(['t1', 't2'])
+})
+
+test('load marker: session.start writes it before any turn', async ($, on) => {
+  const { h, start, turn } = setup($, on)
+  await start()
+  expect(h.markers.length).toBe(1)
+  await turn('t1')
+  expect(h.markers.length).toBe(1)
+})
+
+test('load marker: failed CLI-version and manifest reads still write the marker, without those fields', async ($, on) => {
+  const { h, turn } = setup($, on)
+  h.cache = {}
+  h.noVersion = true
+  await turn('t1')
+  expect(h.markers.length).toBe(1)
+  expect(h.markers[0].session_id).toBe('s1')
+  expect(h.markers[0].mh).toBeUndefined()
+  expect(h.markers[0].cli).toBeUndefined()
+  expect(h.completes).toBe(1)
+})
+
+// GH #442: on session.start in an mh checkout, the cached copy's version beside the repo's.
+test('session.start: cached and repo versions differ -> a status line naming both', async ($, on) => {
+  const { h, start } = setup($, on)
+  h.cache['.claude-plugin/plugin.json'] = manifest('1.1.173')
+  expect(await start()).toEqual({ cwd: '/core' })
+  expect(h.statuses.length).toBe(1)
+  expect(h.statuses[0]).toContain('1.1.173')
+  expect(h.statuses[0]).toContain('1.1.174')
+  expect(h.statuses[0]).toContain('stale')
+})
+
+test('session.start: same version -> a status line that says so, not stale', async ($, on) => {
+  const { h, start } = setup($, on)
+  await start()
+  expect(h.statuses.length).toBe(1)
+  expect(h.statuses[0]).toContain('1.1.174')
+  expect(h.statuses[0]).not.toContain('stale')
+})
+
+test('session.start: not an mh checkout, or unreadable manifests -> no status, core still runs', async ($, on) => {
+  const { h, start } = setup($, on)
+  h.repo['.claude-plugin/plugin.json'] = manifest('9.9.9', 'other')
+  expect(await start()).toEqual({ cwd: '/core' })
+  h.repo = {}
+  expect(await start()).toEqual({ cwd: '/core' })
+  h.repo['.claude-plugin/plugin.json'] = 'not json'
+  expect(await start()).toEqual({ cwd: '/core' })
+  h.repo['.claude-plugin/plugin.json'] = manifest('1.1.174')
+  h.cache = {}
+  expect(await start()).toEqual({ cwd: '/core' })
+  expect(h.statuses).toEqual([])
+})
+
+// GH #442: a skill whose repo SKILL.md differs from the cached copy gets one toast per session.
+test('skill.prompt: repo SKILL.md differs -> one toast per skill, text passes through', async ($, on) => {
+  const { h, skill } = setup($, on)
+  h.cache['skills/meta/cost-report/SKILL.md'] = 'old'
+  h.repo['skills/meta/cost-report/SKILL.md'] = 'new'
+  h.cache['skills/workflow/ideate/SKILL.md'] = 'same'
+  h.repo['skills/workflow/ideate/SKILL.md'] = 'same'
+  expect(await skill('mh:cost-report')).toEqual({ text: 'core:body' })
+  expect(await skill('cost-report')).toEqual({ text: 'core:body' })
+  expect(await skill('ideate')).toEqual({ text: 'core:body' })
+  expect(h.toasts.length).toBe(1)
+  expect(h.toasts[0]).toContain('cost-report')
+  expect(h.toasts[0]).toContain('cached')
+})
+
+test('skill.prompt: no toast for a skill not in mh, missing from the repo, or outside an mh checkout', async ($, on) => {
+  const { h, skill } = setup($, on)
+  h.cache['skills/meta/gone/SKILL.md'] = 'old'
+  expect(await skill('commit')).toEqual({ text: 'core:body' })
+  expect(await skill('gone')).toEqual({ text: 'core:body' })
+  h.cache['skills/meta/cost-report/SKILL.md'] = 'old'
+  h.repo['skills/meta/cost-report/SKILL.md'] = 'new'
+  h.repo['.claude-plugin/plugin.json'] = manifest('1.1.174', 'other')
+  expect(await skill('cost-report')).toEqual({ text: 'core:body' })
+  expect(h.toasts).toEqual([])
+})
 
 test('records the cumulative ledger and the per-turn delta, main loop only', async ($, on) => {
   const { h, turn } = setup($, on)
@@ -109,7 +235,8 @@ test('a non-finite reading becomes an error row and leaves the baseline alone', 
 })
 
 test('a failed append is logged, never thrown, and core still runs', async ($, on) => {
-  const { h, turn } = setup($, on)
+  const { h, turn, start } = setup($, on)
+  await start() // the load marker takes the first append
   h.usage = { cost: { usd: 0.5 } }
   h.fail = 'exit'
   expect(await turn('t1')).toEqual({ text: 'core' })

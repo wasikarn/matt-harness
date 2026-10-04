@@ -1,9 +1,10 @@
-import type { Register } from 'claude-code'
+import type { EngineInterface, Register } from 'claude-code'
 
 // mh's one hooks module (GH #323, #334): an observer that records Claude Code's own cost ledger
 // ($.session.usage().cost.usd, what /cost totals) after each main-loop turn, so cost-report can
-// cross-check the transcript-priced costs.jsonl against it. Reference:
-// docs/reference/cost-ledger-module.md.
+// cross-check the transcript-priced costs.jsonl against it. It also writes one load-proof row per
+// module load (#444) and, in an mh checkout, shows whether the cached copy matches the repo
+// (#442). Reference: docs/reference/cost-ledger-module.md.
 //
 // Observer only: it never denies, asks, rewrites or answers for core. Every step sits in one
 // try/catch and the hook always ends in `next(e)`, so a failure here costs one row, never the turn.
@@ -28,8 +29,108 @@ export const ledgerDelta = (prev: number | undefined, usd: number) =>
 // deltas start to matter.
 let prev: number | undefined
 
+const append = async ($: EngineInterface, row: string) => {
+  try {
+    const r = await $.process.run(['sh', '-c', APPEND, 'sh', row], { timeoutMs: 2000 })
+    if (r.exitCode === 0) return true
+    $.ui.log(`cost-ledger append exited ${r.exitCode}: ${r.stderr.trim().slice(0, 200)}`)
+  } catch (err) {
+    $.ui.log(`cost-ledger append failed: ${String(err).slice(0, 200)}`)
+  }
+  return false
+}
+
+type Manifest = { name?: string; version?: string; skills?: string[] }
+const readText = async ($: EngineInterface, path: string): Promise<string | undefined> => {
+  try {
+    return await $.fs.read(path)
+  } catch {
+    return undefined
+  }
+}
+const readManifest = async ($: EngineInterface, root: string): Promise<Manifest | undefined> => {
+  try {
+    return JSON.parse((await readText($, `${root}/.claude-plugin/plugin.json`)) ?? '')
+  } catch {
+    return undefined
+  }
+}
+// The session's project root and its manifest, when it is a checkout of this plugin (an mh repo
+// or worktree); undefined anywhere else.
+const mhRepo = async ($: EngineInterface) => {
+  const root = await $.session.root()
+  const manifest = await readManifest($, root)
+  return manifest?.name === $.plugin.name ? { root, manifest } : undefined
+}
+
+// GH #444: one load-proof row per module load, from whichever hook runs first, so a session with
+// modules off (no row) reads apart from one where the module loaded and stayed idle. A reload
+// writes another; the report counts sessions, not rows.
+let marked = false
+const markLoaded = async ($: EngineInterface) => {
+  if (marked) return
+  marked = true
+  try {
+    const [session, cli, mh] = await Promise.all([
+      $.session.id(),
+      $.session.version().then(v => v.version, () => undefined),
+      readManifest($, $.plugin.root).then(m => m?.version),
+    ])
+    await append($, JSON.stringify({ t: new Date().toISOString(), session_id: session, loaded: true, cli, mh }))
+  } catch (err) {
+    $.ui.log(`cost-ledger load marker failed: ${String(err).slice(0, 200)}`)
+  }
+}
+
+// GH #442: skills whose repo SKILL.md differs from the cached copy that runs, toasted once each.
+const toasted = new Set<string>()
+
 export const register: Register = on => {
+  on('session.start', async ($, e, next) => {
+    await markLoaded($)
+    try {
+      const repo = (await mhRepo($))?.manifest
+      const cache = repo?.version ? await readManifest($, $.plugin.root) : undefined
+      if (cache?.version && repo?.version)
+        $.ui.status(
+          cache.version === repo.version
+            ? `${$.plugin.name} ${cache.version}: cache = repo version (same-version edits still need a bump)`
+            : `${$.plugin.name}: cache ${cache.version} is stale, repo ${repo.version} (bump + claude plugin update)`,
+        )
+    } catch (err) {
+      $.ui.log(`cost-ledger version status failed: ${String(err).slice(0, 200)}`)
+    }
+    return next(e)
+  })
+
+  on('skill.prompt', async ($, e, next) => {
+    await markLoaded($)
+    try {
+      const name = e.skill.split(':').pop() ?? ''
+      const root = name && !toasted.has(name) ? (await mhRepo($))?.root : undefined
+      if (root) {
+        // plugin.json's `skills` lists parent folders (./skills/meta/) and skill folders alike.
+        const dirs = ((await readManifest($, $.plugin.root))?.skills ?? []).map(d => d.replace(/^\.\//, '').replace(/\/$/, ''))
+        const rels = dirs.flatMap(d => [`${d}/${name}/SKILL.md`, ...(d.split('/').pop() === name ? [`${d}/SKILL.md`] : [])])
+        for (const rel of rels) {
+          const cached = await readText($, `${$.plugin.root}/${rel}`)
+          if (cached === undefined) continue
+          const current = await readText($, `${root}/${rel}`)
+          if (current !== undefined && current !== cached) {
+            toasted.add(name)
+            $.ui.toast(`${name}: the cached copy runs; repo ${rel} differs (bump + claude plugin update)`, { timeoutMs: 8000 })
+          }
+          break
+        }
+      }
+    } catch (err) {
+      $.ui.log(`cost-ledger skill check failed: ${String(err).slice(0, 200)}`)
+    }
+    return next(e)
+  })
+
   on('turn.complete', async ($, e, next) => {
+    await markLoaded($)
     if (e.agentId !== undefined) return next(e)
     let session = 'unknown'
     let row: string | undefined
@@ -48,15 +149,7 @@ export const register: Register = on => {
     } catch (err) {
       row = JSON.stringify({ t: new Date().toISOString(), session_id: session, turn_id: e.turnId, error: String(err).slice(0, 200) })
     }
-    if (row !== undefined) {
-      try {
-        const r = await $.process.run(['sh', '-c', APPEND, 'sh', row], { timeoutMs: 2000 })
-        if (r.exitCode !== 0) $.ui.log(`cost-ledger append exited ${r.exitCode}: ${r.stderr.trim().slice(0, 200)}`)
-        else if (usd !== undefined) prev = usd
-      } catch (err) {
-        $.ui.log(`cost-ledger append failed: ${String(err).slice(0, 200)}`)
-      }
-    }
+    if (row !== undefined && (await append($, row)) && usd !== undefined) prev = usd
     return next(e)
   })
 }
