@@ -8,8 +8,11 @@
 # from this log (docs/research/ai-native-sdlc-playbook-audit-2026-08-28.md Round 4).
 import json
 import os
+import re
 import sys
 from collections import Counter
+
+UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
 MH_GATE_JOURNAL_PATH = "MH_GATE_JOURNAL_PATH"  # same env var _journal.py itself reads
 
@@ -34,6 +37,7 @@ def main():
     total = 0
     skipped = 0
     sessionless = 0     # rows with no session_id: test fixtures / direct gate runs, not live hooks
+    oddids = Counter()  # non-UUID session_id -> events (counted, only named in the report)
     with open(path) as f:
         for line in f:
             line = line.strip()
@@ -52,11 +56,13 @@ def main():
             # Live hook calls always carry a session_id, so a row without one came from a test
             # or a direct gate run (the real journal held 268,206 of them beside ~830 rows with
             # an id, drowning every count); it is tallied apart and kept out of the report. A
-            # fake id does not make a row live: older tests wrote "test-session" and "s" rows,
-            # and those still count.
+            # fake id does not make a row live: older tests and hand-run gate probes wrote
+            # "test-session", "s" and "t" rows. Those still count; non-UUID ids are named below.
             if row.get("session_id") is None:
                 sessionless += n
                 continue
+            if not UUID_RE.match(str(row["session_id"])):
+                oddids[str(row["session_id"])] += n
             gate_id = row.get("id", "(unknown)")
             decision = row.get("decision", "(unknown)")
             tool_name = row.get("tool_name", "(unknown)")
@@ -90,6 +96,10 @@ def main():
         print(f"Range: {first_ts} .. {last_ts}")
     if sessionless:
         print(ignored)
+    if oddids:
+        top = ", ".join(f"{sid} x{n}" for sid, n in oddids.most_common(5))
+        print(f"Non-UUID session id(s), counted above ({sum(oddids.values())} event(s)): {top}"
+              " (likely made-up ids from tests or hand-run gate probes, not live sessions).")
     print()
     print("By gate x decision (ask-count only — no resolution timestamp is logged, so this")
     print("is never a wait-time metric):")
