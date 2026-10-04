@@ -10,6 +10,14 @@ every test under `tests/`. pre-push runs the gauntlet; pre-commit runs the fast 
 shellcheck on staged `.sh`, JSON parse, the home-path ban, harness-audit CRIT only, and when a gate
 is staged, `scripts/gate-canary.sh` against the index copy of `hooks/gates/`).
 
+The gauntlet's timing rows ("finishes inside 4 s / 8 s") fail when several gauntlets share the
+machine (GH #158: four parallel builders pushed load to 15-20 and failed seven pushes). pre-push
+therefore takes a machine-wide lock (`scripts/_lib/gauntlet-lock.sh`, default
+`~/.cache/mh/gauntlet.lock`) and waits its turn, up to 30 minutes, then runs anyway with a message
+(it orders work; it is never a gate). A lock whose owner is gone is reclaimed; a child of the holder
+skips the queue so a test that runs the hook cannot deadlock the gauntlet. Load from other apps and
+non-mh sessions is not covered. Builders still build in parallel; only their pushes queue.
+
 ## Git hooks
 
 Hooks live in `git-hooks/`, not `.git/hooks/`. Wire once per clone with

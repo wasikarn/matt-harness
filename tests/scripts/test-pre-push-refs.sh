@@ -30,9 +30,12 @@ mkdir -p "$FIXTURE/scripts"
 cat > "$FIXTURE/scripts/run-gauntlet.sh" <<'EOF'
 #!/usr/bin/env bash
 echo "stub gauntlet ran"
+echo "lock held: $([ -f "${GAUNTLET_LOCK_DIR:-}/pid" ] && echo yes || echo no)"
 exit 0
 EOF
 chmod +x "$FIXTURE/scripts/run-gauntlet.sh"
+# GH #158: the hook queues behind other gauntlets; keep this test's lock out of the real one.
+export GAUNTLET_LOCK_DIR="$FIXTURE/gauntlet.lock"
 
 run_hook() {
   # stdin from $1 (a file), cwd the fixture repo so `git rev-parse
@@ -110,6 +113,27 @@ printf 'only-two-fields %s\n' "$LOCAL_SHA" > "$in"
 out=$(run_hook "$in" 2>&1); rc=$?
 [[ "$rc" -ne 0 && "$out" == *"malformed"* && "$out" != *"stub gauntlet ran"* ]] && ok=1 || ok=0
 assert_pass "$ok" "a malformed ref line fails closed with a diagnostic, never a silent pass-through"
+trash "$in" 2>/dev/null || true
+
+# --- GH #158: the gauntlet runs while the hook holds the machine-wide lock, and the lock is
+# released afterwards, on success and on a failing gauntlet ---
+in=$(mktemp)
+printf 'refs/heads/feat/x %s refs/heads/feat/x %s\n' "$LOCAL_SHA" "$REMOTE_SHA_ZERO" > "$in"
+out=$(run_hook "$in" 2>&1); rc=$?
+[[ "$rc" -eq 0 && "$out" == *"lock held: yes"* && ! -e "$GAUNTLET_LOCK_DIR" ]] && ok=1 || ok=0
+assert_pass "$ok" "the gauntlet runs under the lock, and the lock is gone after a passing run"
+printf '#!/usr/bin/env bash\necho "stub gauntlet failed"\nexit 3\n' > "$FIXTURE/scripts/run-gauntlet.sh"
+out=$(run_hook "$in" 2>&1); rc=$?
+[[ "$rc" -eq 3 && ! -e "$GAUNTLET_LOCK_DIR" ]] && ok=1 || ok=0
+assert_pass "$ok" "a failing gauntlet keeps its exit status and still releases the lock"
+trash "$in" 2>/dev/null || true
+
+# --- a refused push never touches the lock ---
+in=$(mktemp)
+printf 'refs/heads/feat/x %s refs/heads/develop %s\n' "$LOCAL_SHA" "$REMOTE_SHA_ZERO" > "$in"
+out=$(run_hook "$in" 2>&1); rc=$?
+[[ "$rc" -ne 0 && ! -e "$GAUNTLET_LOCK_DIR" ]] && ok=1 || ok=0
+assert_pass "$ok" "a push refused before the gauntlet never takes the lock"
 trash "$in" 2>/dev/null || true
 
 echo "self-test: $pass passed, $fail failed"
