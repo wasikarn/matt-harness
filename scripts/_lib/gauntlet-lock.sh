@@ -27,6 +27,12 @@ _gl_dir() { printf '%s' "${GAUNTLET_LOCK_DIR:-$HOME/.cache/mh/gauntlet.lock}"; }
 
 _gl_alive() { [ -n "${1:-}" ] && kill -0 "$1" 2>/dev/null; }
 
+# A numeric env setting, or its default when unset or not a whole number: a typo such as "1h" must
+# not make a `[ -lt ]` test error out (that read as "stale" and let a waiter take a live lock).
+_gl_num() {
+  case "${1:-}" in ''|*[!0-9]*) echo "$2" ;; *) echo "$1" ;; esac
+}
+
 # Seconds since the lock dir last changed (GNU stat first: BSD stat has no -c).
 _gl_age() {
   local m
@@ -40,10 +46,10 @@ _gl_stale() {
   owner=$(cat "$d/pid" 2>/dev/null || true)
   age=$(_gl_age "$d")
   if [ -n "$owner" ]; then
-    _gl_alive "$owner" && [ "$age" -lt "${GAUNTLET_LOCK_MAX_AGE:-3600}" ] && return 1
+    _gl_alive "$owner" && [ "$age" -lt "$(_gl_num "${GAUNTLET_LOCK_MAX_AGE:-}" 3600)" ] && return 1
     return 0
   fi
-  [ "$age" -ge "${GAUNTLET_LOCK_NOPID_SECS:-60}" ]
+  [ "$age" -ge "$(_gl_num "${GAUNTLET_LOCK_NOPID_SECS:-}" 60)" ]
 }
 
 # Remove a lock dir with whatever is in it (only a pid file belongs there). Never fails.
@@ -62,14 +68,17 @@ _gl_take() {
   return 0
 }
 
-# Reclaim the stale lock at $1 if this process wins the claim. Returns 0 when it removed the lock.
+# Reclaim the stale lock at $1 if this process wins the claim. Returns 0 only when the lock dir is
+# gone; one that cannot be emptied (a subdirectory, a read-only dir) returns 1 so the caller still
+# sleeps and reaches the wait cap instead of spinning.
 _gl_reclaim() {
   local d=$1
   if mkdir "$d.reclaim" 2>/dev/null; then
     if _gl_stale "$d"; then
       _gl_rmlock "$d"
       rmdir "$d.reclaim" 2>/dev/null || true
-      return 0
+      [ ! -d "$d" ]
+      return
     fi
     rmdir "$d.reclaim" 2>/dev/null || true
     return 1
@@ -85,7 +94,7 @@ _gl_reclaim() {
 gauntlet_lock_acquire() {
   local d max poll start owner announced=0 nap
   d=$(_gl_dir)
-  max="${GAUNTLET_LOCK_WAIT_SECS:-1800}"
+  max=$(_gl_num "${GAUNTLET_LOCK_WAIT_SECS:-}" 1800)
   poll="${GAUNTLET_LOCK_POLL:-5}"
 
   if [ -n "${MH_GAUNTLET_LOCK_OWNER:-}" ] && _gl_alive "$MH_GAUNTLET_LOCK_OWNER" \

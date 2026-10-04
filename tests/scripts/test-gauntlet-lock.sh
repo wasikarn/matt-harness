@@ -110,9 +110,14 @@ chmod 755 "$RO"
 if [ "$(LC_ALL=de_DE.UTF-8 awk 'BEGIN { printf "%.1f", 1.5 }' 2>/dev/null)" = "1,5" ]; then
   sleep 30 & BG=$!
   mkdir "$L"; echo "$BG" > "$L/pid"
-  out=$(LC_ALL=de_DE.UTF-8 GAUNTLET_LOCK_DIR="$L" GAUNTLET_LOCK_POLL=0.2 GAUNTLET_LOCK_WAIT_SECS=2 \
+  # A logging sleep first on PATH: the library hides sleep's stderr and falls back to `sleep 1`,
+  # so the only way to see a comma interval is to record what it was asked to sleep.
+  mkdir "$T/bin"; : >"$T/sleeps"
+  printf '#!/bin/sh\necho "$1" >>"%s/sleeps"\nexec /bin/sleep "$1"\n' "$T" >"$T/bin/sleep"; chmod +x "$T/bin/sleep"
+  out=$(PATH="$T/bin:$PATH" LC_ALL=de_DE.UTF-8 GAUNTLET_LOCK_DIR="$L" GAUNTLET_LOCK_POLL=0.2 GAUNTLET_LOCK_WAIT_SECS=2 \
     bash -c "set -euo pipefail; . '$LIB'; gauntlet_lock_acquire; echo rc=\$?" 2>&1)
-  if printf '%s' "$out" | /usr/bin/grep -q 'rc=0' && ! printf '%s' "$out" | /usr/bin/grep -qi 'invalid time interval'; then
+  if printf '%s' "$out" | /usr/bin/grep -q 'rc=0' && ! printf '%s' "$out" | /usr/bin/grep -qi 'invalid time interval' \
+    && [ -s "$T/sleeps" ] && ! /usr/bin/grep -q ',' "$T/sleeps"; then
     ok "a decimal-comma locale does not break the wait under set -e"
   else bad "locale broke the jittered sleep: $out"; fi
   kill $BG 2>/dev/null; wait $BG 2>/dev/null; BG=""
@@ -151,6 +156,34 @@ for _ in 1 2 3 4 5 6 7 8; do
   reset
 done
 if [ "$overlaps" -eq 0 ]; then ok "six racers on a stale lock never overlap (8 rounds)"; else bad "$overlaps overlapping entries while reclaiming a stale lock"; fi
+
+# 11. a stale lock that cannot be emptied (a subdirectory) must not spin past the wait cap, and a
+# non-numeric cap or max-age must not break the wait or let a waiter take a live holder's lock.
+mkdir "$L"; echo 999999 >"$L/pid"; mkdir "$L/sub"
+start=$(date +%s)
+out=$(WAIT=2 run 'gauntlet_lock_acquire; echo rc=$?')
+elapsed=$(( $(date +%s) - start ))
+if printf '%s' "$out" | /usr/bin/grep -q 'rc=0' && [ "$elapsed" -le 6 ]; then
+  ok "a lock that cannot be removed still fails open at the cap (${elapsed}s)"
+else bad "stuck lock spun or stalled (${elapsed}s): $out"; fi
+rm -f "$L/pid"; rmdir "$L/sub" "$L" 2>/dev/null; reset
+
+sleep 30 & BG=$!
+mkdir "$L"; echo "$BG" > "$L/pid"
+out=$(GAUNTLET_LOCK_MAX_AGE=1h GAUNTLET_LOCK_WAIT_SECS=2 GAUNTLET_LOCK_DIR="$L" GAUNTLET_LOCK_POLL=0.1 \
+  bash -c ". '$LIB'; gauntlet_lock_acquire; echo owner=\$(cat '$L/pid')" 2>&1)
+if printf '%s' "$out" | /usr/bin/grep -q "owner=$BG"; then ok "a non-numeric MAX_AGE does not let a waiter take a live lock"
+else bad "live lock taken with MAX_AGE=1h: $out"; fi
+# WAIT_SECS=2s falls back to the 1800 s default, so it must keep waiting quietly, not error each poll.
+GAUNTLET_LOCK_WAIT_SECS=2s GAUNTLET_LOCK_DIR="$L" GAUNTLET_LOCK_POLL=0.1 \
+  bash -c ". '$LIB'; gauntlet_lock_acquire" >"$T/ws.out" 2>&1 & W=$!
+sleep 3
+kill -0 $W 2>/dev/null && alive=yes || alive=no
+kill $W 2>/dev/null; wait $W 2>/dev/null
+if [ "$alive" = yes ] && ! /usr/bin/grep -q 'integer expected' "$T/ws.out"; then ok "a non-numeric WAIT_SECS falls back to the default without errors"
+else bad "WAIT_SECS=2s: alive=$alive $(cat "$T/ws.out")"; fi
+kill $BG 2>/dev/null; wait $BG 2>/dev/null; BG=""
+reset
 
 echo "self-test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

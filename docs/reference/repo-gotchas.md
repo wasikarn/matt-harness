@@ -16,7 +16,10 @@ therefore takes a per-user lock (`scripts/_lib/gauntlet-lock.sh`, default
 `~/.cache/mh/gauntlet.lock`) and waits its turn, up to 30 minutes, then runs anyway with a message
 (it orders work; it is never a gate). A lock whose owner is gone is reclaimed; a child of the holder
 skips the queue so a test that runs the hook cannot deadlock the gauntlet. Load from other apps and
-non-mh sessions is not covered. Builders still build in parallel; only their pushes queue.
+non-mh sessions is not covered. Builders still build in parallel; only their pushes queue. If
+`core.hooksPath` is an absolute path to the main checkout, a push from any worktree runs that
+checkout's hook, so the lock applies only once that checkout has the new `git-hooks/pre-push`
+(update it after this lands); a relative path uses each worktree's own hook.
 
 ## Git hooks
 
