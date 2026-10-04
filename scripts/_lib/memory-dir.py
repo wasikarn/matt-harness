@@ -20,8 +20,15 @@ Usage: python3 memory-dir.py          -> prints the resolved memory dir path
 """
 import json
 import os
+import re
 import subprocess
 import sys
+
+
+def _slug(path):
+    # Claude Code's own rule (its binary: replace(/[^a-zA-Z0-9]/g,"-")):
+    # every non-alphanumeric char becomes "-", not just "/" (GH #423).
+    return re.sub(r"[^A-Za-z0-9]", "-", path)
 
 
 def _auto_memory_directory_setting():
@@ -70,12 +77,12 @@ def resolve_enc():
         # A configured autoMemoryDirectory has no separate <enc> concept --
         # callers that need marker/lock naming fall back to encoding the
         # resolved directory itself in that case.
-        return os.path.expanduser(auto_dir).replace("/", "-")
+        return _slug(os.path.expanduser(auto_dir))
     config_dir = os.environ.get("CLAUDE_CONFIG_DIR")
     project_dir_name = os.environ.get("CLAUDE_CODE_PROJECT_DIR_NAME")
     if config_dir and project_dir_name:
         return project_dir_name
-    return _git_derived_root().replace("/", "-")
+    return _slug(_git_derived_root())
 
 
 def resolve_memory_dir():
@@ -89,7 +96,7 @@ def resolve_memory_dir():
     if config_dir and project_dir_name:
         enc = project_dir_name
     else:
-        enc = _git_derived_root().replace("/", "-")
+        enc = _slug(_git_derived_root())
     return os.path.join(projects_root, enc, "memory")
 
 

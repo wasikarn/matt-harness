@@ -317,7 +317,7 @@ def test_memory_dir_project_dir_name_requires_config_dir():
             ["git", "-C", repo, "rev-parse", "--show-toplevel"],
             capture_output=True, text=True, check=True,
         ).stdout.strip()
-        git_enc = toplevel.replace("/", "-")
+        git_enc = _cc_slug(toplevel)
 
         saved_cwd = os.getcwd()
         saved_env = {k: os.environ.get(k) for k in ("CLAUDE_CONFIG_DIR", "CLAUDE_CODE_PROJECT_DIR_NAME")}
@@ -622,6 +622,28 @@ def test_duplicate_slug_does_not_false_positive_as_orphan():
         assert linked_count == 3, linked_count
 
 
+def _cc_slug(path):
+    # Claude Code's own rule: every non-alphanumeric char becomes "-" (GH #423).
+    return "".join(c if c.isascii() and c.isalnum() else "-" for c in path)
+
+
+def test_memory_dir_slug_replaces_every_non_alphanumeric():
+    # GH #423: the resolver used to turn only "/" into "-", so a repo path with a
+    # dot, space or underscore resolved to a store Claude Code never writes.
+    resolver = os.path.join(HERE, "..", "..", "..", "scripts", "_lib", "memory-dir.py")
+    env = {k: v for k, v in os.environ.items()
+           if k not in ("CLAUDE_CONFIG_DIR", "CLAUDE_CODE_PROJECT_DIR_NAME")}
+    with tempfile.TemporaryDirectory() as d:
+        repo = os.path.join(d, "a.b c_d")
+        os.mkdir(repo)
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+        root = os.path.realpath(repo)
+        enc = subprocess.run(["python3", resolver, "--enc"], cwd=repo, env=env,
+                             capture_output=True, text=True, check=True).stdout.strip()
+        assert enc == _cc_slug(root), enc
+        assert "a-b-c-d" in enc, enc
+
+
 def test_memory_dir_falls_back_to_cwd_when_not_a_git_repo():
     # L185: memory_dir shells `git rev-parse --show-toplevel` with check=True; in a non-repo
     # cwd git exits 128 -> except -> root=cwd. Mutated check=False swallows the failure and
@@ -633,7 +655,7 @@ def test_memory_dir_falls_back_to_cwd_when_not_a_git_repo():
             os.chdir(d)
             result = memory_lint.memory_dir(None)
             expected = os.path.join(os.path.expanduser("~/.claude/projects"),
-                                    os.getcwd().replace("/", "-"), "memory")
+                                    _cc_slug(os.getcwd()), "memory")
             assert result == expected, result
     finally:
         os.chdir(orig_cwd)
@@ -1105,6 +1127,7 @@ if __name__ == "__main__":
     test_class_d_break_is_inclusive_at_exact_line_target()
     # 2026-08-23 --auto-archive action-path coverage
     test_memory_dir_falls_back_to_cwd_when_not_a_git_repo()
+    test_memory_dir_slug_replaces_every_non_alphanumeric()
     test_class_b_collapses_verbose_pointer_over_thresholds()
     test_class_b_topic_size_boundary_is_exclusive_at_5120()
     test_class_b_pointer_length_boundary_is_inclusive_at_250()

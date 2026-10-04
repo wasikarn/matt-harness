@@ -817,7 +817,7 @@ fake_home=$(mktemp -d)
 # leftover state (untracked files, prior commits) from one case can leak
 # into the next.
 proj_noopt=$(mktemp -d)
-mem_noopt="$fake_home/.claude/projects/$(cd "$proj_noopt" && pwd -P | sed 's|/|-|g')/memory"
+mem_noopt="$fake_home/.claude/projects/$(cd "$proj_noopt" && pwd -P | LC_ALL=C sed 's/[^A-Za-z0-9]/-/g')/memory"
 mkdir -p "$mem_noopt"
 echo "not opted in" > "$mem_noopt/f.md"
 out=$(cd "$proj_noopt" && HOME="$fake_home" CLAUDE_PLUGIN_ROOT="$ROOT" bash "$MEMORY_COMMIT" 2>/dev/null)
@@ -827,7 +827,7 @@ still_no_git="no"; [[ "$(cd "$mem_noopt" && git rev-parse --is-inside-work-tree 
 assert "no-op (exit 0, no repo created) when the memory dir isn't already a git repo" "$ok"
 
 proj=$(mktemp -d)
-mem_dir="$fake_home/.claude/projects/$(cd "$proj" && pwd -P | sed 's|/|-|g')/memory"
+mem_dir="$fake_home/.claude/projects/$(cd "$proj" && pwd -P | LC_ALL=C sed 's/[^A-Za-z0-9]/-/g')/memory"
 mkdir -p "$mem_dir"
 echo "# Memory index" > "$mem_dir/MEMORY.md"
 (cd "$mem_dir" && git init -q && git config user.email test@test && git config user.name test && git add MEMORY.md && git -c user.email=test@test -c user.name=test commit -q -m baseline)
