@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # merge-pr.sh <PR> — merge a PR only if its head contains the origin/develop tip
-# (GH #450). The pre-push gauntlet then ran on the exact tree that merges, so two
+# and whose base is develop (GH #450). The pre-push gauntlet then ran on the exact tree that merges, so two
 # PRs green alone cannot land red together (#445 + #446). --match-head-commit
 # pins the merge to the checked sha: a push after the check makes GitHub refuse.
 # Checks are local-only; this narrows the race, it does not close it.
@@ -24,6 +24,7 @@ if [ -z "$head" ] || [ "$head" = "$info" ]; then
 fi
 if [ "$base" != "develop" ]; then
   echo "merge-pr: PR $pr targets '$base', not develop; the origin/develop check would prove nothing." >&2
+  echo "Retarget it (gh pr edit $pr --base develop) or ask the operator; do not fall back to a bare gh pr merge." >&2
   exit 1
 fi
 
@@ -53,6 +54,12 @@ while :; do
   sleep 30
   waited=$((waited + 30))
 done
+
+now=$(gh pr view "$pr" --json baseRefName -q .baseRefName)
+if [ "$now" != "develop" ]; then
+  echo "merge-pr: PR $pr base changed to '$now' while waiting; not merging." >&2
+  exit 1
+fi
 
 gh pr merge "$pr" --merge --match-head-commit "$head"
 gh pr view "$pr" --json mergeCommit -q .mergeCommit.oid
