@@ -1258,7 +1258,8 @@ _AMBIG_NARROW_AFTER = {
 }
 # A sub word with no piece above counts as a hit, so a word added to _AMBIG_GIT_SUB_RE alone fails closed.
 _AMBIG_ANY = re.compile(r"")
-_AMBIG_RM_FLAG_RE = re.compile(r"\s(?:-[A-Za-z]*[rRf]|--recursive\b|--force\b)")
+# --r / --f: any long option starting there, so every GNU prefix of --recursive / --force counts.
+_AMBIG_RM_FLAG_RE = re.compile(r"\s(?:-[A-Za-z]*[rRf]|--[rf])")
 _AMBIG_FIND_RE = re.compile(r"-delete|-exec\w*\s+rm")
 
 class _AmbigVerb:
@@ -1788,8 +1789,25 @@ def _sets_hooks_path(w):
 
 # GH #336: chmod making files world-writable (777 / a+rwx) recursively or on / or ~.
 # The tokenizer splits `+` out of a word (`a+rwx` is "a", "+", "rwx"), so the mode is read on the
-# joined words.
-_CHMOD_WORLD_RE = re.compile(r"(?:^| )(?:0*[0-7]?777|(?:a|[ugo]{3}) ?[+=] ?rwx)(?: |$)")
+# joined words. 777 means u, g and o each get r, w and x: in any letter order, with X (execute on
+# directories, which a recursive chmod reaches), and across a clause list (u+rwx,g+rwx,o+rwx). A clause
+# with no who letter is masked by umask, and a `-` clause is ignored (the deny direction).
+_CHMOD_CLAUSE = r"(?:0*[0-7]?777|[ugoa]* ?[-+=] ?[rwxXst]*(?: ?[-+=] ?[rwxXst]*)*)"
+_CHMOD_WORLD_RE = re.compile(r"(?:^| )(" + _CHMOD_CLAUSE + r"(?: ?, ?" + _CHMOD_CLAUSE + r")*)(?: |$)")
+_CHMOD_SYM_RE = re.compile(r"([ugoa]*)((?:[-+=][rwxXst]*)+)")
+_CHMOD_OP_RE = re.compile(r"([-+=])([rwxXst]*)")
+def _chmod_world_mode(s):
+    got = {"u": "", "g": "", "o": ""}
+    for c in s.split(","):
+        if re.fullmatch(r"0*[0-7]?777", c):
+            return True
+        m = _CHMOD_SYM_RE.fullmatch(c)
+        if not (m and m.group(1)):
+            continue
+        perms = "".join(p for op, p in _CHMOD_OP_RE.findall(m.group(2)) if op != "-")
+        for w in ("ugo" if "a" in m.group(1) else m.group(1)):
+            got[w] += perms
+    return all("r" in p and "w" in p and ("x" in p or "X" in p) for p in got.values())
 _ROOT_OR_HOME = ("/", "/*", "/.", "~", "~/", "~/*", "~/.")
 def _chmod_world(rest):
     toks = [t.replace(PH, "") for t in rest]
@@ -1797,7 +1815,8 @@ def _chmod_world(rest):
     # substitution before it joins as a leading blank, which the regex allows), so a file named
     # 777 or a+rwx is not a mode.
     k = next((j for j, t in enumerate(toks) if not t.startswith("-")), len(toks))
-    return (bool(_CHMOD_WORLD_RE.match(" ".join(toks[k:]))) or _chmod_world_word(rest)) and any(
+    m = _CHMOD_WORLD_RE.match(" ".join(toks[k:]))
+    return ((m and _chmod_world_mode(m.group(1).replace(" ", ""))) or _chmod_world_word(rest)) and any(
         t in _ROOT_OR_HOME or _is_flag(t, "--recursive")
         or (t.startswith("-") and not t.startswith("--") and "R" in t) for t in toks)
 
@@ -1805,7 +1824,6 @@ def _chmod_world(rest):
 # A comma mode (u+s,a+rwx) is one word whose clauses are each a mode; a word that is only an
 # expansion ($V, "$1") may be empty, so it is not the mode word; an option word made only of mode
 # characters (-x,a+rwx) is a mode to chmod wherever it stands. A deny in either reading wins.
-_CHMOD_CLAUSE_RE = re.compile(r"0*[0-7]?777|(?:a|[ugo]{3})[+=]rwx")
 _CHMOD_DASH_MODE_RE = re.compile(r"-[-+=,0-7rwxXstugoa]+")
 _EXPANSION_ONLY_RE = re.compile(r"(?:" + PH + r"|\$(?:\w+|[@*#?$!-]))+")
 def _chmod_world_word(rest):
@@ -1822,8 +1840,7 @@ def _chmod_world_word(rest):
         mode = not seen and not s.startswith("-")
         if mode and _EXPANSION_ONLY_RE.fullmatch(w):
             continue
-        if (mode or _CHMOD_DASH_MODE_RE.fullmatch(s)) and any(
-                _CHMOD_CLAUSE_RE.fullmatch(c) for c in s.split(",")):
+        if (mode or _CHMOD_DASH_MODE_RE.fullmatch(s)) and _chmod_world_mode(s):
             return True
         seen = seen or mode
     return False
@@ -2041,9 +2058,12 @@ def _check_window(_wi, w):
     for argv0 in _candidates(argv0, KNOWN_DANGEROUS):
         if argv0 == "rm":
             # Lowercase so "rm -Rf" matches. A SHORT bundled cluster counts
-            # per-character; a LONG option only on exact --recursive/--force
+            # per-character; a LONG option only as a prefix of --recursive/--force
             # (bare letter membership across long flags false-positived on
             # "--before=1" once candidate duplication ran this on any command).
+            # GNU rm takes any unambiguous prefix, and its long options (force,
+            # interactive, one-file-system, no-preserve-root, preserve-root,
+            # recursive, dir, verbose, help, version) leave --r and --f unambiguous.
             has_r = has_f = False
             for t in rest:
                 # "$(true)-rf" IS "-rf" in bash but blanks to "PH-rf", which no
@@ -2051,8 +2071,8 @@ def _check_window(_wi, w):
                 # (empty-substitution) resolution.
                 t = t.replace(PH, "")
                 if t.startswith("--"):
-                    has_r = has_r or t == "--recursive"
-                    has_f = has_f or t == "--force"
+                    has_r = has_r or _is_flag(t, "--recursive")
+                    has_f = has_f or _is_flag(t, "--force")
                 elif t.startswith("-") and len(t) > 1:
                     body = t[1:].lower()
                     has_r = has_r or "r" in body
@@ -2345,8 +2365,8 @@ _run_words()
 # owned by a rule id of its own (so it can ship shadow, GH #337): "ifs-split" reads $IFS / ${IFS} /
 # ${IFS:..} as a blank and drops the empty positionals ($9, $@) used as word ends; "var-verb" reads back
 # `$NAME` / `${NAME}` where the command assigns NAME a plain value (`X=rm; $X -rf x`; the last value,
-# then the first). Views run only after the command passed every check, and only up to
-# _VIEW_LEN_CAP: each one re-reads the whole text, and a timed-out hook allows.
+# then the first). Views run only after the command passed every check; the shadow var-verb view only
+# up to _VIEW_LEN_CAP: each one re-reads the whole text, and a timed-out hook allows.
 # ponytail: one substitution per view, not every combination of values or of the two readings.
 _IFS_RE = re.compile(r"\$(?:\{IFS(?:[:%#/^,][^}]{0,40})?\}|IFS(?![A-Za-z0-9_]))")
 _EMPTY_POS_RE = re.compile(r"\$(?:[1-9@*]|\{[1-9@*]\})")
@@ -2359,13 +2379,15 @@ _PLAIN_ASSIGN_RE = re.compile(
 _VIEW_LEN_CAP = 20_000
 
 def _views():
-    if len(cmd) > _VIEW_LEN_CAP:
-        return []
     out = []
+    # The enforced ifs-split view reads as far as the parser does (_CMD_LEN_CAP); capping it lower let
+    # padding past _VIEW_LEN_CAP hide `rm${IFS}-rf`. Only the shadow var-verb view keeps the lower cap.
     if "IFS" in cmd:
         v = _EMPTY_POS_RE.sub("", _IFS_RE.sub(" ", cmd))
         if v != cmd:
             out.append(("ifs-split", v))
+    if len(cmd) > _VIEW_LEN_CAP:
+        return out
     vals = {}
     for m in _PLAIN_ASSIGN_RE.finditer(cmd):
         vals.setdefault(m.group(1), []).append(next(g for g in m.groups()[1:] if g is not None))
