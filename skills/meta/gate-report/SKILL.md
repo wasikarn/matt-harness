@@ -49,7 +49,13 @@ Quote the script's counts as printed.
 - **Session-less rows are left out.** A row with no `session_id` came from a test or a direct
   gate run, not a live hook call; the report skips it and prints `Ignored N session-less row(s)`.
   A large N means something is writing to the real journal without `MH_GATE_JOURNAL_PATH`
-  (the real log once held 268,206 of them beside ~800 live rows); say so instead of folding them in.
+  (the real log once held 268,206 of them beside ~830 rows with an id); say so instead of
+  folding them in.
+- **A `session_id` is not proof of a live call.** Tests that fed a gate a made-up id
+  (`test-session`, `s`) wrote rows before they were isolated, and those still count: about 170
+  of the real log's ~830 counted rows, most of its `subagent-verdict-check` denies. They carry no
+  `mh_version` (live rows since then do, older live rows do not). Before acting on a gate's count,
+  check whether one session id supplies most of it.
 - **A high count for one gate isn't automatically a problem.** It says a gate fired often, not
   that it was wrong to; compare against that gate's own false-positive history if one exists
   before recommending a change to it.

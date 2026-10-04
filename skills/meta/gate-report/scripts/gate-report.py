@@ -49,9 +49,11 @@ def main():
             n = row.get("count", 1)
             if type(n) is not int or n < 1:
                 n = 1
-            # Live hook calls always carry a session_id. A row without one came from a test or a
-            # direct gate run (the real journal held 268,206 of them beside ~800 live rows,
-            # drowning every count), so it is tallied apart and kept out of the report.
+            # Live hook calls always carry a session_id, so a row without one came from a test
+            # or a direct gate run (the real journal held 268,206 of them beside ~830 rows with
+            # an id, drowning every count); it is tallied apart and kept out of the report. A
+            # fake id does not make a row live: older tests wrote "test-session" and "s" rows,
+            # and those still count.
             if row.get("session_id") is None:
                 sessionless += n
                 continue
@@ -76,7 +78,7 @@ def main():
 
     ignored = f"Ignored {sessionless} session-less row(s) (no session_id: test or direct gate runs, not live hook calls)."
     if total == 0 and sessionless:
-        print("Gate journal has no live-session event(s).")
+        print("Gate journal has no events with a session_id.")
         print(ignored)
         return 0
     if total == 0:

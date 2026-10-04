@@ -132,7 +132,7 @@ ONLY_SL="$TMPDIR_TEST/only-sessionless.jsonl"
 head -2 "$SESSIONLESS" > "$ONLY_SL"
 out_only="$(MH_GATE_JOURNAL_PATH="$ONLY_SL" python3 "$REPORT_PY")"
 assert "a journal of only session-less rows says so instead of printing zero-count tables" \
-  "$(grep -q 'no live-session event' <<<"$out_only" && grep -q 'Ignored 2 session-less row(s)' <<<"$out_only" && echo 1 || echo 0)"
+  "$(grep -q 'no events with a session_id' <<<"$out_only" && grep -q 'Ignored 2 session-less row(s)' <<<"$out_only" && echo 1 || echo 0)"
 
 echo
 echo "=== $pass passed, $fail failed ==="
