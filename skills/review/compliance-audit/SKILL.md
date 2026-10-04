@@ -96,7 +96,10 @@ must discover independently, then get an independent answer from a different mod
    skill's own JSON Schema for `{contract_version, requirements[], gauntlet, scope_ok, unexpected_files[]}` —
    `mh:deep-audit`'s `checker-output-schema.json` is the pattern this copies). Select the
    model/effort through `docs/reference/codex-integration-map.md`: Terra/medium for explicit
-   requirements, Sol/medium when interpretation is material; check availability and quota first.
+   requirements, Sol/medium when interpretation is material. Resolve the tier to a slug, never
+   type one: `python3 "${CLAUDE_SKILL_DIR}/../../../scripts/_lib/codex-resolve-model.py" terra --effort medium`
+   (non-zero exit: follow the map's substitution rule and say so); name the resolved slug in the
+   report. Check availability and quota first.
    On rate-limit or Codex's absence, fall back to a Claude `general-purpose` subagent (no new
    bespoke agent type) — note "independence reduced for this pass" in the final report.
    - **Validate before trusting, on both paths.** Pipe the verifier's raw output (the

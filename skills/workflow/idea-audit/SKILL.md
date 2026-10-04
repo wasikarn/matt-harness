@@ -171,7 +171,10 @@ cannot resolve. Always pass the schema path as absolute (or as `<skill-dir>` rel
 `--cd`'s own target), never bare.
 
 Select model and effort through `docs/reference/codex-integration-map.md`'s task/account-cost
-policy; normally Sol/medium for this adversarial attacker. Check availability and quota first;
+policy; normally Sol/medium for this adversarial attacker. Resolve the tier to a slug, never type
+one: `python3 "${CLAUDE_SKILL_DIR}/../../../scripts/_lib/codex-resolve-model.py" sol --effort medium`
+(non-zero exit: follow the map's substitution rule and say so); name the resolved slug in the
+report. Check availability and quota first;
 escalate effort for concrete reasoning needs without weakening the acceptance criteria. The brief (`references/attacker-brief.md`)
 gives the attacker the scratchpad source's **absolute path so it can actually open the file** —
 `codex exec --help`'s own flag semantics say `-s`/`--sandbox` governs what a shell command can

@@ -122,7 +122,10 @@ codex exec --sandbox read-only --model <selected-model> -c model_reasoning_effor
 ```
 Choose `<selected-model>` and `<selected-effort>` using
 `docs/reference/codex-integration-map.md`'s task/account-cost policy; normally Sol/medium
-for this adversarial checker. Check availability and remaining quota before a substantial run.
+for this adversarial checker. Resolve the tier to a slug, never type one:
+`python3 "${CLAUDE_SKILL_DIR}/../../../scripts/_lib/codex-resolve-model.py" sol --effort medium`
+(non-zero exit: follow the map's substitution rule and say so); name the resolved slug in the
+report. Check availability and remaining quota before a substantial run.
 Raise effort only for a concrete reasoning need; acceptance criteria below never weaken.
 `<schema-file>` is `references/checker-output-schema.json` (this skill's own JSON Schema for
 `{contract_version, pass, findings[], checked[], scope_ok, unexpected_files[]}`). This is sandboxed against
