@@ -22,7 +22,7 @@ Then the lane runs `gh pr merge --merge --match-head-commit <sha>` and comments 
 | | Paths |
 |---|---|
 | Allowed | `docs/*`, `*.md`, `skills/*/references/*` |
-| Denied | `hooks/*`, `scripts/*`, `agents/*`, `.github/*`, `.claude-plugin/*`, `*SKILL.md`, `*CLAUDE.md`, `*AGENTS.md`, `rules/*`, `*settings*`, `*.env*`, `*secret*`, `*credential*`, `*.pem`, `*.key`, `*id_rsa*`, `*hooks.json` |
+| Denied | `hooks/*`, `scripts/*`, `agents/*`, `.github/*`, `.claude-plugin/*`, `*SKILL.md`, `*CLAUDE.md`, `*AGENTS.md`, `rules/*`, `*/rules/*`, `*settings*`, `*.env`, `*.env.*`, `*secret*`, `*credential*`, `*.pem`, `*.key`, `*id_rsa*`, `*hooks.json` |
 
 `tests/*` is not allowed: the gauntlet executes the tests with the owner's HOME before any verdict exists.
 
