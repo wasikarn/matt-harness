@@ -132,7 +132,21 @@ ONLY_SL="$TMPDIR_TEST/only-sessionless.jsonl"
 head -2 "$SESSIONLESS" > "$ONLY_SL"
 out_only="$(MH_GATE_JOURNAL_PATH="$ONLY_SL" python3 "$REPORT_PY")"
 assert "a journal of only session-less rows says so instead of printing zero-count tables" \
-  "$(grep -q 'no live-session event' <<<"$out_only" && grep -q 'Ignored 2 session-less row(s)' <<<"$out_only" && echo 1 || echo 0)"
+  "$(grep -q 'no events with a session_id' <<<"$out_only" && grep -q 'Ignored 2 session-less row(s)' <<<"$out_only" && echo 1 || echo 0)"
+
+# A made-up id still passes the session_id filter; the report names non-UUID ids (counted, not
+# dropped: another host's log may not use UUIDs) so a fixture-heavy gate count is visible.
+ODDID="$TMPDIR_TEST/oddid.jsonl"
+cat > "$ODDID" <<'JSONL'
+{"ts": "2026-10-01T09:00:00Z", "id": "gate:write:test-integrity", "tool_name": "Edit", "decision": "ask", "session_id": "3ee810d0-aa02-40c6-aea7-e8de710cbe92"}
+{"ts": "2026-10-01T09:01:00Z", "id": "gate:agent:subagent-verdict-check", "tool_name": "general-purpose", "decision": "deny", "session_id": "test-session"}
+{"ts": "2026-10-01T09:02:00Z", "id": "gate:agent:subagent-verdict-check", "tool_name": "general-purpose", "decision": "deny", "session_id": "test-session"}
+JSONL
+out_odd="$(MH_GATE_JOURNAL_PATH="$ODDID" python3 "$REPORT_PY")"
+assert "non-UUID session ids are named with their event count" \
+  "$(grep -q 'Non-UUID session id.*test-session x2' <<<"$out_odd" && echo 1 || echo 0)"
+assert "non-UUID rows are still counted, not dropped" \
+  "$(grep -q '3 ask/deny event' <<<"$out_odd" && echo 1 || echo 0)"
 
 echo
 echo "=== $pass passed, $fail failed ==="

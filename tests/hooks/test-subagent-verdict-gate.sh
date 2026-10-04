@@ -10,6 +10,12 @@ set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 SH="$ROOT/hooks/gates/subagent-verdict-gate.sh"
 
+# The gate journals every block it makes; keep those rows out of the real journal, where
+# "test-session" rows were read as live gate events by gate-report.
+JOURNAL="$(mktemp)" || { echo "mktemp failed: no scratch journal, refusing to run against the real one" >&2; exit 1; }
+export MH_GATE_JOURNAL_PATH="$JOURNAL"
+trap 'rm -f "$JOURNAL"' EXIT
+
 pass=0
 fail=0
 
@@ -243,6 +249,8 @@ run_missing_sibling() {
 }
 run_missing_sibling
 [ "$CODE" -eq 0 ] && [ -z "$OUT" ]; check "missing sibling .py: exit 0, no block JSON (fail-open)" "$?"
+
+[ -s "$JOURNAL" ]; check "block rows landed in the override journal (the export is still wired)" "$?"
 
 echo ""
 echo "=== Results: $pass passed, $fail failed ==="
