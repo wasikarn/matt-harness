@@ -596,10 +596,13 @@ done
 # which the separator x length charge never saw: `true; ` + `command ` x 8000 before a real
 # `git stash` ran 9 s with one `;`, and a timed-out hook allows. Each row must be DECIDED inside 8 s:
 # sgg_rc waits forever, so a late deny would read as a pass. --- #
-# A load spike (peer gauntlets, GH #158) can push a fast row past 8 s once; a real quadratic scan
-# takes 9 s or more every time, so a row only fails when the retry times out too.
+# A load spike (peer gauntlets, GH #158) can push a fast row past 8 s once, and a sustained one
+# (load average 5-8 with peer sessions live) twice; a real quadratic scan takes 9 s or more every
+# time, so a row only fails when all three tries time out.
 sgg_rc8() {
-  local rc; rc=$(_sgg_rc8_once "$1"); [ "$rc" = "124" ] && rc=$(_sgg_rc8_once "$1"); echo "$rc"
+  local rc _try; rc=124
+  for _try in 1 2 3; do rc=$(_sgg_rc8_once "$1"); [ "$rc" != "124" ] && break; done
+  echo "$rc"
 }
 _sgg_rc8_once() {
   payload "$1" fork | python3 -c '
