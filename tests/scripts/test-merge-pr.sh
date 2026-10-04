@@ -18,7 +18,9 @@ STUB=$(mktemp -d)
 if [ -z "$STUB" ]; then echo "mktemp -d failed" >&2; exit 1; fi
 LOG="$STUB/calls.log"
 
-# gh: `pr view --json headRefOid` prints STUB_HEAD; `pr merge` refuses unless
+# gh: `pr view --json headRefOid,baseRefName` prints "STUB_HEAD STUB_BASE" (nothing when
+# STUB_EMPTY is set); `pr view --json baseRefName` prints STUB_BASE2, else STUB_BASE, else
+# develop (the re-read just before the merge); `pr merge` refuses unless
 # --match-head-commit equals STUB_REMOTE_HEAD (GitHub's real behaviour);
 # `pr view --json mergeCommit` prints the merge sha.
 cat >"$STUB/gh" <<'EOF'
@@ -30,7 +32,8 @@ case "$*" in
     for a in "$@"; do [ "$prev" = "--match-head-commit" ] && want="$a"; prev="$a"; done
     [ "$want" = "$STUB_REMOTE_HEAD" ] || { echo "head branch was modified" >&2; exit 1; }
     exit 0 ;;
-  *headRefOid*) echo "$STUB_HEAD" ;;
+  *headRefOid,baseRefName*) [ -n "${STUB_EMPTY:-}" ] || echo "$STUB_HEAD ${STUB_BASE:-develop}" ;;
+  *baseRefName*) echo "${STUB_BASE2:-${STUB_BASE:-develop}}" ;;
   *mergeCommit*) echo "mergesha000" ;;
   *) exit 2 ;;
 esac
@@ -51,12 +54,13 @@ echo "10:00  up 1 day, 2 users, load averages: $STUB_LOAD 2.00 2.00"
 EOF
 chmod +x "$STUB/gh" "$STUB/git" "$STUB/uptime"
 
-# run <ancestor-rc> <remote-head> <load>; sets out, rc
+# run <ancestor-rc> <remote-head> <load>; sets out, rc. Extra stub env (STUB_BASE,
+# STUB_BASE2, STUB_EMPTY) comes from the caller's environment.
 run() {
   : >"$LOG"
   out=$(PATH="$STUB:$PATH" STUB_LOG="$LOG" STUB_HEAD=headsha111 \
     STUB_ANCESTOR="$1" STUB_REMOTE_HEAD="$2" STUB_LOAD="$3" \
-    MERGE_PR_LOAD_WAIT_SECS=0 bash "$SCRIPT" 451 2>&1)
+    MERGE_PR_LOAD_WAIT_SECS=0 MERGE_PR_LOAD_MAX=4 bash "$SCRIPT" 451 2>&1)
   rc=$?
 }
 merged() { /usr/bin/grep -q '^gh pr merge' "$LOG"; }
@@ -91,6 +95,22 @@ run 0 headsha111 7.25
 if [ "$rc" -ne 0 ]; then ok "high load exits non-zero (rc=$rc)"; else bad "high load exited 0"; fi
 if merged; then bad "high load still reached gh pr merge"; else ok "high load never calls gh pr merge"; fi
 if printf '%s' "$out" | /usr/bin/grep -q '7.25'; then ok "high load message carries the figure"; else bad "no load figure: $out"; fi
+
+# 4b. PR targets another branch: the develop ancestry check proves nothing, so refuse.
+STUB_BASE=main run 0 headsha111 1.50
+if [ "$rc" -ne 0 ]; then ok "non-develop base exits non-zero (rc=$rc)"; else bad "non-develop base exited 0"; fi
+if merged; then bad "non-develop base still reached gh pr merge"; else ok "non-develop base never calls gh pr merge"; fi
+if printf '%s' "$out" | /usr/bin/grep -q "not develop"; then ok "non-develop message names the base"; else bad "no base message: $out"; fi
+
+# 4c. base retargeted while waiting for load: the re-read before the merge refuses.
+STUB_BASE2=main run 0 headsha111 1.50
+if [ "$rc" -ne 0 ]; then ok "retargeted base exits non-zero (rc=$rc)"; else bad "retargeted base exited 0"; fi
+if merged; then bad "retargeted base still reached gh pr merge"; else ok "retargeted base never calls gh pr merge"; fi
+
+# 4d. gh prints nothing: refuse before any merge.
+STUB_EMPTY=1 run 0 headsha111 1.50
+if [ "$rc" -ne 0 ]; then ok "empty gh output exits non-zero (rc=$rc)"; else bad "empty gh output exited 0"; fi
+if merged; then bad "empty gh output still reached gh pr merge"; else ok "empty gh output never calls gh pr merge"; fi
 
 # 5. no PR argument: usage error.
 out=$(PATH="$STUB:$PATH" STUB_LOG="$LOG" bash "$SCRIPT" 2>&1); rc=$?
