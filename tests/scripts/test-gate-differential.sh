@@ -84,6 +84,12 @@ if [ "$rc" -eq 0 ] && printf '%s' "$out" | /usr/bin/grep -q 'replay=2 '; then
   ok "replay sampled the 2 commands of this project, none from a sibling-named project"
 else bad "replay (rc=$rc): $out"; fi
 
+echo "=== slug traversal out of a worktree prefix ==="
+out=$(bash "$SCRIPT" --replay 3 --slug "$slug--claude-worktrees-probe/../foreign" "$T/old" "$T/same" irrecoverable 2>&1); rc=$?
+if [ "$rc" -eq 2 ] && printf '%s' "$out" | /usr/bin/grep -q 'refusing'; then
+  ok "--slug with ../ refused with exit 2"
+else bad "--slug traversal (rc=$rc): $out"; fi
+
 echo "=== fuzz ==="
 out=$(bash "$SCRIPT" --fuzz-seed 7 "$T/old" "$T/same" irrecoverable 2>&1); rc=$?
 if [ "$rc" -eq 0 ] && printf '%s' "$out" | /usr/bin/grep -Eq 'fuzz=[1-9][0-9]*\)'; then

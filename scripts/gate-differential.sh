@@ -48,6 +48,7 @@ common=$(git -C "$ROOT" rev-parse --path-format=absolute --git-common-dir) || ex
 own_slug=$(cd -P "$common/.." && pwd | LC_ALL=C sed 's/[^A-Za-z0-9]/-/g')
 if [ -n "$slug" ]; then
   case "$slug" in
+    */*|*..*) echo "gate-differential: refusing --slug with / or .. in it" >&2; exit 2 ;;
     "$own_slug"|"$own_slug--claude-worktrees-"*) : ;;
     *) echo "gate-differential: refusing --slug outside this project (want $own_slug or its worktrees)" >&2; exit 2 ;;
   esac

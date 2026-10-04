@@ -48,11 +48,47 @@ else
 fi
 
 # Strip // comments so the module's own "never denies, asks, rewrites" prose cannot trip the scan.
-hits="$(sed 's#//.*##' "$MOD" | /usr/bin/grep -nE '\b(deny|ask|allow)[[:space:]]*:|next\([[:space:]]*\{')"
+hits="$(sed 's#//.*##' "$MOD" | /usr/bin/grep -nE '\b(deny|ask|allow)[[:space:]]*:')"
 if [ -n "$hits" ]; then
   printf '%s\n' "$hits" | sed 's/^/observer-contract: deny\/ask\/rewrite in source: /'
   rc=1
 fi
+# Rewrites: a whole-file scan, so a next( split across lines or fed a variable is still seen.
+# Comments and string contents are blanked (newlines kept, so line numbers hold); every next(
+# call's balanced-paren argument must be exactly the handler's event parameter `e`.
+python3 - "$MOD" <<'PY' || rc=1
+import re, sys
+src = open(sys.argv[1], encoding="utf-8").read()
+out, i, n = [], 0, len(src)
+while i < n:
+    c = src[i]
+    if src.startswith("//", i):
+        j = src.find("\n", i)
+        i = n if j < 0 else j
+    elif src.startswith("/*", i):
+        j = src.find("*/", i + 2)
+        j = n if j < 0 else j + 2
+        out.append(re.sub(r"[^\n]", " ", src[i:j])); i = j
+    elif c in "'\"`":
+        j = i + 1
+        while j < n and src[j] != c:
+            j += 2 if src[j] == "\\" else 1
+        out.append(c + re.sub(r"[^\n]", " ", src[i + 1:j]) + c); i = j + 1
+    else:
+        out.append(c); i += 1
+code = "".join(out)
+bad = 0
+for m in re.finditer(r"(?<![\w$.])next\s*\(", code):
+    depth, j = 1, m.end()
+    while j < len(code) and depth:
+        depth += {"(": 1, ")": -1}.get(code[j], 0); j += 1
+    arg = code[m.end():j - 1]
+    if arg.strip() != "e":
+        bad = 1
+        line = code.count("\n", 0, m.start()) + 1
+        print(f"observer-contract: deny/ask/rewrite in source: L{line}: next({' '.join(arg.split())})")
+sys.exit(bad)
+PY
 
 [ "$rc" -eq 0 ] && echo "observer-contract: cost-ledger.ts is an observer"
 exit "$rc"
