@@ -92,8 +92,9 @@ entries whose `supported_reasoning_levels` list the effort (so an effort the new
 falls to the next one that has it); disclose the resolved slug in the report.
 `scripts/_lib/codex-resolve-model.py <tier> --effort <e>` does exactly this (the dotfiles
 `sync-profile-models.sh --resolve` is the same rule in bash). The profile sync and the drift
-check use the same candidate rule but not the effort-first pick: they keep the profile's own
-effort and refuse a model that lacks it rather than swap in an older one. The three agree on
+check use the same candidate rule but not the effort-first pick: the sync keeps the profile's
+own effort and refuses a model that lacks it rather than swap in an older one, and the drift
+check does not look at effort at all. The three agree on
 every catalog shape Codex has shipped; they can differ on exotic JSON (a float priority such as
 `1.0`, a non-string `upgrade.model`). The slug in a dated note above is the last check, not a pin.
 

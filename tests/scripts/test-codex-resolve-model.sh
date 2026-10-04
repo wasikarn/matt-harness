@@ -77,7 +77,7 @@ for u in 'null' '{}' '""' '{"model":""}'; do
 done
 printf '{"models": [{"slug":"gpt-only-sol","priority":1,"visibility":"list","upgrade":{"model":"x-nova"},"supported_reasoning_levels":[{"effort":"medium"}]}]}' > "$T/models_cache.json"
 out="$(python3 "$RESOLVE" sol 2>"$T/err")"; rc=$?
-t "a lone entry with upgrade.model set is retiring: refused" fails_with "$rc" "$out" "$T/err" sol
+t "a lone entry with upgrade.model set is retiring: refused for that reason" fails_with "$rc" "$out" "$T/err" "no visible 'sol' model"
 
 # an empty tier must not match a slug that ends in "-"
 cat > "$T/models_cache.json" <<'JSON'
