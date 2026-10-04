@@ -105,5 +105,52 @@ else
 fi
 chmod 755 "$RO"
 
+# 8. under the hook's `set -euo pipefail`, a decimal-comma locale must not turn the jittered
+# sleep into "sleep: invalid time interval" and kill the push; the wait fails open instead.
+if [ "$(LC_ALL=de_DE.UTF-8 awk 'BEGIN { printf "%.1f", 1.5 }' 2>/dev/null)" = "1,5" ]; then
+  sleep 30 & BG=$!
+  mkdir "$L"; echo "$BG" > "$L/pid"
+  out=$(LC_ALL=de_DE.UTF-8 GAUNTLET_LOCK_DIR="$L" GAUNTLET_LOCK_POLL=0.2 GAUNTLET_LOCK_WAIT_SECS=2 \
+    bash -c "set -euo pipefail; . '$LIB'; gauntlet_lock_acquire; echo rc=\$?" 2>&1)
+  if printf '%s' "$out" | /usr/bin/grep -q 'rc=0' && ! printf '%s' "$out" | /usr/bin/grep -qi 'invalid time interval'; then
+    ok "a decimal-comma locale does not break the wait under set -e"
+  else bad "locale broke the jittered sleep: $out"; fi
+  kill $BG 2>/dev/null; wait $BG 2>/dev/null; BG=""
+  reset
+else
+  echo "  SKIP: no decimal-comma locale (de_DE.UTF-8) on this machine"
+fi
+
+# 9. under `set -e`, stray files in the lock dir must not turn a passing run into exit 1, at
+# release or when reclaiming a stale lock.
+out=$(GAUNTLET_LOCK_DIR="$L" bash -c "set -euo pipefail; . '$LIB'; gauntlet_lock_acquire; touch \"\$GAUNTLET_LOCK_DIR/extra\"; gauntlet_lock_release; echo done" 2>&1); rc=$?
+if [ "$rc" -eq 0 ] && printf '%s' "$out" | /usr/bin/grep -q '^done$' && [ ! -e "$L" ]; then ok "release with a stray file in the lock dir still exits 0 and clears the lock"; else bad "release broke under set -e (rc=$rc, lock present=$([ -e "$L" ] && echo y || echo n)): $out"; reset; fi
+dead=$(bash -c 'echo $$')
+mkdir "$L"; echo "$dead" > "$L/pid"; touch "$L/extra"
+out=$(GAUNTLET_LOCK_DIR="$L" GAUNTLET_LOCK_POLL=0.1 GAUNTLET_LOCK_WAIT_SECS=20 bash -c "set -euo pipefail; . '$LIB'; gauntlet_lock_acquire; echo rc=\$?; gauntlet_lock_release" 2>&1); rc=$?
+if [ "$rc" -eq 0 ] && printf '%s' "$out" | /usr/bin/grep -q 'rc=0' && ! printf '%s' "$out" | /usr/bin/grep -qi 'without the lock'; then ok "a stale lock with a stray file is reclaimed under set -e"; else bad "stale reclaim broke under set -e (rc=$rc): $out"; fi
+reset
+for d in "$T"/lock.stale.* "$T"/lock.reclaim; do [ -e "$d" ] && bad "leftover $d"; done
+
+# 10. mutual exclusion while reclaiming a stale lock: six racers all find the same dead owner.
+# Every round must keep at most one of them inside the critical section.
+overlaps=0
+for _ in 1 2 3 4 5 6 7 8; do
+  rm -f "$T/race.log"
+  dead=$(bash -c 'echo $$')
+  mkdir "$L"; echo "$dead" > "$L/pid"
+  pids=""
+  for _ in 1 2 3 4 5 6; do
+    GAUNTLET_LOCK_DIR="$L" GAUNTLET_LOCK_POLL=0.02 GAUNTLET_LOCK_WAIT_SECS=60 \
+      bash -c ". '$LIB'; gauntlet_lock_acquire; echo in >> '$T/race.log'; sleep 0.1; echo out >> '$T/race.log'; gauntlet_lock_release" >/dev/null 2>&1 &
+    pids="$pids $!"
+  done
+  wait $pids
+  o=$(awk '/^in/ { d++; if (d > 1) n++ } /^out/ { d-- } END { print n + 0 }' "$T/race.log")
+  overlaps=$((overlaps + o))
+  reset
+done
+if [ "$overlaps" -eq 0 ]; then ok "six racers on a stale lock never overlap (8 rounds)"; else bad "$overlaps overlapping entries while reclaiming a stale lock"; fi
+
 echo "self-test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]

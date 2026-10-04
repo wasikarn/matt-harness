@@ -1,16 +1,21 @@
 #!/usr/bin/env bash
-# gauntlet-lock.sh — a machine-wide queue so only one pre-push gauntlet runs at a time (GH #158).
+# gauntlet-lock.sh — a per-user queue so only one pre-push gauntlet runs at a time (GH #158).
 # The gauntlet's timing rows (finishes inside 4 s / 8 s) fail when several gauntlets, or a gauntlet
 # and busy peer sessions, share the machine; waiting for your turn is deterministic where waiting
 # for the load to drop is a guess. Source it, then:
 #   gauntlet_lock_acquire; trap gauntlet_lock_release EXIT
 # The lock is a directory taken with an atomic mkdir, holding the owner's pid. Waiters poll with
 # jitter so peers do not all start the moment it frees. A lock whose owner is gone, or that is older
-# than GAUNTLET_LOCK_MAX_AGE (pid reuse), is reclaimed with an atomic rename so two waiters cannot
-# both reclaim it. A child of the holder (a test that runs the pre-push hook) sees
-# MH_GAUNTLET_LOCK_OWNER and skips the queue, so it cannot deadlock the gauntlet that runs it.
-# Fail open: a wait past GAUNTLET_LOCK_WAIT_SECS, or an uncreatable lock dir, prints a message and
-# runs without the lock. This only orders work; it is never a gate.
+# than GAUNTLET_LOCK_MAX_AGE (pid reuse), is reclaimed by one waiter at a time: it takes a claim dir
+# (<lock>.reclaim, atomic mkdir), re-checks that the lock is still stale under the claim, then
+# removes it, so no waiter can remove a lock another waiter has just taken. A child of the holder (a
+# test that runs the pre-push hook) sees MH_GAUNTLET_LOCK_OWNER and skips the queue, so it cannot
+# deadlock the gauntlet that runs it.
+# Fail open, and never fail the caller: a wait past GAUNTLET_LOCK_WAIT_SECS, or a lock dir that
+# cannot be created, prints a message and runs without the lock. Every command here is guarded, so
+# a caller under `set -e` (the pre-push hook) is never aborted by it. This only orders work; it is
+# never a gate. Known edge: a pid reused by an unrelated long-lived process keeps a dead owner's
+# lock "alive" until GAUNTLET_LOCK_MAX_AGE, so pushes in that hour wait out the cap, then run.
 # Env: GAUNTLET_LOCK_DIR (default $HOME/.cache/mh/gauntlet.lock), GAUNTLET_LOCK_WAIT_SECS (1800),
 # GAUNTLET_LOCK_POLL (5, seconds, stretched by 0-50% jitter), GAUNTLET_LOCK_MAX_AGE (3600),
 # GAUNTLET_LOCK_NOPID_SECS (60: how old a pid-less lock dir must be to count as a crash leftover).
@@ -41,17 +46,44 @@ _gl_stale() {
   [ "$age" -ge "${GAUNTLET_LOCK_NOPID_SECS:-60}" ]
 }
 
+# Remove a lock dir with whatever is in it (only a pid file belongs there). Never fails.
+_gl_rmlock() {
+  rm -f "$1"/* "$1"/.[!.]* 2>/dev/null || true
+  rmdir "$1" 2>/dev/null || true
+  return 0
+}
+
 # Take the lock at $1: an atomic mkdir, then record this process as the owner.
 _gl_take() {
   mkdir "$1" 2>/dev/null || return 1
-  printf '%s\n' "$$" >"$1/pid"
+  printf '%s\n' "$$" >"$1/pid" 2>/dev/null || { _gl_rmlock "$1"; return 1; }
   GAUNTLET_LOCK_HELD=1
   export MH_GAUNTLET_LOCK_OWNER=$$
   return 0
 }
 
+# Reclaim the stale lock at $1 if this process wins the claim. Returns 0 when it removed the lock.
+_gl_reclaim() {
+  local d=$1
+  if mkdir "$d.reclaim" 2>/dev/null; then
+    if _gl_stale "$d"; then
+      _gl_rmlock "$d"
+      rmdir "$d.reclaim" 2>/dev/null || true
+      return 0
+    fi
+    rmdir "$d.reclaim" 2>/dev/null || true
+    return 1
+  fi
+  # Another waiter holds the claim; if its process died mid-reclaim the claim dir would block
+  # reclaiming for good, so drop one that is old.
+  if [ -d "$d.reclaim" ] && [ "$(_gl_age "$d.reclaim")" -ge 60 ]; then
+    rmdir "$d.reclaim" 2>/dev/null || true
+  fi
+  return 1
+}
+
 gauntlet_lock_acquire() {
-  local d max poll start owner announced=0
+  local d max poll start owner announced=0 nap
   d=$(_gl_dir)
   max="${GAUNTLET_LOCK_WAIT_SECS:-1800}"
   poll="${GAUNTLET_LOCK_POLL:-5}"
@@ -78,12 +110,7 @@ gauntlet_lock_acquire() {
         return 0
       fi
     fi
-    if _gl_stale "$d" && mv "$d" "$d.stale.$$" 2>/dev/null; then
-      # ponytail: a waiter that judged the old lock stale can still rename a new owner's fresh
-      # lock away if another waiter reclaimed and re-took it in between; worst case two gauntlets
-      # overlap, which is today's behaviour. A claim file per reclaimer closes it if that bites.
-      rm -f "$d.stale.$$/pid"
-      rmdir "$d.stale.$$" 2>/dev/null
+    if _gl_stale "$d" && _gl_reclaim "$d"; then
       continue
     fi
     if [ "$announced" -eq 0 ]; then
@@ -95,7 +122,9 @@ gauntlet_lock_acquire() {
       echo "gauntlet-lock: waited ${max}s for the gauntlet lock at $d; running without the lock (timing rows may flake under load, GH #158)" >&2
       return 0
     fi
-    sleep "$(awk -v p="$poll" -v r="$RANDOM" 'BEGIN { printf "%.2f", p * (1 + (r % 50) / 100) }')"
+    # LC_ALL=C: a decimal-comma locale makes awk print "5,85", which sleep rejects.
+    nap=$(LC_ALL=C awk -v p="$poll" -v r="$RANDOM" 'BEGIN { printf "%.2f", p * (1 + (r % 50) / 100) }' 2>/dev/null || true)
+    sleep "${nap:-5}" 2>/dev/null || sleep 1 || true
   done
 }
 
@@ -104,8 +133,8 @@ gauntlet_lock_release() {
   local d
   d=$(_gl_dir)
   if [ "$(cat "$d/pid" 2>/dev/null)" = "$$" ]; then
-    rm -f "$d/pid"
-    rmdir "$d" 2>/dev/null
+    _gl_rmlock "$d"
   fi
   GAUNTLET_LOCK_HELD=0
+  return 0
 }
