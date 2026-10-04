@@ -94,3 +94,16 @@ documentation only: `plugin.json` has no field for a minimum version. On older C
   `--resume` is the likely shape) interleave their `usd` sequences. A switch to the lower one reads
   as a reset and a switch back as growth from it, so the ledger total runs high: rows
   `1.0, 0.2, 1.1, 0.3` read $2.40 where the two processes' finals sum to $1.40.
+
+## Observer contract check
+
+`scripts/check-observer-contract.sh` (GH #443) runs in the gauntlet's validate layer and fails
+when the module stops being an observer. It reads `claude plugin validate --json`, whose notes on
+the `hooks/hooks.json` entry list what the module hooks and which `$.` calls it makes
+(`./mod/cost-ledger.ts hooks: turn.complete`, `... calls: $.process.run, ...`; shape checked on
+2.1.289). Every hook must be `turn.complete`, and no call may be an ask/deny/permission surface
+(`$.ui.ask`). Deny and rewrite are return values (`{ deny }`, `next({ ...e })`), which the notes
+cannot show, so a static scan of the source (comments stripped) covers them. A missing hooks note
+fails, so a CLI output change shows up instead of passing silently. Without the `claude` CLI only
+the static scan runs. Test: `tests/scripts/test-observer-contract.sh`, with a known-bad module
+under `tests/scripts/fixtures/observer-contract/bad/`.

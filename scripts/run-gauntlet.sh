@@ -168,7 +168,8 @@ run_hook_tests() {
 
 p1="" p2=""
 if [ -z "$shard" ] || [ "${shard%/*}" -eq 1 ]; then
-  run_validate >"$LOG/validate" 2>&1 & p1=$!
+  # check-observer-contract.sh (GH #443): the mh module stays a turn.complete observer.
+  { run_validate && bash scripts/check-observer-contract.sh "$ROOT"; } >"$LOG/validate" 2>&1 & p1=$!
   run_lint >"$LOG/lint" 2>&1 & p2=$!
 fi
 run_hook_tests >"$LOG/tests" 2>&1 & p3=$!
