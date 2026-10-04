@@ -31,10 +31,14 @@ const setup = (...[$, on]: Parameters<TestBody>) => {
     repo: { '.claude-plugin/plugin.json': manifest('1.1.174') } as Record<string, string>,
     usage: { cost: { usd: 0 } } as Usage,
     fail: undefined as 'exit' | 'throw' | undefined,
+    noVersion: false,
     completes: 0,
   }
   on('session.id', () => ({ value: 's1' }))
-  on('session.version', () => ({ value: { version: '2.1.289', base: '2.1.289' } }))
+  on('session.version', () => {
+    if (h.noVersion) throw new Error('version broke')
+    return { value: { version: '2.1.289', base: '2.1.289' } }
+  })
   on('session.root', () => ({ value: '/repo' }))
   on('fs.read', (_$, e) => {
     const p = e.path
@@ -93,12 +97,15 @@ test('load marker: session.start writes it before any turn', async ($, on) => {
   expect(h.markers.length).toBe(1)
 })
 
-test('load marker: a failed version read still writes the marker, without the field', async ($, on) => {
+test('load marker: failed CLI-version and manifest reads still write the marker, without those fields', async ($, on) => {
   const { h, turn } = setup($, on)
   h.cache = {}
+  h.noVersion = true
   await turn('t1')
   expect(h.markers.length).toBe(1)
+  expect(h.markers[0].session_id).toBe('s1')
   expect(h.markers[0].mh).toBeUndefined()
+  expect(h.markers[0].cli).toBeUndefined()
   expect(h.completes).toBe(1)
 })
 
