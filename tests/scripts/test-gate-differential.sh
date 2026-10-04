@@ -65,7 +65,7 @@ if [ "$rc" -eq 0 ] || [ "$rc" -eq 1 ]; then ok "git ref OLD resolves (rc=$rc)"
 else bad "git ref OLD (rc=$rc): $out"; fi
 
 echo "=== slug outside the project ==="
-out=$(bash "$SCRIPT" --replay 3 --slug -home-someone-else"$T/old" irrecoverable 2>&1); rc=$?
+out=$(bash "$SCRIPT" --replay 3 --slug -home-someone-else "$T/old" irrecoverable 2>&1); rc=$?
 if [ "$rc" -eq 2 ] && printf '%s' "$out" | /usr/bin/grep -q 'refusing'; then
   ok "foreign --slug refused with exit 2"
 else bad "foreign --slug (rc=$rc): $out"; fi
