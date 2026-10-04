@@ -7,7 +7,7 @@ version, not PostToolUse (confirmed live, deep-audit 2026-09-07) -- a
 PostToolUse registration would only ever see successful calls (exit_code 0),
 so it was dropped rather than kept as an always-no-op.
 
-Capped at 1 nudge per distinct failing command per session (tightened from an
+Capped at 1 nudge per distinct failing command per session, and per subagent within it (GH #463; tightened from an
 earlier 3-per-signature cap in v1.1.55; this docstring drifted stale until the
 2026-09-20 audit caught it) via a small session-scoped counter file -- the
 fleet's first stateful hook, deliberately narrow in scope: a local rate-limit

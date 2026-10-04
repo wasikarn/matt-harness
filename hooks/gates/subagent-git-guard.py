@@ -388,7 +388,7 @@ def _skip_git_globals(s, i):
 # and a timed-out hook allows: padding in front of a real `git stash` walked around the deny.
 # Each scan charges that upper bound to one shared budget (bodies and all three passes add up) and a
 # command over budget is denied, never scanned. Real subagent commands charge far less; only a
-# rare huge script (about 16-23 KB, ~5e7 over six scans) is refused.
+# rare huge script (about 16-23 KB, ~5e7 over six scans, measured at the old 60M; a 12.7 KB real command is refused at 40M) is refused.
 # Deep-audit 5: a run of chain words (_CHAIN_PREFIX: eval/builtin/command/exec/rtk) after a wrapper
 # is re-read from every walk position, so it costs about run x run per command start even with a
 # single start (`true; ` + `command ` x 8000 before a `git stash` took 9 s). Each maximal run charges
