@@ -47,8 +47,22 @@ LOG="$(mktemp -d)" && [ -d "$LOG" ] || { echo "gauntlet: mktemp -d failed, refus
 # (CHANGELOG.md), so a bare $LOG must never reach trash unchecked.
 trap '[ -n "$LOG" ] && [ "${fail:-0}" -eq 0 ] && trash "$LOG" 2>/dev/null; true' EXIT
 
+# Claude Code 2.1.289 warns "CLAUDE.md at the plugin root is not loaded as project context" and
+# --strict makes it an error. It is intentional here (docs/METHODOLOGY.md ships via hooks), so a
+# strict failure passes only when a plain validate succeeds and every warning it reports is that one.
+validate_strict_tolerant() {
+  local out
+  out="$(claude plugin validate . --strict 2>&1)" && { printf '%s\n' "$out"; return 0; }
+  printf '%s\n' "$out"
+  local plain total benign
+  plain="$(claude plugin validate . 2>&1)" || return 1
+  total="$(printf '%s\n' "$plain" | sed -n 's/.*Found \([0-9][0-9]*\) warning.*/\1/p' | awk '{s+=$1} END {print s+0}')"
+  benign="$(printf '%s\n' "$plain" | /usr/bin/grep -c 'CLAUDE.md at the plugin root is not loaded')"
+  [ "$total" -gt 0 ] && [ "$total" -eq "$benign" ]
+}
+
 run_validate() {
-  claude plugin validate . --strict &&
+  validate_strict_tolerant &&
   claude plugin validate .claude-plugin/plugin.json
 }
 
