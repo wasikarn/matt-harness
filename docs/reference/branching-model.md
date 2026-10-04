@@ -31,6 +31,22 @@ Enforcement layers, weakest to strongest:
   `core.hooksPath` unset, or a push from another machine, skips them. Re-add a workflow and the
   required contexts together if that stops being acceptable.
 
+## Merging: `scripts/merge-pr.sh <PR>` (GH #450)
+
+#445 and #446 were each green alone and red together on `develop`. Agents merge through
+`scripts/merge-pr.sh <PR>`, not bare `gh pr merge`. It runs `git fetch origin`, refuses unless the
+PR head contains the `origin/develop` tip (`git merge-base --is-ancestor`), waits for load below 4
+(default 900s, then fails with the load figure), merges with
+`gh pr merge --merge --match-head-commit <checked sha>`, and prints the merge commit sha. On a
+refusal, rebase on `origin/develop` and push: the pre-push gauntlet then runs on the exact tree that
+will merge, and the pinned sha makes GitHub refuse a head that moved after the check.
+
+The checks are local-only. The script narrows the gap; it does not close it: a push to `develop`
+from another clone between the check and the merge can still race, and nothing stops a merge made
+outside the script. The script's own `gh pr merge` call runs inside the script, so
+`gate:bash:irrecoverable`'s ask on that command does not see it.
+A gate that executes PR content before it decides makes `tests/` unsafe to allowlist.
+
 The former `git worktree add -b` deny predates this and was removed in the v1.0.0 rebuild;
 `claude --worktree` and `/branch` never routed through it anyway. `/branch` and
 `claude --continue --fork-session` are session branches, not git branches: they fork the
