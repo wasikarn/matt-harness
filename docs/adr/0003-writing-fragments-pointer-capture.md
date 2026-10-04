@@ -2,7 +2,7 @@
 status: accepted
 ---
 
-# mh captures a pointer to mattpocock-skills:writing-fragments' own file
+# mh captures a pointer to upstream writing-fragments' own file
 
 `writing-fragments` (upstream, `skills/in-progress/writing-fragments/`, unregistered in matt's
 own `plugin.json`) asks the user once for a save path and "remember[s] it for the rest of the
@@ -156,7 +156,7 @@ relationship to the abandoned one.
 
 ## Consequences
 
-- **Cost accepted**: same as `mh:handoff` — `disable-model-invocation: true` means mh can only
+- **Cost accepted**: same as mh's former handoff wrapper (removed in v1.1.94) — `disable-model-invocation: true` means mh can only
   relay a suggestion in prose, never invoke the skill itself.
 - **No content ever inlined.** Every surface line is a path, title, count, size, and age — never
   the fragments themselves. The two injection call sites (the known-path nudge, the surface block)

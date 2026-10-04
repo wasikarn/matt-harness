@@ -4,7 +4,7 @@
 # audit.sh's fragment integrity guard catches LOST checks, not SILENT ones. Each
 # known-bad fixture below is paired with a clean one; the matching check must
 # FIRE on bad and stay SILENT on good. Per-check fixtures cover 04, 05, 20, 22, 28, 29, 54,
-# 70, 71, 72, 73, 74 (five fixtures, two added 2026-09-21), 75, 76, 77, 78, 79; the fleet-bad / fleet-good pair covers the other sixteen with at
+# 70, 71, 72, 73, 74 (five fixtures, two added 2026-09-21), 75, 76, 77, 78, 79, 80; the fleet-bad / fleet-good pair covers the other sixteen with at
 # least one defect per check (43 is driven by the env ceiling, not a planted defect).
 # check-73-bad-missing-command-field and check-73-bad-args-fingerprint-mismatch (below) are
 # deep-audit fixes, 2026-09-10: a Codex-primary fresh-context checker found the original check
@@ -274,6 +274,34 @@ expect_warn_match 79 check-79-bad-version-mismatch 'version 1.0.1.*1.0.0'
 expect_warn_match 79 check-79-bad-gate-count 'gate count 3.*registry has 2'
 expect_warn_match 79 check-79-bad-check-table 'check table lacks 03'
 expect_info_only  79 check-79-info-no-sources 'README.md absent, skill count pin skipped'
+
+# Check 80: external skill references resolve (GH #394). A fake HOME carries the plugin caches.
+# mattpocock-skills has two versions: 1.9.0 ships writing-fragments in its manifest, the newer
+# 1.10.0 keeps it on disk (in-progress/) but out of plugin.json skills[] -- so the bad fixture's
+# reference only dangles if the check picks the newest version numerically and reads the manifest,
+# not the disk. codex has no skills[] (default scan: commands/, agents/, skills/<n>/).
+H80="$CODEX_TMP/home80"
+MP80="$H80/.claude/plugins/cache/mattpocock/mattpocock-skills"
+mkdir -p "$MP80/1.9.0/.claude-plugin" "$MP80/1.10.0/.claude-plugin" \
+  "$MP80/1.10.0/skills/engineering/tdd" "$MP80/1.10.0/skills/in-progress/writing-fragments"
+printf '{"skills":["./skills/engineering/tdd","./skills/in-progress/writing-fragments"]}\n' > "$MP80/1.9.0/.claude-plugin/plugin.json"
+printf '{"skills":["./skills/engineering/tdd"]}\n' > "$MP80/1.10.0/.claude-plugin/plugin.json"
+printf -- '---\nname: tdd\n---\n' > "$MP80/1.10.0/skills/engineering/tdd/SKILL.md"
+printf -- '---\nname: writing-fragments\n---\n' > "$MP80/1.10.0/skills/in-progress/writing-fragments/SKILL.md"
+CX80="$H80/.claude/plugins/cache/openai-codex/codex/1.0.6"
+mkdir -p "$CX80/commands" "$CX80/agents" "$CX80/skills/gpt-prompting"
+printf 'x\n' > "$CX80/commands/setup.md"
+printf 'x\n' > "$CX80/agents/codex-rescue.md"
+printf 'x\n' > "$CX80/skills/gpt-prompting/SKILL.md"
+HOME="$H80" expect_silent     80 check-80-good-resolves
+HOME="$H80" expect_warn_match 80 check-80-bad-dangling "README.md:3: 'mattpocock-skills:writing-fragments'"
+HOME="$H80" expect_warn_match 80 check-80-bad-dangling "x.md:1: 'mh:gone'"
+HOME="$H80" expect_warn_match 80 check-80-bad-dangling "x.md:1: 'codex:nope'"
+# CI: no plugin cache at all. mh references still resolve against the tree; the external
+# namespaces are an INFO skip, never a WARN.
+mkdir -p "$CODEX_TMP/home80-empty"
+HOME="$CODEX_TMP/home80-empty" expect_info_only 80 check-80-good-resolves 'mattpocock-skills.*not installed'
+HOME="$CODEX_TMP/home80-empty" expect_warn_match 80 check-80-bad-dangling "x.md:1: 'mh:gone'"
 
 # Check 76: measurement coverage status freshness (harness gap-audit M14,
 # 2026-09-20). Shallow on purpose -- WARN, not CRIT -- for the retired
