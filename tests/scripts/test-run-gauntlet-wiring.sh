@@ -30,5 +30,26 @@ if [ "${#missing[@]}" -eq 0 ]; then
 else
   bad "hook_test_files() does NOT list: ${missing[*]}"
 fi
+
+# GH #448: every tests/<dir> must be run by some layer. A dir counts as run when
+# hook_test_files() lists a file in it, or it holds mod tests (*.test.ts/tsx) and a
+# listed file calls `claude plugin test` (tests/hooks/test-cost-ledger-module.sh).
+# tests/_lib holds sourced helpers, not tests.
+plugin_test_runner=$(cd "$ROOT" && printf '%s\n' "$ran" | xargs /usr/bin/grep -lE '^[[:space:]]*claude plugin test ' | head -1)
+unrun=()
+for d in "$ROOT"/tests/*/; do
+  name=$(basename "$d")
+  [ "$name" = _lib ] && continue
+  printf '%s\n' "$ran" | /usr/bin/grep -q "^tests/$name/" && continue
+  if [ -n "$plugin_test_runner" ] && [ -n "$(find "$d" \( -name '*.test.ts' -o -name '*.test.tsx' \) | head -1)" ]; then
+    continue
+  fi
+  unrun+=("tests/$name")
+done
+if [ "${#unrun[@]}" -eq 0 ]; then
+  ok "every tests/<dir> is run by a gauntlet layer (mod tests via ${plugin_test_runner:-none})"
+else
+  bad "no gauntlet layer runs: ${unrun[*]}"
+fi
 echo "self-test: $pass passed, $fail failed"
 [ "$fail" -eq 0 ]
