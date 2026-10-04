@@ -108,7 +108,12 @@ silence.
 
 **Fingerprint scope before dispatch.** For every path step 1 put in scope (committed-diff files,
 any staged/untracked/uncommitted files, any named out-of-git file — memory store, settings),
-record whether it exists and, if so, a content hash of its bytes on disk. Keep this manifest.
+record whether it exists and, if so, a content hash of its bytes on disk. Pipe the paths, one per
+line, to the script, which writes the manifest:
+```
+printf '%s\n' <scope paths> | python3 "${CLAUDE_SKILL_DIR}/scripts/scope-fingerprint.py" snapshot "$MANIFEST"
+```
+`$MANIFEST` is a file outside the repo (a fresh `mktemp`), so it never lands in scope itself.
 
 **Dispatch, Codex primary:**
 ```
@@ -181,8 +186,14 @@ and surfaces to the operator as an open question, not a broken checker. The subs
 unchanged regardless of exit code: schema-valid JSON that still refuses in prose is not review
 evidence.
 
-**Re-fingerprint after the checker returns.** A mismatch against the pre-dispatch manifest — a
-changed hash, a path that appeared or disappeared — means a concurrent session touched scope
+**Re-fingerprint after the checker returns:**
+```
+python3 "${CLAUDE_SKILL_DIR}/scripts/scope-fingerprint.py" compare "$MANIFEST"
+```
+Exit 0 means scope is stable; exit 1 prints one `changed:`/`appeared:`/`disappeared:` line per
+drifted path; exit 2 means the manifest is missing or unreadable, which counts as unstable. A
+mismatch against the pre-dispatch manifest — a changed hash, a path that appeared or
+disappeared — means a concurrent session touched scope
 mid-check (this session keeps working in its own worktree while the checker runs): rebuild scope from git and
 re-run the checker once.
 
