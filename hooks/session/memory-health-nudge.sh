@@ -45,10 +45,17 @@ if command -v python3 >/dev/null 2>&1 && [ -r "$_MEMDIR_RESOLVER" ]; then
 fi
 _MARKER_ENC="$ENC"
 if [ -z "$_MARKER_ENC" ]; then
-  _MARKER_ENC="$(pwd -P | LC_ALL=C sed 's/[^A-Za-z0-9]/-/g')"
+  # Pure bash (no sed), so it works with python3 AND coreutils off PATH.
+  _MARKER_ENC="$(LC_ALL=C; _p="$(pwd -P)"; printf '%s' "${_p//[^A-Za-z0-9]/-}")"
 fi
-FAILMARKERS=("$HOME"/.claude/state/memory-audit-commit-fail-"$_MARKER_ENC"-*)
-if [ -e "${FAILMARKERS[0]}" ]; then
+# The glob alone also matches a longer ENC's markers (proj vs proj-v2, since
+# every non-alphanumeric becomes "-"); keep only names whose tail is the pid.
+# Same acceptance as memory-audit-commit.sh's sweep.
+FAILMARKERS=()
+for _m in "$HOME"/.claude/state/memory-audit-commit-fail-"$_MARKER_ENC"-*; do
+  [[ "${_m##*/memory-audit-commit-fail-"$_MARKER_ENC"-}" =~ ^[0-9]+$ ]] && [ -e "$_m" ] && FAILMARKERS+=("$_m")
+done
+if [ "${#FAILMARKERS[@]}" -gt 0 ]; then
   printf '%s\n' "[memory-lint] the memory store's auto-commit failed and is not currently versioned:"
   for _m in "${FAILMARKERS[@]}"; do
     # Line 1 is the writer's machine-read acquisition_ts= record; keep it out
@@ -61,8 +68,10 @@ if [ -e "${FAILMARKERS[0]}" ]; then
 fi
 
 [ -n "$ENC" ] || exit 0
-MEMDIR="$HOME/.claude/projects/$ENC/memory"
-[ -d "$MEMDIR" ] || exit 0
+# The resolver's full path, as memory-audit-commit.sh uses: a hand-built
+# projects/$ENC/memory misses a configured autoMemoryDirectory.
+MEMDIR="$(python3 "$_MEMDIR_RESOLVER" 2>/dev/null)" || exit 0
+[ -n "$MEMDIR" ] && [ -d "$MEMDIR" ] || exit 0
 
 LINT="${CLAUDE_PLUGIN_ROOT:-}/skills/meta/memory-lint/scripts/memory-lint.py"
 [ -f "$LINT" ] || exit 0
