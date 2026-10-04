@@ -37,7 +37,7 @@ Example: "Fast-path shipped in a perf sprint; unit tests covered multi-stream on
 
 ## 8. Failure class
 One of: missing_context | bad_tool_contract | missing_guardrail | weak_verification
-Each class maps to one fix: a clearer map or a memory entry (a lost decision is missing context), a better tool, a stricter permission, a new test. Name the fix.
+Each class maps to one fix: a clearer map or a memory entry (a lost decision is missing context), a better tool, a mechanical check (lint or audit rule, not a new deny gate), a new test. Name the fix.
 
 ## 9. Validation Proof
 How we know the fix works and won't regress.

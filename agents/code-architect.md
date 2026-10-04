@@ -61,6 +61,8 @@ You design feature architectures based on a deep understanding of the existing c
 - design the feature to fit naturally into current patterns
 - choose the simplest architecture that meets the requirement
 - avoid speculative abstractions unless the repo already uses them
+- flag a list kept in sync by hand (the same names repeated in a second file, a registry that
+  mirrors a directory): derive one from the other, or add a check that fails when they drift
 
 **When to introduce an abstraction:** `mattpocock-skills:codebase-design`'s seam principle
 governs this — "one adapter means a hypothetical seam, two adapters means a real one." Propose an
