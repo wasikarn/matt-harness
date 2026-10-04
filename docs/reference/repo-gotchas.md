@@ -179,7 +179,7 @@ builder's self-check ("0 bypasses in 4032") was wrong each time.
   charge covers that, not the per-run one. Slowest allowed shape (`eval sudo ` + 1000 args + `;` x 70, then `ls`):
   5.1 s on the branch at the old 60M budget, 0.09 s on `develop` (M3 Pro). The guard's budget is now 45M
   (worst measured 4.2 s, about 1.9x under the 8 s timeout; a padded benign command over roughly 16-23 KB is
-  refused); lower it again if a slower runner flakes `test-subagent-git-guard.sh`. `eval` takes
+  refused); lower it again if a slower runner flakes `test-subagent-git-guard.sh`. GH #469: it did. The GH #307 shape (`eval command sudo ` + 1000 args + `;` x 70) is refused, not allowed, and took 6.9-7.0 s to reach that refusal at 45M (a `git stash` tail: 5.6-5.8 s); the cost steps one heavy scan at a time (30M 2.9 s, 35M and 40M 4.3 s, 45M 7.0 s). The budget is now 40M. Of the 60 longest real Bash commands in local transcripts, one (12.7 KB) flips from allowed to refused between 45M and 40M. `eval` takes
   assignments (`eval A=1 env git stash` runs git) and `doas` is a wrapper word, both GH #273 follow-ups. A chain/wrapper loop was
   exponential (`sudo eval ` x 250 never finished), so keep it to one leading run, limited to the non-wrapper words (eval, builtin, rtk) and ended by a
   lookahead for a wrapper word: a run that also took `command`/`exec` doubled every split (deep-audit
