@@ -31,7 +31,7 @@ Otherwise ask and abort on any NO:
    name/title with nothing attached routes to **Phase 0** below instead of an immediate abort;
    Phase 0 either resolves it to a real source or aborts with the same message check 3 always gave.
 
-Not a check, so never an abort: before Phase 1, grep `docs/research/*-audit-*` and the memory index
+Not a check, so never an abort: before Phase 1, grep `docs/research/` (names do not always say `audit`) and the memory index
 for the source's URL or title. On a hit, name the earlier audit in the report and say what changed
 since, instead of re-deriving its verdict as if it were new.
 
