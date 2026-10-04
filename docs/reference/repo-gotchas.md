@@ -80,8 +80,9 @@ never runs at all and nothing server-side notices. Run the verify command above 
   (dotfiles-owned). `test-honesty.md` fires on any `.py` read, not just tests.
 - **Piping a payload into a gate by hand writes to the real journal.** A denying gate appends to
   `~/.local/share/kbg/metrics/gate-decisions.jsonl` unless `MH_GATE_JOURNAL_PATH` is set, and a
-  made-up `session_id` (`s`, `t`, `test-session`) passes `gate-report`'s session filter, so it is
-  counted as a live event (159 of 161 `subagent-verdict-check` denies were these). Probe with
+  made-up `session_id` (`s`, `t`, `test-session`) passes `gate-report`'s session filter, so it
+  is counted in the totals (159 of 161 `subagent-verdict-check` denies were these; the report
+  names non-UUID ids but does not drop them). Probe with
   `MH_GATE_JOURNAL_PATH=/dev/null` (or a scratch file when you want to read the row back), and
   use `scripts/gate-differential.sh` for old-vs-new comparisons, which already isolates it.
 
