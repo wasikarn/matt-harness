@@ -119,7 +119,7 @@ for path in (CITATIONS,) + CITATION_COPIES:
             break
     m[path] = "".join(lines)
     probes += landed
-    check("planted CITATION_RE edit in %s is caught" % path.split("/")[-1], landed and "CITATION_RE" in drift(m))
+    check("planted CITATION_RE edit in %s is caught" % path,landed and "CITATION_RE" in drift(m))
 
 for path in CITATION_COPIES:
     m = dict(srcs)
