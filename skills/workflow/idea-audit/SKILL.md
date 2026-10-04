@@ -342,10 +342,15 @@ hardcoded-path-hygiene-still-applies directory, but it's also the one directory 
 `pre-commit`/gauntlet home-path scan deliberately skips — this skill is the only backstop for its
 own scratchpad-path citations landing there.
 
-**mh-memory detection (no path literal in the check itself):** compute the candidate memory-store
-directory the way `skills/meta/learn/scripts/find-transcript.sh` derives the transcript
-directory — at runtime from the live cwd, never a hardcoded slug. Above 200 chars, say so loudly
-(matching that script's own choice) rather than skipping silently. If `MEMORY.md` exists there,
+**mh-memory detection (no path literal in the check itself):** get the candidate memory-store
+directory from the shared resolver, never by hand from the live cwd (a linked worktree's cwd names
+a store that doesn't exist):
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/../../../scripts/_lib/memory-dir.py"
+```
+
+If `MEMORY.md` exists there,
 write both the memory **detail file** and its index line under "Article / idea audits" — an index
 line with no target file is a dangling link `mh:memory-lint` will catch. If it doesn't exist, skip
 silently — never invent a memory-store shape for a repo that doesn't have one.
