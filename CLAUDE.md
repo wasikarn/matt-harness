@@ -85,4 +85,8 @@ module (a mod, never a gate; shell hooks stay the base): `docs/reference/cost-le
 A mistake that recurs a second time (a feedback-type auto-memory fact firing again, or observed
 directly in-session) gets promoted into a committed rule here or in `docs/reference/`, not left as
 a memory entry alone — memory is per-operator and can go stale or unread; a committed rule binds
-every session and agent that loads this repo.
+every session and agent that loads this repo. Better still, fix it with the strongest check that
+works (audit check, gauntlet test, or lint; never a new PreToolUse gate, `docs/reference/operating-model.md` §1):
+prove it fails on the real past mistake, fail only when a change adds more of the pattern (a
+ratchet), and delete the prose rule once the check covers it. These checks run only in the local
+git hooks; there is no CI.
