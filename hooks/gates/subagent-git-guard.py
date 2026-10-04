@@ -393,7 +393,7 @@ def _skip_git_globals(s, i):
 # is re-read from every walk position, so it costs about run x run per command start even with a
 # single start (`true; ` + `command ` x 8000 before a `git stash` took 9 s). Each maximal run charges
 # its length squared per start, plus one for the line start.
-_WORK_BUDGET = 45_000_000  # was 60M; the slowest allowed shape (GH #273) took 5.1 s of the 8 s hook timeout
+_WORK_BUDGET = 40_000_000  # was 45M, 60M before; at 45M the GH #307 shape was refused only after 7.0 s of the 8 s hook timeout (GH #469), 4.3 s at 40M
 _work = 0
 _CHAIN_RUN_RE = re.compile(r"(?<!\S)(?:" + _SHELL_PASS + r"|" + _RTK_PREFIX + r")+")
 
