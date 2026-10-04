@@ -75,17 +75,26 @@ rate-limit prompts that ask before switching.
 0.156.1): `gpt-6-sol`, `gpt-6-luna`, `gpt-6-astra` and `gpt-5.6-terra` are listed, and
 `gpt-5.6-sol`/`gpt-5.6-luna` are still listed, so the GPT-6 rollout for Sol and Luna is not a
 hard break. `gpt-5.5` carries an upgrade to `gpt-5.6-sol` and retires 2026-10-14. Terra has no
-GPT-6 variant yet. Credit rates (public docs, 2026-09-23): `gpt-6-sol` and `gpt-6-luna` cost
+GPT-6 variant yet. **Re-checked 2026-10-04** (`models_cache.json`, CLI 0.160.0): `gpt-6.1-sol`
+now leads the Sol tier (`priority` 1, ahead of `gpt-6-astra` 2 and `gpt-6-sol` 3), lists `medium`
+effort but defaults to `low` (`gpt-6-sol` defaults to `medium`), and is now the `gpt-5.5`
+upgrade target. The catalog has no price field and the rates below have no `gpt-6.1-sol` entry,
+so its rate is unconfirmed: check the pricing page before relying on it for a long run. Credit rates (public docs, 2026-09-23): `gpt-6-sol` and `gpt-6-luna` cost
 roughly half the prior rate on input and cached-input tokens (exactly half for Sol on every
 column; Luna's output-token rate is cut further, to ~0.42x — see the exact numbers below).
 Re-verify this note the next time this table is touched.
 
-| Work | Starting model | Effort |
+The table names a **tier**, not a slug. Resolve a tier to the best visible catalog entry whose
+slug ends in it (lowest `priority`, `visibility: list`) at dispatch time, then check the effort
+is in that entry's `supported_reasoning_levels`; disclose the resolved slug in the report. The
+slug in a dated note above is the last check, not a pin.
+
+| Work | Starting tier | Effort |
 |---|---|---|
-| Clear, small edits or extraction | `gpt-6-luna` | `low` |
-| Bounded implementation or verification of explicit requirements | `gpt-5.6-terra` | `medium` |
-| Ambiguous bugs, adversarial review, cross-file judgment | `gpt-6-sol` | `medium` |
-| Hard end-to-end investigation with sustained judgment | `gpt-6-astra` | `medium` |
+| Clear, small edits or extraction | Luna | `low` |
+| Bounded implementation or verification of explicit requirements | Terra | `medium` |
+| Ambiguous bugs, adversarial review, cross-file judgment | Sol | `medium` |
+| Hard end-to-end investigation with sustained judgment | Astra | `medium` |
 
 OpenAI's own starting points are Sol `medium`, Luna `high` and Astra `low`
 (`learn.chatgpt.com/docs/models`). By operator policy, this table starts Luna lower (small, clear
