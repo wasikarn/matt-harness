@@ -6,7 +6,7 @@
 
 compare exits 0 when every path matches, 1 on any drift (one line per path:
 "changed: P", "appeared: P", "disappeared: P"), 2 on a usage error or an
-unreadable manifest. A directory hashes as the sorted walk of its files'
+unreadable manifest. snapshot exits 2 when stdin holds no path. A directory hashes as the sorted walk of its files'
 relative paths and bytes. mtime is ignored: only bytes count.
 """
 import hashlib
@@ -47,6 +47,9 @@ def main(argv):
     mode, manifest = argv[1], argv[2]
     if mode == "snapshot":
         paths = [line.rstrip("\n") for line in sys.stdin if line.strip()]
+        if not paths:  # an empty manifest would make every later compare pass
+            sys.stderr.write("scope-fingerprint: snapshot got no paths on stdin\n")
+            return 2
         with open(manifest, "w") as f:
             json.dump({p: fingerprint(p) for p in paths}, f, indent=1, sort_keys=True)
         return 0
