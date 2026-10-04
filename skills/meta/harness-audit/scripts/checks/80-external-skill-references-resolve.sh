@@ -74,7 +74,7 @@ for path in sorted(files):
         continue
     with open(path, encoding="utf-8", errors="replace") as f:
         text = f.read()
-    if rel.startswith("docs/adr/") and re.match(r"---\n(?:.*\n)*?status:\s*deprecated\b", text):
+    if rel.startswith("docs/adr/") and re.match(r"---\n(?:(?!---\n).*\n)*?status:\s*deprecated\b", text):
         continue
     seen = set()
     for ln, line in enumerate(text.splitlines(), 1):

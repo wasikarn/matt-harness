@@ -68,9 +68,12 @@ def main():
             tool_name = row.get("tool_name", "(unknown)")
             ts = row.get("ts")
             counts[(gate_id, decision)] += n
-            tools[tool_name] += n
-            total += n
-            if str(decision).startswith("would_"):
+            # would_deny/would_ask (shadow rules) allowed the call: not a block, so they stay out
+            # of the headline and By-tool counts and show only under "Shadow rules" (SKILL.md).
+            if not str(decision).startswith("would_"):
+                tools[tool_name] += n
+                total += n
+            else:
                 s = shadow.setdefault((gate_id, row.get("rule", "(unknown)")),
                                       {"n": 0, "sessions": set(), "samples": []})
                 s["n"] += 1
@@ -83,11 +86,11 @@ def main():
                 last_ts = ts if last_ts is None or ts > last_ts else last_ts
 
     ignored = f"Ignored {sessionless} session-less row(s) (no session_id: test or direct gate runs, not live hook calls)."
-    if total == 0 and sessionless:
+    if total == 0 and not shadow and sessionless:
         print("Gate journal has no events with a session_id.")
         print(ignored)
         return 0
-    if total == 0:
+    if total == 0 and not shadow:
         print("Gate journal is empty — no ask/deny events logged yet.")
         return 0
 

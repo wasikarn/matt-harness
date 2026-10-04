@@ -30,6 +30,8 @@ check "head moved after audit" 1 "$audited" HEAD
 check "unresolvable ref" 2 "$audited" no-such-branch
 check "unresolvable audited SHA" 2 deadbeefdeadbeef HEAD
 check "missing argument" 2 "$audited" ""
+check "a ref as the pin is not a SHA (HEAD HEAD)" 2 HEAD HEAD
+check "a branch name as the pin is not a SHA" 2 "$(git -C "$R" branch --show-current)" HEAD
 
 # Paragraph scope: Phase 1 step 4 (pin) and the Phase 3 "pass true" ship bullet.
 pin=$(awk '/^4\. \*\*Pin the revision safely/{p=1} p&&/^5\. /{exit} p' "$SKILL")

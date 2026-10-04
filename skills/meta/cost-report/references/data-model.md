@@ -163,18 +163,18 @@ report then prints one line after `total:`:
   unattributed $Z (P% of ledger)`. Only sessions present in both files count; sessions on one
   side only are listed as `left out: A transcript-only, B ledger-only`, never added.
 - **No ledger rows** (no file, or only `error` or load-marker rows): `ledger cross-check: no
-  ledger data (...)`.
-
-Load-marker rows (`{ t, session_id, loaded: true, cli, mh }`, GH #444, one per module load) carry
-no `usd` and feed a separate line before it: `module loaded: N of M sessions since the first load
-marker (<date>)`, M being the `costs.jsonl` sessions whose last row is at or after the first
-marker, or `module loaded: no load marker (...)` when there is none. A session with spend and no
-marker ran with modules off.
-  Modules were off, the CLI is older than 2.1.287, or no turn has ended yet. Not zero.
+  ledger data (...)`. Modules were off, the CLI is older than 2.1.287, or no turn has ended yet.
+  Not zero.
 - **Error rows** add a `warning:` line with their count; the ledger total may then run low.
 - **Rows whose `usd` is not a finite number** (`null`, a string, missing; `null` is how JSON writes
   NaN and Infinity) are skipped and counted in their own `warning:` line. They are never read as
   $0: a $0 reading is a reset, which adds the next reading in full.
+
+Load-marker rows (`{ t, session_id, loaded: true, cli, mh }`, GH #444, one per module load) carry
+no `usd` and feed a separate line before the cross-check line: `module loaded: N of M sessions
+since the first load marker (<date>)`, M being the `costs.jsonl` sessions whose last row is at or
+after the first marker, or `module loaded: no load marker (...)` when there is none. A session with
+spend and no marker ran with modules off.
 
 `tests/skills/test-cost-report.sh` pins the three cases and the recompute rule with fixtures whose
 wrong answers (summed stored deltas, last or max `usd`, an unchanged reading taken as a reset)
