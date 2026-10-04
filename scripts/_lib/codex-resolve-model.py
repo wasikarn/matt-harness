@@ -33,6 +33,8 @@ def main(argv):
     if len(args) != 1:
         return fail("usage: codex-resolve-model.py <tier> [--effort E]")
     tier = args[0].lower()
+    if not tier:
+        return fail("tier must not be empty")
 
     path = os.path.join(os.environ.get("CODEX_HOME") or os.path.expanduser("~/.codex"), "models_cache.json")
     try:
@@ -46,11 +48,16 @@ def main(argv):
     if not isinstance(models, list):
         return fail(f"catalog at {path} has no 'models' list")
 
-    # Skip a model with a non-int (or bool) priority, and one the catalog is retiring (`upgrade`).
+    def retiring(m):  # the catalog names a replacement: upgrade.model is a non-empty string
+        u = m.get("upgrade")
+        return isinstance(u, dict) and isinstance(u.get("model"), str) and u["model"] != ""
+
+    # Skip a model with a non-int (or bool) priority, and one the catalog is retiring. The same
+    # candidate rule as dotfiles' sync-profile-models.sh and model-catalog-drift.sh.
     cands = [m for m in models
-             if isinstance(m, dict) and str(m.get("slug", "")).endswith("-" + tier)
+             if isinstance(m, dict) and isinstance(m.get("slug"), str) and m["slug"].endswith("-" + tier)
              and m.get("visibility") == "list" and type(m.get("priority")) is int
-             and not m.get("upgrade")]
+             and not retiring(m)]
     if not cands:
         return fail(f"no visible '{tier}' model in the catalog")
     if effort:

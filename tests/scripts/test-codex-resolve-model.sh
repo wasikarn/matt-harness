@@ -8,7 +8,8 @@ pass=0; fail=0
 ok()  { pass=$((pass + 1)); echo "  PASS: $1"; }
 bad() { fail=$((fail + 1)); echo "  FAIL: $1" >&2; }
 t() { local d="$1"; shift; if "$@"; then ok "$d"; else bad "$d"; fi; }
-eq() { [ "$1" = "$2" ]; }
+# got <expected-slug> <resolver args...>: exits 0 AND prints exactly the slug
+got() { out="$(python3 "$RESOLVE" "${@:2}" 2>/dev/null)"; rc=$?; [ "$rc" -eq 0 ] && [ "$out" = "$1" ]; }
 ok_with() { [ "$1" -eq 0 ] && [ "$2" = "$3" ]; }
 fails_with() { [ "$1" -ne 0 ] && [ -z "$2" ] && grep -q "$4" "$3"; }
 clean_error() { [ "$1" -ne 0 ] && [ -z "$2" ] && [ -s "$3" ] && ! grep -q Traceback "$3"; }
@@ -28,9 +29,9 @@ JSON
 echo "=== codex-resolve-model.py ==="
 out="$(python3 "$RESOLVE" sol)"; rc=$?
 t "best visible model of the tier (hidden priority-0 entry skipped)" ok_with "$rc" "$out" gpt-9-sol
-t "tier is case-insensitive; a supported effort keeps the best model" eq "$(python3 "$RESOLVE" Sol --effort medium)" gpt-9-sol
-t "an effort the best model lacks falls to the next model that lists it" eq "$(python3 "$RESOLVE" sol --effort xhigh)" gpt-8-sol
-t "another tier resolves on its own" eq "$(python3 "$RESOLVE" terra)" gpt-5-terra
+t "tier is case-insensitive; a supported effort keeps the best model" got gpt-9-sol Sol --effort medium
+t "an effort the best model lacks falls to the next model that lists it" got gpt-8-sol sol --effort xhigh
+t "another tier resolves on its own" got gpt-5-terra terra
 
 out="$(python3 "$RESOLVE" sol --effort ultra 2>"$T/err")"; rc=$?
 t "no model lists the effort: exit non-zero, no stdout, reason on stderr" fails_with "$rc" "$out" "$T/err" ultra
@@ -66,7 +67,29 @@ cat > "$T/models_cache.json" <<'JSON'
  {"slug":"gpt-retiring-sol","priority":0,"visibility":"list","upgrade":{"model":"gpt-ok-sol"},"supported_reasoning_levels":[{"effort":"medium"}]},
  {"slug":"gpt-ok-sol","priority":2,"visibility":"list","supported_reasoning_levels":[{"effort":"medium"}]}]}
 JSON
-t "a boolean priority and a model with an upgrade field are not chosen" eq "$(python3 "$RESOLVE" sol)" gpt-ok-sol
+t "a boolean priority and a retiring model (upgrade.model set) are not chosen" got gpt-ok-sol sol
+
+# "retiring" means upgrade.model is a non-empty string; the live catalog carries "upgrade": null
+cat > "$T/models_cache.json" <<'JSON'
+{"models": [
+ {"slug":"gpt-a-sol","priority":1,"visibility":"list","upgrade":null,"supported_reasoning_levels":[{"effort":"medium"}]},
+ {"slug":"gpt-b-sol","priority":2,"visibility":"list","upgrade":{},"supported_reasoning_levels":[{"effort":"medium"}]},
+ {"slug":"gpt-c-sol","priority":3,"visibility":"list","upgrade":"","supported_reasoning_levels":[{"effort":"medium"}]}]}
+JSON
+t "upgrade null is not retiring (live catalog shape)" got gpt-a-sol sol
+cat > "$T/models_cache.json" <<'JSON'
+{"models": [
+ {"slug":"gpt-b-sol","priority":2,"visibility":"list","upgrade":{"model":""},"supported_reasoning_levels":[{"effort":"medium"}]},
+ {"slug":"gpt-c-sol","priority":3,"visibility":"list","upgrade":"","supported_reasoning_levels":[{"effort":"medium"}]}]}
+JSON
+t "upgrade {\"model\": \"\"} and \"\" are not retiring either" got gpt-b-sol sol
+
+# an empty tier must not match a slug that ends in "-"
+cat > "$T/models_cache.json" <<'JSON'
+{"models": [{"slug":"gpt-invalid-","priority":0,"visibility":"list","supported_reasoning_levels":[{"effort":"medium"}]}]}
+JSON
+out="$(python3 "$RESOLVE" "" 2>"$T/err")"; rc=$?
+t "empty tier is refused, not matched against a slug ending in a dash" fails_with "$rc" "$out" "$T/err" tier
 
 echo "===$pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

@@ -86,11 +86,13 @@ column; Luna's output-token rate is cut further, to ~0.42x — see the exact num
 Re-verify this note the next time this table is touched.
 
 The table names a **tier**, not a slug. Resolve a tier to the best visible catalog entry whose
-slug ends in it (lowest `priority`, `visibility: list`, no `upgrade` field) at dispatch time,
-among entries whose `supported_reasoning_levels` list the effort (so an effort the newest entry
-lacks falls to the next one that has it); disclose the resolved slug in the report.
-`scripts/_lib/codex-resolve-model.py <tier> --effort <e>` does exactly this. The slug in a dated
-note above is the last check, not a pin.
+slug ends in it (lowest integer `priority`, `visibility: list`, not retiring: `upgrade.model` is
+unset, and the live catalog carries `"upgrade": null` on most entries) at dispatch time, among
+entries whose `supported_reasoning_levels` list the effort (so an effort the newest entry lacks
+falls to the next one that has it); disclose the resolved slug in the report.
+`scripts/_lib/codex-resolve-model.py <tier> --effort <e>` does exactly this, and the dotfiles
+profile sync and drift check use the same candidate rule. The slug in a dated note above is the
+last check, not a pin.
 
 | Work | Starting tier | Effort |
 |---|---|---|
