@@ -133,9 +133,16 @@ model-generated shell commands (`codex exec --help`'s own wording) plus the brie
 line above — not an unqualified "read-only, guaranteed," since neither layer alone covers every
 tool an environment might load.
 
-**Accept the result only if all of:** `codex exec` exits 0; the output-last-message file parses
-against the schema with all six fields present, **`checked[]` non-empty**; and the result shows
-real review evidence — findings that each cite one checkable fact, or an explicit, legitimate
+**Accept the result only if all of:** `codex exec` exits 0; the output-last-message file's raw
+text validates through the same `scripts/check-verdict.py` the fallback path uses (all six fields,
+**`checked[]` non-empty**, citation-shaped `evidence`):
+```
+python3 "${CLAUDE_SKILL_DIR}/scripts/check-verdict.py" < <output-last-message file>
+```
+Exit 0 = accept; exit 1 = reject, a fallback trigger below; exit 2 = a `NEEDS-DECISION`
+escalation, surfaced to the operator as an open question (its meaning under the fallback path
+below). Schema validity alone is not enough: `--output-schema` cannot enforce citation shape.
+The result also shows real review evidence — findings that each cite one checkable fact, or an explicit, legitimate
 zero-findings pass (see below) — and does not state or imply it couldn't or didn't complete the
 review. Schema-valid JSON that still refuses in prose is not review evidence. `checked[]` is required because
 `pass: true, findings: []` is schema-valid even when a checker addressed none of its primed
@@ -158,7 +165,7 @@ dispatches that don't need this guard) and note "independence reduced for this p
 report.
 
 On this fallback path there is no `--output-last-message` file and no `--output-schema`, so
-"the output-last-message file parses against the schema" above doesn't apply literally. A live
+the agent's raw final message is what goes to `check-verdict.py` instead. A live
 run of this path (2026-09-18) returned a schema-valid object followed by unrequested trailing
 prose after the closing code fence — a plain "strip a leading/trailing fence" rule doesn't
 survive that, since the trailing prose sits after the fence, not inside it. Pipe the agent's raw
