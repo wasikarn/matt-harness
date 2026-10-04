@@ -1690,8 +1690,10 @@ def _git_words(rest, ph_value=False):
         out.append(t)
         st = t.replace(PH, "")
         if st in GIT_VALUE_GLOBALS:
-            if ph_value and t != st and t.startswith(st):  # the substitution comes after the flag
-                out[-1], hit = t.replace(PH, "$"), True
+            # GH #409: a substitution may also come before the flag letters (${E}-C${R}); the word
+            # holds a value when one comes last.
+            if ph_value and t.endswith(PH):
+                out[-1], hit = st + "$", True
             elif i < n:
                 out.append(word())
     return out + rest[i:] if (hit if ph_value else joined) else None
@@ -1729,9 +1731,36 @@ def _chmod_world(rest):
     # substitution before it joins as a leading blank, which the regex allows), so a file named
     # 777 or a+rwx is not a mode.
     k = next((j for j, t in enumerate(toks) if not t.startswith("-")), len(toks))
-    return bool(_CHMOD_WORLD_RE.match(" ".join(toks[k:]))) and any(
+    return (bool(_CHMOD_WORLD_RE.match(" ".join(toks[k:]))) or _chmod_world_word(rest)) and any(
         t in _ROOT_OR_HOME or _is_flag(t, "--recursive")
         or (t.startswith("-") and not t.startswith("--") and "R" in t) for t in toks)
+
+# GH #409: the mode read again on shell words (each glued token run joined, as _git_words does).
+# A comma mode (u+s,a+rwx) is one word whose clauses are each a mode; a word that is only an
+# expansion ($V, "$1") may be empty, so it is not the mode word; an option word made only of mode
+# characters (-x,a+rwx) is a mode to chmod wherever it stands. A deny in either reading wins.
+_CHMOD_CLAUSE_RE = re.compile(r"0*[0-7]?777|(?:a|[ugo]{3})[+=]rwx")
+_CHMOD_DASH_MODE_RE = re.compile(r"-[-+=,0-7rwxXstugoa]+")
+_EXPANSION_ONLY_RE = re.compile(r"(?:" + PH + r"|\$(?:\w+|[@*#?$!-]))+")
+def _chmod_world_word(rest):
+    runs = []
+    for t in rest:
+        if runs and isinstance(t, _Glued):
+            runs[-1].append(t)
+        else:
+            runs.append([t])
+    seen = False  # the mode word was read; GNU chmod still takes a mode option after it
+    for r in runs:
+        w = "".join(r)
+        s = w.replace(PH, "")
+        mode = not seen and not s.startswith("-")
+        if mode and _EXPANSION_ONLY_RE.fullmatch(w):
+            continue
+        if (mode or _CHMOD_DASH_MODE_RE.fullmatch(s)) and any(
+                _CHMOD_CLAUSE_RE.fullmatch(c) for c in s.split(",")):
+            return True
+        seen = seen or mode
+    return False
 
 # GH #336: a program known only at run time -- a `$NAME` argv0 with no `NAME=` anywhere in the
 # command (the var-verb view below reads a visible one back) -- or a sourced file.
