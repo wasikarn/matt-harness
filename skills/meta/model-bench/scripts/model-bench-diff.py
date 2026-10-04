@@ -21,6 +21,13 @@ DEFAULT_CASE_FILTER_DISPLAY = "all cases"
 # ponytail: label-text heuristic, since aggregate-result.json records no model; read the model
 # from arm-meta.txt if a label ever stops being the model spec.
 CLASSIFIER_MODEL_RE = re.compile(r"fable|\bbest\b|\bdefault\b|opus(?![-_]?4)", re.IGNORECASE)
+MODEL_FAMILY_RE = re.compile(r"haiku|sonnet|opus|fable", re.IGNORECASE)
+
+
+def model_family(spec):
+    """Family word in a model spec or label ('sonnet@high' -> sonnet), or None if it names none."""
+    match = MODEL_FAMILY_RE.search(spec)
+    return match.group(0).lower() if match else None
 
 
 def load(path):
@@ -109,6 +116,13 @@ def compare(path_a, path_b, label_a, label_b):
             f"judgeModel differs: {label_a}={judge_model_display(suite_a)} "
             f"vs {label_b}={judge_model_display(suite_b)}"
         )
+    # #391: a judge tends to favor output from its own model family, which skews that arm's score.
+    for label, suite in ((label_a, suite_a), (label_b, suite_b)):
+        family = model_family(label)
+        if family and family == model_family(judge_model_display(suite)):
+            warnings.append(
+                f"{label}: arm shares the judge model family ({family}) — the judge may favor its own family"
+            )
     if case_filter_display(suite_a) != case_filter_display(suite_b):
         warnings.append(
             f"caseFilter differs: {label_a}={case_filter_display(suite_a)} "
