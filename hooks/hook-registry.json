@@ -115,7 +115,7 @@
     "PostToolUseFailure": [
       {
         "id": "sensor:bash:failure-diagnose-nudge",
-        "description": "Advisory only, never blocks: on a non-zero exit, nudge diagnose-before-retry via additionalContext. Capped at 1 per distinct failing command per session. Registered on PostToolUseFailure (not PostToolUse): that is where a nonzero Bash exit dispatches, and its output schema declares additionalContext; provenance in the sensor's docstring.",
+        "description": "Advisory only, never blocks: on a non-zero exit, nudge diagnose-before-retry via additionalContext. Capped at 1 per distinct failing command per session, and per subagent within it (a subagent shares its parent's session_id, so the counter also keys on agent_id). Registered on PostToolUseFailure (not PostToolUse): that is where a nonzero Bash exit dispatches, and its output schema declares additionalContext; provenance in the sensor's docstring.",
         "command": "bash \"${CLAUDE_PLUGIN_ROOT}/hooks/sensors/failure-diagnose-nudge.sh\""
       },
       {
