@@ -3021,6 +3021,8 @@ _timed_case "GH #309: 20000 nested brace pairs before a force reset are denied i
   "$(python3 -c "print('{' * 20000 + 'x' + '}' * 20000 + '; git reset --hard')")"
 _timed_case "GH #309: 30000 chained brace groups before a hidden reset are denied inside the hook timeout" 2 \
   "$(python3 -c "print('echo ' + '{a,b}' * 30000 + '; git {,\"reset\"} --hard')")"
+_timed_case "GH #309: nested groups whose real expansion (120000 chars) is under the cap are not denied for a double charge" 0 \
+  "$(python3 -c "L = 30000; print('echo {{' + 'A' * L + ',' + 'B' * L + '},{' + 'C' * L + ',' + 'D' * L + '}}')")"
 _timed_case "GH #309: a 60000-char word before a brace is allowed fast" 0 \
   "$(python3 -c "print('echo ' + 'a' * 60000 + '{b,c}')")"
 test_deny "$IRRECOVERABLE" "GH #309: a brace expansion over the length cap denies, never skips the copy" \

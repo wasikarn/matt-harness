@@ -135,12 +135,14 @@ def _expand_word(w, budget, depth):
                     for h in heads:
                         for t in tails:
                             s = pre + h + t
-                            # ponytail: a nested group is charged again when its parent recombines, so a
-                            # nested expansion over about half the cap denies early (fails closed, never
-                            # a hole); charge only the outermost call if that ever blocks a real command
-                            budget[0] -= len(s) + 1
-                            if budget[0] < 0:
-                                raise TooBig("expansion over the character cap")
+                            # With no text before or after, s is h itself: an alternative that a nested
+                            # group already charged. Charging it again made a nested expansion over half
+                            # the cap deny early; every new string is still charged, at every level, so
+                            # chained groups cannot build a huge list before anything is checked.
+                            if pre or t:
+                                budget[0] -= len(s) + 1
+                                if budget[0] < 0:
+                                    raise TooBig("expansion over the character cap")
                             out.append(s)
                     return out
         i += 1
