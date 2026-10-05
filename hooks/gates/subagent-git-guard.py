@@ -680,7 +680,7 @@ def _heredoc_at(s, i, after=None):
 # run rule of GH #161) so the two agree again.
 _COMMENT_BOUNDARY = " \t;&|("
 
-def _comment_starts(s, i, start, comment_nl=-1, lookback=True):
+def _comment_starts(s, i, start, comment_nl=-1, lookback=True, paren_close=False):
     # Does the `#` at s[i] open a comment? Yes at the start of the text or after a blank, ; & | ( or a
     # real newline. A backslash-newline pair is deleted by the shell, so look back past it: one backslash
     # leaves what stood before the pair (`echo x \<nl>#y` is a comment, `x\<nl>#y` is one word); a longer
@@ -689,7 +689,9 @@ def _comment_starts(s, i, start, comment_nl=-1, lookback=True):
     # backslash). A `)` is not a boundary: it often ends a word (`$(true)#x`) and the scanner does not
     # track which parens are real subshells, so that shape stays open (GH #512). lookback=False is the
     # reading where a `#` after a backslash-newline is a word character (inside `${..}`, `((..))`, `a[..]=`
-    # it is); the caller scans both readings rather than guess which context it is in.
+    # it is); the caller scans both readings rather than guess which context it is in. paren_close=True is
+    # the reading where a `)` ends a word boundary (it closes a real subshell: `(true)#x`); in the other
+    # reading it is part of a word (`$(true)#x`, `${y:-)#x}`), and the scanner cannot tell which.
     j = i
     while j > start and s[j - 1] == "\n":
         if lookback and j - 1 == comment_nl:  # the other reading must stay develop's
@@ -705,7 +707,7 @@ def _comment_starts(s, i, start, comment_nl=-1, lookback=True):
         j = k
     if j == start:
         return True
-    if s[j - 1] not in _COMMENT_BOUNDARY:
+    if s[j - 1] not in _COMMENT_BOUNDARY and not (paren_close and s[j - 1] == ")"):
         return False
     b = 0  # an escaped boundary character (`\;`, `\ `, `\)`) is part of the word, so the `#` is no comment
     while j - 2 - b >= start and s[j - 2 - b] == "\\":
@@ -727,6 +729,7 @@ def _dollar_run_odd(s, i):
 
 _DOLLAR_PAIR_RE = re.compile(r"\$\$'")
 _BSNL_HASH_RE = re.compile(r"\\\n#")
+_PAREN_HASH_RE = re.compile(r"\)(?:\\\n)*#")
 
 def _substitution_bodies(s, depth=0):
     # GH #512. Every rule that changes what counts as a comment or a `$'..'` can hide a body the old rule
@@ -735,16 +738,19 @@ def _substitution_bodies(s, depth=0):
     # scan, so nothing the legacy scan found can be lost; the corrected readings add what it missed.
     # Corrected readings: `$$'` is the PID then a plain quote in bash/sh but `$` then `$'..'` in zsh, and a
     # `#` right after a backslash-newline is a comment in command position but a word character inside
-    # `${..}`, `((..))` or `a[..]=`, which the scanner does not track.
+    # `${..}`, `((..))` or `a[..]=`, which the scanner does not track; and a `)` right before `#` either
+    # closes a subshell (a boundary) or ends part of a word, which it does not track either.
     dollars = [False, True] if _DOLLAR_PAIR_RE.search(s) else [False]
     looks = [True, False] if _BSNL_HASH_RE.search(s) else [True]
     bodies = _scan_bodies(s, depth, False, True, True)
+    parens = [False, True] if _PAREN_HASH_RE.search(s) else [False]
     for z in dollars:
         for lb in looks:
-            bodies.extend(_scan_bodies(s, depth, z, lb))
+            for pc in parens:
+                bodies.extend(_scan_bodies(s, depth, z, lb, False, pc))
     return bodies
 
-def _scan_bodies(s, depth=0, zsh_dollar=False, lookback=True, legacy=False):
+def _scan_bodies(s, depth=0, zsh_dollar=False, lookback=True, legacy=False, paren_close=False):
     bodies, n, i = [], len(s), 0
     # frame: kind, body start, open quote, paren depth, open `case` count, saw case, at command
     # position, open ${ count
@@ -798,7 +804,7 @@ def _scan_bodies(s, depth=0, zsh_dollar=False, lookback=True, legacy=False):
             f[2] = None if f[2] == '"' else '"'
         elif c == "#" and f[2] is None and (
                 (i == f[1] or s[i - 1] in " \t;&|(" or (s[i - 1] == "\n" and _line_end(s, i - 1) == i - 1))
-                if legacy else _comment_starts(s, i, f[1], comment_nl, lookback)):
+                if legacy else _comment_starts(s, i, f[1], comment_nl, lookback, paren_close)):
             # a comment (any frame): its quotes, parens and `<<` mean nothing; in backticks the
             # closing backtick still ends it
             j = s.find("\n", i)
