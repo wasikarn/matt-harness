@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, re, sys
+import json, os, re, sys
 
 # GH #156: raise the int-string digit limit before parsing so an oversized
 # unquoted int literal doesn't crash json.load() into this gate's fail-open
@@ -817,7 +817,17 @@ def _violation_everywhere(overlap):
 def _all_passes():
     return _violation_everywhere(False) or _violation_everywhere(True) or _violation_everywhere(_LAZY)
 
+# GH #469: the work budget above does not track wall time (an allowed shape took 7.1 s and a refused one
+# 7.4 s at 40M, of the 8 s hook timeout; a timed-out hook allows), so a length cap decides first. Nothing
+# under 28000 bytes passed 3 s in that sweep; the longest real subagent command seen was 29.7 KB.
+try:  # MH_SGG_MAX_CMD_BYTES: test-layer override so stress rows over the cap still run the scan; a bad value keeps the cap
+    _MAX_CMD_BYTES = int(os.environ.get("MH_SGG_MAX_CMD_BYTES", "28000"))
+except ValueError:
+    _MAX_CMD_BYTES = 28_000
+
 try:
+    if len(cmd) > _MAX_CMD_BYTES:
+        raise _TooCostly
     hit = _all_passes()
     for _dollar_join in ("'", ""):  # GH #344: the zsh and dash readings of `$` pieces (see _QWORD_RE)
         if hit or not _dollar_joined:
