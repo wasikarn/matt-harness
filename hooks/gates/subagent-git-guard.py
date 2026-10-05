@@ -69,25 +69,33 @@ agent_type = clip(d.get("agent_type") or "unknown")
 # load, and a hook that hits its 8 s timeout is ALLOWED, so deny at 5 s instead. A signal handler can
 # fire anywhere (even in module-level work outside the try below), so it denies and exits itself.
 # MH_SGG_DEADLINE_SECS: test-layer override; a value that is not a positive number keeps the default
-# (0 would disarm the timer). No SIGALRM on this platform: the work budget and length cap still apply.
+# (0 would disarm the timer) and says so on stderr, and one past the 8 s hook timeout is clamped to 7 s
+# (inf or 1e300 would overflow setitimer and crash the gate, which exits 1 and so allows).
+# No SIGALRM on this platform: the work budget and length cap still apply.
 try:
     _DEADLINE_SECS = float(os.environ.get("MH_SGG_DEADLINE_SECS", "5"))
 except ValueError:
-    _DEADLINE_SECS = 5.0
+    _DEADLINE_SECS = 0.0
 if not _DEADLINE_SECS > 0:
+    print(f"[mh:gate] subagent-git-guard: MH_SGG_DEADLINE_SECS {os.environ.get('MH_SGG_DEADLINE_SECS')!r:.40} "
+          "is not a positive number; using 5 s", file=sys.stderr)
     _DEADLINE_SECS = 5.0
+_DEADLINE_SECS = min(_DEADLINE_SECS, 7.0)
 
 def _deadline_hit(signum, frame):
-    print(f"[mh:gate] BLOCKED: subagent ({agent_type}) command took longer than the gate's {_DEADLINE_SECS:g} s "
-          f"time limit to check ({len(cmd)} characters); write it to a file with the Write tool and run "
-          f"the file, or split it into smaller commands.", file=sys.stderr, flush=True)
-    journal(GATE_ID, "Bash", "deny", d.get("session_id"))
-    os._exit(2)
+    # try/finally: a failed print (a closed stderr) must not skip the exit, or the scan unwinds and allows.
+    try:
+        print(f"[mh:gate] BLOCKED: subagent ({agent_type}) command took longer than the gate's {_DEADLINE_SECS:g} s "
+              f"time limit to check ({len(cmd)} characters); write it to a file with the Write tool and run "
+              f"the file, or split it into smaller commands.", file=sys.stderr, flush=True)
+        journal(GATE_ID, "Bash", "deny", d.get("session_id"))
+    finally:
+        os._exit(2)
 
 try:
     signal.signal(signal.SIGALRM, _deadline_hit)
     signal.setitimer(signal.ITIMER_REAL, _DEADLINE_SECS)
-except (AttributeError, ValueError, OSError):
+except (AttributeError, ValueError, OSError, OverflowError):
     pass
 
 # 2026-09-20: extracted to a shared hooks/gates/_quotemask.py after this

@@ -1125,10 +1125,29 @@ print(p.returncode, round(time.time() - t, 1), "time limit" in p.stderr.decode()
 ' "$GATE")
 set -- $rc_msg; ok=1; [ "$1" = "2" ] && [ "${2%.*}" -lt 4 ] && [ "$3" = "True" ] && ok=0
 check "a slow padded shape is denied by the deadline within 4 s, with its own message (rc/secs/message: $rc_msg)" "$ok"
-# A zero, negative or non-numeric deadline must neither disarm the deadline nor lock everything out.
-for _dv in 0 -1 abc; do
-  rc=$(MH_SGG_DEADLINE_SECS=$_dv sgg_rc8 "echo hi"); ok=1; [ "$rc" = "0" ] && ok=0
-  check "MH_SGG_DEADLINE_SECS=$_dv keeps the default deadline, echo hi allowed (rc $rc)" "$ok"
+# A zero, negative or non-numeric deadline must neither disarm the deadline nor lock everything out: it
+# falls back to the 5 s default and says so on stderr (the diagnostic is what shows the fallback ran;
+# an `echo hi` allow alone would pass with the timer disarmed). A valid value prints nothing.
+_dl_probe() { # $1 MH_SGG_DEADLINE_SECS value, $2 command -> "<rc> <fallback diagnostic seen?>"
+  MH_SGG_DEADLINE_SECS=$1 python3 -c '
+import json, subprocess, sys
+payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": sys.argv[2]},
+                      "agent_id": "fork", "agent_type": "general-purpose"}).encode()
+p = subprocess.run(["bash", sys.argv[1]], input=payload, capture_output=True, timeout=30)
+print(p.returncode, "using 5 s" in p.stderr.decode())
+' "$GATE" "$2"
+}
+for _dv in 0 -1 abc nan; do
+  _pr=$(_dl_probe "$_dv" "echo hi"); ok=1; [ "$_pr" = "0 True" ] && ok=0
+  check "MH_SGG_DEADLINE_SECS=$_dv falls back to the 5 s default with a diagnostic, echo hi allowed ($_pr)" "$ok"
+done
+_pr=$(_dl_probe 3 "echo hi"); ok=1; [ "$_pr" = "0 False" ] && ok=0
+check "a valid MH_SGG_DEADLINE_SECS=3 prints no fallback diagnostic ($_pr)" "$ok"
+# A value too large for setitimer (or past the 8 s hook timeout) must still arm a deadline, never crash the
+# gate: a crash exits 1, which is not a deny, so the command would run.
+for _dv in inf 1e300 100; do
+  _pr=$(_dl_probe "$_dv" "git stash"); ok=1; [ "${_pr%% *}" = "2" ] && ok=0
+  check "MH_SGG_DEADLINE_SECS=$_dv still denies git stash instead of crashing the gate ($_pr)" "$ok"
 done
 # A zero or negative override must not lock every subagent Bash command out: it falls back to the cap.
 for _ov in 0 -1 abc; do
