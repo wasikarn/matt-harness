@@ -1583,6 +1583,51 @@ fp_run '{"tool_name":"Bash","tool_input":{"command":"ls","t":-1.5e3,"b":true,"n"
 ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = no ] && ok=0
 check "GH #326 numbers, literals, spaces and \\\" \\\\ \\/ \\n escapes stay inside the proof (python $fp_py)" "$ok"
 
+# --- GH #309: bash, ksh and zsh expand braces (dash does not), so a brace in the git word, the sub word or a
+# wrapper word (`git {,stash}`, `{,doas} git stash`, `env{,} git stash`) hid the anchor or the sub word.
+for _c in \
+  'git {,stash}' \
+  'git {stash,}' \
+  'git -C . {,stash}' \
+  '{,doas} git stash' \
+  '{,env} git stash' \
+  'doas{,} git stash' \
+  'env{,} git stash' \
+  'git {,reset} --hard' \
+  'git {,clean} -fd' \
+  "bash -c 'git {,stash}'" ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #309 denied (brace expands to a guarded git command): $_c" "$ok"
+done
+for _c in \
+  'git {,status}' \
+  'git {log,show}' \
+  'git {,stash} list' \
+  'git add src/{a,b}.py' \
+  'echo "git {,stash}"' \
+  'echo {a,b}' \
+  'ls {a,b}' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "GH #309 control allowed: $_c" "$ok"
+done
+# The brace-expansion pattern is typed again in irrecoverable.py; they must not drift.
+ok=$(python3 - "$ROOT/hooks/gates" <<'PY'
+import re, sys
+def pat(f, name):
+    m = re.search(r"^" + name + r" = re\.compile\((r\".*\")\)$", open(sys.argv[1] + "/" + f).read(), re.M)
+    return m and m.group(1)
+a, b = pat("subagent-git-guard.py", "_BRACE_EXP_RE"), pat("irrecoverable.py", "_BRACE_EXP_RE")
+print(0 if a and a == b else 1)
+PY
+)
+check "GH #309 brace-expansion pattern is the same in both gates" "$ok"
+_c="ls $(_pad 'a{b,c}d ' 500); git {,stash}"
+rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+check "GH #309 padded braced words decided inside 8 s as deny (rc $rc, ${#_c} bytes)" "$ok"
+_c="ls $(_pad 'a{b,c}d ' 500)"
+rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+check "GH #309 padded braced words allow shape finishes inside 8 s (rc $rc, ${#_c} bytes)" "$ok"
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

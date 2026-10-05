@@ -1357,6 +1357,27 @@ def _deny_if_depth_blown():
         deny("command too long to safely tokenize (nested substitution exceeded depth-scan budget) - confirm with user first")
 _deny_if_depth_blown()
 
+# GH #309: bash, ksh and zsh (not dash) expand a brace inside a word, so "--fo{rce,rce}", "a{dd,dd}" and
+# "{..,}" hid a flag, a sub word or an add argument from every copy below, which reads braces literally.
+# One more copy reads each innermost comma brace, and a one-letter range ("{e..e}"), as the shell expands
+# it, so the real parser decides ("git add src/{a,b}.py" stays allowed). A word is tried only from its
+# first plain character, and the body's first part holds no comma, so the scan is linear. "${a,b}" and
+# "\{a,b}" stay literal. The subagent guard types the same pattern (a test checks they match).
+# ponytail: one level per word, no numeric or stepped ranges; a nested brace keeps its literal reading.
+_BRACE_EXP_RE = re.compile(r"(?<![^\s;&|()<>{}\"'`\\$])(?<![$\\])([^\s;&|()<>{}\"'`\\$]*)\{([^\s;&|()<>{}\"'`\\$,]*,[^\s;&|()<>{}\"'`\\$]*|[A-Za-z]\.\.[A-Za-z])\}([^\s;&|()<>{}\"'`\\$]*)")
+
+def _brace_expanded(c):
+    size = [len(c)]
+    def word(m):
+        pre, body, post = m.groups()
+        alts = body.split(",") if "," in body else [
+            chr(i) for i in range(min(ord(body[0]), ord(body[-1])), max(ord(body[0]), ord(body[-1])) + 1) if chr(i).isalpha()]
+        size[0] += len(alts) * (len(pre) + len(post) + 1) + len(body) - len(m.group())
+        if size[0] > _CMD_LEN_CAP:  # skipping the copy would let padding walk around it
+            deny("command too long to safely tokenize (brace expansion over " + str(_CMD_LEN_CAP) + " chars) - confirm with user first")
+        return " ".join(pre + a + post for a in alts)
+    return _BRACE_EXP_RE.sub(word, c)
+
 # GH #254: a "{" or "}" inside a word is literal in bash ("feat{1}"), but shlex splits the word there
 # and the split opens a new window, so "git reset feat{1} --hard" left "--hard" in a window of its own.
 # A second tokenization keeps braces inside words (a whole-token "{"/"}" still splits, as bash
@@ -1368,6 +1389,10 @@ if "{" in cmd or "}" in cmd:
         # GH #219: the same text read the macOS sh / bash 3.2 / dash way, "{var}>f" a literal word.
         for _nf in (False, "zsh"):
             _token_lists.append(_tokens(_blanked(cmd, _nf), "{}"))
+        # GH #309: bash, ksh and zsh also expand a brace inside a word ("--fo{rce,rce}", "a{dd,dd}", "{..,}").
+        _bx = _brace_expanded(cmd)
+        if _bx != cmd:
+            _token_lists.append(_tokens(_blanked(_bx), "{}"))
     except ValueError:
         pass  # the first copy already handled an unparsable command
 

@@ -2422,6 +2422,13 @@ test_deny  "$IRRECOVERABLE" "control: a real tab between git and its argument st
   "$(bash_payload $'git\tpush --force origin develop')"
 test_allow "$IRRECOVERABLE" "control: literal backslash-t in an unrelated command stays allowed" \
   "$(bash_payload 'printf "a\tb"')"
+# GH #309: a brace inside the argv0 word hides its name from the candidate list ("r{m,m}" runs rm rm).
+test_deny  "$IRRECOVERABLE" "GH #309: r{m,m} -rf (argv0 brace, was a fast-path bypass)" \
+  "$(bash_payload 'r{m,m} -rf /tmp/x')"
+test_deny  "$IRRECOVERABLE" "GH #309: fi{nd,nd} -delete (argv0 brace, was a fast-path bypass)" \
+  "$(bash_payload 'fi{nd,nd} /tmp/x -delete')"
+test_allow "$IRRECOVERABLE" "GH #309 control: a brace group and a brace list with no verb stay allowed" \
+  "$(bash_payload '{ echo a; }; ls x{a,b}')"
 # "gh" was added to the fast-path candidate list alongside the ask-tier gh
 # merge rule (Phase B) -- without this, "gh pr merge" would fast-path
 # straight to allow, never reaching python3's ask() at all.
@@ -2971,6 +2978,62 @@ test_allow "$IRRECOVERABLE" 'GH #269 F1 control: eval, 100 -C globals, push with
   "$(bash_payload 'eval "$(echo git '"$_many_c"'push origin main)"')"
 test_allow "$IRRECOVERABLE" 'GH #269 F2 control: eval, push with 130 words and no force flag' \
   "$(bash_payload 'eval "$(echo git push origin '"$_pad130"'main)"')"
+
+# GH #309: bash, ksh and zsh expand a brace inside a word too (dash does not), so a brace glued to a flag,
+# a sub word or an add argument hid the verb or flag from the token windows, which read it literally.
+for _c in \
+  'git push --fo{rce,rce} origin main' \
+  'git push --forc{e,e-with-lease} origin main' \
+  'git push "--fo"{rce,} origin main' \
+  'git push --forc{e..e} origin main' \
+  'git restore -S --wor{ktree,} file.txt' \
+  'git branch --del{ete,ete} --forc{e,e} feat' \
+  'git add {..,}' \
+  'git add {.,}' \
+  'git add {-A,}' \
+  'git add {:/,}' \
+  'git add {*,}' \
+  'git add {--pathspec-from-file=list,}' \
+  'git add -{-pathspec-from-file=list,}' \
+  'git {,add} .' \
+  'git {,add} -A' \
+  'git a{dd,dd} .' \
+  'git -C . a{dd,dd} .' \
+  'git pu{sh,} --force origin main' \
+  'git rest{ore,ore} .' \
+  'git br{anch,anch} -D main' ; do
+  test_deny "$IRRECOVERABLE" "GH #309: brace inside a word expands to a destructive command: $_c" "$(bash_payload "$_c")"
+done
+# Already denied before the fix (the brace-kept token shows the letter, or a whole-token brace sits next
+# to a broad verb); kept so the fix cannot lose them.
+for _c in \
+  'git restore -S{W,} file.txt' \
+  'git {,stash} drop' \
+  '{,doas} git push --force origin main' \
+  'env{,} git push --force origin main' ; do
+  test_deny "$IRRECOVERABLE" "GH #309 regression: $_c" "$(bash_payload "$_c")"
+done
+for _c in \
+  'git add src/{a,b}.py' \
+  'git add {README.md,LICENSE}' \
+  'git push --for{ce-with-lease,} origin main' \
+  'git push origin feat/{a,b}' \
+  'rm src/{a,b}.txt' \
+  'cp x.{txt,bak}' \
+  'mkdir -p src/{a,b}' \
+  'git diff HEAD~{1,2}' \
+  'git log --format={a,b}' \
+  'git commit -m "fix {a,b} parsing"' \
+  'echo {a,b}' \
+  'ls {a,b}' \
+  'ls -l{a,h} x' \
+  'echo ${x,y}' ; do
+  test_allow "$IRRECOVERABLE" "GH #309 control: a brace that expands to nothing destructive: $_c" "$(bash_payload "$_c")"
+done
+_timed_case "GH #309: 3000 braced words before a brace-hidden force flag are denied fast" 2 \
+  "$(python3 -c "print('echo ' + 'a{b,c}d ' * 3000 + '; git push --fo{rce,rce} origin main')")"
+_timed_case "GH #309: a 60000-char word before a brace is allowed fast" 0 \
+  "$(python3 -c "print('echo ' + 'a' * 60000 + '{b,c}')")"
 
 # GH #336: $IFS splitting, a verb held in a variable, mkfs, chmod 777 and rm --no-preserve-root.
 # Cases (each deny shape checked in real shells) live in a fixture. A WOULD_* line is a shadow rule

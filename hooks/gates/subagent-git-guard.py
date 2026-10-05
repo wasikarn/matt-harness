@@ -956,6 +956,23 @@ def _violation_everywhere(overlap):
 def _all_passes():
     return _violation_everywhere(False) or _violation_everywhere(True) or _violation_everywhere(_LAZY)
 
+# GH #309: bash, ksh and zsh (not dash) expand braces, so `git {,stash}`, `{,doas} git stash` and
+# `env{,} git stash` hid the sub word or the anchor. A last reading checks the text with each innermost
+# brace expanded. Same pattern as irrecoverable.py's (a test checks they match; the rationale is there).
+_BRACE_EXP_RE = re.compile(r"(?<![^\s;&|()<>{}\"'`\\$])(?<![$\\])([^\s;&|()<>{}\"'`\\$]*)\{([^\s;&|()<>{}\"'`\\$,]*,[^\s;&|()<>{}\"'`\\$]*|[A-Za-z]\.\.[A-Za-z])\}([^\s;&|()<>{}\"'`\\$]*)")
+
+def _brace_expanded(c):
+    size = [len(c)]
+    def word(m):
+        pre, body, post = m.groups()
+        alts = body.split(",") if "," in body else [
+            chr(i) for i in range(min(ord(body[0]), ord(body[-1])), max(ord(body[0]), ord(body[-1])) + 1) if chr(i).isalpha()]
+        size[0] += len(alts) * (len(pre) + len(post) + 1) + len(body) - len(m.group())
+        if size[0] > _MAX_CMD_CHARS:
+            raise _TooCostly
+        return " ".join(pre + a + post for a in alts)
+    return _BRACE_EXP_RE.sub(word, c)
+
 try:
     if len(cmd) > _MAX_CMD_CHARS:
         raise _TooCostly
@@ -966,6 +983,14 @@ try:
         _sub_texts = None
         masked = _mask(cmd)
         hit = _all_passes()
+    _raw_cmd = cmd
+    if not hit and "{" in cmd:
+        cmd = _brace_expanded(cmd)
+        if cmd != _raw_cmd:
+            _sub_texts, _dollar_join = None, "'\""
+            masked = _mask(cmd)
+            hit = _all_passes()
+        cmd = _raw_cmd
 except _TooCostly:
     _err(f"[mh:gate] BLOCKED: subagent ({agent_type}) command is too long or too dense to check "
          f"safely ({len(cmd)} characters); write it to a file with the Write tool and run the file, "
