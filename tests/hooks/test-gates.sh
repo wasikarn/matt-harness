@@ -3170,6 +3170,30 @@ test_allow "$IRRECOVERABLE" "GH #309 control: a JSON here-string with chained ob
 test_deny "$IRRECOVERABLE" "GH #309: a bash -c body that only starts like JSON is still expanded (structural deny over the cap)" \
   "$(bash_payload "bash -c '$_json309; git {,\"reset\"} --hard'")"
 _would336 deny brace-view "bash -c '{\"a\":1}; git {,\"reset\"} --hard; {x,y}'"
+# A brace that cannot expand (no comma, no range: an f-string field, "{x}") stays on the shell fast path, so
+# a heredoc body whose quotes the tokenizer cannot balance is not newly denied by the brace routing.
+_c309h=$(cat <<'XEOF'
+python3 - <<'EOF'
+old = '''        secs = (datetime.datetime.now(datetime.timezone.utc) - t).total_seconds()
+        if secs < 60: return f"{int(secs)}s"'''
+new = '''        secs = (datetime.datetime.now(datetime.timezone.utc) - t).total_seconds()
+        if secs < 0: return "0s"  # future/clock-skewed ts -- don't print a negative age
+        if secs < 60: return f"{int(secs)}s"'''
+for path in ["/tmp/test-dashboard.py", "commands/review-dashboard.md"]:
+    with open(path) as f:
+        content = f.read()
+    if old in content:
+        content = content.replace(old, new)
+        with open(path, "w") as f:
+            f.write(content)
+        print("patched:", path)
+    else:
+        print("MISS:", path)
+EOF
+XEOF
+)
+test_allow "$IRRECOVERABLE" "GH #309 control: a heredoc with f-string braces and an apostrophe takes the fast path, allowed" \
+  "$(bash_payload "$_c309h")"
 # An uncaught error would exit 1, which does not block: 3000 nested substitutions must exit 2.
 test_deny "$IRRECOVERABLE" "GH #309: 3000 nested dollar-paren spans in a command with a brace deny (exit 2, no traceback)" \
   "$(bash_payload "$(python3 -c "print('echo {a,b} ' + '\"\$(' * 3000)")")"
