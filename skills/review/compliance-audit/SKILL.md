@@ -217,7 +217,8 @@ fix.
    - `pass` true → done; ship/merge if not already, but only after
      `bash "${CLAUDE_SKILL_DIR}/scripts/check-head.sh" <pinned-sha> <branch>` exits 0 (fetch
      first for a remote branch; for a PR, also pass `gh pr merge --match-head-commit
-     <pinned-sha>`, or in a repo with `scripts/merge-pr.sh` merge through it instead). Exit 1 = the branch moved since the audit: the verdict does not cover the
+     <pinned-sha>`; where a repo ships its own merge script, run `check-head.sh` right before
+     it). Exit 1 = the branch moved since the audit: the verdict does not cover the
      new head, so re-run `/mh:compliance-audit` before shipping.
    - `pass` false for any reason — an open requirement, a failed gauntlet, `scope_ok: false`, or
      a non-empty `unexpected_files[]` —

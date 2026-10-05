@@ -93,7 +93,7 @@ before any of these is cited again.
   set the peak-concurrent cap at 5 agents per wave when this skill was
   designed (raised to 10 on 2026-10-05), enforced by
   the lead clamping the work-list before spawning. The 2-wave
-  structure in this skill is still engineered around 5, now its own limit, not Rule 13's.
+  structure in this skill is still engineered around 5.
 - **Fresh-context critic pattern** —
   `agents/ideate-critic.md`
   is the kbg-native critic used for the same-model-critic-circularity
