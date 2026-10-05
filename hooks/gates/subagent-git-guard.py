@@ -703,7 +703,7 @@ def _comment_starts(s, i, start, comment_nl=-1):
         j = k
     if j == start:
         return True
-    if s[j - 1] not in _COMMENT_BOUNDARY :
+    if s[j - 1] not in _COMMENT_BOUNDARY:
         return False
     b = 0  # an escaped boundary character (`\;`, `\ `, `\)`) is part of the word, so the `#` is no comment
     while j - 2 - b >= start and s[j - 2 - b] == "\\":
@@ -722,16 +722,6 @@ def _dollar_run_odd(s, i):
         n += 1
         p -= 1
     return n % 2 == 1
-
-_DOLLAR_PAIR_RE = re.compile(r"\$\$'")
-
-def _substitution_bodies(s, depth=0):
-    # bash and sh read `$$'` as the PID then a plain quote; zsh reads it as `$` then `$'..'`. They need
-    # different quote states, so both are scanned when the text has one (GH #512, round 2 of the review).
-    bodies = _scan_bodies(s, depth, False)
-    if _DOLLAR_PAIR_RE.search(s):
-        bodies.extend(_scan_bodies(s, depth, True))
-    return bodies
 
 _DOLLAR_PAIR_RE = re.compile(r"\$\$'")
 
@@ -795,7 +785,11 @@ def _scan_bodies(s, depth=0, zsh_dollar=False):
             f[2] = "$"; i += 1
         elif c == '"':
             f[2] = None if f[2] == '"' else '"'
-        elif c == "#" and f[2] is None and _comment_starts(s, i, f[1], comment_nl):
+        elif c == "#" and f[2] is None and (
+                # inside `${..}` or an arithmetic `$((..))` or `$[..]` a `#` is a word character, so only the
+                # plain test applies there (the look-back past a backslash-newline would hide a body)
+                (s[i - 1] in " \t;&|(" or i == f[1] or (s[i - 1] == "\n" and _line_end(s, i - 1) == i - 1))
+                if f[7] or f[3] or s.find("$[", f[1], i) >= 0 else _comment_starts(s, i, f[1], comment_nl)):
             # a comment (any frame): its quotes, parens and `<<` mean nothing; in backticks the
             # closing backtick still ends it
             j = s.find("\n", i)

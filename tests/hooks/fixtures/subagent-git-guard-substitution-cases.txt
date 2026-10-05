@@ -215,3 +215,15 @@ echo (a)#"$(git stash)"
 %%
 DENY C61 GH #512 pin: a here-string before a process substitution (bash zsh ran it)
 cat <<<<(a)#"$(git stash)"
+%%
+DENY C62 GH #512 a backslash-newline then # inside ${..} is no comment (sh bash zsh ran it)
+echo ${y:-a \
+#"$(git stash)"}
+%%
+DENY C63 GH #512 a backslash-newline then # inside $((..)) is no comment (sh bash zsh ran it)
+echo $((\
+#"$(git stash)"))
+%%
+DENY C64 GH #512 a backslash-newline then # inside $[..] is no comment (sh bash zsh ran it)
+echo $[1 \
+#"$(git stash)"]
