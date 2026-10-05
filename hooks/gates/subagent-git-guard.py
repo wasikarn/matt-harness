@@ -729,19 +729,22 @@ _DOLLAR_PAIR_RE = re.compile(r"\$\$'")
 _BSNL_HASH_RE = re.compile(r"\\\n#")
 
 def _substitution_bodies(s, depth=0):
-    # Two spots where the shells disagree or the scanner cannot tell the context, so each reading is scanned
-    # and the bodies are pooled (GH #512): bash and sh read `$$'` as the PID then a plain quote, zsh as `$`
-    # then `$'..'`; and a `#` right after a backslash-newline is a comment in command position but a word
-    # character inside `${..}`, `((..))` or `a[..]=`, which the scanner does not track.
+    # GH #512. Every rule that changes what counts as a comment or a `$'..'` can hide a body the old rule
+    # found, and each review round found another place. So the scan is a pool: the legacy reading (the
+    # rules from before #512, exactly) plus the corrected readings. The pool is a superset of the legacy
+    # scan, so nothing the legacy scan found can be lost; the corrected readings add what it missed.
+    # Corrected readings: `$$'` is the PID then a plain quote in bash/sh but `$` then `$'..'` in zsh, and a
+    # `#` right after a backslash-newline is a comment in command position but a word character inside
+    # `${..}`, `((..))` or `a[..]=`, which the scanner does not track.
     dollars = [False, True] if _DOLLAR_PAIR_RE.search(s) else [False]
     looks = [True, False] if _BSNL_HASH_RE.search(s) else [True]
-    bodies = []
+    bodies = _scan_bodies(s, depth, False, True, True)
     for z in dollars:
         for lb in looks:
             bodies.extend(_scan_bodies(s, depth, z, lb))
     return bodies
 
-def _scan_bodies(s, depth=0, zsh_dollar=False, lookback=True):
+def _scan_bodies(s, depth=0, zsh_dollar=False, lookback=True, legacy=False):
     bodies, n, i = [], len(s), 0
     # frame: kind, body start, open quote, paren depth, open `case` count, saw case, at command
     # position, open ${ count
@@ -789,11 +792,13 @@ def _scan_bodies(s, depth=0, zsh_dollar=False, lookback=True):
         elif c == "'" and f[2] is None and f[0] != "bt":  # inside "..." an apostrophe is a letter
             f[2] = "'"
         elif c == "$" and s[i + 1:i + 2] == "'" and f[2] is None and f[0] != "bt" \
-                and (zsh_dollar or _dollar_run_odd(s, i)):
+                and (legacy or zsh_dollar or _dollar_run_odd(s, i)):
             f[2] = "$"; i += 1
         elif c == '"':
             f[2] = None if f[2] == '"' else '"'
-        elif c == "#" and f[2] is None and _comment_starts(s, i, f[1], comment_nl, lookback):
+        elif c == "#" and f[2] is None and (
+                (i == f[1] or s[i - 1] in " \t;&|(" or (s[i - 1] == "\n" and _line_end(s, i - 1) == i - 1))
+                if legacy else _comment_starts(s, i, f[1], comment_nl, lookback)):
             # a comment (any frame): its quotes, parens and `<<` mean nothing; in backticks the
             # closing backtick still ends it
             j = s.find("\n", i)

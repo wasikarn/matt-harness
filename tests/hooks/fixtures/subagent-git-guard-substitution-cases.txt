@@ -255,3 +255,9 @@ DENY C70 GH #512 same inside a bare (( )) (sh bash zsh ran it)
 DENY C71 GH #512 same with a set variable so ${y:+..} expands (sh bash zsh ran it)
 y=1; echo ${y:+a #c\
 #$(git stash)}
+%%
+DENY C72 GH #512 an escaped semicolon then # in backticks: the old comment reading must stay in the pool (bash sh ran it)
+x=`echo a\;#$('`; echo "$(git stash)" #'
+%%
+DENY C73 GH #512 three backslashes in backticks leave an escaped backslash and a real comment (sh bash zsh ran it)
+x=`echo a\\\;#$('`; echo "$(git stash)" #'
