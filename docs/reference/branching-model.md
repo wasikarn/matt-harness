@@ -92,7 +92,7 @@ discipline:
   state, not what was true when this session started.
 - **Bump the manifests last, then re-check at the PR and again right before merging.** Run
   `git fetch` and read `origin/develop`'s version immediately before the bump commit, once the PR
-  exists, and in the same command as `gh pr merge`: if a peer's bump merged in between, move to
+  exists, and in the same command as `scripts/merge-pr.sh` (never bare `gh pr merge`, see Merging above): if a peer's bump merged in between, move to
   the next number first. Two PRs that cut the same version leave the installed cache with
   whichever tree built first, and the other change never loads (#492 and #493 both took 1.1.189,
   #496 and #497 both took 1.1.191, 2026-10-05).
