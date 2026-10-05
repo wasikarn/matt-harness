@@ -12,8 +12,8 @@ it). Only the unquoted words are expanded as the shell does, so a quoted comma o
 quote inside an alternative is kept. The quotes stay in the text, so the gate's own tokenizer still
 reads `"git push --force"` as one word.
 
-Fail-closed, never skipped: nesting, a range or a product over the budget, or a raw private-use
-character (the stand-ins below) raises TooBig, and the caller denies. A numeric range over MAX_NUM_RANGE
+Fail-closed, never skipped: nesting, a range or a product over the budget, or a raw stand-in
+character (a noncharacter, U+FDD0-U+FDEF; see _PROT) raises TooBig, and the caller denies. A numeric range over MAX_NUM_RANGE
 items is left literal instead: digits cannot spell a verb or a flag.
 """
 import re
@@ -28,11 +28,11 @@ class TooBig(Exception):
 _SEP = re.compile(r"([\s;&|()<>]+)")
 _INT_RANGE = re.compile(r"^(-?\d+)\.\.(-?\d+)(?:\.\.(-?\d+))?$")
 _CHR_RANGE = re.compile(r"^([A-Za-z])\.\.([A-Za-z])(?:\.\.(-?\d+))?$")
-# a protected span keeps these literal for the outer expansion: private-use stand-ins, restored after
-_PROT = {c: chr(0xE000 + i) for i, c in enumerate("{},;&|()<> \t\n#\\")}
+# a protected span keeps these literal for the outer expansion: noncharacter stand-ins, restored after
+_PROT = {c: chr(0xFDD0 + i) for i, c in enumerate("{},;&|()<> \t\n#\\")}
 _TO_PROT = str.maketrans(_PROT)
 _FROM_PROT = str.maketrans({v: k for k, v in _PROT.items()})
-_PRIVATE = re.compile("[-]")
+_PRIVATE = re.compile("[" + chr(0xFDD0) + "-" + chr(0xFDEF) + "]")   # noncharacters: never in real text
 _WORD_START = " \t\n;&|()<>"
 
 def _max_depth(t):
@@ -148,29 +148,31 @@ def _expand_word(w, budget, depth):
         i += 1
     return [w]
 
-def _close(t, i, opener):
+def _close(t, i, opener, depth=0):
     # index just past the span that starts at t[i]: a quote, "$(", "$((" or a backtick; len(t) if unclosed
+    if depth > MAX_QDEPTH:
+        raise TooBig("quote nesting over %d" % MAX_QDEPTH)
     n = len(t)
     if opener == "$(":
-        depth, j = 0, i + 2
+        parens, j = 0, i + 2
         while j < n:
             c = t[j]
             if c == "\\":
                 j += 2
                 continue
             if c in "'\"`":
-                j = _close(t, j, c)
+                j = _close(t, j, c, depth + 1)
                 continue
             if c == "$" and t[j + 1:j + 2] == "(":
-                depth += 1
+                parens += 1
                 j += 2
                 continue
             if c == "(":
-                depth += 1
+                parens += 1
             elif c == ")":
-                if depth == 0:
+                if parens == 0:
                     return j + 1
-                depth -= 1
+                parens -= 1
             j += 1
         return n
     ansi = opener == "$'"
@@ -182,7 +184,7 @@ def _close(t, i, opener):
             j += 2
             continue
         if q == '"' and c == "$" and t[j + 1:j + 2] == "(":
-            j = _close(t, j + 1, "$(")
+            j = _close(t, j + 1, "$(", depth + 1)
             continue
         if c == q:
             return j + 1
@@ -268,7 +270,7 @@ def expand_text(cmd, cap):
     if "{" not in cmd:
         return cmd
     if _PRIVATE.search(cmd):
-        raise TooBig("private-use character in the command")
+        raise TooBig("expander stand-in character in the command")
     if _max_depth(cmd) > MAX_DEPTH:
         raise TooBig("brace nesting over %d" % MAX_DEPTH)
     out = _expand(cmd.replace("\\\n", ""), [cap], 0)

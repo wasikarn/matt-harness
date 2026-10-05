@@ -3154,10 +3154,16 @@ for _c in \
   '{r,"x y"}m -rf /tmp/x' ; do
   _would336 deny brace-view "$_c"
 done
-# A structural deny takes no id, so it enforces even while brace-view is shadowed: a raw private-use
-# character (the expander's own stand-ins) is refused rather than read.
-test_deny "$IRRECOVERABLE" "GH #309: a private-use character in a command with a brace denies" \
-  "$(bash_payload $'echo a\xee\x80\x88\xee\x80\x88E {x,"y"}\ngit {,"reset"} --hard\nE')"
+# A structural deny takes no id, so it enforces even while brace-view is shadowed: a raw noncharacter
+# (U+FDD0-U+FDEF, the expander's own stand-ins) is refused rather than read.
+test_deny "$IRRECOVERABLE" "GH #309: a stand-in noncharacter in a command with a brace denies" \
+  "$(bash_payload $'echo a\xef\xb7\x98\xef\xb7\x98E {x,"y"}\ngit {,"reset"} --hard\nE')"
+# A private-use icon (Nerd Fonts live at U+E000) is an ordinary character, not a stand-in.
+test_allow "$IRRECOVERABLE" "GH #309 control: a private-use icon in a command with a brace is allowed" \
+  "$(bash_payload $'echo \xee\x80\x80 {a,b}')"
+# An uncaught error would exit 1, which does not block: 3000 nested substitutions must exit 2.
+test_deny "$IRRECOVERABLE" "GH #309: 3000 nested dollar-paren spans in a command with a brace deny (exit 2, no traceback)" \
+  "$(bash_payload "$(python3 -c "print('echo {a,b} ' + '\"\$(' * 3000)")")"
 
 # GH #375: a git global's value split by shlex at $, :, @ or a non-ASCII letter (-C $R) took the
 # variable's name for the subcommand. Cases (each deny shape checked in real shells) live in a fixture.

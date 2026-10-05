@@ -1222,12 +1222,12 @@ if len(cmd) > _CMD_LEN_CAP:
 # which read the text literally. _bracex expands the whole command the way the shell does (lexed, so
 # quotes, substitutions and comments stay what they are); the result is read as one more view
 # ("brace-view", see _views), checked by every rule. A command the expansion cannot bound (nesting,
-# size, a private-use character) is a structural deny here, never skipped.
+# size, a stand-in noncharacter) is a structural deny here, never skipped.
 _BRACEX_TEXT = None
 if _bracex and "{" in cmd:
     try:
         _BRACEX_TEXT = _bracex.expand_text(cmd, _CMD_LEN_CAP)
-    except _bracex.TooBig as _e:
+    except (_bracex.TooBig, RecursionError) as _e:
         deny("command too long to safely tokenize (brace expansion: " + str(_e) + ") - confirm with user first")
     if _BRACEX_TEXT == cmd:
         _BRACEX_TEXT = None

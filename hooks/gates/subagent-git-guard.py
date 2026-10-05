@@ -979,7 +979,7 @@ try:
     if not hit and _bracex and "{" in cmd:
         try:
             _bx = _bracex.expand_text(cmd, _MAX_CMD_CHARS)
-        except _bracex.TooBig:
+        except (_bracex.TooBig, RecursionError):
             raise _TooCostly
         if _bx != cmd:
             _raw_cmd, cmd = cmd, _bx
