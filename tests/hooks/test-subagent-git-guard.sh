@@ -12,9 +12,9 @@ _JOURNAL_TMP="$(mktemp -d)"
 trap 'trash "$_JOURNAL_TMP" 2>/dev/null || true' EXIT
 export MH_GATE_JOURNAL_PATH="$_JOURNAL_TMP/gate-decisions.jsonl"
 GATE="$ROOT/hooks/gates/subagent-git-guard.sh"
-# The length cap (GH #469) would decide every over-28 KB stress row below before its scan ran; lift it
+# The length cap (GH #469) would decide every over-16000-character stress row below before its scan ran; lift it
 # for the file and let the cap rows unset it.
-export MH_SGG_MAX_CMD_BYTES=100000000
+export MH_SGG_MAX_CMD_CHARS=100000000
 
 pass=0
 fail=0
@@ -1079,17 +1079,44 @@ for _c in \
 done
 
 # GH #469 follow-up: the work budget does not track wall time (an allowed shape took 7.1 s at 40M, a
-# refused one 7.4 s), so a hard length cap decides before any scan. 28000 bytes is the line: nothing
-# under it passed 3 s in the sweep, and the longest real subagent command seen was 29.7 KB.
-_big="echo $(_pad 'a' 29000)"
-rc=$(unset MH_SGG_MAX_CMD_BYTES; sgg_rc8 "$_big"); ok=1; [ "$rc" = "2" ] && ok=0
-check "over-length command (${#_big} bytes) is denied before any scan (rc $rc)" "$ok"
+# refused one 7.4 s), so a hard length cap decides before any scan. 16000 characters is the line: the
+# slowest padded family (`eval sudo ` + 75 args + `;` x N, then `git stash`) took 2.8 s at 16 KB, 4.4 s
+# at 20 KB, 6.2 s at 24 KB (load 3); 8 of 3190 real subagent commands of 3 KB or more are longer.
+_big="echo $(_pad 'a' 16100)"
+rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_big"); ok=1; [ "$rc" = "2" ] && ok=0
+check "over-length command (${#_big} chars) is denied before any scan (rc $rc)" "$ok"
 _big="$(_pad "eval sudo $(_pad 's ' 800);" 55)ls"
-rc=$(unset MH_SGG_MAX_CMD_BYTES; sgg_rc8 "$_big"); ok=1; [ "$rc" = "2" ] && ok=0
-check "GH #469 sweep shape (${#_big} bytes) is denied by length (rc $rc)" "$ok"
-_ok="echo $(_pad 'a' 27000)"
-rc=$(unset MH_SGG_MAX_CMD_BYTES; sgg_rc8 "$_ok"); ok=1; [ "$rc" = "0" ] && ok=0
-check "a ${#_ok}-byte benign command is still allowed (rc $rc)" "$ok"
+rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_big"); ok=1; [ "$rc" = "2" ] && ok=0
+check "GH #469 sweep shape (${#_big} chars) is denied by length (rc $rc)" "$ok"
+_ok="echo $(_pad 'a' 15900)"
+rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_ok"); ok=1; [ "$rc" = "0" ] && ok=0
+check "a ${#_ok}-char benign command is still allowed (rc $rc)" "$ok"
+# The cap counts characters, not bytes: 8000 emoji are 32 KB of UTF-8 but 8000 characters of scan work.
+_ok="echo $(_pad '😀' 8000)"
+rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_ok"); ok=1; [ "$rc" = "0" ] && ok=0
+check "8000 emoji (32 KB of UTF-8, 8000 characters) is under a character cap (rc $rc)" "$ok"
+# The cap decides before the quote mask runs: a 20 MB command of quoted words took the mask alone about 9 s.
+# The payload is built inside python, since a 20 MB argv would fail and the gate would see no command.
+rc=$(unset MH_SGG_MAX_CMD_CHARS; python3 -c '
+import json, os, signal, subprocess, sys
+payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": "\"g\" " * 5000000 + "; git stash"},
+                      "agent_id": "fork", "agent_type": "general-purpose"}).encode()
+p = subprocess.Popen(["bash", sys.argv[1]], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True)
+try:
+    p.communicate(payload, timeout=8)
+    print(p.returncode)
+except subprocess.TimeoutExpired:
+    os.killpg(p.pid, signal.SIGKILL)
+    print(124)
+' "$GATE")
+ok=1; [ "$rc" = "2" ] && ok=0
+check "a 20 MB command is denied inside 8 s, before the quote mask (rc $rc)" "$ok"
+# A zero or negative override must not lock every subagent Bash command out: it falls back to the cap.
+for _ov in 0 -1 abc; do
+  rc=$(MH_SGG_MAX_CMD_CHARS=$_ov sgg_rc8 "echo hi"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "MH_SGG_MAX_CMD_CHARS=$_ov keeps the default cap, echo hi allowed (rc $rc)" "$ok"
+done
 
 # --- (23) GH #318: zsh runs a brace group with no blank after `{` (`{git stash;}`); bash, dash and
 # ksh read `{git` as a word. The Bash tool runs zsh here, so a glued `{` is a command start too (any

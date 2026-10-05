@@ -43,6 +43,20 @@ cmd = ti.get("command") if isinstance(ti, dict) else None
 if not isinstance(cmd, str):
     sys.exit(0)
 
+# GH #469: the work budget below does not track wall time (an allowed shape took 7.1 s and a refused one
+# 7.4 s at 40M, of the 8 s hook timeout; a timed-out hook allows), so a length cap in characters decides
+# first, before the quote mask below runs (about 0.45 s per MB). The slowest padded family (`eval sudo `
+# + 75 args + `;` x N, then `git stash`) took 2.8 s at 16000, 4.4 s at 20000, 6.2 s at 24000 (load 3);
+# 8 of 3190 real subagent commands of 3 KB or more are longer.
+# MH_SGG_MAX_CMD_CHARS: test-layer override so stress rows over the cap still run the scan; a value that
+# is not a positive integer keeps the cap.
+try:
+    _MAX_CMD_CHARS = int(os.environ.get("MH_SGG_MAX_CMD_CHARS", "16000"))
+except ValueError:
+    _MAX_CMD_CHARS = 16_000
+if _MAX_CMD_CHARS < 1:
+    _MAX_CMD_CHARS = 16_000
+
 def clip(s):
     # Log-injection guard: a crafted command cannot forge/erase a [mh:gate] line.
     s = re.sub(r"[^\x20-\x7e]", "?", str(s))
@@ -208,7 +222,7 @@ def _mask(s):
         _mask_memo[k] = _WORD_TOKEN_RE.sub(_drop_escapes, _join_quoted_words(s, _mask_quotes(s)))
     return _mask_memo[k]
 
-masked = _mask(cmd)
+masked = _mask(cmd) if len(cmd) <= _MAX_CMD_CHARS else ""  # over the cap: denied below, never scanned
 
 # Anchor: "git" must sit at a real command-start (string/line start, |;&(, &&,
 # ||, optional VAR=val chain, optional prefix wrapper(s), or a /path/git).
@@ -817,16 +831,8 @@ def _violation_everywhere(overlap):
 def _all_passes():
     return _violation_everywhere(False) or _violation_everywhere(True) or _violation_everywhere(_LAZY)
 
-# GH #469: the work budget above does not track wall time (an allowed shape took 7.1 s and a refused one
-# 7.4 s at 40M, of the 8 s hook timeout; a timed-out hook allows), so a length cap decides first. Nothing
-# under 28000 bytes passed 3 s in that sweep; the longest real subagent command seen was 29.7 KB.
-try:  # MH_SGG_MAX_CMD_BYTES: test-layer override so stress rows over the cap still run the scan; a bad value keeps the cap
-    _MAX_CMD_BYTES = int(os.environ.get("MH_SGG_MAX_CMD_BYTES", "28000"))
-except ValueError:
-    _MAX_CMD_BYTES = 28_000
-
 try:
-    if len(cmd) > _MAX_CMD_BYTES:
+    if len(cmd) > _MAX_CMD_CHARS:
         raise _TooCostly
     hit = _all_passes()
     for _dollar_join in ("'", ""):  # GH #344: the zsh and dash readings of `$` pieces (see _QWORD_RE)
@@ -837,7 +843,7 @@ try:
         hit = _all_passes()
 except _TooCostly:
     print(f"[mh:gate] BLOCKED: subagent ({agent_type}) command is too long or too dense to check "
-          f"safely ({len(cmd)} bytes); write it to a file with the Write tool and run the file, "
+          f"safely ({len(cmd)} characters); write it to a file with the Write tool and run the file, "
           f"or split it into smaller commands.", file=sys.stderr)
     journal(GATE_ID, "Bash", "deny", d.get("session_id"))
     sys.exit(2)
