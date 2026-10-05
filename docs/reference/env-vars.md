@@ -16,6 +16,9 @@ under `env`, never in a committed file.
 | `MH_CODEX_DATA_DIR` | `scripts/_lib/codex-state-path.sh`, check 71 | Overrides the paired `codex@openai-codex` plugin's per-plugin data root (default: `~/.claude/plugins/data/codex-openai-codex`) that check 71 reads the review-gate state from. Test-only: points the self-test at a throwaway directory instead of the real, shared one. |
 | `MH_CODEX_CACHE_DIR` | check 72 | Overrides the paired `codex@openai-codex` plugin's cache dir (default: newest `~/.claude/plugins/cache/openai-codex/codex/<version>/`) that check 72 reads `VALID_REASONING_EFFORTS` from. Test-only. |
 | `MH_FRAGMENTS_DEBUG` | `hooks/sensors/fragments-capture.sh` | Set to `1` to trace each decision point (why a capture did or didn't fire — not armed, window expired, no match, publish race) to stderr. Silent by default; a user knob for debugging the writing-fragments pointer-capture sensor, not read by any other script. |
+| `MERGE_PR_LOAD_MAX` | `scripts/merge-pr.sh` | Load average below which the script merges (default `4`); `tests/scripts/test-merge-pr.sh` sets it. |
+| `MERGE_PR_LOAD_WAIT_SECS` | `scripts/merge-pr.sh` | Seconds the script waits for load to drop before it fails with the load figure (default `900`); the test sets `0`. |
+| `MERGE_PR_ALLOW_SAME_VERSION` | `scripts/merge-pr.sh` | Set to `1` to skip only the refusal of a head whose manifest version equals `origin/develop`'s, for a PR that needs no bump. A lower version still refuses. |
 
 Native Claude Code variables this plugin relies on but does not own: `CLAUDE_PLUGIN_ROOT`
 (every hook command), `CLAUDE_SKILL_DIR` (set while a skill body runs; `harness-audit`,

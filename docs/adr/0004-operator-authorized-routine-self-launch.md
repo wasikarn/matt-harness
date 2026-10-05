@@ -431,7 +431,7 @@ Matches `ADR 0009`'s precedent (5 fresh-context reviewers + 2 rounds of cross-AD
 review — the most scrutiny any single decision in this lineage has received) and satisfies
 `ADR 0011`'s own revisit trigger verbatim.
 
-**Wave 1 — 5 fresh-context reviewers, main-session-dispatched only** (Rule 13's 5-per-wave cap),
+**Wave 1 — 5 fresh-context reviewers, main-session-dispatched only** (inside Rule 13's per-wave cap: 5 when this was written, 10 since 2026-10-05),
 each a distinct lens:
 1. **Doctrine-fidelity** — does this ADR actually retain everything §2 claims it retains, checked
    against the live repo, not against this document's own assertions?
