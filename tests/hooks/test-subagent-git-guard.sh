@@ -15,6 +15,8 @@ GATE="$ROOT/hooks/gates/subagent-git-guard.sh"
 # The length cap (GH #469) would decide every over-16000-character stress row below before its scan ran; lift it
 # for the file and let the cap rows unset it.
 export MH_SGG_MAX_CMD_CHARS=100000000
+# The deadline (GH #469) would turn a slow stress row below into a deny before its scan finished; lift it too.
+export MH_SGG_DEADLINE_SECS=1000
 
 pass=0
 fail=0
@@ -1108,6 +1110,26 @@ except subprocess.TimeoutExpired:
 ' "$GATE")
 ok=1; [ "$rc" = "2" ] && ok=0
 check "a 20 MB command is denied inside 8 s, before the quote mask (rc $rc)" "$ok"
+# GH #469: no length decides time (see above), so the gate also arms a wall-clock deadline of its own
+# (default 5 s, under the 8 s hook timeout; a timed-out hook allows) and denies when it fires. The row
+# below is a padded eval-sudo shape that took 6.5 s with no deadline; with a 1 s deadline it must be
+# denied within 4 s, with the deadline's own message (the work budget's message would say "too dense").
+rc_msg=$(MH_SGG_DEADLINE_SECS=1 python3 -c '
+import json, subprocess, sys, time
+cmd = ("eval sudo " + "s " * 24 + ";") * 270 + "git stash $" + chr(34) + "show" + chr(34)
+payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": cmd},
+                      "agent_id": "fork", "agent_type": "general-purpose"}).encode()
+t = time.time()
+p = subprocess.run(["bash", sys.argv[1]], input=payload, capture_output=True, timeout=30)
+print(p.returncode, round(time.time() - t, 1), "time limit" in p.stderr.decode())
+' "$GATE")
+set -- $rc_msg; ok=1; [ "$1" = "2" ] && [ "${2%.*}" -lt 4 ] && [ "$3" = "True" ] && ok=0
+check "a slow padded shape is denied by the deadline within 4 s, with its own message (rc/secs/message: $rc_msg)" "$ok"
+# A zero, negative or non-numeric deadline must neither disarm the deadline nor lock everything out.
+for _dv in 0 -1 abc; do
+  rc=$(MH_SGG_DEADLINE_SECS=$_dv sgg_rc8 "echo hi"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "MH_SGG_DEADLINE_SECS=$_dv keeps the default deadline, echo hi allowed (rc $rc)" "$ok"
+done
 # A zero or negative override must not lock every subagent Bash command out: it falls back to the cap.
 for _ov in 0 -1 abc; do
   rc=$(MH_SGG_MAX_CMD_CHARS=$_ov sgg_rc8 "echo hi"); ok=1; [ "$rc" = "0" ] && ok=0

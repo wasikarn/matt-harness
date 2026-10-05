@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, os, re, sys
+import json, os, re, signal, sys
 
 # GH #156: raise the int-string digit limit before parsing so an oversized
 # unquoted int literal doesn't crash json.load() into this gate's fail-open
@@ -48,7 +48,7 @@ if not isinstance(cmd, str):
 # first, before the quote mask below runs (about 0.45 s per MB: a 20 MB command timed out into allow).
 # It is NOT a time bound for shapes under the cap: cost follows `;` count x length, so a padded
 # `eval sudo ` + 24 args + `;` x 270 (15947 chars) took 6.5 s at load 3.5 and 9.8 s at load 9.4.
-# A deadline inside the gate is the open design (see docs/reference/repo-gotchas.md, GH #469).
+# The deadline below bounds those shapes directly (see docs/reference/repo-gotchas.md, GH #469).
 # MH_SGG_MAX_CMD_CHARS: test-layer override so stress rows over the cap still run the scan; a value that
 # is not a positive integer keeps the cap.
 try:
@@ -64,6 +64,31 @@ def clip(s):
     return s[:120]
 
 agent_type = clip(d.get("agent_type") or "unknown")
+
+# GH #469: a deadline of the gate's own. No length or work charge tracks wall time across shapes and
+# load, and a hook that hits its 8 s timeout is ALLOWED, so deny at 5 s instead. A signal handler can
+# fire anywhere (even in module-level work outside the try below), so it denies and exits itself.
+# MH_SGG_DEADLINE_SECS: test-layer override; a value that is not a positive number keeps the default
+# (0 would disarm the timer). No SIGALRM on this platform: the work budget and length cap still apply.
+try:
+    _DEADLINE_SECS = float(os.environ.get("MH_SGG_DEADLINE_SECS", "5"))
+except ValueError:
+    _DEADLINE_SECS = 5.0
+if not _DEADLINE_SECS > 0:
+    _DEADLINE_SECS = 5.0
+
+def _deadline_hit(signum, frame):
+    print(f"[mh:gate] BLOCKED: subagent ({agent_type}) command took longer than the gate's {_DEADLINE_SECS:g} s "
+          f"time limit to check ({len(cmd)} characters); write it to a file with the Write tool and run "
+          f"the file, or split it into smaller commands.", file=sys.stderr, flush=True)
+    journal(GATE_ID, "Bash", "deny", d.get("session_id"))
+    os._exit(2)
+
+try:
+    signal.signal(signal.SIGALRM, _deadline_hit)
+    signal.setitimer(signal.ITIMER_REAL, _DEADLINE_SECS)
+except (AttributeError, ValueError, OSError):
+    pass
 
 # 2026-09-20: extracted to a shared hooks/gates/_quotemask.py after this
 # function and test-integrity.py's identical _mask_quotes_bash drifted into
