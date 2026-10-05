@@ -163,3 +163,101 @@ x
 PY'''
 print(cmd)
 PY
+%%
+DENY C47 GH #512 a comment after a backslash-newline inside a quoted substitution (sh bash zsh ran it)
+echo "$(echo x \
+# a)
+git stash)"
+%%
+DENY C48 GH #512 a comment after a backslash-newline at the start of a word (sh bash zsh ran it)
+echo \
+# don't
+echo "$(git stash)"
+%%
+DENY C49 GH #512 dollar-dollar then an ANSI-C quote: bash and sh read the PID and a plain quote (bash sh ran it)
+echo $$'a\'; echo "$(git stash)"; echo 'x'
+%%
+DENY C50 GH #512 dollar-dollar then a quote: zsh reads a dollar and an ANSI-C quote, so both readings are scanned (zsh ran it)
+echo $$'x\'' "$(git stash)" #'
+%%
+DENY C51 GH #512 a comment that ends in a backslash still ends at its newline (sh bash zsh ran it)
+# x\
+#don't
+echo "$(git stash)"
+%%
+DENY C52 GH #512 an escaped semicolon is part of the word, so # after it is no comment (sh bash zsh ran it)
+echo \;#"$(git stash)"
+%%
+DENY C53 GH #512 pin: an escaped close paren before # (sh bash zsh ran it)
+echo \)#"$(git stash)"
+%%
+DENY C54 GH #512 pin: a close paren that ends a substitution is part of the word (sh bash zsh ran it)
+echo $(true)#"$(git stash)"
+%%
+DENY C55 GH #512 pin: same after an arithmetic close (sh bash zsh ran it)
+echo $((1))#"$(git stash)"
+%%
+DENY C56 GH #512 pin: a process substitution close is part of the word (bash zsh ran it)
+<(true)#x\;`git stash`
+%%
+DENY C57 GH #512 pin: process substitution then a line continuation (bash zsh ran it)
+<(true)\
+#x\;`git stash`
+%%
+DENY C58 GH #512 pin: a close paren inside ${..} is part of the word (sh bash zsh ran it)
+echo ${y:-)#"$(git stash)"}
+%%
+DENY C59 GH #512 pin: a close paren inside arithmetic is part of the word (sh bash zsh ran it)
+echo $(( (1)#"$(git stash)" ))
+%%
+DENY C60 GH #512 pin: zsh reads (a) as a glob, so # after it is no comment (zsh ran it)
+echo (a)#"$(git stash)"
+%%
+DENY C61 GH #512 pin: a here-string before a process substitution (bash zsh ran it)
+cat <<<<(a)#"$(git stash)"
+%%
+DENY C62 GH #512 a backslash-newline then # inside ${..} is no comment (sh bash zsh ran it)
+echo ${y:-a \
+#"$(git stash)"}
+%%
+DENY C63 GH #512 a backslash-newline then # inside $((..)) is no comment (sh bash zsh ran it)
+echo $((\
+#"$(git stash)"))
+%%
+DENY C64 GH #512 a backslash-newline then # inside $[..] is no comment (sh bash zsh ran it)
+echo $[1 \
+#"$(git stash)"]
+%%
+DENY C65 GH #512 a backslash-newline then # inside a bare (( )) is no comment (sh bash zsh ran it)
+(( 1 \
+#"$(git stash)" ))
+%%
+DENY C66 GH #512 a backslash-newline then # inside a for (( )) header is no comment (bash zsh ran it)
+for (( i=0; i<1 \
+#"$(git stash)"; i++ )); do :; done
+%%
+DENY C67 GH #512 a backslash-newline then # inside an array subscript is no comment (bash sh ran it)
+a[ 1 \
+#"$(git stash)"]=1
+%%
+DENY C68 GH #512 a quoted } inside ${..} does not end it, so # after a backslash-newline is no comment (sh bash zsh ran it)
+echo ${y:-"}" \
+#"$(git stash)"}
+%%
+DENY C69 GH #512 a fake comment in ${..} must not make the next backslash-newline # a comment (sh bash zsh ran it)
+echo ${y:-a #c\
+#$(git stash)}
+%%
+DENY C70 GH #512 same inside a bare (( )) (sh bash zsh ran it)
+(( 1 #c\
+#$(git stash) ))
+%%
+DENY C71 GH #512 same with a set variable so ${y:+..} expands (sh bash zsh ran it)
+y=1; echo ${y:+a #c\
+#$(git stash)}
+%%
+DENY C72 GH #512 an escaped semicolon then # in backticks: the old comment reading must stay in the pool (bash sh ran it)
+x=`echo a\;#$('`; echo "$(git stash)" #'
+%%
+DENY C73 GH #512 three backslashes in backticks leave an escaped backslash and a real comment (sh bash zsh ran it)
+x=`echo a\\\;#$('`; echo "$(git stash)" #'
