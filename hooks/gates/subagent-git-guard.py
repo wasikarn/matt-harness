@@ -692,7 +692,7 @@ def _comment_starts(s, i, start, comment_nl=-1, lookback=True):
     # it is); the caller scans both readings rather than guess which context it is in.
     j = i
     while j > start and s[j - 1] == "\n":
-        if j - 1 == comment_nl:
+        if lookback and j - 1 == comment_nl:  # the other reading must stay develop's
             return True
         k = j - 1
         while k > start and s[k - 1] == "\\":

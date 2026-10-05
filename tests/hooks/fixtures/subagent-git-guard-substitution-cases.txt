@@ -243,3 +243,15 @@ a[ 1 \
 DENY C68 GH #512 a quoted } inside ${..} does not end it, so # after a backslash-newline is no comment (sh bash zsh ran it)
 echo ${y:-"}" \
 #"$(git stash)"}
+%%
+DENY C69 GH #512 a fake comment in ${..} must not make the next backslash-newline # a comment (sh bash zsh ran it)
+echo ${y:-a #c\
+#$(git stash)}
+%%
+DENY C70 GH #512 same inside a bare (( )) (sh bash zsh ran it)
+(( 1 #c\
+#$(git stash) ))
+%%
+DENY C71 GH #512 same with a set variable so ${y:+..} expands (sh bash zsh ran it)
+y=1; echo ${y:+a #c\
+#$(git stash)}
