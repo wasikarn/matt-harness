@@ -227,3 +227,19 @@ echo $((\
 DENY C64 GH #512 a backslash-newline then # inside $[..] is no comment (sh bash zsh ran it)
 echo $[1 \
 #"$(git stash)"]
+%%
+DENY C65 GH #512 a backslash-newline then # inside a bare (( )) is no comment (sh bash zsh ran it)
+(( 1 \
+#"$(git stash)" ))
+%%
+DENY C66 GH #512 a backslash-newline then # inside a for (( )) header is no comment (bash zsh ran it)
+for (( i=0; i<1 \
+#"$(git stash)"; i++ )); do :; done
+%%
+DENY C67 GH #512 a backslash-newline then # inside an array subscript is no comment (bash sh ran it)
+a[ 1 \
+#"$(git stash)"]=1
+%%
+DENY C68 GH #512 a quoted } inside ${..} does not end it, so # after a backslash-newline is no comment (sh bash zsh ran it)
+echo ${y:-"}" \
+#"$(git stash)"}

@@ -680,14 +680,16 @@ def _heredoc_at(s, i, after=None):
 # run rule of GH #161) so the two agree again.
 _COMMENT_BOUNDARY = " \t;&|("
 
-def _comment_starts(s, i, start, comment_nl=-1):
+def _comment_starts(s, i, start, comment_nl=-1, lookback=True):
     # Does the `#` at s[i] open a comment? Yes at the start of the text or after a blank, ; & | ( or a
     # real newline. A backslash-newline pair is deleted by the shell, so look back past it: one backslash
     # leaves what stood before the pair (`echo x \<nl>#y` is a comment, `x\<nl>#y` is one word); a longer
     # odd run leaves escaped backslashes, which are word characters. comment_nl is the newline that ended a
     # comment, which the text alone cannot say (a comment ends at its newline even when it ends in a
     # backslash). A `)` is not a boundary: it often ends a word (`$(true)#x`) and the scanner does not
-    # track which parens are real subshells, so that shape stays open (GH #512).
+    # track which parens are real subshells, so that shape stays open (GH #512). lookback=False is the
+    # reading where a `#` after a backslash-newline is a word character (inside `${..}`, `((..))`, `a[..]=`
+    # it is); the caller scans both readings rather than guess which context it is in.
     j = i
     while j > start and s[j - 1] == "\n":
         if j - 1 == comment_nl:
@@ -698,7 +700,7 @@ def _comment_starts(s, i, start, comment_nl=-1):
         run = j - 1 - k
         if run % 2 == 0:
             return True  # a real newline
-        if run > 1:
+        if run > 1 or not lookback:
             return False
         j = k
     if j == start:
@@ -724,16 +726,22 @@ def _dollar_run_odd(s, i):
     return n % 2 == 1
 
 _DOLLAR_PAIR_RE = re.compile(r"\$\$'")
+_BSNL_HASH_RE = re.compile(r"\\\n#")
 
 def _substitution_bodies(s, depth=0):
-    # bash and sh read `$$'` as the PID then a plain quote; zsh reads it as `$` then `$'..'`. They need
-    # different quote states, so both are scanned when the text has one (GH #512, round 2 of the review).
-    bodies = _scan_bodies(s, depth, False)
-    if _DOLLAR_PAIR_RE.search(s):
-        bodies.extend(_scan_bodies(s, depth, True))
+    # Two spots where the shells disagree or the scanner cannot tell the context, so each reading is scanned
+    # and the bodies are pooled (GH #512): bash and sh read `$$'` as the PID then a plain quote, zsh as `$`
+    # then `$'..'`; and a `#` right after a backslash-newline is a comment in command position but a word
+    # character inside `${..}`, `((..))` or `a[..]=`, which the scanner does not track.
+    dollars = [False, True] if _DOLLAR_PAIR_RE.search(s) else [False]
+    looks = [True, False] if _BSNL_HASH_RE.search(s) else [True]
+    bodies = []
+    for z in dollars:
+        for lb in looks:
+            bodies.extend(_scan_bodies(s, depth, z, lb))
     return bodies
 
-def _scan_bodies(s, depth=0, zsh_dollar=False):
+def _scan_bodies(s, depth=0, zsh_dollar=False, lookback=True):
     bodies, n, i = [], len(s), 0
     # frame: kind, body start, open quote, paren depth, open `case` count, saw case, at command
     # position, open ${ count
@@ -785,11 +793,7 @@ def _scan_bodies(s, depth=0, zsh_dollar=False):
             f[2] = "$"; i += 1
         elif c == '"':
             f[2] = None if f[2] == '"' else '"'
-        elif c == "#" and f[2] is None and (
-                # inside `${..}` or an arithmetic `$((..))` or `$[..]` a `#` is a word character, so only the
-                # plain test applies there (the look-back past a backslash-newline would hide a body)
-                (s[i - 1] in " \t;&|(" or i == f[1] or (s[i - 1] == "\n" and _line_end(s, i - 1) == i - 1))
-                if f[7] or f[3] or s.find("$[", f[1], i) >= 0 else _comment_starts(s, i, f[1], comment_nl)):
+        elif c == "#" and f[2] is None and _comment_starts(s, i, f[1], comment_nl, lookback):
             # a comment (any frame): its quotes, parens and `<<` mean nothing; in backticks the
             # closing backtick still ends it
             j = s.find("\n", i)
