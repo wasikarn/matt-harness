@@ -11,10 +11,10 @@ The 2026-06-12 audit caught a 44→105-agent failure mode where a
 soft cap on a work-list was silently doubled by an audit + verify
 layer (operator memory store, `bounded-agent-spawning` and
 `whole-repo-dig-2026-06-16`; not in this repo). `evals/ideate-run/`
-bounds Agent calls per run (8 to 9) but cannot see wave shape; what is
-code-enforced is narrower than a fixture would claim: METHODOLOGY Rule 13's hard cap
-clamps any single wave's work-list to ≤10 before spawning (≤5 until 2026-10-05; this
-skill keeps its own 5-agent design limit). This command's Phase 1 (5)
+bounds Agent calls per run (8 to 9) but cannot see wave shape; what Rule 13
+provides is narrower than a fixture would claim: its hard cap is injected prose, no hook, that
+tells the lead to clamp any single wave's work-list to ≤10 before spawning (≤5 until 2026-10-05;
+this skill keeps its own 5-agent design limit). This command's Phase 1 (5)
 and Phase 3 (3) sizes are written to sit inside that per-wave
 clamp. The "exactly 2 waves, not 3+" shape is this skill's own
 design contract (Phase 1 through Phase 3 in `SKILL.md`), not
@@ -89,11 +89,10 @@ before any of these is cited again.
 - **Why this exists** — `kbg-vs-adhd.md` (read via Bash: `cat "${MH_PLUGIN_ROOT}/docs/research/kbg-vs-adhd.md"`)
   records the port decisions, the eval-rigor limitation (n=1
   upstream), and the things explicitly rejected.
-- **5-agent hard cap (load-bearing)** — METHODOLOGY Rule 13
-  set the peak-concurrent cap at 5 agents per wave when this skill was
-  designed (raised to 10 on 2026-10-05), enforced by
-  the lead clamping the work-list before spawning. The 2-wave
-  structure in this skill is still engineered around 5.
+- **5-agent design limit (load-bearing)** — this skill's 2-wave
+  structure is engineered around 5 agents per wave. That was METHODOLOGY Rule 13's
+  peak-concurrent cap when the skill was designed (raised to 10 on 2026-10-05); the lead
+  applies it by clamping the work-list before spawning, and the skill keeps 5 as its own limit.
 - **Fresh-context critic pattern** —
   `agents/ideate-critic.md`
   is the kbg-native critic used for the same-model-critic-circularity
