@@ -12,7 +12,7 @@ effort: high
 
 Draft the engineering record of a fixed bug: the document that answers "what happened and why"
 for a reader who was not there. It follows `mattpocock-skills:diagnosing-bugs`, whose Phases 2, 5 and 6
-outputs (minimised repro, regression test, confirmed hypothesis in the commit message) are this
+outputs (minimised repro, regression test, confirmed hypothesis in the commit / PR message) are this
 skill's input.
 
 Three rules hold through every step:

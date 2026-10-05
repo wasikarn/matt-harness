@@ -128,8 +128,8 @@ def _normalize_ansi_c_quotes(cmd):
 cmd = _strip_heredocs(d["tool_input"].get("command", ""))
 
 def _mid_merge():
-    # `git add -A|--all|.` is allowed only mid-merge (upstream's former resolving-merge-conflicts
-    # needs it). Checked in the payload cwd, not this process cwd.
+    # `git add -A|--all|.` is allowed only mid-merge (staging a manual conflict
+    # resolution needs it). Checked in the payload cwd, not this process cwd.
     import subprocess
     cwd = d.get("cwd") or os.getcwd()
     try:
