@@ -1,5 +1,5 @@
 ---
-description: "Gate-report: ask/deny counts per gate from the gate-decisions journal. Use when checking how often gates interrupt writes. Not a wait-time/approval-latency metric (none logged)."
+description: "Gate-report: ask/deny counts per gate from the gate-decisions journal, and mh skills unused in the last N sessions. Use for gate friction or stale skills."
 name: gate-report
 disable-model-invocation: true
 model: inherit
@@ -28,6 +28,27 @@ a second override name.
 
 If the file is missing, the script prints `Gate journal not set up.` and exits 0. Relay that
 line: the log fills only after a gate first asks or denies. Do not invent numbers.
+
+## Skill usage
+
+Which mh skills had no recorded use in the last N sessions (default 100; GH #474). Read-only and
+machine-local: it reads `~/.local/share/kbg/metrics/skill-usage.jsonl`, never a gate and never
+a `harness-audit` check, since the log differs per machine.
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/skill-usage.py" [--sessions N]
+```
+
+It prints two lists with each skill's last-use date: model-invocable skills, then manual-only
+ones (`disable-model-invocation: true`), because a manual-only skill is used only when typed and
+rarely by nature. A missing log prints `Skill usage log not set up.`; relay that line.
+
+- **Zero use is not broken.** A rare skill and a description that never matches look the same
+  here. List the skills; a human decides keep, trim or fix the description.
+- **N counts sessions that used an mh skill.** A session with no skill use leaves no row, so
+  it is invisible; the header says `last X of Y sessions with an mh skill use`.
+- **Typed uses are logged** (`source: typed`) next to model calls, so a manual-only skill's use
+  does show up.
 
 ## Read back
 
