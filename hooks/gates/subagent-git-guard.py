@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import json, re, sys
+import json, os, re, signal, sys
 
 # GH #156: raise the int-string digit limit before parsing so an oversized
 # unquoted int literal doesn't crash json.load() into this gate's fail-open
@@ -43,12 +43,60 @@ cmd = ti.get("command") if isinstance(ti, dict) else None
 if not isinstance(cmd, str):
     sys.exit(0)
 
+# GH #469: the work budget below does not track wall time (an allowed shape took 7.1 s and a refused one
+# 7.4 s at 40M, of the 8 s hook timeout; a timed-out hook allows), so a length cap in characters decides
+# first, before the quote mask below runs (about 0.45 s per MB: a 20 MB command timed out into allow).
+# It is NOT a time bound for shapes under the cap: cost follows `;` count x length, so a padded
+# `eval sudo ` + 24 args + `;` x 270 (15947 chars) took 6.5 s at load 3.5 and 9.8 s at load 9.4.
+# The deadline below bounds those shapes directly (see docs/reference/repo-gotchas.md, GH #469).
+# MH_SGG_MAX_CMD_CHARS: test-layer override so stress rows over the cap still run the scan; a value that
+# is not a positive integer keeps the cap.
+try:
+    _MAX_CMD_CHARS = int(os.environ.get("MH_SGG_MAX_CMD_CHARS", "16000"))
+except ValueError:
+    _MAX_CMD_CHARS = 16_000
+if _MAX_CMD_CHARS < 1:
+    _MAX_CMD_CHARS = 16_000
+
 def clip(s):
     # Log-injection guard: a crafted command cannot forge/erase a [mh:gate] line.
     s = re.sub(r"[^\x20-\x7e]", "?", str(s))
     return s[:120]
 
 agent_type = clip(d.get("agent_type") or "unknown")
+
+# GH #469: a deadline of the gate's own. No length or work charge tracks wall time across shapes and
+# load, and a hook that hits its 8 s timeout is ALLOWED, so deny at 5 s instead. A signal handler can
+# fire anywhere (even in module-level work outside the try below), so it denies and exits itself.
+# MH_SGG_DEADLINE_SECS: test-layer override; a value that is not a positive number keeps the default
+# (0 would disarm the timer) and says so on stderr, and one past the 8 s hook timeout is clamped to 7 s
+# (inf or 1e300 would overflow setitimer and crash the gate, which exits 1 and so allows).
+# No SIGALRM on this platform: the work budget and length cap still apply.
+try:
+    _DEADLINE_SECS = float(os.environ.get("MH_SGG_DEADLINE_SECS", "5"))
+except ValueError:
+    _DEADLINE_SECS = 0.0
+if not _DEADLINE_SECS > 0:
+    print(f"[mh:gate] subagent-git-guard: MH_SGG_DEADLINE_SECS {os.environ.get('MH_SGG_DEADLINE_SECS')!r:.40} "
+          "is not a positive number; using 5 s", file=sys.stderr)
+    _DEADLINE_SECS = 5.0
+_DEADLINE_SECS = min(_DEADLINE_SECS, 7.0)
+
+def _deadline_hit(signum, frame):
+    # try/finally: a failed print (a closed stderr) must not skip the exit, or the scan unwinds and allows.
+    try:
+        print(f"[mh:gate] BLOCKED: subagent ({agent_type}) command took longer than the gate's {_DEADLINE_SECS:g} s "
+              f"time limit to check ({len(cmd)} characters); write it to a file with the Write tool and run "
+              f"the file, or split it into smaller commands.", file=sys.stderr, flush=True)
+        journal(GATE_ID, "Bash", "deny", d.get("session_id"))
+    finally:
+        os._exit(2)
+
+try:
+    signal.signal(signal.SIGALRM, _deadline_hit)
+    signal.setitimer(signal.ITIMER_REAL, _DEADLINE_SECS)
+except (AttributeError, ValueError, OSError, OverflowError):
+    pass
 
 # 2026-09-20: extracted to a shared hooks/gates/_quotemask.py after this
 # function and test-integrity.py's identical _mask_quotes_bash drifted into
@@ -208,7 +256,7 @@ def _mask(s):
         _mask_memo[k] = _WORD_TOKEN_RE.sub(_drop_escapes, _join_quoted_words(s, _mask_quotes(s)))
     return _mask_memo[k]
 
-masked = _mask(cmd)
+masked = _mask(cmd) if len(cmd) <= _MAX_CMD_CHARS else ""  # over the cap: denied below, never scanned
 
 # Anchor: "git" must sit at a real command-start (string/line start, |;&(, &&,
 # ||, optional VAR=val chain, optional prefix wrapper(s), or a /path/git).
@@ -818,6 +866,8 @@ def _all_passes():
     return _violation_everywhere(False) or _violation_everywhere(True) or _violation_everywhere(_LAZY)
 
 try:
+    if len(cmd) > _MAX_CMD_CHARS:
+        raise _TooCostly
     hit = _all_passes()
     for _dollar_join in ("'", ""):  # GH #344: the zsh and dash readings of `$` pieces (see _QWORD_RE)
         if hit or not _dollar_joined:
@@ -827,7 +877,7 @@ try:
         hit = _all_passes()
 except _TooCostly:
     print(f"[mh:gate] BLOCKED: subagent ({agent_type}) command is too long or too dense to check "
-          f"safely ({len(cmd)} bytes); write it to a file with the Write tool and run the file, "
+          f"safely ({len(cmd)} characters); write it to a file with the Write tool and run the file, "
           f"or split it into smaller commands.", file=sys.stderr)
     journal(GATE_ID, "Bash", "deny", d.get("session_id"))
     sys.exit(2)

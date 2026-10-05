@@ -12,6 +12,11 @@ _JOURNAL_TMP="$(mktemp -d)"
 trap 'trash "$_JOURNAL_TMP" 2>/dev/null || true' EXIT
 export MH_GATE_JOURNAL_PATH="$_JOURNAL_TMP/gate-decisions.jsonl"
 GATE="$ROOT/hooks/gates/subagent-git-guard.sh"
+# The length cap (GH #469) would decide every over-16000-character stress row below before its scan ran; lift it
+# for the file and let the cap rows unset it.
+export MH_SGG_MAX_CMD_CHARS=100000000
+# The deadline (GH #469) would turn a slow stress row below into a deny before its scan finished; lift it too.
+export MH_SGG_DEADLINE_SECS=1000
 
 pass=0
 fail=0
@@ -1073,6 +1078,81 @@ for _c in \
   "eval $(_pad 'command ' 8000)ls" ; do
   rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" != "124" ] && ok=0
   check "GH #307 allow shape finishes inside 8 s (rc $rc, ${#_c} bytes): ${_c:0:30}" "$ok"
+done
+
+# GH #469 follow-up: the work budget does not track wall time (an allowed shape took 7.1 s at 40M, a
+# refused one 7.4 s), so a length cap decides before any scan. It bounds the pre-mask linear cost (the
+# 20 MB row below), not the time of a shape under the cap (see repo-gotchas, GH #469).
+_big="echo $(_pad 'a' 16100)"
+rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_big"); ok=1; [ "$rc" = "2" ] && ok=0
+check "over-length command (${#_big} chars) is denied before any scan (rc $rc)" "$ok"
+_ok="echo $(_pad 'a' 15900)"
+rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_ok"); ok=1; [ "$rc" = "0" ] && ok=0
+check "a ${#_ok}-char benign command is still allowed (rc $rc)" "$ok"
+# The cap counts characters, not bytes: 8000 emoji are 32 KB of UTF-8 but 8000 characters of scan work.
+_ok="echo $(_pad '😀' 8000)"
+rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_ok"); ok=1; [ "$rc" = "0" ] && ok=0
+check "8000 emoji (32 KB of UTF-8, 8000 characters) is under a character cap (rc $rc)" "$ok"
+# The cap decides before the quote mask runs: a 20 MB command of quoted words took the mask alone about 9 s.
+# The payload is built inside python, since a 20 MB argv would fail and the gate would see no command.
+rc=$(unset MH_SGG_MAX_CMD_CHARS; python3 -c '
+import json, os, signal, subprocess, sys
+payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": "\"g\" " * 5000000 + "; git stash"},
+                      "agent_id": "fork", "agent_type": "general-purpose"}).encode()
+p = subprocess.Popen(["bash", sys.argv[1]], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, start_new_session=True)
+try:
+    p.communicate(payload, timeout=8)
+    print(p.returncode)
+except subprocess.TimeoutExpired:
+    os.killpg(p.pid, signal.SIGKILL)
+    print(124)
+' "$GATE")
+ok=1; [ "$rc" = "2" ] && ok=0
+check "a 20 MB command is denied inside 8 s, before the quote mask (rc $rc)" "$ok"
+# GH #469: no length decides time (see above), so the gate also arms a wall-clock deadline of its own
+# (default 5 s, under the 8 s hook timeout; a timed-out hook allows) and denies when it fires. The row
+# below is a padded eval-sudo shape that took 6.5 s with no deadline; with a 1 s deadline it must be
+# denied within 4 s, with the deadline's own message (the work budget's message would say "too dense").
+rc_msg=$(MH_SGG_DEADLINE_SECS=1 python3 -c '
+import json, subprocess, sys, time
+cmd = ("eval sudo " + "s " * 24 + ";") * 270 + "git stash $" + chr(34) + "show" + chr(34)
+payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": cmd},
+                      "agent_id": "fork", "agent_type": "general-purpose"}).encode()
+t = time.time()
+p = subprocess.run(["bash", sys.argv[1]], input=payload, capture_output=True, timeout=30)
+print(p.returncode, round(time.time() - t, 1), "time limit" in p.stderr.decode())
+' "$GATE")
+set -- $rc_msg; ok=1; [ "$1" = "2" ] && [ "${2%.*}" -lt 4 ] && [ "$3" = "True" ] && ok=0
+check "a slow padded shape is denied by the deadline within 4 s, with its own message (rc/secs/message: $rc_msg)" "$ok"
+# A zero, negative or non-numeric deadline must neither disarm the deadline nor lock everything out: it
+# falls back to the 5 s default and says so on stderr (the diagnostic is what shows the fallback ran;
+# an `echo hi` allow alone would pass with the timer disarmed). A valid value prints nothing.
+_dl_probe() { # $1 MH_SGG_DEADLINE_SECS value, $2 command -> "<rc> <fallback diagnostic seen?>"
+  MH_SGG_DEADLINE_SECS=$1 python3 -c '
+import json, subprocess, sys
+payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": sys.argv[2]},
+                      "agent_id": "fork", "agent_type": "general-purpose"}).encode()
+p = subprocess.run(["bash", sys.argv[1]], input=payload, capture_output=True, timeout=30)
+print(p.returncode, "using 5 s" in p.stderr.decode())
+' "$GATE" "$2"
+}
+for _dv in 0 -1 abc nan; do
+  _pr=$(_dl_probe "$_dv" "echo hi"); ok=1; [ "$_pr" = "0 True" ] && ok=0
+  check "MH_SGG_DEADLINE_SECS=$_dv falls back to the 5 s default with a diagnostic, echo hi allowed ($_pr)" "$ok"
+done
+_pr=$(_dl_probe 3 "echo hi"); ok=1; [ "$_pr" = "0 False" ] && ok=0
+check "a valid MH_SGG_DEADLINE_SECS=3 prints no fallback diagnostic ($_pr)" "$ok"
+# A value too large for setitimer (or past the 8 s hook timeout) must still arm a deadline, never crash the
+# gate: a crash exits 1, which is not a deny, so the command would run.
+for _dv in inf 1e300 100; do
+  _pr=$(_dl_probe "$_dv" "git stash"); ok=1; [ "${_pr%% *}" = "2" ] && ok=0
+  check "MH_SGG_DEADLINE_SECS=$_dv still denies git stash instead of crashing the gate ($_pr)" "$ok"
+done
+# A zero or negative override must not lock every subagent Bash command out: it falls back to the cap.
+for _ov in 0 -1 abc; do
+  rc=$(MH_SGG_MAX_CMD_CHARS=$_ov sgg_rc8 "echo hi"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "MH_SGG_MAX_CMD_CHARS=$_ov keeps the default cap, echo hi allowed (rc $rc)" "$ok"
 done
 
 # --- (23) GH #318: zsh runs a brace group with no blank after `{` (`{git stash;}`); bash, dash and
