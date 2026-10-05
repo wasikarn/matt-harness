@@ -2422,11 +2422,7 @@ test_deny  "$IRRECOVERABLE" "control: a real tab between git and its argument st
   "$(bash_payload $'git\tpush --force origin develop')"
 test_allow "$IRRECOVERABLE" "control: literal backslash-t in an unrelated command stays allowed" \
   "$(bash_payload 'printf "a\tb"')"
-# GH #309: a brace inside the argv0 word hides its name from the candidate list ("r{m,m}" runs rm rm).
-test_deny  "$IRRECOVERABLE" "GH #309: r{m,m} -rf (argv0 brace, was a fast-path bypass)" \
-  "$(bash_payload 'r{m,m} -rf /tmp/x')"
-test_deny  "$IRRECOVERABLE" "GH #309: fi{nd,nd} -delete (argv0 brace, was a fast-path bypass)" \
-  "$(bash_payload 'fi{nd,nd} /tmp/x -delete')"
+# GH #309: the argv0 brace rows (r{m,m}, fi{nd,nd}) sit with the other brace-view rows below.
 test_allow "$IRRECOVERABLE" "GH #309 control: a brace group and a brace list with no verb stay allowed" \
   "$(bash_payload '{ echo a; }; ls x{a,b}')"
 # "gh" was added to the fast-path candidate list alongside the ask-tier gh
@@ -2981,58 +2977,6 @@ test_allow "$IRRECOVERABLE" 'GH #269 F2 control: eval, push with 130 words and n
 
 # GH #309: bash, ksh and zsh expand a brace inside a word too (dash does not), so a brace glued to a flag,
 # a sub word or an add argument hid the verb or flag from the token windows, which read it literally.
-for _c in \
-  'git push --fo{rce,rce} origin main' \
-  'git push --forc{e,e-with-lease} origin main' \
-  'git push "--fo"{rce,} origin main' \
-  'git push --forc{e..e} origin main' \
-  'git restore -S --wor{ktree,} file.txt' \
-  'git branch --del{ete,ete} --forc{e,e} main' \
-  'git add {..,}' \
-  'git add {.,}' \
-  'git add {-A,}' \
-  'git add {:/,}' \
-  'git add {*,}' \
-  'git add {--pathspec-from-file=list,}' \
-  'git add -{-pathspec-from-file=list,}' \
-  'git {,add} .' \
-  'git {,add} -A' \
-  'git a{dd,dd} .' \
-  'git -C . a{dd,dd} .' \
-  'git pu{sh,} --force origin main' \
-  'git rest{ore,ore} .' \
-  'git br{anch,anch} -D main' \
-  'r{"m",} -rf /tmp/x' \
-  "r{'m',} -rf /tmp/x" \
-  'r{\m,} -rf /tmp/x' \
-  'r{m,$x} -rf /tmp/x' \
-  'fi{"nd",} /tmp -delete' \
-  'git {,"reset"} --hard' \
-  'git -C . {,"reset"} --hard' \
-  'git {,"clean"} -fd' \
-  'git {,"push"} --force origin main' \
-  "git {,'push'} --force origin main" \
-  "bash -c 'git {,\"reset\"} --hard'" \
-  'git push --fo{r,}{ce,} origin main' \
-  'git push --fo{r{ce,x},} origin main' \
-  '{r,}{m,} -rf /tmp/x' \
-  '{r{m,},} -rf /tmp/x' \
-  'git push "--"{x,force} origin main' \
-  "git push \$'--'{x,force} origin main" \
-  'git push origin main {--forc,x}"e"' \
-  'git push \--fo{rce,} origin main' \
-  $'git push --fo{rce,\\\n} origin main' \
-  'git push --forc{e..e..1} origin main' \
-  'r{m..m..1} -rf /tmp/x' \
-  'echo {x,#$}; git {,"reset"} --hard' \
-  $'# {x,y}\'\ngit {,"reset"} --hard' \
-  'rm {-rf,\ } /tmp/x' \
-  '{$(:),git} push --force origin main' \
-  '{f,"x y"}ind . -delete' \
-  '{r,"x y"}m -rf /tmp/x' \
-  $'echo a\xee\x80\x88\xee\x80\x88E {x,"y"}\ngit {,"reset"} --hard\nE' ; do
-  test_deny "$IRRECOVERABLE" "GH #309: brace inside a word expands to a destructive command: $_c" "$(bash_payload "$_c")"
-done
 # Already denied before the fix (the brace-kept token shows the letter, or a whole-token brace sits next
 # to a broad verb); kept so the fix cannot lose them.
 for _c in \
@@ -3071,7 +3015,7 @@ for _c in \
   'echo ${x,y}' ; do
   test_allow "$IRRECOVERABLE" "GH #309 control: a brace that expands to nothing destructive: $_c" "$(bash_payload "$_c")"
 done
-_timed_case "GH #309: 3000 braced words before a brace-hidden force flag are denied fast" 2 \
+_timed_case "GH #309: 3000 braced words before a brace-hidden force flag are read inside the hook timeout (brace-view shadow: allowed)" 0 \
   "$(python3 -c "print('echo ' + 'a{b,c}d ' * 3000 + '; git push --fo{rce,rce} origin main')")"
 _timed_case "GH #309: 20000 nested brace pairs before a force reset are denied inside the hook timeout" 2 \
   "$(python3 -c "print('{' * 20000 + 'x' + '}' * 20000 + '; git reset --hard')")"
@@ -3149,6 +3093,69 @@ if [ "$_want336" -ge 60 ] && [ "$_got336" = "$_want336" ]; then
 else
   echo "  ❌ GH #336: corpus replayed $_got336 of $_want336 cases" >&2; fail=$((fail + 1))
 fi
+
+# GH #309: bash, ksh and zsh expand a brace inside a word too (dash does not), so a brace glued to a flag,
+# a sub word, an add argument or argv0 hid the verb or flag from the token windows, which read it literally.
+# The expanded text is read as the "brace-view" view, which ships shadow first (GH #337): each row is
+# allowed with one would_deny row, and denied once the id leaves SHADOW_RULES (the enforced copy).
+# ('git add {.,}' is not a row: the enforced copy also turns the shadowed source-file rule on, which asks
+# for the literal '{ ., }' reading, so its stdout is not empty; it is the same bypass as 'git add {..,}'.)
+for _c in \
+  'r{m,m} -rf /tmp/x' \
+  'fi{nd,nd} /tmp/x -delete' \
+  'git push --fo{rce,rce} origin main' \
+  'git push --forc{e,e-with-lease} origin main' \
+  'git push "--fo"{rce,} origin main' \
+  'git push --forc{e..e} origin main' \
+  'git restore -S --wor{ktree,} file.txt' \
+  'git branch --del{ete,ete} --forc{e,e} main' \
+  'git add {..,}' \
+  'git add {-A,}' \
+  'git add {:/,}' \
+  'git add {*,}' \
+  'git add {--pathspec-from-file=list,}' \
+  'git add -{-pathspec-from-file=list,}' \
+  'git {,add} .' \
+  'git {,add} -A' \
+  'git a{dd,dd} .' \
+  'git -C . a{dd,dd} .' \
+  'git pu{sh,} --force origin main' \
+  'git rest{ore,ore} .' \
+  'git br{anch,anch} -D main' \
+  'r{"m",} -rf /tmp/x' \
+  "r{'m',} -rf /tmp/x" \
+  'r{\m,} -rf /tmp/x' \
+  'r{m,$x} -rf /tmp/x' \
+  'fi{"nd",} /tmp -delete' \
+  'git {,"reset"} --hard' \
+  'git -C . {,"reset"} --hard' \
+  'git {,"clean"} -fd' \
+  'git {,"push"} --force origin main' \
+  "git {,'push'} --force origin main" \
+  "bash -c 'git {,\"reset\"} --hard'" \
+  'git push --fo{r,}{ce,} origin main' \
+  'git push --fo{r{ce,x},} origin main' \
+  '{r,}{m,} -rf /tmp/x' \
+  '{r{m,},} -rf /tmp/x' \
+  'git push "--"{x,force} origin main' \
+  "git push \$'--'{x,force} origin main" \
+  'git push origin main {--forc,x}"e"' \
+  'git push \--fo{rce,} origin main' \
+  $'git push --fo{rce,\\\n} origin main' \
+  'git push --forc{e..e..1} origin main' \
+  'r{m..m..1} -rf /tmp/x' \
+  'echo {x,#$}; git {,"reset"} --hard' \
+  $'# {x,y}\'\ngit {,"reset"} --hard' \
+  'rm {-rf,\ } /tmp/x' \
+  '{$(:),git} push --force origin main' \
+  '{f,"x y"}ind . -delete' \
+  '{r,"x y"}m -rf /tmp/x' ; do
+  _would336 deny brace-view "$_c"
+done
+# A structural deny takes no id, so it enforces even while brace-view is shadowed: a raw private-use
+# character (the expander's own stand-ins) is refused rather than read.
+test_deny "$IRRECOVERABLE" "GH #309: a private-use character in a command with a brace denies" \
+  "$(bash_payload $'echo a\xee\x80\x88\xee\x80\x88E {x,"y"}\ngit {,"reset"} --hard\nE')"
 
 # GH #375: a git global's value split by shlex at $, :, @ or a non-ASCII letter (-C $R) took the
 # variable's name for the subcommand. Cases (each deny shape checked in real shells) live in a fixture.
