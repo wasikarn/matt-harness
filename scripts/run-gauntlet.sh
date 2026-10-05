@@ -164,7 +164,16 @@ run_hook_tests() {
     cat "$o.out"
     [ "$(cat "$o.rc" 2>/dev/null)" = 0 ] || { rc=1; failed="$failed $t"; }
   done
-  # Name the culprits (GH #387): a red CI log runs to thousands of lines.
+  # Name the culprits (GH #387): a red CI log runs to thousands of lines. Then the failing rows
+  # themselves (GH #158), up to 3 per file, so a load flake reads differently from a regression
+  # without a re-run; a file with no marked row (a crash) shows its last output line instead.
+  local row
+  for t in $failed; do
+    o="$TDIR/${t//\//_}"
+    row=$(/usr/bin/grep -E '❌|FAIL|not ok|rc 124' "$o.out" | head -n 3)
+    [ -n "$row" ] || row=$(tail -n 1 "$o.out")
+    printf '%s\n' "$row" | sed "s|^ *|failed-at: $t: |"
+  done
   [ -z "$failed" ] || echo "failing:$failed"
   return "$rc"
 }
@@ -196,6 +205,7 @@ if [ "$fail" -eq 0 ]; then
   echo "gauntlet: all layers passed"
 else
   echo "gauntlet: FAILED (full logs kept at $LOG)" >&2
+  /usr/bin/grep '^failed-at:' "$LOG/tests" >&2
   /usr/bin/grep '^failing:' "$LOG/tests" >&2
 fi
 exit "$fail"

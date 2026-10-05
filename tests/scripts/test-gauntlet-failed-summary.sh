@@ -23,7 +23,7 @@ elif [ -z "$FIX" ]; then
   bad "mktemp -d failed for the fixture dir"
 else
   printf 'exit 0\n' >"$FIX/test-green.sh"
-  printf 'exit 1\n' >"$FIX/test-red.sh"
+  printf 'echo "  ✅ fine row"\necho "  ❌ GH #307 allow shape finishes inside 8 s (rc 124)"\necho "=== 1 passed, 1 failed ==="\nexit 1\n' >"$FIX/test-red.sh"
   out=$(bash -c "
     $BODY
     hook_test_files() { printf '%s\n' '$FIX/test-green.sh' '$FIX/test-red.sh'; }
@@ -46,6 +46,18 @@ else
   else
     ok "the 'failing:' line leaves out the passing file"
   fi
+  # GH #158: the failing row itself, so a load flake reads differently from a regression.
+  at=$(printf '%s\n' "$out" | /usr/bin/grep '^failed-at:')
+  if printf '%s\n' "$at" | /usr/bin/grep -qF "test-red.sh" && printf '%s\n' "$at" | /usr/bin/grep -qF 'finishes inside 8 s (rc 124)'; then
+    ok "a 'failed-at:' line names the failing file and its failing row"
+  else
+    bad "no 'failed-at:' line with the failing row; got: <$at>"
+  fi
+  if printf '%s\n' "$at" | /usr/bin/grep -qF "fine row"; then
+    bad "the 'failed-at:' line includes a passing row: <$at>"
+  else
+    ok "the 'failed-at:' line leaves out passing rows"
+  fi
 fi
 safe_trash "$FIX"
 
@@ -58,13 +70,18 @@ if [ -z "$TAIL" ]; then
 elif [ -z "$LOGDIR" ]; then
   bad "mktemp -d failed for the log dir"
 else
-  printf -- '--- tests/x.sh\nnoise\nfailing: tests/scripts/test-red.sh\n' >"$LOGDIR/tests"
+  printf -- '--- tests/x.sh\nnoise\nfailed-at: tests/scripts/test-red.sh: ❌ row\nfailing: tests/scripts/test-red.sh\n' >"$LOGDIR/tests"
   out=$(bash -c "LOG='$LOGDIR'; fail=1; $TAIL" 2>&1)
   last=$(printf '%s\n' "$out" | tail -n 1)
   if printf '%s\n' "$last" | /usr/bin/grep -qF 'failing: tests/scripts/test-red.sh'; then
     ok "the last line of a failed run repeats the failing: list"
   else
     bad "the last line of a failed run does not name the file: <$last>"
+  fi
+  if printf '%s\n' "$out" | /usr/bin/grep -qF 'failed-at: tests/scripts/test-red.sh: ❌ row'; then
+    ok "a failed run repeats the failed-at: rows above the failing: list"
+  else
+    bad "a failed run does not repeat the failed-at: rows: <$out>"
   fi
 fi
 safe_trash "$LOGDIR"
