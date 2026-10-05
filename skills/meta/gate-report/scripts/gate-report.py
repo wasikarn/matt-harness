@@ -66,10 +66,12 @@ def main():
                 continue
             if not UUID_RE.match(str(row["session_id"])):
                 oddids[str(row["session_id"])] += n
-            gate_id = row.get("id", "(unknown)")
-            decision = row.get("decision", "(unknown)")
-            tool_name = row.get("tool_name", "(unknown)")
+            # A hand-edited row can hold any JSON type; the report keys, sorts and prints on these.
+            gate_id = str(row.get("id", "(unknown)"))
+            decision = str(row.get("decision", "(unknown)"))
+            tool_name = str(row.get("tool_name", "(unknown)"))
             ts = row.get("ts")
+            ts = ts if isinstance(ts, str) else None
             counts[(gate_id, decision)] += n
             # would_deny/would_ask (shadow rules) allowed the call: not a block, so they stay out
             # of the headline and By-tool counts and show only under "Shadow rules" (SKILL.md).
@@ -77,12 +79,12 @@ def main():
                 tools[tool_name] += n
                 total += n
             else:
-                s = shadow.setdefault((gate_id, row.get("rule", "(unknown)")),
+                s = shadow.setdefault((gate_id, str(row.get("rule", "(unknown)"))),
                                       {"n": 0, "sessions": set(), "samples": []})
                 s["n"] += 1
                 s["sessions"].add(row.get("session_id"))
                 cmd = row.get("command")
-                if cmd and cmd not in s["samples"] and len(s["samples"]) < 3:
+                if isinstance(cmd, str) and cmd and cmd not in s["samples"] and len(s["samples"]) < 3:
                     s["samples"].append(cmd)
             if ts:
                 first_ts = ts if first_ts is None or ts < first_ts else first_ts

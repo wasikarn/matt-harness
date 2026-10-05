@@ -15,6 +15,7 @@ trap _cleanup_trash EXIT
 fail=0
 
 R=$(fresh_repo)
+[ -n "$R" ] && [ -d "$R/.git" ] || { echo "FAIL: fresh_repo made no repo (mktemp failed?)"; exit 1; }
 git -C "$R" commit -q --allow-empty -m one
 audited=$(git -C "$R" rev-parse HEAD)
 
