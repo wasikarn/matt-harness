@@ -3157,20 +3157,29 @@ for _c in \
   '{,git} push origin +main' \
   '{r,"x y"}m -rf /tmp/x' \
   'r{{x},m} -rf /tmp/x' \
-  'git {{,},reset} --hard' ; do
+  'git {{,},reset} --hard' \
+  '{A=1}},git} reset --hard' \
+  '{A=1}},git} push --force origin main' \
+  '{A=1}},rm} -rf /tmp/x' \
+  '{A="x y",git} reset --hard' \
+  "{A='x y',git} reset --hard" \
+  '{r..3}m -rf /tmp/x' ; do
   _would336 deny brace-view "$_c"
 done
 # The .sh fast path hands a command to python only when brace-route.awk sees an expanding group, so the
-# awk must see every shape _bracex expands: enumerate each string of { } , x up to 7 characters (21,844)
-# and fail on any that expands but is not routed (a single-level grep missed r{{x},m}: GH #309 review).
+# awk must see every shape _bracex expands: enumerate each string of { } , x . up to 7 characters (97,655),
+# wrap it in the hook payload, and fail on any that expands but is not routed (a single-level grep missed
+# r{{x},m} and a stray "}" before the comma, "{A=1}},git}": GH #309 review). The same shapes up to 6
+# characters are also run through the bash on PATH (echo), and _bracex must read the same words: it mirrors
+# bash's own scan (a "}" closes a group only after a comma or "..", "{" then "}" at a word start is no group).
 _drift=$(python3 - "$ROOT" <<'PYEOF'
-import itertools, subprocess, sys
+import itertools, json, shutil, subprocess, sys
 root = sys.argv[1]
 sys.path.insert(0, root + "/hooks/gates")
 import _bracex
-cmds = []
+cmds, shapes = [], []
 for n in range(1, 8):
-    for t in itertools.product("{},x", repeat=n):
+    for t in itertools.product("{},x.", repeat=n):
         c = "echo r" + "".join(t) + " -rf"
         try:
             e = _bracex.expand_text(c, 150000)
@@ -3178,18 +3187,28 @@ for n in range(1, 8):
             continue
         if e != c:
             cmds.append(c)
-out = subprocess.run(["awk", "-f", root + "/hooks/gates/brace-route.awk"], input="\n".join(cmds) + "\n",
+        if n <= 6:
+            shapes.append((c, e.split()))
+pay = lambda c: json.dumps({"tool_name": "Bash", "tool_input": {"command": c}})
+out = subprocess.run(["awk", "-f", root + "/hooks/gates/brace-route.awk"], input="\n".join(pay(c) for c in cmds) + "\n",
                      capture_output=True, text=True).stdout.split()
 miss = [c for c, o in zip(cmds, out) if o == "0"]
-print(len(cmds), len(out), len(miss), " | ".join(miss[:5]))
+bad, nbash = [], 0
+bash = shutil.which("bash")
+if bash:
+    got = subprocess.run([bash, "-c", "\n".join(c for c, _ in shapes)], capture_output=True, text=True).stdout.split("\n")[:-1]
+    if len(got) == len(shapes):
+        nbash = len(got)
+        bad = [c for (c, e), g in zip(shapes, got) if g.split() != e[1:]]
+print(len(cmds), len(out), len(miss), nbash, len(bad), " | ".join((miss + bad)[:5]))
 PYEOF
 )
-read -r _dn _do _dm _drest <<< "$_drift"
-if [ "${_dn:-0}" -gt 1000 ] && [ "$_dn" = "${_do:-x}" ] && [ "${_dm:-1}" = "0" ]; then
-  echo "  ✅ GH #309: brace-route.awk routes every one of $_dn enumerated brace shapes that _bracex expands"
+read -r _dn _do _dm _bn _bb _drest <<< "$_drift"
+if [ "${_dn:-0}" -gt 1000 ] && [ "$_dn" = "${_do:-x}" ] && [ "${_dm:-1}" = "0" ] && [ "${_bb:-1}" = "0" ]; then
+  echo "  ✅ GH #309: brace-route.awk routes all $_dn enumerated brace shapes _bracex expands; _bracex matches bash on $_bn"
   pass=$((pass + 1))
 else
-  echo "  ❌ GH #309: brace-route.awk missed $_dm of $_dn expanding shapes (first: $_drest)" >&2
+  echo "  ❌ GH #309: brace-route.awk missed ${_dm:-?} of ${_dn:-?} expanding shapes, _bracex differs from bash on ${_bb:-?} of ${_bn:-?} (first: $_drest)" >&2
   fail=$((fail + 1))
 fi
 # _deny_ambiguous returns inside brace-view only: any other view (ifs-split enforces) still ends on it.

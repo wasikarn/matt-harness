@@ -28,7 +28,10 @@ class TooBig(Exception):
 
 _SEP = re.compile(r"([\s;&|()<>]+)")
 _INT_RANGE = re.compile(r"^(-?\d+)\.\.(-?\d+)(?:\.\.(-?\d+))?$")
-_CHR_RANGE = re.compile(r"^([A-Za-z])\.\.([A-Za-z])(?:\.\.(-?\d+))?$")
+# zsh reads any two single characters as a range ({x..3} is x w v ... 3, so "gi{t..3}" holds "git"); bash
+# leaves a mixed one literal. Expanding it is the safe reading: more words are checked, never fewer.
+_RANGE_SYNTAX = frozenset(";&|()<>`$'\"\\#{},!~")
+_CHR_RANGE = re.compile(r"^([^\s{},\\'\"`$.])\.\.([^\s{},\\'\"`$.])(?:\.\.(-?\d+))?$")
 # a protected span keeps these literal for the outer expansion: noncharacter stand-ins, restored after
 _PROT = {c: chr(0xFDD0 + i) for i, c in enumerate("{},;&|()<> \t\n#\\")}
 _TO_PROT = str.maketrans(_PROT)
@@ -52,23 +55,41 @@ def _max_depth(t):
         j += 1
     return deepest
 
-def _pairs(w):
-    # {index of "{": index of its closing "}"} in one pass; "\x" is one literal character
-    out, stack, j, n = {}, [], 0, len(w)
+_SCAN = [0]  # characters read while looking for closing braces, per expand_text call
+MAX_SCAN = 4_000_000
+
+def _closing(w, i):
+    # Bash's brace_gobbler: index of the "}" that closes the "{" at w[i], or -1. A "}" at the group's own
+    # level closes it only once a comma (at that level) or ".." not followed by "}" (at any level) has been seen; before that
+    # it is a literal character of the group, so "{A=1}},git}" is two words ("A=1}}" and "git"). A "}"
+    # inside a nested group closes that group. "\x" is one character.
+    level, commas, j, n = 0, 0, i + 1, len(w)
     while j < n:
         c = w[j]
         if c == "\\":
             j += 2
             continue
+        if c == "}" and level == 0 and commas:
+            break
         if c == "{":
-            stack.append(j)
-        elif c == "}" and stack:
-            out[stack.pop()] = j
+            level += 1
+        elif c == "}":
+            if level:
+                level -= 1
+        elif c == "," and level == 0:
+            commas += 1
+        elif c == "." and w.startswith("..", j) and w[j + 2:j + 3] != "}":
+            commas += 1
         j += 1
-    return out
+    else:
+        j = -1
+    _SCAN[0] += (n if j < 0 else j) - i
+    if _SCAN[0] > MAX_SCAN:
+        raise TooBig("brace scan over %d characters" % MAX_SCAN)
+    return j
 
 def _split_top(body):
-    # split on commas that sit outside nested braces
+    # split on commas outside nested braces; a stray "}" at the top level is a literal character
     parts, cur, depth, j, n = [], [], 0, 0, len(body)
     while j < n:
         c = body[j]
@@ -78,7 +99,7 @@ def _split_top(body):
             continue
         if c == "{":
             depth += 1
-        elif c == "}":
+        elif c == "}" and depth:
             depth -= 1
         if c == "," and depth == 0:
             parts.append("".join(cur))
@@ -107,7 +128,9 @@ def _range(body):
         if not m:
             return None
         lo, hi = ord(m.group(1)), ord(m.group(2))
-        fmt = chr
+        # a character the shell would read as syntax stays a literal word character: {Z..a} holds "`", "\\"
+        # and zsh's {+..9} holds ",", ";" and "(": backslash-escaped, so the text read later has the same words
+        fmt = lambda v: "\\" + chr(v) if chr(v) in _RANGE_SYNTAX else chr(v)
         step = abs(int(m.group(3))) if m.group(3) else 1
         step = step or 1
     return [fmt(v) for v in (range(lo, hi + 1, step) if lo <= hi else range(lo, hi - 1, -step))]
@@ -116,14 +139,15 @@ def _expand_word(w, budget, depth):
     # all expansions of one word, leftmost group first; budget[0] counts the characters still allowed
     if depth > MAX_DEPTH:
         raise TooBig("brace nesting over %d" % MAX_DEPTH)
-    i, n, pairs = 0, len(w), _pairs(w)
+    i, n = 0, len(w)
     while i < n:
         c = w[i]
         if c == "\\":
             i += 2
             continue
-        if c == "{" and not (i and w[i - 1] == "$"):
-            j = pairs.get(i, -1)
+        # bash never opens a group at a "{" that starts the text and is followed by "}" or a blank
+        if c == "{" and not (i and w[i - 1] == "$") and not (depth == 0 and i == 0 and (n == 1 or w[1] == "}")):
+            j = _closing(w, i)
             if j > 0:
                 body = w[i + 1:j]
                 alts = _split_top(body)
@@ -288,6 +312,7 @@ def expand_text(cmd, cap):
         raise TooBig("expander stand-in character in the command")
     if _max_depth(cmd) > MAX_DEPTH:
         raise TooBig("brace nesting over %d" % MAX_DEPTH)
+    _SCAN[0] = 0
     out = _expand(cmd.replace("\\\n", ""), [cap], 0)
     if len(out) > cap:
         raise TooBig("expansion over the character cap")

@@ -1643,6 +1643,11 @@ check "GH #309 denied under the default cap: a brace-hidden stash beside a big r
 _c='echo {a..z}{a..z}{a..z}{a..z}'
 rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
 check "GH #309 denied: an expansion over 150 KB is refused (rc $rc)" "$ok"
+# Bash closes a brace group at "}" only after a comma, so "{A=1}},git}" is "A=1}} git": an assignment, then git.
+for _c in '{A=1}},git} stash' '{A=1}},git} reset --hard'; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" != "0" ] && ok=0
+  check "GH #309 denied (bash's closing-brace rule): $_c" "$ok"
+done
 # Both gates read braces through the one shared module, so the two cannot drift apart.
 ok=0
 for _g in subagent-git-guard.py irrecoverable.py; do

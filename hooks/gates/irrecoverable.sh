@@ -18,14 +18,15 @@ _has_subst=0
 case "$_input" in *'`'*|*'$'*) _has_subst=1 ;; esac
 # GH #309: a brace group can hide any word, argv0 included ("r{m,} -rf" runs rm, "{f,\"x y\"}ind" runs
 # find), so a command with a brace group that can expand (a "," or ".." at its own level, nested groups
-# included: "r{{x},m}") defers to python. brace-route.awk does the counting (it skips the payload's own
-# JSON objects). "${var}" is a plain parameter, "{x}" and f"{n}" expand to nothing: both stay on the
-# fast path. A missing awk file defers to python, never allows.
+# included: "r{{x},m}", and a stray "}" before the comma: "{A=1}},git}") defers to python. brace-route.awk
+# does the counting the way bash scans (it skips the payload's own JSON objects). "${var}" is a plain
+# parameter, "{x}" and f"{n}" expand to nothing: both stay on the fast path. A missing awk file defers
+# to python, never allows.
 case "$0" in */*) _gdir="${0%/*}" ;; *) _gdir=. ;; esac
 _awk="$_gdir/brace-route.awk"
-# A payload over 20000 characters goes to python without the scan: the awk loop is per character, and
-# python's own length cap decides an oversized command.
-if [ "${#_input}" -gt 20000 ] || [ ! -r "$_awk" ] || ! command -v awk >/dev/null 2>&1; then
+# A payload over 2000 characters with a "{" goes to python without the scan: the awk loop is per character
+# (one scan per "{", quadratic in the worst case), and python's own length cap decides an oversized command.
+if { [ "${#_input}" -gt 2000 ] && case "$_input" in *'{'*) true ;; *) false ;; esac; } || [ ! -r "$_awk" ] || ! command -v awk >/dev/null 2>&1; then
   _has_subst=1
 else
   _nbrace="$(printf '%s' "$_input" | awk -f "$_awk" | tr -d '0\n')"
