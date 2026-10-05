@@ -38,7 +38,7 @@ Done when: the brief names either the three YES answers or the explicit trigger.
   which also deepens and so replaces Phase 3.
 - **Phase 3 Deepen (host path only):** 3 parallel Agent calls, peak 3.
 
-Peak concurrency 5 is the Rule 13 hard cap. Phase 1 completes before Phase 2 starts; never
+Peak concurrency 5 is this skill's own design limit (Rule 13 caps at 10). Phase 1 completes before Phase 2 starts; never
 collapse Diverge and Deepen into one wave of 8. History of the 44-to-105-agent failure this
 guards against: `references/provenance.md`.
 
