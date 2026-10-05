@@ -52,7 +52,7 @@ EOF
 cat >"$STUB/git" <<'EOF'
 #!/usr/bin/env bash
 echo "git $*" >>"$STUB_LOG"
-count() { local n; n=$(cat "$STUB_DIR/$1" 2>/dev/null); n=$(( ${n:-0} + 1 )); echo "$n" >"$STUB_DIR/$1"; echo "$n"; }
+count() { local n=0; [ ! -f "$STUB_DIR/$1" ] || n=$(cat "$STUB_DIR/$1"); n=$((n + 1)); echo "$n" >"$STUB_DIR/$1"; echo "$n"; }
 case "$1" in
   fetch)
     n=$(count fetch)
@@ -95,6 +95,17 @@ run() {
 }
 merged() { /usr/bin/grep -q '^gh pr merge' "$LOG"; }
 
+# refuses <label> <message-pattern>: the last run() exited non-zero, never reached gh pr merge,
+# and said why.
+refuses() {
+  if [ "$rc" -ne 0 ]; then ok "$1 exits non-zero (rc=$rc)"; else bad "$1 exited 0"; fi
+  if merged; then bad "$1 still reached gh pr merge"; else ok "$1 never calls gh pr merge"; fi
+  if printf '%s' "$out" | /usr/bin/grep -q -- "$2"; then ok "$1 message matches '$2'"; else bad "$1: no '$2' in: $out"; fi
+}
+# second_call_line <pattern>: line number in the stub log of the second matching call (empty
+# when there is none), i.e. the call made after the load wait.
+second_call_line() { awk -v p="$1" '$0 ~ p { n++; if (n == 2) { print NR; exit } }' "$LOG"; }
+
 # 1. up to date: merges with the checked head pinned, prints the merge sha.
 run 0 headsha111 1.50
 if [ "$rc" -eq 0 ]; then ok "up-to-date PR exits 0"; else bad "up-to-date PR rc=$rc: $out"; fi
@@ -110,9 +121,7 @@ else bad "no ancestry check: $(cat "$LOG")"; fi
 
 # 2. behind: fails before merging, tells the agent to rebase.
 run 1 headsha111 1.50
-if [ "$rc" -ne 0 ]; then ok "behind PR exits non-zero (rc=$rc)"; else bad "behind PR exited 0"; fi
-if merged; then bad "behind PR still reached gh pr merge"; else ok "behind PR never calls gh pr merge"; fi
-if printf '%s' "$out" | /usr/bin/grep -qi 'rebase on origin/develop'; then ok "behind message says rebase"; else bad "no rebase hint: $out"; fi
+refuses "behind PR" "ebase on origin/develop"
 
 # 3. head mismatch: a push landed after the check; GitHub refuses, script fails.
 run 0 othersha999 1.50
@@ -122,42 +131,26 @@ if printf '%s' "$out" | /usr/bin/grep -q 'mergesha000'; then bad "head mismatch 
 
 # 4. load stays high: fails with the figure, no merge.
 run 0 headsha111 7.25
-if [ "$rc" -ne 0 ]; then ok "high load exits non-zero (rc=$rc)"; else bad "high load exited 0"; fi
-if merged; then bad "high load still reached gh pr merge"; else ok "high load never calls gh pr merge"; fi
-if printf '%s' "$out" | /usr/bin/grep -q '7.25'; then ok "high load message carries the figure"; else bad "no load figure: $out"; fi
+refuses "high load" "7.25"
 
 # 4b. PR targets another branch: the develop ancestry check proves nothing, so refuse.
 STUB_BASE=main run 0 headsha111 1.50
-if [ "$rc" -ne 0 ]; then ok "non-develop base exits non-zero (rc=$rc)"; else bad "non-develop base exited 0"; fi
-if merged; then bad "non-develop base still reached gh pr merge"; else ok "non-develop base never calls gh pr merge"; fi
-if printf '%s' "$out" | /usr/bin/grep -q "not develop"; then ok "non-develop message names the base"; else bad "no base message: $out"; fi
+refuses "non-develop base" "not develop"
 
 # 4c. base retargeted while waiting for load: the re-read before the merge refuses.
 STUB_BASE2=main run 0 headsha111 1.50
-if [ "$rc" -ne 0 ]; then ok "retargeted base exits non-zero (rc=$rc)"; else bad "retargeted base exited 0"; fi
-if merged; then bad "retargeted base still reached gh pr merge"; else ok "retargeted base never calls gh pr merge"; fi
+refuses "retargeted base" "base changed"
 
 # 4d. gh prints nothing: refuse before any merge.
 STUB_EMPTY=1 run 0 headsha111 1.50
-if [ "$rc" -ne 0 ]; then ok "empty gh output exits non-zero (rc=$rc)"; else bad "empty gh output exited 0"; fi
-if merged; then bad "empty gh output still reached gh pr merge"; else ok "empty gh output never calls gh pr merge"; fi
-
-# refuses <label> <message-pattern>: the last run() exited non-zero, never reached gh pr merge,
-# and said why.
-refuses() {
-  if [ "$rc" -ne 0 ]; then ok "$1 exits non-zero (rc=$rc)"; else bad "$1 exited 0"; fi
-  if merged; then bad "$1 still reached gh pr merge"; else ok "$1 never calls gh pr merge"; fi
-  if printf '%s' "$out" | /usr/bin/grep -q -- "$2"; then ok "$1 message matches '$2'"; else bad "$1: no '$2' in: $out"; fi
-}
-# log_index <pattern>: line number of the first matching call in the stub log.
-log_index() { /usr/bin/grep -n -- "$1" "$LOG" | head -n 2 | tail -n 1 | cut -d: -f1; }
+refuses "empty gh output" "could not read the head sha"
 
 # 4e. develop moved during the load wait: the first ancestry check passed, the second fails.
 STUB_ANCESTOR2=1 run 0 headsha111 1.50
 refuses "develop moved after the first check" "does not contain origin/develop"
 if [ "$(/usr/bin/grep -c '^git merge-base' "$LOG")" -eq 2 ]; then ok "ancestry re-checked after the wait"; else bad "ancestry not re-checked: $(cat "$LOG")"; fi
 # the re-check must see a fresh develop: a fetch sits between the two merge-base calls.
-second_fetch=$(log_index '^git fetch'); second_mb=$(log_index '^git merge-base')
+second_fetch=$(second_call_line '^git fetch'); second_mb=$(second_call_line '^git merge-base')
 if [ "$(/usr/bin/grep -c '^git fetch' "$LOG")" -eq 2 ] && [ -n "$second_mb" ] && [ "$second_fetch" -lt "$second_mb" ]; then
   ok "git fetch runs before the second ancestry check"
 else bad "no fetch before the second ancestry check: $(cat "$LOG")"; fi
@@ -177,6 +170,20 @@ refuses "version taken during the wait" "1.1.2"
 # 4f3. a head below develop's version (a conflict resolved to a lower number) is refused too.
 STUB_HEAD_VER=1.1.4 STUB_DEV_VER=1.1.5 run 0 headsha111 1.50
 refuses "version below develop's" "below"
+
+# 4f4. versions compare per number, not as text: 1.1.99 is below 1.1.100.
+STUB_HEAD_VER=1.1.99 STUB_DEV_VER=1.1.100 run 0 headsha111 1.50
+refuses "1.1.99 against 1.1.100" "below"
+STUB_HEAD_VER=1.1.100 STUB_DEV_VER=1.1.99 run 0 headsha111 1.50
+if [ "$rc" -eq 0 ]; then ok "1.1.100 against 1.1.99 merges"; else bad "1.1.100 against 1.1.99 rc=$rc: $out"; fi
+
+# 4f5. the opt-out skips only the equal-version refusal, never the below-develop one.
+MERGE_PR_ALLOW_SAME_VERSION=1 STUB_HEAD_VER=1.1.4 STUB_DEV_VER=1.1.5 run 0 headsha111 1.50
+refuses "opt-out with a version below develop's" "below"
+
+# 4f6. a version that is not plain X.Y.Z cannot be ordered safely: refuse and say so.
+STUB_HEAD_VER=1.1.196-rc1 STUB_HEAD_MKT_VER=1.1.196-rc1 run 0 headsha111 1.50
+refuses "non-numeric version" "not X.Y.Z"
 
 # 4g. opt-out for a PR that needs no bump.
 MERGE_PR_ALLOW_SAME_VERSION=1 STUB_HEAD_VER=1.1.5 STUB_DEV_VER=1.1.5 run 0 headsha111 1.50

@@ -38,7 +38,7 @@ Enforcement layers, weakest to strongest:
 PR's base is `develop` (re-read just before the merge) and its head contains the `origin/develop`
 tip (`git merge-base --is-ancestor`), waits for load below 4
 (default 900s, then fails with the load figure), fetches and re-checks ancestry after that wait,
-refuses a head whose two manifests disagree or whose version is equal to or below
+refuses a head whose versions are not plain `X.Y.Z`, whose two manifests disagree, or whose version is equal to or below
 `origin/develop`'s (checked before the wait and again after it; `MERGE_PR_ALLOW_SAME_VERSION=1`
 skips only the equal-version refusal, for a PR that needs no bump; an unreadable manifest or a
 failed fetch after the wait also refuses, with a message naming it), merges with
