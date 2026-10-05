@@ -62,7 +62,7 @@ empirically 2026-09-05); a timed-out gate does not block.
 ## What it injects
 
 `docs/METHODOLOGY.md` (under 4 KB) at SessionStart: the decision-sizing triad, interrogate the
-claim, bug fix = failing test first, context economy and delegation (5 agents per wave, a fresh
+claim, bug fix = failing test first, context economy and delegation (10 agents per wave, a fresh
 validator for a dispatched builder's multi-file work, `NEEDS-DECISION` instead of guessing),
 score not feel. `git-hooks/pre-commit` refuses a `docs/METHODOLOGY.md` over 4096 bytes.
 

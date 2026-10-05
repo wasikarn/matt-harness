@@ -89,9 +89,10 @@ before any of these is cited again.
   records the port decisions, the eval-rigor limitation (n=1
   upstream), and the things explicitly rejected.
 - **5-agent hard cap (load-bearing)** — METHODOLOGY Rule 13
-  sets the peak-concurrent cap at 5 agents per wave, enforced by
+  set the peak-concurrent cap at 5 agents per wave when this skill was
+  designed (raised to 10 on 2026-10-05), enforced by
   the lead clamping the work-list before spawning. The 2-wave
-  structure in this skill is engineered to fit that cap exactly.
+  structure in this skill is still engineered around 5.
 - **Fresh-context critic pattern** —
   `agents/ideate-critic.md`
   is the kbg-native critic used for the same-model-critic-circularity
