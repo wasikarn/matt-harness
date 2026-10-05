@@ -41,7 +41,36 @@ check_ancestry() {
     exit 1
   fi
 }
+
+# Refuse a head that ships under the version origin/develop already carries: an identical bump
+# rebases away with no conflict, so two PRs can cut one number (#492/#493, #496/#497). Both
+# manifests must agree at the head. MERGE_PR_ALLOW_SAME_VERSION=1 skips the same-version
+# refusal for a PR that needs no bump.
+manifest_version() {
+  local raw
+  raw=$(git show "$1:$2") || { echo "merge-pr: cannot read $2 at $1." >&2; exit 1; }
+  printf '%s\n' "$raw" | sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' | head -1
+}
+check_version() {
+  local head_ver mkt_ver dev_ver
+  head_ver=$(manifest_version "$head" .claude-plugin/plugin.json)
+  mkt_ver=$(manifest_version "$head" .claude-plugin/marketplace.json)
+  dev_ver=$(manifest_version origin/develop .claude-plugin/plugin.json)
+  if [ -z "$head_ver" ] || [ -z "$mkt_ver" ] || [ -z "$dev_ver" ]; then
+    echo "merge-pr: could not read the manifest version of the PR head or origin/develop." >&2
+    exit 1
+  fi
+  if [ "$head_ver" != "$mkt_ver" ]; then
+    echo "merge-pr: PR $pr head has plugin.json $head_ver but marketplace.json $mkt_ver; bump both manifests to the same number." >&2
+    exit 1
+  fi
+  if [ "$head_ver" = "$dev_ver" ] && [ "${MERGE_PR_ALLOW_SAME_VERSION:-}" != "1" ]; then
+    echo "merge-pr: PR $pr head ships version $head_ver, the same as origin/develop; bump both manifests to the next number first (or MERGE_PR_ALLOW_SAME_VERSION=1)." >&2
+    exit 1
+  fi
+}
 check_ancestry
+check_version
 
 load_max="${MERGE_PR_LOAD_MAX:-4}"
 wait_secs="${MERGE_PR_LOAD_WAIT_SECS:-900}"
@@ -59,25 +88,10 @@ while :; do
   waited=$((waited + 30))
 done
 
-# develop can move during the load wait: fetch and check again. Then refuse a head that ships
-# under the version origin/develop already carries: an identical bump rebases away with no
-# conflict, so two PRs can cut one number (#492/#493, #496/#497). MERGE_PR_ALLOW_SAME_VERSION=1
-# skips that refusal for a PR that needs no bump.
-git fetch origin
+# develop can move during the load wait: fetch and check both again.
+git fetch origin || { echo "merge-pr: git fetch failed after the load wait; not merging." >&2; exit 1; }
 check_ancestry
-manifest_version() {
-  git show "$1:.claude-plugin/plugin.json" | sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' | head -1
-}
-head_ver=$(manifest_version "$head")
-dev_ver=$(manifest_version origin/develop)
-if [ -z "$head_ver" ] || [ -z "$dev_ver" ]; then
-  echo "merge-pr: could not read the manifest version of the PR head or origin/develop." >&2
-  exit 1
-fi
-if [ "$head_ver" = "$dev_ver" ] && [ "${MERGE_PR_ALLOW_SAME_VERSION:-}" != "1" ]; then
-  echo "merge-pr: PR $pr head ships version $head_ver, the same as origin/develop; bump both manifests to the next number first (or MERGE_PR_ALLOW_SAME_VERSION=1)." >&2
-  exit 1
-fi
+check_version
 
 now=$(gh pr view "$pr" --json baseRefName -q .baseRefName)
 if [ "$now" != "develop" ]; then

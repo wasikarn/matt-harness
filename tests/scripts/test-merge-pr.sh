@@ -52,10 +52,13 @@ case "$1" in
     if [ "$n" -gt 1 ]; then exit "${STUB_ANCESTOR2:-$STUB_ANCESTOR}"; fi
     exit "$STUB_ANCESTOR" ;;
   show)
+    [ -z "${STUB_SHOW_FAIL:-}" ] || { echo "fatal: path does not exist" >&2; exit 128; }
     case "$2" in
-      origin/develop:*) printf '{\n  "version": "%s"\n}\n' "$STUB_DEV_VER" ;;
-      *) printf '{\n  "version": "%s"\n}\n' "$STUB_HEAD_VER" ;;
-    esac ;;
+      origin/develop:*) v="$STUB_DEV_VER" ;;
+      *:.claude-plugin/marketplace.json) v="${STUB_HEAD_MKT_VER-$STUB_HEAD_VER}" ;;
+      *) v="$STUB_HEAD_VER" ;;
+    esac
+    printf '{\n  "version": "%s"\n}\n' "$v" ;;
   *) exit 2 ;;
 esac
 EOF
@@ -144,6 +147,25 @@ if [ "$rc" -eq 0 ]; then ok "same version with the opt-out merges"; else bad "op
 STUB_HEAD_VER='' run 0 headsha111 1.50
 if [ "$rc" -ne 0 ]; then ok "unreadable version exits non-zero (rc=$rc)"; else bad "unreadable version exited 0"; fi
 if merged; then bad "unreadable version still reached gh pr merge"; else ok "unreadable version never calls gh pr merge"; fi
+if printf '%s' "$out" | /usr/bin/grep -q 'could not read'; then ok "unreadable version says so"; else bad "no unreadable-version message: $out"; fi
+
+# 4i. a same-version head fails fast, before the load wait (load 7.25 would otherwise wait).
+STUB_HEAD_VER=1.1.5 STUB_DEV_VER=1.1.5 run 0 headsha111 7.25
+if printf '%s' "$out" | /usr/bin/grep -q '1.1.5' && ! printf '%s' "$out" | /usr/bin/grep -q 'load'; then
+  ok "same version is refused before the load wait"
+else bad "same version not refused up front: $out"; fi
+
+# 4j. the two manifests at the head disagree: refuse (checking plugin.json alone would miss it).
+STUB_HEAD_MKT_VER=1.1.9 run 0 headsha111 1.50
+if [ "$rc" -ne 0 ]; then ok "manifest mismatch exits non-zero (rc=$rc)"; else bad "manifest mismatch exited 0"; fi
+if merged; then bad "manifest mismatch still reached gh pr merge"; else ok "manifest mismatch never calls gh pr merge"; fi
+if printf '%s' "$out" | /usr/bin/grep -q 'marketplace'; then ok "mismatch message names marketplace.json"; else bad "no marketplace message: $out"; fi
+
+# 4k. a manifest missing at the head (git show fails): the script says which one and refuses.
+STUB_SHOW_FAIL=1 run 0 headsha111 1.50
+if [ "$rc" -ne 0 ]; then ok "unreadable manifest file exits non-zero (rc=$rc)"; else bad "unreadable manifest file exited 0"; fi
+if merged; then bad "unreadable manifest file still reached gh pr merge"; else ok "unreadable manifest file never calls gh pr merge"; fi
+if printf '%s' "$out" | /usr/bin/grep -q 'cannot read'; then ok "unreadable manifest file says so"; else bad "no cannot-read message: $out"; fi
 
 # 5. no PR argument: usage error.
 out=$(PATH="$STUB:$PATH" STUB_LOG="$LOG" bash "$SCRIPT" 2>&1); rc=$?
