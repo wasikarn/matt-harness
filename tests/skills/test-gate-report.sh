@@ -157,6 +157,12 @@ assert "non-UUID session ids are named with their event count" \
 assert "non-UUID rows are still counted, not dropped" \
   "$(grep -q '3 ask/deny event' <<<"$out_odd" && echo 1 || echo 0)"
 
+NONOBJ="$TMPDIR_TEST/nonobj.jsonl"
+printf '%s\n' '[]' '"str"' '7' '{"ts": "2026-10-01T09:00:00Z", "id": "gate:write:test-integrity", "tool_name": "Edit", "decision": "ask", "session_id": "3ee810d0-aa02-40c6-aea7-e8de710cbe92"}' > "$NONOBJ"
+out_nonobj="$(MH_GATE_JOURNAL_PATH="$NONOBJ" python3 "$REPORT_PY" 2>&1)"; rc_nonobj=$?
+assert "a valid-JSON row that is not an object is skipped, not a crash" \
+  "$([[ $rc_nonobj -eq 0 ]] && grep -q '1 ask/deny event' <<<"$out_nonobj" && echo 1 || echo 0)"
+
 echo
 echo "=== $pass passed, $fail failed ==="
 [[ $fail -eq 0 ]]

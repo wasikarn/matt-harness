@@ -48,6 +48,9 @@ def main():
             except ValueError:
                 skipped += 1
                 continue
+            if not isinstance(row, dict):
+                skipped += 1
+                continue
             # GH #378: one secret-scan allow-suppressed row stands for "count" matches (older
             # rows, one per match, have none). Anything but a positive int counts as one.
             n = row.get("count", 1)

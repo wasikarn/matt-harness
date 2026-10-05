@@ -33,6 +33,10 @@ check "missing argument" 2 "$audited" ""
 check "a ref as the pin is not a SHA (HEAD HEAD)" 2 HEAD HEAD
 check "a branch name as the pin is not a SHA" 2 "$(git -C "$R" branch --show-current)" HEAD
 
+git -C "$R" branch deadbeef
+check "a branch named like a hex SHA is not a pin" 2 deadbeef deadbeef
+git -C "$R" branch -q -D deadbeef
+
 # Paragraph scope: Phase 1 step 4 (pin) and the Phase 3 "pass true" ship bullet.
 pin=$(awk '/^4\. \*\*Pin the revision safely/{p=1} p&&/^5\. /{exit} p' "$SKILL")
 ship=$(awk '/^   - `pass` true/{p=1;print;next} p&&/^   - /{exit} p' "$SKILL")

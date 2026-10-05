@@ -1,0 +1,8 @@
+---
+status: accepted
+--- 
+
+A quoted example frontmatter line:
+status: deprecated
+
+Still names the retired `mh:gone` wrapper.

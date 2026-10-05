@@ -67,10 +67,11 @@ def main():
         return 0
     rows.sort()
 
-    order = []  # session ids, oldest first by first use
+    order = []  # session ids, oldest first by last use
     for _, sid, _ in rows:
-        if sid not in order:
-            order.append(sid)
+        if sid in order:
+            order.remove(sid)
+        order.append(sid)
     window = set(order[-args.sessions:])
     in_window = {name for _, sid, name in rows if sid in window}
     last_use = {}

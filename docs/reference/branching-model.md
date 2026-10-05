@@ -88,8 +88,8 @@ discipline:
   isolation removes the *working-tree* collision, not a collision in a file both sessions read
   from or write to outside git (e.g. this repo's own manifests, or the shared memory store above).
 - **Re-read both manifests right before writing a version into a commit message.** A peer session
-  in a different worktree can still push a bump first; `Read` always sees the latest committed
-  state, not what was true when this session started.
+  in a different worktree can still push a bump first; a `Read` in your own worktree shows that
+  checkout, not the peer's push, so `git fetch` and read `origin/develop`'s manifests.
 - **Bump the manifests last, then re-check at the PR and again right before merging.** Run
   `git fetch` and read `origin/develop`'s version immediately before the bump commit and once the
   PR exists. Merge only through `scripts/merge-pr.sh` (never bare `gh pr merge`); it refuses a

@@ -59,6 +59,9 @@ def main(argv):
     except (OSError, ValueError) as e:
         sys.stderr.write("scope-fingerprint: cannot read manifest: %s\n" % e)
         return 2
+    if not isinstance(before, dict) or not before:  # same vacuous pass snapshot refuses
+        sys.stderr.write("scope-fingerprint: manifest holds no paths\n")
+        return 2
     drift = 0
     for p in sorted(before):
         old, new = before[p], fingerprint(p)

@@ -84,6 +84,20 @@ else
     bad "a failed run does not repeat the failed-at: rows: <$out>"
   fi
 fi
+# Deep-audit: three passing rows that mention FAIL must not push the real failing row out of the 3 shown.
+FIX=$(mktemp -d)
+printf 'echo "  ✅ PASS: rejects FAIL one"\necho "  ✅ PASS: rejects FAIL two"\necho "  ✅ PASS: rejects FAIL three"\necho "  ❌ real regression row"\nexit 1\n' >"$FIX/test-red.sh"
+out2=$(bash -c "
+  $BODY
+  hook_test_files() { printf '%s\n' '$FIX/test-red.sh'; }
+  run_hook_tests
+" 2>&1)
+if printf '%s\n' "$out2" | /usr/bin/grep '^failed-at:' | /usr/bin/grep -qF 'real regression row'; then
+  ok "failed-at keeps the failing row when passing rows also say FAIL"
+else
+  bad "failed-at hid the failing row behind passing rows: <$out2>"
+fi
+safe_trash "$FIX"
 safe_trash "$LOGDIR"
 
 echo "self-test: $pass passed, $fail failed"

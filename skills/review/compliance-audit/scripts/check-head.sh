@@ -11,6 +11,10 @@ fi
 # The pin must be a SHA (same shape as check-verdict.py's SHA_RE): a ref like HEAD would
 # resolve alongside <ref> and always match.
 [[ "$1" =~ ^[0-9a-f]{7,40}$ ]] || { echo "check-head: audited SHA '$1' is not a commit SHA (7-40 lowercase hex)" >&2; exit 2; }
+if git show-ref --quiet --verify "refs/heads/$1" || git show-ref --quiet --verify "refs/tags/$1"; then
+  echo "check-head: '$1' names a branch or tag, so it is a ref and not an audited SHA" >&2
+  exit 2
+fi
 audited=$(git rev-parse --verify --quiet "$1^{commit}") || { echo "check-head: audited SHA '$1' does not resolve" >&2; exit 2; }
 now=$(git rev-parse --verify --quiet "$2^{commit}") || { echo "check-head: ref '$2' does not resolve" >&2; exit 2; }
 if [ "$audited" = "$now" ]; then

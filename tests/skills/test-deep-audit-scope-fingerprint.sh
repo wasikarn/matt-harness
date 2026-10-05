@@ -49,4 +49,8 @@ out=$(printf '' | python3 "$FP" snapshot "$T/empty.json" 2>&1); code=$?
 out=$(python3 "$FP" compare "$T/nope.json" 2>&1); code=$?
 [ "$code" -eq 2 ] && echo "ok: missing manifest is a usage error (2)" || { echo "FAIL: missing manifest exit $code: $out"; fail=1; }
 
+printf '{}' >"$T/emptym.json"
+out=$(python3 "$FP" compare "$T/emptym.json" 2>&1); code=$?
+[ "$code" -eq 2 ] && echo "ok: an empty manifest is a usage error (2), not a vacuous pass" || { echo "FAIL: empty manifest exit $code: $out"; fail=1; }
+
 [ "$fail" -eq 0 ] && echo "PASS: test-deep-audit-scope-fingerprint" || { echo "FAIL: test-deep-audit-scope-fingerprint"; exit 1; }
