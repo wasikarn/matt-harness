@@ -89,11 +89,10 @@ before any of these is cited again.
 - **Why this exists** — `kbg-vs-adhd.md` (read via Bash: `cat "${MH_PLUGIN_ROOT}/docs/research/kbg-vs-adhd.md"`)
   records the port decisions, the eval-rigor limitation (n=1
   upstream), and the things explicitly rejected.
-- **5-agent design limit (load-bearing)** — METHODOLOGY Rule 13
-  set the peak-concurrent cap at 5 agents per wave when this skill was
-  designed (raised to 10 on 2026-10-05), enforced by
-  the lead clamping the work-list before spawning. The 2-wave
-  structure in this skill is still engineered around 5.
+- **5-agent design limit (load-bearing)** — this skill's 2-wave
+  structure is engineered around 5 agents per wave. That was METHODOLOGY Rule 13's
+  peak-concurrent cap when the skill was designed (raised to 10 on 2026-10-05); the lead
+  applies it by clamping the work-list before spawning, and the skill keeps 5 as its own limit.
 - **Fresh-context critic pattern** —
   `agents/ideate-critic.md`
   is the kbg-native critic used for the same-model-critic-circularity

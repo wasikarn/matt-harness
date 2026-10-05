@@ -92,12 +92,12 @@ discipline:
   state, not what was true when this session started.
 - **Bump the manifests last, then re-check at the PR and again right before merging.** Run
   `git fetch` and read `origin/develop`'s version immediately before the bump commit and once the
-  PR exists. Right before merging, in one command, compare this head's version with
-  `origin/develop`'s and then run `scripts/merge-pr.sh` (never bare `gh pr merge`, see Merging
-  above). The script re-checks after its load wait; a small race remains between its last
-  check and the merge. If a peer's bump merged in between, move to the next number first. Two PRs that cut the same version leave the installed
-  cache with whichever tree built first, and the other change does not load until the next bump
-  (#492 and #493 both took 1.1.189, #496 and #497 both took 1.1.191, 2026-10-05).
+  PR exists. Merge only through `scripts/merge-pr.sh` (never bare `gh pr merge`); it refuses a
+  head whose version is not above `origin/develop`'s, before and after its load wait (see
+  Merging above for what it checks and the race that remains). If it refuses, move to the next
+  number first. Two PRs that cut the same version leave the installed cache with whichever tree
+  built first, and the other change does not load until the next bump (#492 and #493 both took
+  1.1.189, #496 and #497 both took 1.1.191, 2026-10-05).
 - **`/rewind` only reverts this session's own worktree.** It can no longer touch a peer's tree at
   all, since each session now has its own — this constraint from the old shared-tree model is
   gone, not merely mitigated.
