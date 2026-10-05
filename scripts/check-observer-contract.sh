@@ -69,7 +69,23 @@ while i < n:
         j = src.find("*/", i + 2)
         j = n if j < 0 else j + 2
         out.append(re.sub(r"[^\n]", " ", src[i:j])); i = j
-    elif c in "'\"`":
+    elif c == "`":
+        # A template literal: its text is blanked but a ${...} interpolation is code, so a next()
+        # inside it is still scanned (the braces are counted; a "}" inside a nested string is
+        # a known gap, and miscounting only widens what is scanned).
+        out.append(c); j = i + 1
+        while j < n and src[j] != c:
+            if src[j] == "\\":
+                out.append("  "); j += 2
+            elif src.startswith("${", j):
+                depth, k = 1, j + 2
+                while k < n and depth:
+                    depth += {"{": 1, "}": -1}.get(src[k], 0); k += 1
+                out.append(src[j:k]); j = k
+            else:
+                out.append(" " if src[j] != "\n" else "\n"); j += 1
+        out.append(c); i = j + 1
+    elif c in "'\"":
         j = i + 1
         while j < n and src[j] != c:
             j += 2 if src[j] == "\\" else 1

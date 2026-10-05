@@ -54,5 +54,26 @@ case "$out" in *"rewrite in source: L3: next({ ...e, prompt:"*) ok "multi-line o
 out="$(bash "$CHECK" "$T/var" 2>&1)"
 case "$out" in *"rewrite in source: L3: next(r)"*) ok "variable arg flagged" ;; *) bad "variable arg not flagged: $out" ;; esac
 
+# Deep-audit: a next() call inside a template literal's ${...} is code, not string text.
+mkdir -p "$T/tpl/hooks/mod" "$T/tplok/hooks/mod"
+cat > "$T/tpl/hooks/mod/cost-ledger.ts" <<'EOF'
+export default (on) => {
+  on('turn.complete', async ($, e, next) => {
+    const forwarded = `${next({ ...e, text: 'x' })}`; return forwarded
+  })
+}
+EOF
+cat > "$T/tplok/hooks/mod/cost-ledger.ts" <<'EOF'
+export default (on) => {
+  on('turn.complete', async ($, e, next) => {
+    const note = `plain text mentions next({ ...e }) and ${e.id}`; return next(e)
+  })
+}
+EOF
+out="$(bash "$CHECK" "$T/tpl" 2>&1)"
+case "$out" in *"rewrite in source: L3: next({ ...e, text:"*) ok "next() inside a template interpolation flagged" ;; *) bad "template interpolation not flagged: $out" ;; esac
+out="$(bash "$CHECK" "$T/tplok" 2>&1)"
+case "$out" in *"in source"*) bad "template text (not an interpolation) flagged: $out" ;; *) ok "next() named in template text is not flagged" ;; esac
+
 echo "  ($pass passed, $fail failed)"
 [ "$fail" -eq 0 ]
