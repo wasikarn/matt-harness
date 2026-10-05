@@ -261,3 +261,21 @@ x=`echo a\;#$('`; echo "$(git stash)" #'
 %%
 DENY C73 GH #512 three backslashes in backticks leave an escaped backslash and a real comment (sh bash zsh ran it)
 x=`echo a\\\;#$('`; echo "$(git stash)" #'
+%%
+DENY C74 GH #512 a close paren that ends a subshell, then a comment holding an apostrophe, hides the next line from a one-reading scan (sh bash zsh ran it)
+(true)#don't
+echo "$(git stash)"
+%%
+DENY C75 GH #512 same inside a quoted substitution: the subshell close ends a word boundary and the comment swallows the line break (sh bash zsh ran it)
+echo "$(true; (true)# a
+git stash)"
+%%
+DENY C76 GH #512 subshell close, backslash-newline, then a comment with an apostrophe (sh bash zsh ran it)
+(true)\
+#don't
+echo "$(git stash)"
+%%
+DENY C77 GH #512 a subshell close then a comment with a backtick (sh bash zsh ran it)
+(true)# `
+echo "$(git stash)"
+# `
