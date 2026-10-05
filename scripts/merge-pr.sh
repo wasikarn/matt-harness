@@ -49,7 +49,15 @@ check_ancestry() {
 manifest_version() {
   local raw
   raw=$(git show "$1:$2") || { echo "merge-pr: cannot read $2 at $1." >&2; exit 1; }
-  printf '%s\n' "$raw" | sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' | head -1
+  # First "version" key; awk reads all of its input, so no SIGPIPE under pipefail.
+  printf '%s\n' "$raw" | awk -F'"' '/"version"/ && !seen { print $4; seen = 1 }'
+}
+# version_lt A B: exit 0 when dotted version A is lower than B.
+version_lt() {
+  awk -v a="$1" -v b="$2" 'BEGIN {
+    split(a, x, "."); split(b, y, ".")
+    for (i = 1; i <= 3; i++) { if (x[i] + 0 < y[i] + 0) exit 0; if (x[i] + 0 > y[i] + 0) exit 1 }
+    exit 1 }'
 }
 check_version() {
   local head_ver mkt_ver dev_ver
@@ -62,6 +70,10 @@ check_version() {
   fi
   if [ "$head_ver" != "$mkt_ver" ]; then
     echo "merge-pr: PR $pr head has plugin.json $head_ver but marketplace.json $mkt_ver; bump both manifests to the same number." >&2
+    exit 1
+  fi
+  if version_lt "$head_ver" "$dev_ver"; then
+    echo "merge-pr: PR $pr head ships version $head_ver, below origin/develop's $dev_ver; a conflict was resolved to a lower number. Bump both manifests above $dev_ver." >&2
     exit 1
   fi
   if [ "$head_ver" = "$dev_ver" ] && [ "${MERGE_PR_ALLOW_SAME_VERSION:-}" != "1" ]; then

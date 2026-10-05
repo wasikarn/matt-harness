@@ -38,9 +38,10 @@ Enforcement layers, weakest to strongest:
 PR's base is `develop` (re-read just before the merge) and its head contains the `origin/develop`
 tip (`git merge-base --is-ancestor`), waits for load below 4
 (default 900s, then fails with the load figure), fetches and re-checks ancestry after that wait,
-refuses a head whose two manifests disagree or whose version equals `origin/develop`'s (checked
-before the wait and again after it; `MERGE_PR_ALLOW_SAME_VERSION=1` skips the equal-version
-refusal for a PR that needs no bump; an unreadable manifest also refuses), merges with
+refuses a head whose two manifests disagree or whose version is equal to or below
+`origin/develop`'s (checked before the wait and again after it; `MERGE_PR_ALLOW_SAME_VERSION=1`
+skips only the equal-version refusal, for a PR that needs no bump; an unreadable manifest or a
+failed fetch after the wait also refuses, with a message naming it), merges with
 `gh pr merge --merge --match-head-commit <checked sha>`, and prints the merge commit sha. On a
 behind-develop refusal, rebase on `origin/develop` and push (on a wrong-base refusal, retarget the PR
 with `gh pr edit <PR> --base develop`): the pre-push gauntlet then runs on the exact tree that
