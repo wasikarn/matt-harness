@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 71. Codex review-gate state (the paired codex@openai-codex plugin's
-# Stop-time LLM-judgment review gate must stay off by design -- CONTEXT.md's
+# Stop-time LLM-judgment review gate must stay off by design -- GLOSSARY.md's
 # "review gate" entry, ADR-0001, docs/reference/codex-integration-map.md).
 # WARN only -- this reads third-party, operator-machine state, not a rule this
 # repo can enforce; fail-open to INFO on anything missing or unparseable, same
@@ -27,7 +27,7 @@ except Exception:
     print("unknown")
 ' "$_codex_state_file" 2>/dev/null)
     case "$_codex_gate" in
-      on) warn "codex@openai-codex review gate is ON for this repo ($_codex_state_file) -- an LLM-judgment Stop hook that can block a session end; mh's doctrine keeps this off (CONTEXT.md, ADR-0001). Run /codex:setup --disable-review-gate" ;;
+      on) warn "codex@openai-codex review gate is ON for this repo ($_codex_state_file) -- an LLM-judgment Stop hook that can block a session end; mh's doctrine keeps this off (GLOSSARY.md, ADR-0001). Run /codex:setup --disable-review-gate" ;;
       off) info "codex@openai-codex review gate is off for this repo" ;;
       *) info "codex@openai-codex review-gate state file found but unparseable ($_codex_state_file) -- treating as off" ;;
     esac

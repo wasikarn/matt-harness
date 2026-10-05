@@ -3,7 +3,7 @@
 `codex@openai-codex` (source `openai/codex-plugin-cc`) paired alongside mh as a second,
 independent coding agent — a different model family, routed to by name. Not a wrapper, mirror,
 or orchestration layer: mh creates no surface whose only job is to call Codex (see
-`CONTEXT.md`'s "pairing" entry). Re-verify this table whenever the installed `codex` plugin
+`GLOSSARY.md`'s "pairing" entry). Re-verify this table whenever the installed `codex` plugin
 cache version changes; no check parses it. Full reasoning: `docs/plans/codex-pairing-2026-09-06.md`.
 
 ## Routing

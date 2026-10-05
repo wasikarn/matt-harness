@@ -12,12 +12,14 @@ the `mattpocock-skills` cache version changes. No check parses this table.
 | codebase-design | model | `agents/code-architect.md`, `agents/backend-architect.md` boundary lines (deep-module vocabulary mid-blueprint) |
 | diagnosing-bugs | model | METHODOLOGY Rule 4; `skills/workflow/post-mortem/SKILL.md` input contract |
 | tdd | model | METHODOLOGY Rule 4 |
-| domain-modeling | model | `CLAUDE.md` Authoring section (root `CONTEXT.md` + `docs/adr/`, created lazily) |
+| domain-modeling | model | `CLAUDE.md` Authoring section (root `GLOSSARY.md` + `docs/adr/`, created lazily) |
 | grill-with-docs, improve-codebase-architecture | user | paths into domain-modeling; unrouted from mh prose |
 | grilling | model | escalation for a contested call; no mh pointer. Main session only (its research step dispatches a subagent) |
 | grill-me | user | `agents/requirement-analyst.md` boundary line (live interview vs analyzing a written requirement) |
 | research | model | `CLAUDE.md` research section defers to it after qmd/context7. Main session only |
-| resolving-merge-conflicts | model | adjacent to `gate:bash:irrecoverable`: its "stage everything" step is why `git add -A` is allowed while `MERGE_HEAD` exists |
+| implement-spec | user | deferred: parallel whole-spec alternative to `implement` (worktree implementers, one integration branch); mh names no step of it. Graduated upstream in 1.3.0 |
+| pr | model | PR-body shape (smallest visual, before/after evidence, merge-danger call); used when writing a PR body. Graduated upstream in 1.3.0 |
+| retro | user | deferred: session retrospective on the agent's environment; overlaps `mh:learn` (cross-turn memory patterns), no mh wrapper. Graduated upstream in 1.3.0 |
 | setup-matt-pocock-skills | user | `README.md` Install section. Re-running regenerates its output files from scratch |
 | implement, to-spec, to-tickets | user | the spec-to-ship chain; mh names no step of it |
 | prototype | model | deferred: no mh surface produces throwaway spikes |

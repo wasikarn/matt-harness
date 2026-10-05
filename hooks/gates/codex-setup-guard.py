@@ -42,7 +42,7 @@ try:
     emit_ask(
         "codex-setup-guard: this call to codex:setup would enable the paired Codex "
         "plugin review gate, an LLM-judgment Stop-time check mh keeps off by design "
-        "(see CONTEXT.md, ADR-0001). Confirm this is intentional.",
+        "(see GLOSSARY.md, ADR-0001). Confirm this is intentional.",
         d.get("tool_name"), d.get("session_id"),
     )
 except Exception as e:
