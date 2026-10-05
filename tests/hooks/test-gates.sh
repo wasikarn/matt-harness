@@ -3151,6 +3151,10 @@ for _c in \
   'rm {-rf,\ } /tmp/x' \
   '{$(:),git} push --force origin main' \
   '{f,"x y"}ind . -delete' \
+  '{,git} reset --hard' \
+  '{,git} push --force origin main' \
+  'env {,git} push --force origin main' \
+  '{,git} push origin +main' \
   '{r,"x y"}m -rf /tmp/x' ; do
   _would336 deny brace-view "$_c"
 done
@@ -3194,6 +3198,10 @@ XEOF
 )
 test_allow "$IRRECOVERABLE" "GH #309 control: a heredoc with f-string braces and an apostrophe takes the fast path, allowed" \
   "$(bash_payload "$_c309h")"
+# A double-quoted body can be a shell's command text (bash -c "..."), which expands braces itself, so double
+# quotes are still read as command text. The cost is a known over-deny: a double-quoted JSON body with more
+# than a few chained objects (curl -d "{...}") exceeds the cap and is denied.
+_would336 deny brace-view 'bash -c "r{m,} -rf /tmp/x"'
 # An uncaught error would exit 1, which does not block: 3000 nested substitutions must exit 2.
 test_deny "$IRRECOVERABLE" "GH #309: 3000 nested dollar-paren spans in a command with a brace deny (exit 2, no traceback)" \
   "$(bash_payload "$(python3 -c "print('echo {a,b} ' + '\"\$(' * 3000)")")"
