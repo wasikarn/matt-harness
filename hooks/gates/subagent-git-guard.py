@@ -674,13 +674,83 @@ def _heredoc_at(s, i, after=None):
         raise _Unparsed
     return (trigger, trigger + 1, strict.start(), strict.end(), m.group(3) is None or word.startswith("\\"))
 
+# GH #512: the scanner below and _quotemask.py each decide what opens a comment and what opens `$'..'`,
+# and they drifted: five shapes hid a `git stash` from the scan. These two helpers read the mask's rules
+# (see _quotemask.py: its _WORD_BOUNDARY_CHARS, the line-continuation rule of GH #286/#306 and the `$`
+# run rule of GH #161) so the two agree again.
+_COMMENT_BOUNDARY = " \t;&|("
+
+def _comment_starts(s, i, start, comment_nl=-1):
+    # Does the `#` at s[i] open a comment? Yes at the start of the text or after a blank, ; & | ( or a
+    # real newline. A backslash-newline pair is deleted by the shell, so look back past it: one backslash
+    # leaves what stood before the pair (`echo x \<nl>#y` is a comment, `x\<nl>#y` is one word); a longer
+    # odd run leaves escaped backslashes, which are word characters. comment_nl is the newline that ended a
+    # comment, which the text alone cannot say (a comment ends at its newline even when it ends in a
+    # backslash). A `)` is not a boundary: it often ends a word (`$(true)#x`) and the scanner does not
+    # track which parens are real subshells, so that shape stays open (GH #512).
+    j = i
+    while j > start and s[j - 1] == "\n":
+        if j - 1 == comment_nl:
+            return True
+        k = j - 1
+        while k > start and s[k - 1] == "\\":
+            k -= 1
+        run = j - 1 - k
+        if run % 2 == 0:
+            return True  # a real newline
+        if run > 1:
+            return False
+        j = k
+    if j == start:
+        return True
+    if s[j - 1] not in _COMMENT_BOUNDARY :
+        return False
+    b = 0  # an escaped boundary character (`\;`, `\ `, `\)`) is part of the word, so the `#` is no comment
+    while j - 2 - b >= start and s[j - 2 - b] == "\\":
+        b += 1
+    return b % 2 == 0
+
+def _dollar_run_odd(s, i):
+    # Only the LAST `$` of an odd-length run of unescaped `$` can open `$'..'`; `$$` is the PID.
+    n, p = 0, i
+    while p >= 0 and s[p] == "$":
+        b = 0
+        while p - 1 - b >= 0 and s[p - 1 - b] == "\\":
+            b += 1
+        if b % 2:
+            break  # this `$` is escaped
+        n += 1
+        p -= 1
+    return n % 2 == 1
+
+_DOLLAR_PAIR_RE = re.compile(r"\$\$'")
+
 def _substitution_bodies(s, depth=0):
+    # bash and sh read `$$'` as the PID then a plain quote; zsh reads it as `$` then `$'..'`. They need
+    # different quote states, so both are scanned when the text has one (GH #512, round 2 of the review).
+    bodies = _scan_bodies(s, depth, False)
+    if _DOLLAR_PAIR_RE.search(s):
+        bodies.extend(_scan_bodies(s, depth, True))
+    return bodies
+
+_DOLLAR_PAIR_RE = re.compile(r"\$\$'")
+
+def _substitution_bodies(s, depth=0):
+    # bash and sh read `$$'` as the PID then a plain quote; zsh reads it as `$` then `$'..'`. They need
+    # different quote states, so both are scanned when the text has one (GH #512, round 2 of the review).
+    bodies = _scan_bodies(s, depth, False)
+    if _DOLLAR_PAIR_RE.search(s):
+        bodies.extend(_scan_bodies(s, depth, True))
+    return bodies
+
+def _scan_bodies(s, depth=0, zsh_dollar=False):
     bodies, n, i = [], len(s), 0
     # frame: kind, body start, open quote, paren depth, open `case` count, saw case, at command
     # position, open ${ count
     frames = [["top", 0, None, 0, 0, False, True, 0]]
     pend = []  # heredocs whose bodies start after the current line, in order
     hd_end = hd_depth = -1
+    comment_nl = -1  # the newline that ended the last comment
     _scan_cost(n * 4)
 
     def done(f, end):
@@ -720,18 +790,20 @@ def _substitution_bodies(s, depth=0):
             i += 1
         elif c == "'" and f[2] is None and f[0] != "bt":  # inside "..." an apostrophe is a letter
             f[2] = "'"
-        elif c == "$" and s[i + 1:i + 2] == "'" and f[2] is None and f[0] != "bt":
+        elif c == "$" and s[i + 1:i + 2] == "'" and f[2] is None and f[0] != "bt" \
+                and (zsh_dollar or _dollar_run_odd(s, i)):
             f[2] = "$"; i += 1
         elif c == '"':
             f[2] = None if f[2] == '"' else '"'
-        elif c == "#" and f[2] is None and (i == f[1] or s[i - 1] in " \t;&|(" or (
-                s[i - 1] == "\n" and _line_end(s, i - 1) == i - 1)):  # not after a backslash-newline
+        elif c == "#" and f[2] is None and _comment_starts(s, i, f[1], comment_nl):
             # a comment (any frame): its quotes, parens and `<<` mean nothing; in backticks the
             # closing backtick still ends it
             j = s.find("\n", i)
             k = s.find("`", i) if f[0] == "bt" else -1
             ends = [x for x in (j, k) if x >= 0]
             i = (min(ends) if ends else n) - 1
+            if j >= 0 and ends and j == min(ends):
+                comment_nl = j
         elif c == "<" and f[2] is None and s.startswith("<<", i) \
                 and s[i + 2:i + 3] != "<" and s[i - 1:i] != "<":
             h = _heredoc_at(s, i, pend[-1][3] if pend else None)

@@ -163,3 +163,55 @@ x
 PY'''
 print(cmd)
 PY
+%%
+DENY C47 GH #512 a comment after a backslash-newline inside a quoted substitution (sh bash zsh ran it)
+echo "$(echo x \
+# a)
+git stash)"
+%%
+DENY C48 GH #512 a comment after a backslash-newline at the start of a word (sh bash zsh ran it)
+echo \
+# don't
+echo "$(git stash)"
+%%
+DENY C49 GH #512 dollar-dollar then an ANSI-C quote: bash and sh read the PID and a plain quote (bash sh ran it)
+echo $$'a\'; echo "$(git stash)"; echo 'x'
+%%
+DENY C50 GH #512 dollar-dollar then a quote: zsh reads a dollar and an ANSI-C quote, so both readings are scanned (zsh ran it)
+echo $$'x\'' "$(git stash)" #'
+%%
+DENY C51 GH #512 a comment that ends in a backslash still ends at its newline (sh bash zsh ran it)
+# x\
+#don't
+echo "$(git stash)"
+%%
+DENY C52 GH #512 an escaped semicolon is part of the word, so # after it is no comment (sh bash zsh ran it)
+echo \;#"$(git stash)"
+%%
+DENY C53 GH #512 pin: an escaped close paren before # (sh bash zsh ran it)
+echo \)#"$(git stash)"
+%%
+DENY C54 GH #512 pin: a close paren that ends a substitution is part of the word (sh bash zsh ran it)
+echo $(true)#"$(git stash)"
+%%
+DENY C55 GH #512 pin: same after an arithmetic close (sh bash zsh ran it)
+echo $((1))#"$(git stash)"
+%%
+DENY C56 GH #512 pin: a process substitution close is part of the word (bash zsh ran it)
+<(true)#x\;`git stash`
+%%
+DENY C57 GH #512 pin: process substitution then a line continuation (bash zsh ran it)
+<(true)\
+#x\;`git stash`
+%%
+DENY C58 GH #512 pin: a close paren inside ${..} is part of the word (sh bash zsh ran it)
+echo ${y:-)#"$(git stash)"}
+%%
+DENY C59 GH #512 pin: a close paren inside arithmetic is part of the word (sh bash zsh ran it)
+echo $(( (1)#"$(git stash)" ))
+%%
+DENY C60 GH #512 pin: zsh reads (a) as a glob, so # after it is no comment (zsh ran it)
+echo (a)#"$(git stash)"
+%%
+DENY C61 GH #512 pin: a here-string before a process substitution (bash zsh ran it)
+cat <<<<(a)#"$(git stash)"
