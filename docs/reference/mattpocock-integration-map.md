@@ -10,14 +10,14 @@ the `mattpocock-skills` cache version changes. No check parses this table.
 | ask-matt | user | the routing layer for "which matt skill" questions; mh ships no router of its own |
 | code-review | model | the review surface. Main session only: its internal Standards/Spec fan-out spawns subagents, which native `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1` denies from inside a dispatched subagent. Shares its bare name with Claude Code's built-in `/code-review`; the namespaced form is unambiguous |
 | codebase-design | model | `agents/code-architect.md`, `agents/backend-architect.md` boundary lines (deep-module vocabulary mid-blueprint) |
-| diagnosing-bugs | model | METHODOLOGY Rule 4; `skills/workflow/post-mortem/SKILL.md` input contract |
+| diagnosing-bugs | model | METHODOLOGY Rule 4; `skills/workflow/post-mortem/SKILL.md` input contract (Phases 2, 5 and 6 outputs; Phase 6 is now Cleanup only) |
 | tdd | model | METHODOLOGY Rule 4 |
 | domain-modeling | model | `CLAUDE.md` Authoring section (root `GLOSSARY.md` + `docs/adr/`, created lazily) |
 | grill-with-docs, improve-codebase-architecture | user | paths into domain-modeling; unrouted from mh prose |
 | grilling | model | escalation for a contested call; no mh pointer. Main session only (its research step dispatches a subagent) |
 | grill-me | user | `agents/requirement-analyst.md` boundary line (live interview vs analyzing a written requirement) |
 | research | model | `CLAUDE.md` research section defers to it after qmd/context7. Main session only |
-| implement-spec | user | deferred: parallel whole-spec alternative to `implement` (worktree implementers, one integration branch); mh names no step of it. Graduated upstream in 1.3.0 |
+| implement-spec | user | deferred: parallel whole-spec alternative to `implement` (worktree implementers, one integration branch); mh names no step of it. Its frontier fan-out is uncapped upstream, so wave it at 10 (Rule 13); it has no Rule 13 fresh-context validator (only a merger subagent and a closing `code-review`), so add one when a builder touches 2+ files. Graduated upstream in 1.3.0 |
 | pr | model | PR-body shape (smallest visual, before/after evidence, merge-danger call); used when writing a PR body. Graduated upstream in 1.3.0 |
 | retro | user | deferred: session retrospective on the agent's environment; overlaps `mh:learn` (cross-turn memory patterns), no mh wrapper. Graduated upstream in 1.3.0 |
 | setup-matt-pocock-skills | user | `README.md` Install section. Re-running regenerates its output files from scratch |

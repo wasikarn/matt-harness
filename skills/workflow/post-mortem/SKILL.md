@@ -11,8 +11,8 @@ effort: high
 # Post-Mortem
 
 Draft the engineering record of a fixed bug: the document that answers "what happened and why"
-for a reader who was not there. It follows `mattpocock-skills:diagnosing-bugs`, whose Phase 6
-output (confirmed hypothesis in the commit message, regression test, minimised repro) is this
+for a reader who was not there. It follows `mattpocock-skills:diagnosing-bugs`, whose Phases 2, 5 and 6
+outputs (minimised repro, regression test, confirmed hypothesis in the commit message) are this
 skill's input.
 
 Three rules hold through every step:
