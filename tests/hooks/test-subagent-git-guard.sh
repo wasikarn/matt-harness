@@ -1143,6 +1143,40 @@ for _dv in 0 -1 abc nan; do
 done
 _pr=$(_dl_probe 3 "echo hi"); ok=1; [ "$_pr" = "0 False" ] && ok=0
 check "a valid MH_SGG_DEADLINE_SECS=3 prints no fallback diagnostic ($_pr)" "$ok"
+# An override over the 7 s clamp (past the 8 s hook timeout) is clamped to 7 and says so, so the clamp is
+# observable: without it, a 100 s deadline would let a slow scan run into the timeout (= allow).
+for _dv in 100 inf; do
+  _pr=$(MH_SGG_DEADLINE_SECS=$_dv python3 -c '
+import json, subprocess, sys
+payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": "echo hi"},
+                      "agent_id": "fork", "agent_type": "general-purpose"}).encode()
+p = subprocess.run(["bash", sys.argv[1]], input=payload, capture_output=True, timeout=30)
+print(p.returncode, "clamped to 7 s" in p.stderr.decode())
+' "$GATE"); ok=1; [ "$_pr" = "0 True" ] && ok=0
+  check "MH_SGG_DEADLINE_SECS=$_dv is clamped to 7 s with a diagnostic, echo hi allowed ($_pr)" "$ok"
+done
+# A deny must survive an unwritable stderr: a print that raises exits 120, which is not a deny, so the
+# command would run. Each row closes the read end of the stderr pipe before the gate writes its deny.
+_closed_stderr_rc() { # $1 command, $2 extra env assignment (NAME=value) or empty -> exit code
+  python3 -c '
+import json, os, subprocess, sys
+r, w = os.pipe()
+os.close(r)
+env = dict(os.environ)
+if sys.argv[3]:
+    k, v = sys.argv[3].split("=", 1)
+    env[k] = v
+payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": sys.argv[2]},
+                      "agent_id": "fork", "agent_type": "general-purpose"}).encode()
+p = subprocess.run(["bash", sys.argv[1]], input=payload, stdout=subprocess.DEVNULL, stderr=w, timeout=30, env=env)
+print(p.returncode)
+' "$GATE" "$1" "$2"
+}
+_big="echo $(_pad 'a' 16100)"
+for _case in "git stash|" "$_big|MH_SGG_MAX_CMD_CHARS=16000" "git stash|MH_SGG_DEADLINE_SECS=abc"; do
+  rc=$(_closed_stderr_rc "${_case%%|*}" "${_case#*|}"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "deny exits 2 with stderr unwritable: ${_case:0:40} (rc $rc)" "$ok"
+done
 # A value too large for setitimer (or past the 8 s hook timeout) must still arm a deadline, never crash the
 # gate: a crash exits 1, which is not a deny, so the command would run.
 for _dv in inf 1e300 100; do
