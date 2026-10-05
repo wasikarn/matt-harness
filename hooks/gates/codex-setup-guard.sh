@@ -5,7 +5,7 @@
 # The paired Codex plugin's own `/codex:setup --enable-review-gate` toggle
 # turns on a Stop-time LLM-judgment review that can block a Claude Code
 # session from ending -- exactly the shape the operating model keeps out of
-# mh's deny/ask set (see CONTEXT.md's "review gate" entry). Two of the eight
+# mh's deny/ask set (see GLOSSARY.md's "review gate" entry). Two of the eight
 # `/codex:*` commands ship without `disable-model-invocation: true` --
 # `codex:setup` and `codex:rescue` -- so nothing stops the model from calling
 # either one itself. ADR-0001 records the split: this gate closes the

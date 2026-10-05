@@ -10,7 +10,7 @@
 #   - codex:<n>                holding a SKILL.md is itself, else its direct children, as check 75's
 #                              loads()), else skills/<n>/; plus commands/<n>.md and agents/<n>.md
 # A namespace with no plugin cache (CI) is an INFO skip. Scope is prose: *.md in README.md,
-# CLAUDE.md, CONTEXT.md, AGENTS.md, docs/ (minus the frozen research/, plans/, post-mortems/ and
+# CLAUDE.md, GLOSSARY.md, AGENTS.md, docs/ (minus the frozen research/, plans/, post-mortems/ and
 # any `status: deprecated` ADR), skills/, agents/. Code and tests name hook ids (mh:gate:...) and
 # fake tokens by design. A token followed by `:` is a hook id, not a reference. WARN: doc rot.
 _ck80_out=$(python3 - "$CLAUDE_DIR" "$HOME/.claude/plugins/cache" <<'PYEOF'
@@ -64,7 +64,7 @@ for ns, plugin in PLUGINS.items():
         continue
     known[ns] = plugin_names(max(vers, key=vkey))
 
-files = [os.path.join(root, f) for f in ("README.md", "CLAUDE.md", "CONTEXT.md", "AGENTS.md")]
+files = [os.path.join(root, f) for f in ("README.md", "CLAUDE.md", "GLOSSARY.md", "AGENTS.md")]
 for top in ("docs", "skills", "agents"):
     for d, dirs, names in os.walk(os.path.join(root, top)):
         files.extend(os.path.join(d, n) for n in names if n.endswith(".md"))
