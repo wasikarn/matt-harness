@@ -170,7 +170,7 @@ run_hook_tests() {
   local row
   for t in $failed; do
     o="$TDIR/${t//\//_}"
-    row=$(/usr/bin/grep -E '❌|FAIL|not ok|rc 124' "$o.out" | /usr/bin/grep -vE '^ *(✅|PASS|ok )' | head -n 3)
+    row=$(/usr/bin/grep -E '❌|FAIL|not ok|rc 124' "$o.out" | /usr/bin/grep -vE '^ *(✅|PASS|SKIP|ok[: ])' | head -n 3)
     [ -n "$row" ] || row=$(tail -n 1 "$o.out")
     printf '%s\n' "$row" | sed "s|^ *|failed-at: $t: |"
   done

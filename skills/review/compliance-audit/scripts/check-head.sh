@@ -2,7 +2,7 @@
 # check-head.sh <audited-sha> <ref>: exit 0 only when <ref> still resolves to
 # the head SHA the audit pinned (issue #395). Run before ship/merge; fetch first
 # when <ref> is a remote branch. Exit 1 = the ref moved since the audit (re-audit);
-# exit 2 = usage error or a SHA/ref that does not resolve to a commit.
+# exit 2 = usage error, a SHA/ref that does not resolve to a commit, or a pin that is a ref name.
 set -u
 if [ $# -ne 2 ] || [ -z "$1" ] || [ -z "$2" ]; then
   echo "usage: check-head.sh <audited-sha> <ref>" >&2
@@ -11,11 +11,10 @@ fi
 # The pin must be a SHA (same shape as check-verdict.py's SHA_RE): a ref like HEAD would
 # resolve alongside <ref> and always match.
 [[ "$1" =~ ^[0-9a-f]{7,40}$ ]] || { echo "check-head: audited SHA '$1' is not a commit SHA (7-40 lowercase hex)" >&2; exit 2; }
-if git show-ref --quiet --verify "refs/heads/$1" || git show-ref --quiet --verify "refs/tags/$1"; then
-  echo "check-head: '$1' names a branch or tag, so it is a ref and not an audited SHA" >&2
-  exit 2
-fi
 audited=$(git rev-parse --verify --quiet "$1^{commit}") || { echo "check-head: audited SHA '$1' does not resolve" >&2; exit 2; }
+# A hex-looking ref name (a branch, a tag, refs/<name>) can win git's lookup over the SHA; the
+# resolved commit must start with what was typed.
+[[ "$audited" == "$1"* ]] || { echo "check-head: '$1' resolves to a ref, not to an audited SHA" >&2; exit 2; }
 now=$(git rev-parse --verify --quiet "$2^{commit}") || { echo "check-head: ref '$2' does not resolve" >&2; exit 2; }
 if [ "$audited" = "$now" ]; then
   echo "check-head: $2 is still the audited head $audited"

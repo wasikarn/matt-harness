@@ -54,9 +54,9 @@ asked to research. Detail: `docs/reference/repo-gotchas.md`.
 
 `develop` is protected: no direct push, PR required (`feat/`/`claude/` branch,
 `gh pr create`, review via `mattpocock-skills:code-review`). Each session gets its own worktree; a
-subagent still shares its parent session's worktree, and the memory store + both manifests are
-still shared across every worktree — re-read manifests before writing a version into a commit
-message. Detail: `docs/reference/branching-model.md`.
+subagent still shares its parent session's worktree, and the memory store is shared across every
+worktree; each worktree has its own manifest checkout, so `git fetch` and read `origin/develop`'s
+manifests before writing a version into a commit message. Detail: `docs/reference/branching-model.md`.
 
 ## Architecture
 

@@ -50,7 +50,7 @@ out="$(MH_GATE_JOURNAL_PATH="$JOURNAL" python3 "$REPORT_PY")"
 rc=$?
 assert "exits 0 on a populated journal" "$([[ $rc -eq 0 ]] && echo 1 || echo 0)"
 assert "counts 4 events, skips the 1 garbage line" \
-  "$(grep -q '^Gate journal: 4 ask/deny event(s), 1 unparsable line(s) skipped$' <<<"$out" && echo 1 || echo 0)"
+  "$(grep -q '^Gate journal: 4 ask/deny event(s), 1 unparsable or non-object line(s) skipped$' <<<"$out" && echo 1 || echo 0)"
 assert "secret-scan ask count is 2, not double-counted across tools" \
   "$(grep -qE '^ *2  gate:write:secret-scan  ask$' <<<"$out" && echo 1 || echo 0)"
 assert "irrecoverable deny counted separately from secret-scan" \

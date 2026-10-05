@@ -97,7 +97,7 @@ def main():
         print("Gate journal is empty — no ask/deny events logged yet.")
         return 0
 
-    print(f"Gate journal: {total} ask/deny event(s)" + (f", {skipped} unparsable line(s) skipped" if skipped else ""))
+    print(f"Gate journal: {total} ask/deny event(s)" + (f", {skipped} unparsable or non-object line(s) skipped" if skipped else ""))
     if first_ts and last_ts:
         print(f"Range: {first_ts} .. {last_ts}")
     if sessionless:
