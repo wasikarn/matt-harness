@@ -63,16 +63,17 @@ const mhRepo = async ($: EngineInterface) => {
   return manifest?.name === $.plugin.name ? { root, manifest } : undefined
 }
 
-// GH #444: one load-proof row per module load, from whichever hook runs first, so a session with
-// modules off (no row) reads apart from one where the module loaded and stayed idle. A reload
-// writes another; the report counts sessions, not rows.
-let marked = false
+// GH #444: one load-proof row per module load and session id, from whichever hook runs first, so a
+// session with modules off (no row) reads apart from one where the module loaded and stayed idle.
+// /clear gives the same process a new session id, so the guard is per id, not once per load. A
+// reload writes another; the report counts sessions, not rows.
+let markedFor: string | undefined
 const markLoaded = async ($: EngineInterface) => {
-  if (marked) return
-  marked = true
   try {
-    const [session, cli, mh] = await Promise.all([
-      $.session.id(),
+    const session = await $.session.id()
+    if (markedFor === session) return
+    markedFor = session
+    const [cli, mh] = await Promise.all([
       $.session.version().then(v => v.version, () => undefined),
       readManifest($, $.plugin.root).then(m => m?.version),
     ])
