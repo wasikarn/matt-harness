@@ -3161,6 +3161,15 @@ test_deny "$IRRECOVERABLE" "GH #309: a stand-in noncharacter in a command with a
 # A private-use icon (Nerd Fonts live at U+E000) is an ordinary character, not a stand-in.
 test_allow "$IRRECOVERABLE" "GH #309 control: a private-use icon in a command with a brace is allowed" \
   "$(bash_payload $'echo \xee\x80\x80 {a,b}')"
+# A single-quoted span that is valid JSON is data, not a runnable command (the weighted-score call of
+# every deep-audit): chained objects there used to multiply past the cap and deny. Anything that is not
+# valid JSON is still read as command text (bash -c bodies), padded or not.
+_json309='{"scores": [{"id":"a","score":9,"max":10,"weight":3,"insufficient":false},{"id":"b","score":9,"max":10,"weight":2,"insufficient":false},{"id":"c","score":8,"max":10,"weight":2,"insufficient":false},{"id":"d","score":8,"max":10,"weight":2,"insufficient":false},{"id":"e","score":8,"max":10,"weight":1,"insufficient":false}], "floorPct": 0.5}'
+test_allow "$IRRECOVERABLE" "GH #309 control: a JSON here-string with chained objects is data, allowed (no TooBig)" \
+  "$(bash_payload "python3 weighted-score.py <<< '$_json309'")"
+test_deny "$IRRECOVERABLE" "GH #309: a bash -c body that only starts like JSON is still expanded (structural deny over the cap)" \
+  "$(bash_payload "bash -c '$_json309; git {,\"reset\"} --hard'")"
+_would336 deny brace-view "bash -c '{\"a\":1}; git {,\"reset\"} --hard; {x,y}'"
 # An uncaught error would exit 1, which does not block: 3000 nested substitutions must exit 2.
 test_deny "$IRRECOVERABLE" "GH #309: 3000 nested dollar-paren spans in a command with a brace deny (exit 2, no traceback)" \
   "$(bash_payload "$(python3 -c "print('echo {a,b} ' + '\"\$(' * 3000)")")"

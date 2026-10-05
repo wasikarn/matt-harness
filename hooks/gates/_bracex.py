@@ -16,6 +16,7 @@ Fail-closed, never skipped: nesting, a range or a product over the budget, or a 
 character (a noncharacter, U+FDD0-U+FDEF; see _PROT) raises TooBig, and the caller denies. A numeric range over MAX_NUM_RANGE
 items is left literal instead: digits cannot spell a verb or a flag.
 """
+import json
 import re
 
 MAX_DEPTH = 64          # nesting of braces, and braces chained in one word
@@ -241,6 +242,18 @@ def _segments(t):
     flush()
     return out
 
+def _is_json_data(text):
+    # a single-quoted span that is valid JSON object/array text is data: it is no runnable command, and a
+    # brace-hidden verb cannot ride in it (chained objects there multiplied past the cap and denied)
+    s = text.strip()
+    if not s or s[0] not in "{[" or s[-1] not in "}]":
+        return False
+    try:
+        json.loads(s)
+    except (ValueError, RecursionError):
+        return False
+    return True
+
 def _expand(t, budget, qdepth):
     if qdepth > MAX_QDEPTH:
         raise TooBig("quote nesting over %d" % MAX_QDEPTH)
@@ -252,6 +265,8 @@ def _expand(t, budget, qdepth):
             pieces.append(text)
         elif kind == "c":
             pieces.append(text.translate(_TO_PROT))
+        elif opener == "'" and closer and _is_json_data(text):
+            pieces.append((opener + text + closer).translate(_TO_PROT))
         else:
             pieces.append(opener.translate(_TO_PROT) + _expand(text, budget, qdepth + 1).translate(_TO_PROT)
                           + closer.translate(_TO_PROT))

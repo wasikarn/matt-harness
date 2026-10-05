@@ -1621,6 +1621,10 @@ for _c in \
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
   check "GH #309 control allowed: $_c" "$ok"
 done
+# A JSON here-string with chained objects is data (the deep-audit weighted-score call): allowed, not TooBig.
+_c="python3 weighted-score.py <<< '{\"scores\": [{\"id\":\"a\",\"score\":9,\"max\":10,\"weight\":3,\"insufficient\":false},{\"id\":\"b\",\"score\":9,\"max\":10,\"weight\":2,\"insufficient\":false},{\"id\":\"c\",\"score\":8,\"max\":10,\"weight\":2,\"insufficient\":false},{\"id\":\"d\",\"score\":8,\"max\":10,\"weight\":2,\"insufficient\":false},{\"id\":\"e\",\"score\":8,\"max\":10,\"weight\":1,\"insufficient\":false}], \"floorPct\": 0.5}'"
+rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+check "GH #309 control allowed: JSON here-string with chained objects" "$ok"
 # Both gates read braces through the one shared module, so the two cannot drift apart.
 ok=0
 for _g in subagent-git-guard.py irrecoverable.py; do
