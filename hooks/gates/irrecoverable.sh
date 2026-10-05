@@ -16,11 +16,11 @@ _norm="$(printf '%s' "$_input" | sed "s/\\\\\\\\/$_bs/g; s/\\\\[nt]/ /g" | tr -s
 _norm_nows="$(printf '%s' "$_norm" | tr -d '[:space:]')"
 _has_subst=0
 case "$_input" in *'`'*|*'$'*) _has_subst=1 ;; esac
-# GH #309: a brace the shell would expand (a comma or ".." inside, no blank) can hide any word, argv0
-# included ("r{m,} -rf" runs rm), so it defers to python. A quote inside the body is JSON's escaped \"
-# (the command's own quote); JSON's own braces open with a bare " and never match.
-_brace_re='[{]([^}"[:space:]]|\\")*(,|[.][.])([^}"[:space:]]|\\")*[}]'
-[[ "$_input" =~ $_brace_re ]] && _has_subst=1
+# GH #309: a brace group can hide any word, argv0 included ("r{m,} -rf" runs rm, "{f,\"x y\"}ind" runs
+# find), so a command with a brace defers to python. The payload's own structure has one "{" that does
+# not follow a "$" (the tool_input object); "${var}" is a plain parameter and stays on the fast path.
+_nbrace="$(printf '%s' "$_input" | grep -o '[^$]{' | wc -l | tr -d ' ')"
+[ "${_nbrace:-0}" -gt 1 ] && _has_subst=1
 case "$_norm$_norm_nows" in
   *rm*|*find*|*git*|*gh*|*dd*|*mysql*|*psql*|*sqlite3*|*mariadb*|*claude*|*mkfs*|*mke2fs*|*chmod*|*source*) : ;;  # candidate -> python
   *) [ "$_has_subst" -eq 1 ] || exit 0 ;;                          # no destructive token possible -> allow (unless obfuscated)

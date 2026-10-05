@@ -3023,7 +3023,14 @@ for _c in \
   'git push \--fo{rce,} origin main' \
   $'git push --fo{rce,\\\n} origin main' \
   'git push --forc{e..e..1} origin main' \
-  'r{m..m..1} -rf /tmp/x' ; do
+  'r{m..m..1} -rf /tmp/x' \
+  'echo {x,#$}; git {,"reset"} --hard' \
+  $'# {x,y}\'\ngit {,"reset"} --hard' \
+  'rm {-rf,\ } /tmp/x' \
+  '{$(:),git} push --force origin main' \
+  '{f,"x y"}ind . -delete' \
+  '{r,"x y"}m -rf /tmp/x' \
+  $'echo a\xee\x80\x88\xee\x80\x88E {x,"y"}\ngit {,"reset"} --hard\nE' ; do
   test_deny "$IRRECOVERABLE" "GH #309: brace inside a word expands to a destructive command: $_c" "$(bash_payload "$_c")"
 done
 # Already denied before the fix (the brace-kept token shows the letter, or a whole-token brace sits next
@@ -3055,11 +3062,21 @@ for _c in \
   "curl -d '{\"a\":1,\"b\":2}' http://x" \
   "awk '{print \$1,\$2}' f" \
   'echo "git push --fo{rce,} origin main"' \
+  'for i in {1..20000}; do echo $i; done' \
+  'echo "{1..99999}"' \
+  'touch f{0..99}{0..99}.txt' \
+  'f() { echo {a,b}; }' \
+  '{ git status; }' \
+  'echo {a,b} # {c,d}' \
   'echo ${x,y}' ; do
   test_allow "$IRRECOVERABLE" "GH #309 control: a brace that expands to nothing destructive: $_c" "$(bash_payload "$_c")"
 done
 _timed_case "GH #309: 3000 braced words before a brace-hidden force flag are denied fast" 2 \
   "$(python3 -c "print('echo ' + 'a{b,c}d ' * 3000 + '; git push --fo{rce,rce} origin main')")"
+_timed_case "GH #309: 20000 nested brace pairs before a force reset are denied inside the hook timeout" 2 \
+  "$(python3 -c "print('{' * 20000 + 'x' + '}' * 20000 + '; git reset --hard')")"
+_timed_case "GH #309: 30000 chained brace groups before a hidden reset are denied inside the hook timeout" 2 \
+  "$(python3 -c "print('echo ' + '{a,b}' * 30000 + '; git {,\"reset\"} --hard')")"
 _timed_case "GH #309: a 60000-char word before a brace is allowed fast" 0 \
   "$(python3 -c "print('echo ' + 'a' * 60000 + '{b,c}')")"
 test_deny "$IRRECOVERABLE" "GH #309: a brace expansion over the length cap denies, never skips the copy" \

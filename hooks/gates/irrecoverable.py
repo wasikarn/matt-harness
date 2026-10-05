@@ -1221,9 +1221,10 @@ if len(cmd) > _CMD_LEN_CAP:
 # "git {,\"reset\"} --hard", "--fo{r,}{ce,}" and "r{m,} -rf" hid a verb or flag from every check below,
 # which read the text literally. _bracex expands the whole command the way the shell does (quote-blind,
 # nesting and chained groups included); when it changes anything, the end of this script runs this same
-# gate once more on the expanded text (MH_GATE_BRACEX marks that pass), and a deny there wins.
+# gate once more on the expanded text (the "--brace-pass" argument marks that pass; an environment
+# variable would let a settings file switch the second pass off), and a deny there wins.
 _BRACEX_TEXT = None
-if _bracex and "{" in cmd and not os.environ.get("MH_GATE_BRACEX"):
+if _bracex and "{" in cmd and "--brace-pass" not in sys.argv:
     try:
         _BRACEX_TEXT = _bracex.expand_text(cmd, _CMD_LEN_CAP)
     except _bracex.TooBig as _e:
@@ -2460,13 +2461,12 @@ if _BRACEX_TEXT is not None:
     import subprocess
     _d2 = dict(d, tool_input=dict(d["tool_input"], command=_BRACEX_TEXT))
     try:
-        _r = subprocess.run([sys.executable, os.path.abspath(__file__)], input=json.dumps(_d2), capture_output=True,
-                            text=True, timeout=5, env=dict(os.environ, MH_GATE_BRACEX="1"))
+        _r = subprocess.run([sys.executable, os.path.abspath(__file__), "--brace-pass"], input=json.dumps(_d2),
+                            capture_output=True, text=True, timeout=5)
     except Exception as _e:  # a hook that times out allows, so refuse here first
         deny("brace-expanded reading did not finish (" + type(_e).__name__ + ") - confirm with user first")
     if _r.returncode == 2:
-        sys.stderr.write(_r.stderr)
-        journal(GATE_ID, d.get("tool_name"), "deny", d.get("session_id"), rule="brace-expanded")
+        sys.stderr.write(_r.stderr)  # the expanded pass already journaled its own deny
         sys.exit(2)
     if _r.returncode != 0:
         deny("brace-expanded reading failed (exit " + str(_r.returncode) + ") - confirm with user first")

@@ -1601,6 +1601,8 @@ for _c in \
   '{"git",} stash' \
   '{,"doas"} git stash' \
   '{,"env"} git stash' \
+  'echo {x,#$}; git {,"stash"}' \
+  $'# {x,y}\'\ngit {,"stash"}' \
   "bash -c 'git {,\"stash\"}'" \
   "bash -c 'git {,stash}'" ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
@@ -1613,6 +1615,8 @@ for _c in \
   'git add src/{a,b}.py' \
   'echo "git {,stash}"' \
   'echo {a,b}' \
+  'for i in {1..5000}; do echo $i; done' \
+  'touch f{0..99}{0..99}.txt' \
   'ls {a,b}' ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
   check "GH #309 control allowed: $_c" "$ok"
