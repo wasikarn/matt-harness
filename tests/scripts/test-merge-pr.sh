@@ -10,6 +10,8 @@ set -uo pipefail
 HERE="$(cd -P "$(dirname "$0")" && pwd)"
 SCRIPT="$HERE/../../scripts/merge-pr.sh"
 pass=0; fail=0
+# An exported opt-out would turn every same-version refusal case into a merge; cases set it per call.
+unset MERGE_PR_ALLOW_SAME_VERSION
 ok()  { pass=$((pass + 1)); echo "  PASS: $1"; }
 bad() { fail=$((fail + 1)); echo "  FAIL: $1" >&2; }
 safe_trash() { [ -n "${1:-}" ] && trash "$1" 2>/dev/null; return 0; }
