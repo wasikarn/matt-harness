@@ -1595,6 +1595,13 @@ for _c in \
   'env{,} git stash' \
   'git {,reset} --hard' \
   'git {,clean} -fd' \
+  'git {,"stash"}' \
+  "git {,'stash'}" \
+  'git {,stash$x}' \
+  '{"git",} stash' \
+  '{,"doas"} git stash' \
+  '{,"env"} git stash' \
+  "bash -c 'git {,\"stash\"}'" \
   "bash -c 'git {,stash}'" ; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
   check "GH #309 denied (brace expands to a guarded git command): $_c" "$ok"
@@ -1610,17 +1617,12 @@ for _c in \
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
   check "GH #309 control allowed: $_c" "$ok"
 done
-# The brace-expansion pattern is typed again in irrecoverable.py; they must not drift.
-ok=$(python3 - "$ROOT/hooks/gates" <<'PY'
-import re, sys
-def pat(f, name):
-    m = re.search(r"^" + name + r" = re\.compile\((r\".*\")\)$", open(sys.argv[1] + "/" + f).read(), re.M)
-    return m and m.group(1)
-a, b = pat("subagent-git-guard.py", "_BRACE_EXP_RE"), pat("irrecoverable.py", "_BRACE_EXP_RE")
-print(0 if a and a == b else 1)
-PY
-)
-check "GH #309 brace-expansion pattern is the same in both gates" "$ok"
+# Both gates read braces through the one shared module, so the two cannot drift apart.
+ok=0
+for _g in subagent-git-guard.py irrecoverable.py; do
+  grep -qE '^[[:space:]]*(import|from) _bracex\b' "$ROOT/hooks/gates/$_g" || ok=1
+done
+check "GH #309 both gates import the shared _bracex module" "$ok"
 _c="ls $(_pad 'a{b,c}d ' 500); git {,stash}"
 rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
 check "GH #309 padded braced words decided inside 8 s as deny (rc $rc, ${#_c} bytes)" "$ok"

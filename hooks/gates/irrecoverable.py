@@ -14,6 +14,12 @@ except Exception:
     def journal(*a, **k):
         pass
 
+try:
+    import _bracex
+except Exception as _e:
+    _bracex = None
+    print("[mh:gate] irrecoverable: _bracex not importable (" + str(_e) + "); a brace-hidden command is not read", file=sys.stderr)
+
 GATE_ID = "gate:bash:irrecoverable"
 
 try:
@@ -1211,6 +1217,20 @@ _CMD_LEN_CAP = 150_000
 if len(cmd) > _CMD_LEN_CAP:
     deny("command too long to safely tokenize (" + str(len(cmd)) + " chars, cap " + str(_CMD_LEN_CAP) + ") - confirm with user first")
 
+# GH #309: bash, ksh and zsh (not dash) expand a brace inside a word before anything reads it, so
+# "git {,\"reset\"} --hard", "--fo{r,}{ce,}" and "r{m,} -rf" hid a verb or flag from every check below,
+# which read the text literally. _bracex expands the whole command the way the shell does (quote-blind,
+# nesting and chained groups included); when it changes anything, the end of this script runs this same
+# gate once more on the expanded text (MH_GATE_BRACEX marks that pass), and a deny there wins.
+_BRACEX_TEXT = None
+if _bracex and "{" in cmd and not os.environ.get("MH_GATE_BRACEX"):
+    try:
+        _BRACEX_TEXT = _bracex.expand_text(cmd, _CMD_LEN_CAP)
+    except _bracex.TooBig as _e:
+        deny("command too long to safely tokenize (brace expansion: " + str(_e) + ") - confirm with user first")
+    if _BRACEX_TEXT == cmd:
+        _BRACEX_TEXT = None
+
 # GH #184/#185/#194/#195/#196: the tokenizer mis-closes or never expands these shapes, which hides an
 # irrecoverable verb from every check below. Rather than teach it each grammar, fail closed on the raw
 # text (pre-blanking) when the command is BOTH ambiguous and names an irrecoverable verb. Over-denies
@@ -1357,27 +1377,6 @@ def _deny_if_depth_blown():
         deny("command too long to safely tokenize (nested substitution exceeded depth-scan budget) - confirm with user first")
 _deny_if_depth_blown()
 
-# GH #309: bash, ksh and zsh (not dash) expand a brace inside a word, so "--fo{rce,rce}", "a{dd,dd}" and
-# "{..,}" hid a flag, a sub word or an add argument from every copy below, which reads braces literally.
-# One more copy reads each innermost comma brace, and a one-letter range ("{e..e}"), as the shell expands
-# it, so the real parser decides ("git add src/{a,b}.py" stays allowed). A word is tried only from its
-# first plain character, and the body's first part holds no comma, so the scan is linear. "${a,b}" and
-# "\{a,b}" stay literal. The subagent guard types the same pattern (a test checks they match).
-# ponytail: one level per word, no numeric or stepped ranges; a nested brace keeps its literal reading.
-_BRACE_EXP_RE = re.compile(r"(?<![^\s;&|()<>{}\"'`\\$])(?<![$\\])([^\s;&|()<>{}\"'`\\$]*)\{([^\s;&|()<>{}\"'`\\$,]*,[^\s;&|()<>{}\"'`\\$]*|[A-Za-z]\.\.[A-Za-z])\}([^\s;&|()<>{}\"'`\\$]*)")
-
-def _brace_expanded(c):
-    size = [len(c)]
-    def word(m):
-        pre, body, post = m.groups()
-        alts = body.split(",") if "," in body else [
-            chr(i) for i in range(min(ord(body[0]), ord(body[-1])), max(ord(body[0]), ord(body[-1])) + 1) if chr(i).isalpha()]
-        size[0] += len(alts) * (len(pre) + len(post) + 1) + len(body) - len(m.group())
-        if size[0] > _CMD_LEN_CAP:  # skipping the copy would let padding walk around it
-            deny("command too long to safely tokenize (brace expansion over " + str(_CMD_LEN_CAP) + " chars) - confirm with user first")
-        return " ".join(pre + a + post for a in alts)
-    return _BRACE_EXP_RE.sub(word, c)
-
 # GH #254: a "{" or "}" inside a word is literal in bash ("feat{1}"), but shlex splits the word there
 # and the split opens a new window, so "git reset feat{1} --hard" left "--hard" in a window of its own.
 # A second tokenization keeps braces inside words (a whole-token "{"/"}" still splits, as bash
@@ -1389,10 +1388,6 @@ if "{" in cmd or "}" in cmd:
         # GH #219: the same text read the macOS sh / bash 3.2 / dash way, "{var}>f" a literal word.
         for _nf in (False, "zsh"):
             _token_lists.append(_tokens(_blanked(cmd, _nf), "{}"))
-        # GH #309: bash, ksh and zsh also expand a brace inside a word ("--fo{rce,rce}", "a{dd,dd}", "{..,}").
-        _bx = _brace_expanded(cmd)
-        if _bx != cmd:
-            _token_lists.append(_tokens(_blanked(_bx), "{}"))
     except ValueError:
         pass  # the first copy already handled an unparsable command
 
@@ -2460,4 +2455,21 @@ for _VIEW[0], _text in _views():
         _run_words()
     except _ViewStop:
         del _WORDS[:]
+
+if _BRACEX_TEXT is not None:
+    import subprocess
+    _d2 = dict(d, tool_input=dict(d["tool_input"], command=_BRACEX_TEXT))
+    try:
+        _r = subprocess.run([sys.executable, os.path.abspath(__file__)], input=json.dumps(_d2), capture_output=True,
+                            text=True, timeout=5, env=dict(os.environ, MH_GATE_BRACEX="1"))
+    except Exception as _e:  # a hook that times out allows, so refuse here first
+        deny("brace-expanded reading did not finish (" + type(_e).__name__ + ") - confirm with user first")
+    if _r.returncode == 2:
+        sys.stderr.write(_r.stderr)
+        journal(GATE_ID, d.get("tool_name"), "deny", d.get("session_id"), rule="brace-expanded")
+        sys.exit(2)
+    if _r.returncode != 0:
+        deny("brace-expanded reading failed (exit " + str(_r.returncode) + ") - confirm with user first")
+    if _r.stdout and not _ASKED:  # the expanded text asked; emit it once, as ask() does
+        sys.stdout.write(_r.stdout)
 sys.exit(0)

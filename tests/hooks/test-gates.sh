@@ -2987,7 +2987,7 @@ for _c in \
   'git push "--fo"{rce,} origin main' \
   'git push --forc{e..e} origin main' \
   'git restore -S --wor{ktree,} file.txt' \
-  'git branch --del{ete,ete} --forc{e,e} feat' \
+  'git branch --del{ete,ete} --forc{e,e} main' \
   'git add {..,}' \
   'git add {.,}' \
   'git add {-A,}' \
@@ -3001,7 +3001,29 @@ for _c in \
   'git -C . a{dd,dd} .' \
   'git pu{sh,} --force origin main' \
   'git rest{ore,ore} .' \
-  'git br{anch,anch} -D main' ; do
+  'git br{anch,anch} -D main' \
+  'r{"m",} -rf /tmp/x' \
+  "r{'m',} -rf /tmp/x" \
+  'r{\m,} -rf /tmp/x' \
+  'r{m,$x} -rf /tmp/x' \
+  'fi{"nd",} /tmp -delete' \
+  'git {,"reset"} --hard' \
+  'git -C . {,"reset"} --hard' \
+  'git {,"clean"} -fd' \
+  'git {,"push"} --force origin main' \
+  "git {,'push'} --force origin main" \
+  "bash -c 'git {,\"reset\"} --hard'" \
+  'git push --fo{r,}{ce,} origin main' \
+  'git push --fo{r{ce,x},} origin main' \
+  '{r,}{m,} -rf /tmp/x' \
+  '{r{m,},} -rf /tmp/x' \
+  'git push "--"{x,force} origin main' \
+  "git push \$'--'{x,force} origin main" \
+  'git push origin main {--forc,x}"e"' \
+  'git push \--fo{rce,} origin main' \
+  $'git push --fo{rce,\\\n} origin main' \
+  'git push --forc{e..e..1} origin main' \
+  'r{m..m..1} -rf /tmp/x' ; do
   test_deny "$IRRECOVERABLE" "GH #309: brace inside a word expands to a destructive command: $_c" "$(bash_payload "$_c")"
 done
 # Already denied before the fix (the brace-kept token shows the letter, or a whole-token brace sits next
@@ -3027,6 +3049,12 @@ for _c in \
   'echo {a,b}' \
   'ls {a,b}' \
   'ls -l{a,h} x' \
+  'git commit -m "{x,y}"' \
+  'git log --format={%h,%s}' \
+  "jq '{name,id}' file.json" \
+  "curl -d '{\"a\":1,\"b\":2}' http://x" \
+  "awk '{print \$1,\$2}' f" \
+  'echo "git push --fo{rce,} origin main"' \
   'echo ${x,y}' ; do
   test_allow "$IRRECOVERABLE" "GH #309 control: a brace that expands to nothing destructive: $_c" "$(bash_payload "$_c")"
 done
