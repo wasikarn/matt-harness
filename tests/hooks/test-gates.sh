@@ -3034,6 +3034,8 @@ _timed_case "GH #309: 3000 braced words before a brace-hidden force flag are den
   "$(python3 -c "print('echo ' + 'a{b,c}d ' * 3000 + '; git push --fo{rce,rce} origin main')")"
 _timed_case "GH #309: a 60000-char word before a brace is allowed fast" 0 \
   "$(python3 -c "print('echo ' + 'a' * 60000 + '{b,c}')")"
+test_deny "$IRRECOVERABLE" "GH #309: a brace expansion over the length cap denies, never skips the copy" \
+  "$(bash_payload "git add $(python3 -c "print('a' * 70000)"){b,c,d}")"
 
 # GH #336: $IFS splitting, a verb held in a variable, mkfs, chmod 777 and rm --no-preserve-root.
 # Cases (each deny shape checked in real shells) live in a fixture. A WOULD_* line is a shadow rule
