@@ -4,7 +4,8 @@
 # PRs green alone cannot land red together (#445 + #446). --match-head-commit
 # pins the merge to the checked sha: a push after the check makes GitHub refuse.
 # Checks are local-only; this narrows the race, it does not close it.
-# Bash 3.2. Env: MERGE_PR_LOAD_MAX (default 4), MERGE_PR_LOAD_WAIT_SECS (900).
+# Bash 3.2. Env: MERGE_PR_LOAD_MAX (default 4), MERGE_PR_LOAD_WAIT_SECS (900),
+# MERGE_PR_ALLOW_SAME_VERSION (1 skips the same-manifest-version refusal).
 set -euo pipefail
 
 pr="${1:-}"
@@ -28,16 +29,19 @@ if [ "$base" != "develop" ]; then
   exit 1
 fi
 
-rc=0
-git merge-base --is-ancestor origin/develop "$head" || rc=$?
-if [ "$rc" -eq 1 ]; then
-  echo "merge-pr: PR $pr head $head does not contain origin/develop." >&2
-  echo "Rebase on origin/develop and push; the pre-push gauntlet then runs on the exact tree that will merge." >&2
-  exit 1
-elif [ "$rc" -ne 0 ]; then
-  echo "merge-pr: ancestry check failed (rc=$rc); is $head fetched locally?" >&2
-  exit 1
-fi
+check_ancestry() {
+  local rc=0
+  git merge-base --is-ancestor origin/develop "$head" || rc=$?
+  if [ "$rc" -eq 1 ]; then
+    echo "merge-pr: PR $pr head $head does not contain origin/develop." >&2
+    echo "Rebase on origin/develop and push; the pre-push gauntlet then runs on the exact tree that will merge." >&2
+    exit 1
+  elif [ "$rc" -ne 0 ]; then
+    echo "merge-pr: ancestry check failed (rc=$rc); is $head fetched locally?" >&2
+    exit 1
+  fi
+}
+check_ancestry
 
 load_max="${MERGE_PR_LOAD_MAX:-4}"
 wait_secs="${MERGE_PR_LOAD_WAIT_SECS:-900}"
@@ -54,6 +58,26 @@ while :; do
   sleep 30
   waited=$((waited + 30))
 done
+
+# develop can move during the load wait: fetch and check again. Then refuse a head that ships
+# under the version origin/develop already carries: an identical bump rebases away with no
+# conflict, so two PRs can cut one number (#492/#493, #496/#497). MERGE_PR_ALLOW_SAME_VERSION=1
+# skips that refusal for a PR that needs no bump.
+git fetch origin
+check_ancestry
+manifest_version() {
+  git show "$1:.claude-plugin/plugin.json" | sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' | head -1
+}
+head_ver=$(manifest_version "$head")
+dev_ver=$(manifest_version origin/develop)
+if [ -z "$head_ver" ] || [ -z "$dev_ver" ]; then
+  echo "merge-pr: could not read the manifest version of the PR head or origin/develop." >&2
+  exit 1
+fi
+if [ "$head_ver" = "$dev_ver" ] && [ "${MERGE_PR_ALLOW_SAME_VERSION:-}" != "1" ]; then
+  echo "merge-pr: PR $pr head ships version $head_ver, the same as origin/develop; bump both manifests to the next number first (or MERGE_PR_ALLOW_SAME_VERSION=1)." >&2
+  exit 1
+fi
 
 now=$(gh pr view "$pr" --json baseRefName -q .baseRefName)
 if [ "$now" != "develop" ]; then

@@ -38,13 +38,24 @@ case "$*" in
   *) exit 2 ;;
 esac
 EOF
-# git: fetch succeeds; merge-base --is-ancestor exits STUB_ANCESTOR.
+# git: fetch succeeds; merge-base --is-ancestor exits STUB_ANCESTOR on its first call and
+# STUB_ANCESTOR2 (default STUB_ANCESTOR) on later ones (develop moved during the load wait);
+# `show <ref>:.claude-plugin/plugin.json` prints a manifest whose version is STUB_HEAD_VER
+# for the PR head and STUB_DEV_VER for origin/develop.
 cat >"$STUB/git" <<'EOF'
 #!/usr/bin/env bash
 echo "git $*" >>"$STUB_LOG"
 case "$1" in
   fetch) exit 0 ;;
-  merge-base) exit "$STUB_ANCESTOR" ;;
+  merge-base)
+    n=$(/usr/bin/grep -c '^git merge-base' "$STUB_LOG")
+    if [ "$n" -gt 1 ]; then exit "${STUB_ANCESTOR2:-$STUB_ANCESTOR}"; fi
+    exit "$STUB_ANCESTOR" ;;
+  show)
+    case "$2" in
+      origin/develop:*) printf '{\n  "version": "%s"\n}\n' "$STUB_DEV_VER" ;;
+      *) printf '{\n  "version": "%s"\n}\n' "$STUB_HEAD_VER" ;;
+    esac ;;
   *) exit 2 ;;
 esac
 EOF
@@ -60,6 +71,7 @@ run() {
   : >"$LOG"
   out=$(PATH="$STUB:$PATH" STUB_LOG="$LOG" STUB_HEAD=headsha111 \
     STUB_ANCESTOR="$1" STUB_REMOTE_HEAD="$2" STUB_LOAD="$3" \
+    STUB_HEAD_VER="${STUB_HEAD_VER-1.1.2}" STUB_DEV_VER="${STUB_DEV_VER-1.1.1}" \
     MERGE_PR_LOAD_WAIT_SECS=0 MERGE_PR_LOAD_MAX=4 bash "$SCRIPT" 451 2>&1)
   rc=$?
 }
@@ -111,6 +123,27 @@ if merged; then bad "retargeted base still reached gh pr merge"; else ok "retarg
 STUB_EMPTY=1 run 0 headsha111 1.50
 if [ "$rc" -ne 0 ]; then ok "empty gh output exits non-zero (rc=$rc)"; else bad "empty gh output exited 0"; fi
 if merged; then bad "empty gh output still reached gh pr merge"; else ok "empty gh output never calls gh pr merge"; fi
+
+# 4e. develop moved during the load wait: the first ancestry check passed, the second fails.
+STUB_ANCESTOR2=1 run 0 headsha111 1.50
+if [ "$rc" -ne 0 ]; then ok "develop moved after the first check exits non-zero (rc=$rc)"; else bad "moved develop exited 0"; fi
+if merged; then bad "moved develop still reached gh pr merge"; else ok "moved develop never calls gh pr merge"; fi
+if [ "$(/usr/bin/grep -c '^git merge-base' "$LOG")" -eq 2 ]; then ok "ancestry re-checked after the wait"; else bad "ancestry not re-checked: $(cat "$LOG")"; fi
+
+# 4f. same manifest version as origin/develop: refuse before merging (identical bumps rebase away).
+STUB_HEAD_VER=1.1.5 STUB_DEV_VER=1.1.5 run 0 headsha111 1.50
+if [ "$rc" -ne 0 ]; then ok "same version exits non-zero (rc=$rc)"; else bad "same version exited 0"; fi
+if merged; then bad "same version still reached gh pr merge"; else ok "same version never calls gh pr merge"; fi
+if printf '%s' "$out" | /usr/bin/grep -q '1.1.5'; then ok "same-version message carries the version"; else bad "no version in message: $out"; fi
+
+# 4g. opt-out for a PR that needs no bump.
+MERGE_PR_ALLOW_SAME_VERSION=1 STUB_HEAD_VER=1.1.5 STUB_DEV_VER=1.1.5 run 0 headsha111 1.50
+if [ "$rc" -eq 0 ]; then ok "same version with the opt-out merges"; else bad "opt-out rc=$rc: $out"; fi
+
+# 4h. unreadable manifest version: refuse.
+STUB_HEAD_VER='' run 0 headsha111 1.50
+if [ "$rc" -ne 0 ]; then ok "unreadable version exits non-zero (rc=$rc)"; else bad "unreadable version exited 0"; fi
+if merged; then bad "unreadable version still reached gh pr merge"; else ok "unreadable version never calls gh pr merge"; fi
 
 # 5. no PR argument: usage error.
 out=$(PATH="$STUB:$PATH" STUB_LOG="$LOG" bash "$SCRIPT" 2>&1); rc=$?
