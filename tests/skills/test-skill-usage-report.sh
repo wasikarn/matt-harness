@@ -89,6 +89,17 @@ out_empty=$(python3 "$REPORT_PY" --log "$TMPDIR_TEST/empty.jsonl" --skills-dir "
 assert "an empty log says no sessions are logged and exits 0" \
   "$([[ $rc -eq 0 ]] && grep -q 'No skill use logged' <<<"$out_empty" && echo 1 || echo 0)"
 
+# A session that uses a skill again later is recent: s1 first used delta on day 1 and gamma on day 3,
+# s2 used only alpha on day 2, so --sessions 1 is s1 (last use day 3) and gamma is not unused.
+cat > "$TMPDIR_TEST/returning.jsonl" <<'EOF'
+{"ts":"2026-09-01T10:00:00Z","session_id":"s1","skill":"mh:delta","plugin":"mh"}
+{"ts":"2026-09-02T10:00:00Z","session_id":"s2","skill":"mh:alpha","plugin":"mh"}
+{"ts":"2026-09-03T10:00:00Z","session_id":"s1","skill":"mh:gamma","plugin":"mh"}
+EOF
+out_ret=$(python3 "$REPORT_PY" --log "$TMPDIR_TEST/returning.jsonl" --skills-dir "$SK" --sessions 1 2>&1)
+assert "a session that returned later is the most recent one in the window" \
+  "$([[ "$(has 'gamma' "$out_ret")" == 0 && "$(has 'alpha' "$out_ret")" == 1 ]] && echo 1 || echo 0)"
+
 echo
 echo "=== $pass passed, $fail failed ==="
 [[ $fail -eq 0 ]]

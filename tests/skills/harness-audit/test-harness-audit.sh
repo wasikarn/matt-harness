@@ -300,6 +300,11 @@ HOME="$H80" expect_warn_match 80 check-80-bad-dangling "x.md:1: 'codex:nope'"
 # The deprecated-ADR skip reads the frontmatter only: an accepted ADR whose body quotes a
 # "status: deprecated" line is still checked (good side: check-80-good-resolves' 0001-old.md).
 HOME="$H80" expect_warn_match 80 check-80-bad-deprecated-in-body "0002-live.md:8: 'mh:gone'"
+# 0003's closing --- carries a trailing blank (the point of the row); an editor that trims it would
+# turn the row into a copy of 0002 and pass for nothing.
+[ "$(sed -n 3p "$FIX/check-80-bad-deprecated-in-body/docs/adr/0003-live-trailing-blank.md")" = '--- ' ] \
+  || { echo "FAIL: check-80 fixture 0003 lost the trailing blank on its closing ---" >&2; fail=1; }
+HOME="$H80" expect_warn_match 80 check-80-bad-deprecated-in-body "0003-live-trailing-blank.md:8: 'mh:gone'"
 # CI: no plugin cache at all. mh references still resolve against the tree; the external
 # namespaces are an INFO skip, never a WARN.
 mkdir -p "$CODEX_TMP/home80-empty"

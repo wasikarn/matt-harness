@@ -48,6 +48,9 @@ def main():
             except ValueError:
                 skipped += 1
                 continue
+            if not isinstance(row, dict):
+                skipped += 1
+                continue
             # GH #378: one secret-scan allow-suppressed row stands for "count" matches (older
             # rows, one per match, have none). Anything but a positive int counts as one.
             n = row.get("count", 1)
@@ -94,7 +97,7 @@ def main():
         print("Gate journal is empty — no ask/deny events logged yet.")
         return 0
 
-    print(f"Gate journal: {total} ask/deny event(s)" + (f", {skipped} unparsable line(s) skipped" if skipped else ""))
+    print(f"Gate journal: {total} ask/deny event(s)" + (f", {skipped} unparsable or non-object line(s) skipped" if skipped else ""))
     if first_ts and last_ts:
         print(f"Range: {first_ts} .. {last_ts}")
     if sessionless:

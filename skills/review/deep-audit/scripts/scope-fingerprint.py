@@ -5,8 +5,8 @@
   scope-fingerprint.py compare  <manifest>   # re-hash the manifest's paths
 
 compare exits 0 when every path matches, 1 on any drift (one line per path:
-"changed: P", "appeared: P", "disappeared: P"), 2 on a usage error or an
-unreadable manifest. snapshot exits 2 when stdin holds no path. A directory hashes as the sorted walk of its files'
+"changed: P", "appeared: P", "disappeared: P"), 2 on a usage error, an
+unreadable manifest or one that holds no paths. snapshot exits 2 when stdin holds no path. A directory hashes as the sorted walk of its files'
 relative paths and bytes. mtime is ignored: only bytes count.
 """
 import hashlib
@@ -58,6 +58,9 @@ def main(argv):
             before = json.load(f)
     except (OSError, ValueError) as e:
         sys.stderr.write("scope-fingerprint: cannot read manifest: %s\n" % e)
+        return 2
+    if not isinstance(before, dict) or not before:  # same vacuous pass snapshot refuses
+        sys.stderr.write("scope-fingerprint: manifest holds no paths\n")
         return 2
     drift = 0
     for p in sorted(before):

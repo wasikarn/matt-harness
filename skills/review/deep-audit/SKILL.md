@@ -202,7 +202,7 @@ evidence.
 python3 "${CLAUDE_SKILL_DIR}/scripts/scope-fingerprint.py" compare "$MANIFEST"
 ```
 Exit 0 means scope is stable; exit 1 prints one `changed:`/`appeared:`/`disappeared:` line per
-drifted path; exit 2 means the manifest is missing or unreadable, which counts as unstable. A
+drifted path; exit 2 means the manifest is missing, unreadable or empty, which counts as unstable. A
 mismatch against the pre-dispatch manifest — a changed hash, a path that appeared or
 disappeared — means a concurrent session touched scope
 mid-check (this session keeps working in its own worktree while the checker runs): rebuild scope from git and

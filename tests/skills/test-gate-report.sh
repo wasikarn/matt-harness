@@ -50,7 +50,7 @@ out="$(MH_GATE_JOURNAL_PATH="$JOURNAL" python3 "$REPORT_PY")"
 rc=$?
 assert "exits 0 on a populated journal" "$([[ $rc -eq 0 ]] && echo 1 || echo 0)"
 assert "counts 4 events, skips the 1 garbage line" \
-  "$(grep -q '^Gate journal: 4 ask/deny event(s), 1 unparsable line(s) skipped$' <<<"$out" && echo 1 || echo 0)"
+  "$(grep -q '^Gate journal: 4 ask/deny event(s), 1 unparsable or non-object line(s) skipped$' <<<"$out" && echo 1 || echo 0)"
 assert "secret-scan ask count is 2, not double-counted across tools" \
   "$(grep -qE '^ *2  gate:write:secret-scan  ask$' <<<"$out" && echo 1 || echo 0)"
 assert "irrecoverable deny counted separately from secret-scan" \
@@ -156,6 +156,12 @@ assert "non-UUID session ids are named with their event count" \
   "$(grep -q 'Non-UUID session id.*test-session x2' <<<"$out_odd" && echo 1 || echo 0)"
 assert "non-UUID rows are still counted, not dropped" \
   "$(grep -q '3 ask/deny event' <<<"$out_odd" && echo 1 || echo 0)"
+
+NONOBJ="$TMPDIR_TEST/nonobj.jsonl"
+printf '%s\n' '[]' '"str"' '7' '{"ts": "2026-10-01T09:00:00Z", "id": "gate:write:test-integrity", "tool_name": "Edit", "decision": "ask", "session_id": "3ee810d0-aa02-40c6-aea7-e8de710cbe92"}' > "$NONOBJ"
+out_nonobj="$(MH_GATE_JOURNAL_PATH="$NONOBJ" python3 "$REPORT_PY" 2>&1)"; rc_nonobj=$?
+assert "a valid-JSON row that is not an object is skipped, not a crash" \
+  "$([[ $rc_nonobj -eq 0 ]] && grep -q '1 ask/deny event' <<<"$out_nonobj" && echo 1 || echo 0)"
 
 echo
 echo "=== $pass passed, $fail failed ==="

@@ -36,7 +36,8 @@ Dispatching `mh:plan-reviewer` specifically: it has no calling skill of its own 
 as a mandatory step, so the dispatcher must remember it here — pipe
 `{"findings": [{"severity": ...}, ...], "top_blockers_count": <int>, "verdict": "..."}` through
 `scripts/_lib/plan-verdict-check.py` (repo root) before trusting the verdict. It catches
-`production-ready` alongside a real blocker. `findings` is the agent's full `findings:` list;
+`production-ready` alongside a real blocker. `findings` is the agent's full `findings:` list, each item projected to `{"severity": ...}` only
+(the script rejects any other key, such as `lens` or `finding`);
 `top_blockers_count` is the full Critical+High tally, never `len(top_blockers)`, whose display
 list is capped at 10. The script does not check `not-ready`, which needs judgment.
 
