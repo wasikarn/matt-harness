@@ -390,7 +390,7 @@ Python `os.remove`).
   adapted to this skill's 3-key contract). Run on both paths before `check-citations.py`.
 
 No new agent `.md` files. `general-purpose` ×2 (Phase 1), `codex exec`/`general-purpose` ×1
-(Phase 2) — 3 agents per wave, well under Rule 13's cap of 5.
+(Phase 2) — 3 agents per wave, well under Rule 13's cap of 10.
 
 ## Deliberately not building
 
