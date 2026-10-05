@@ -1336,8 +1336,8 @@ def _ambiguous(c):
 
 _ambig = _ambiguous(cmd)
 def _deny_ambiguous():
-    if _VIEW[0]:
-        return  # the raw text was checked above; inside a view this deny would end the view before any rule ran
+    if _VIEW[0] == "brace-view":
+        return  # the raw text was checked above; this deny would end the view before any rule ran (other views keep ending on it)
     deny("ambiguous shell syntax (" + _ambig[0] + ") next to an irrecoverable verb - confirm with user first")
 # The verb is looked for in three views: the raw text, the text with line continuations joined, and the
 # text with quotes and backslashes dropped, so '"git" push' and 'r\m' cannot hide it (GH #255).

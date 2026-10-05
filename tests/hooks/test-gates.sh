@@ -2433,9 +2433,9 @@ test_ask "$IRRECOVERABLE" "gh pr merge reaches python3 through the fast path (no
 
 echo ""
 echo "=== python3-missing fail-open (#93: every deny gate must exit 0 with ONE stderr note, never rc=127 or a silent block) ==="
-# A PATH stub dir with the gates' shell dependencies (cat/sed/tr/grep + bash) but NO python3.
+# A PATH stub dir with the gates' shell dependencies (cat/sed/tr/grep/awk + bash; awk since GH #309) but NO python3.
 NOPY_BIN=$(mktemp -d "${TMPDIR:-/tmp}/kbg-nopy.XXXXXX")
-for _t in bash cat sed tr grep; do
+for _t in bash cat sed tr grep awk; do
   _src=$(PATH="/usr/bin:/bin" command -v "$_t" || command -v "$_t")
   ln -s "$_src" "$NOPY_BIN/$_t"
 done
@@ -3155,9 +3155,51 @@ for _c in \
   '{,git} push --force origin main' \
   'env {,git} push --force origin main' \
   '{,git} push origin +main' \
-  '{r,"x y"}m -rf /tmp/x' ; do
+  '{r,"x y"}m -rf /tmp/x' \
+  'r{{x},m} -rf /tmp/x' \
+  'git {{,},reset} --hard' ; do
   _would336 deny brace-view "$_c"
 done
+# The .sh fast path hands a command to python only when brace-route.awk sees an expanding group, so the
+# awk must see every shape _bracex expands: enumerate each string of { } , x up to 7 characters (21,844)
+# and fail on any that expands but is not routed (a single-level grep missed r{{x},m}: GH #309 review).
+_drift=$(python3 - "$ROOT" <<'PYEOF'
+import itertools, subprocess, sys
+root = sys.argv[1]
+sys.path.insert(0, root + "/hooks/gates")
+import _bracex
+cmds = []
+for n in range(1, 8):
+    for t in itertools.product("{},x", repeat=n):
+        c = "echo r" + "".join(t) + " -rf"
+        try:
+            e = _bracex.expand_text(c, 150000)
+        except Exception:
+            continue
+        if e != c:
+            cmds.append(c)
+out = subprocess.run(["awk", "-f", root + "/hooks/gates/brace-route.awk"], input="\n".join(cmds) + "\n",
+                     capture_output=True, text=True).stdout.split()
+miss = [c for c, o in zip(cmds, out) if o == "0"]
+print(len(cmds), len(out), len(miss), " | ".join(miss[:5]))
+PYEOF
+)
+read -r _dn _do _dm _drest <<< "$_drift"
+if [ "${_dn:-0}" -gt 1000 ] && [ "$_dn" = "${_do:-x}" ] && [ "${_dm:-1}" = "0" ]; then
+  echo "  ✅ GH #309: brace-route.awk routes every one of $_dn enumerated brace shapes that _bracex expands"
+  pass=$((pass + 1))
+else
+  echo "  ❌ GH #309: brace-route.awk missed $_dm of $_dn expanding shapes (first: $_drest)" >&2
+  fail=$((fail + 1))
+fi
+# _deny_ambiguous returns inside brace-view only: any other view (ifs-split enforces) still ends on it.
+if /usr/bin/grep -qE '_VIEW\[0\] == "brace-view"' "$ROOT/hooks/gates/irrecoverable.py"; then
+  echo "  ✅ GH #309: _deny_ambiguous skips only the brace-view view"
+  pass=$((pass + 1))
+else
+  echo "  ❌ GH #309: _deny_ambiguous must return only inside brace-view" >&2
+  fail=$((fail + 1))
+fi
 # A structural deny takes no id, so it enforces even while brace-view is shadowed: a raw noncharacter
 # (U+FDD0-U+FDEF, the expander's own stand-ins) is refused rather than read.
 test_deny "$IRRECOVERABLE" "GH #309: a stand-in noncharacter in a command with a brace denies" \

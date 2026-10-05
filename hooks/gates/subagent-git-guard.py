@@ -64,6 +64,11 @@ except ValueError:
     _MAX_CMD_CHARS = 16_000
 if _MAX_CMD_CHARS < 1:
     _MAX_CMD_CHARS = 16_000
+# GH #309: the brace-expanded reading is longer than the command (a chained range such as
+# `mkdir -p out/{a..z}/{a..z}/{a..j}` is 67 KB), so it has its own cap, the main gate's. The raw
+# command is already under _MAX_CMD_CHARS; the deadline and the work budget bound the time.
+_MAX_VIEW_CHARS = 150_000
+_brace_too_big = False
 
 def clip(s):
     # Log-injection guard: a crafted command cannot forge/erase a [mh:gate] line.
@@ -978,8 +983,9 @@ try:
     # last reading checks the text as the shared _bracex module expands it (same module as the main gate).
     if not hit and _bracex and "{" in cmd:
         try:
-            _bx = _bracex.expand_text(cmd, _MAX_CMD_CHARS)
+            _bx = _bracex.expand_text(cmd, _MAX_VIEW_CHARS)
         except (_bracex.TooBig, RecursionError):
+            _brace_too_big = True
             raise _TooCostly
         if _bx != cmd:
             _raw_cmd, cmd = cmd, _bx
@@ -989,8 +995,8 @@ try:
             cmd = _raw_cmd
 except _TooCostly:
     _err(f"[mh:gate] BLOCKED: subagent ({agent_type}) command is too long or too dense to check "
-         f"safely ({len(cmd)} characters); write it to a file with the Write tool and run the file, "
-         f"or split it into smaller commands.")
+         f"safely ({len(cmd)} characters" + (", brace expansion over the size the guard reads" if _brace_too_big else "")
+         + "); write it to a file with the Write tool and run the file, or split it into smaller commands.")
     journal(GATE_ID, "Bash", "deny", d.get("session_id"))
     os._exit(2)
 except _Unparsed:

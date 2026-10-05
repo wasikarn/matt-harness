@@ -1630,6 +1630,19 @@ for _c in 'bash -c "git {,stash}"' 'sh -c "git {,reset} --hard"'; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" != "0" ] && ok=0
   check "GH #309 denied (double-quoted shell body): $_c" "$ok"
 done
+# The expanded reading has its own 150 KB cap, not the 16 KB cap on the raw command: a chained range with
+# no git in it is allowed under the default cap (develop allowed all three), a hidden verb beside one is
+# still denied, and an expansion over 150 KB is refused.
+for _c in 'mkdir -p out/{a..z}/{a..z}/{a..j}' 'touch f{0..60}{0..60}.txt' 'echo {a..z}{a..z}{a..z}'; do
+  rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "GH #309 control allowed under the default cap: $_c (rc $rc)" "$ok"
+done
+_c='git {,stash}; echo {a..z}{a..z}{a..z}'
+rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+check "GH #309 denied under the default cap: a brace-hidden stash beside a big range (rc $rc)" "$ok"
+_c='echo {a..z}{a..z}{a..z}{a..z}'
+rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+check "GH #309 denied: an expansion over 150 KB is refused (rc $rc)" "$ok"
 # Both gates read braces through the one shared module, so the two cannot drift apart.
 ok=0
 for _g in subagent-git-guard.py irrecoverable.py; do
