@@ -32,9 +32,10 @@ const setup = (...[$, on]: Parameters<TestBody>) => {
     usage: { cost: { usd: 0 } } as Usage,
     fail: undefined as 'exit' | 'throw' | undefined,
     noVersion: false,
+    id: 's1',
     completes: 0,
   }
-  on('session.id', () => ({ value: 's1' }))
+  on('session.id', () => ({ value: h.id }))
   on('session.version', () => {
     if (h.noVersion) throw new Error('version broke')
     return { value: { version: '2.1.289', base: '2.1.289' } }
@@ -87,6 +88,18 @@ test('load marker: written once, by the first hook call, with the CLI and mh ver
   expect(h.markers.map(r => [r.session_id, r.loaded, r.cli, r.mh])).toEqual([['s1', true, '2.1.289', '1.1.173']])
   expect(typeof h.markers[0].t).toBe('string')
   expect(h.rows.map(r => r.turn_id)).toEqual(['t1', 't2'])
+})
+
+// /clear gives the same process a new session id without reloading the module; that session has
+// spend too, so it needs its own marker or the report calls it "modules off".
+test('load marker: a new session id in the same process gets its own marker', async ($, on) => {
+  const { h, turn } = setup($, on)
+  await turn('t1')
+  await turn('t2')
+  h.id = 's2'
+  await turn('t3')
+  await turn('t4')
+  expect(h.markers.map(r => r.session_id)).toEqual(['s1', 's2'])
 })
 
 test('load marker: session.start writes it before any turn', async ($, on) => {

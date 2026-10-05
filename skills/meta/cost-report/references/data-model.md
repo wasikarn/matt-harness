@@ -170,7 +170,7 @@ report then prints one line after `total:`:
   NaN and Infinity) are skipped and counted in their own `warning:` line. They are never read as
   $0: a $0 reading is a reset, which adds the next reading in full.
 
-Load-marker rows (`{ t, session_id, loaded: true, cli, mh }`, GH #444, one per module load) carry
+Load-marker rows (`{ t, session_id, loaded: true, cli, mh }`, GH #444, one per module load and session id, so a `/clear` gets its own) carry
 no `usd` and feed a separate line before the cross-check line: `module loaded: N of M sessions
 since the first load marker (<date>)`, M being the `costs.jsonl` sessions whose last row is at or
 after the first marker, or `module loaded: no load marker (...)` when there is none. A session with
