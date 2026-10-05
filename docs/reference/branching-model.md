@@ -86,6 +86,11 @@ discipline:
 - **Re-read both manifests right before writing a version into a commit message.** A peer session
   in a different worktree can still push a bump first; `Read` always sees the latest committed
   state, not what was true when this session started.
+- **Bump the manifests last, then re-check after the PR opens.** Run `git fetch` and read
+  `origin/develop`'s version immediately before the bump commit, and again once the PR exists:
+  if a peer's bump merged in between, move to the next number. Two PRs that cut the same version
+  leave the installed cache with whichever tree built first, and the other change never loads
+  (PRs #492 and #493 both took 1.1.189, 2026-10-05).
 - **`/rewind` only reverts this session's own worktree.** It can no longer touch a peer's tree at
   all, since each session now has its own — this constraint from the old shared-tree model is
   gone, not merely mitigated.
