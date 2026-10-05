@@ -1079,15 +1079,11 @@ for _c in \
 done
 
 # GH #469 follow-up: the work budget does not track wall time (an allowed shape took 7.1 s at 40M, a
-# refused one 7.4 s), so a hard length cap decides before any scan. 16000 characters is the line: the
-# slowest padded family (`eval sudo ` + 75 args + `;` x N, then `git stash`) took 2.8 s at 16 KB, 4.4 s
-# at 20 KB, 6.2 s at 24 KB (load 3); 8 of 3190 real subagent commands of 3 KB or more are longer.
+# refused one 7.4 s), so a length cap decides before any scan. It bounds the pre-mask linear cost (the
+# 20 MB row below), not the time of a shape under the cap (see repo-gotchas, GH #469).
 _big="echo $(_pad 'a' 16100)"
 rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_big"); ok=1; [ "$rc" = "2" ] && ok=0
 check "over-length command (${#_big} chars) is denied before any scan (rc $rc)" "$ok"
-_big="$(_pad "eval sudo $(_pad 's ' 800);" 55)ls"
-rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_big"); ok=1; [ "$rc" = "2" ] && ok=0
-check "GH #469 sweep shape (${#_big} chars) is denied by length (rc $rc)" "$ok"
 _ok="echo $(_pad 'a' 15900)"
 rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_ok"); ok=1; [ "$rc" = "0" ] && ok=0
 check "a ${#_ok}-char benign command is still allowed (rc $rc)" "$ok"

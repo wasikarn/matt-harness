@@ -45,9 +45,10 @@ if not isinstance(cmd, str):
 
 # GH #469: the work budget below does not track wall time (an allowed shape took 7.1 s and a refused one
 # 7.4 s at 40M, of the 8 s hook timeout; a timed-out hook allows), so a length cap in characters decides
-# first, before the quote mask below runs (about 0.45 s per MB). The slowest padded family (`eval sudo `
-# + 75 args + `;` x N, then `git stash`) took 2.8 s at 16000, 4.4 s at 20000, 6.2 s at 24000 (load 3);
-# 8 of 3190 real subagent commands of 3 KB or more are longer.
+# first, before the quote mask below runs (about 0.45 s per MB: a 20 MB command timed out into allow).
+# It is NOT a time bound for shapes under the cap: cost follows `;` count x length, so a padded
+# `eval sudo ` + 24 args + `;` x 270 (15947 chars) took 6.5 s at load 3.5 and 9.8 s at load 9.4.
+# A deadline inside the gate is the open design (see docs/reference/repo-gotchas.md, GH #469).
 # MH_SGG_MAX_CMD_CHARS: test-layer override so stress rows over the cap still run the scan; a value that
 # is not a positive integer keeps the cap.
 try:
