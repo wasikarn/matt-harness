@@ -70,7 +70,7 @@ check_version() {
     exit 1
   fi
   for v in "$head_ver" "$mkt_ver" "$dev_ver"; do
-    if ! [[ "$v" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    if ! [[ "$v" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
       echo "merge-pr: manifest version '$v' is not X.Y.Z; cannot order it against origin/develop." >&2
       exit 1
     fi

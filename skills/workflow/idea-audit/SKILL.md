@@ -310,7 +310,8 @@ the numerator and the denominator — never dividing by the full weight sum, whi
 — an axis at exactly 40% does not trip it) — trigger (2) above.
 `primaryWeightOk` is trigger-adjacent, not a floor: pass `primaryId` and the script confirms that
 axis's weight is *strictly* the largest, catching a tie (two axes both at 40, say) a bare
-sum-to-100 check would miss. Pass the threshold this phase states as `passThreshold`: the
+sum-to-100 check would miss. **When `primaryWeightOk` is false, stop and fix the weights; do not report the
+script's `pass`**, because it was computed on weights that break the primary-axis rule. Pass the threshold this phase states as `passThreshold`: the
 script's `pass` is the artifact's PASS/FAIL (Rule 14's pass/fail reason), so no hand comparison
 reaches it, and a tripped floor forces FAIL. **The script fails closed:** malformed input or an
 entirely-insufficient source exits non-zero with a reason on stderr, which is trigger (1) above

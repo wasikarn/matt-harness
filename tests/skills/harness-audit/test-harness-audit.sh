@@ -175,6 +175,9 @@ setup_codex_state check-71-bad-review-gate-on true
 expect_warn   71 check-71-bad-review-gate-on
 setup_codex_state check-71-good-review-gate-off false
 expect_silent 71 check-71-good-review-gate-off
+# A string "false" is not the boolean false: it must read as unknown (info), not ON (warn).
+setup_codex_state check-71-good-review-gate-off '"false"'
+expect_silent 71 check-71-good-review-gate-off
 unset MH_CODEX_DATA_DIR
 
 # Check 21: agent model value. fable is a documented alias but a discouraged pin
