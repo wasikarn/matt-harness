@@ -1797,17 +1797,25 @@ _CHMOD_WORLD_RE = re.compile(r"(?:^| )(" + _CHMOD_CLAUSE + r"(?: ?, ?" + _CHMOD_
 _CHMOD_SYM_RE = re.compile(r"([ugoa]*)((?:[-+=][rwxXst]*)+)")
 _CHMOD_OP_RE = re.compile(r"([-+=])([rwxXst]*)")
 def _chmod_world_mode(s):
-    got = {"u": "", "g": "", "o": ""}
+    # Clauses and the operators inside one clause apply left to right, as chmod does: + adds, = sets,
+    # - takes away (a -X is read as +X: BSD chmod does that).
+    got = {"u": set(), "g": set(), "o": set()}
     for c in s.split(","):
         if re.fullmatch(r"0*[0-7]?777", c):
             return True
         m = _CHMOD_SYM_RE.fullmatch(c)
         if not (m and m.group(1)):
             continue
-        perms = "".join(p for op, p in _CHMOD_OP_RE.findall(m.group(2)) if op != "-")
         for w in ("ugo" if "a" in m.group(1) else m.group(1)):
-            got[w] += perms
-    return all("r" in p and "w" in p and ("x" in p or "X" in p) for p in got.values())
+            for op, p in _CHMOD_OP_RE.findall(m.group(2)):
+                if op == "-":
+                    got[w] -= set(p) & set("rwx")
+                    if "X" in p:  # BSD/macOS chmod reads -X as +X on a directory; GNU clears it. Assume the add.
+                        got[w].add("x")
+                else:
+                    bits = {"x" if b == "X" else b for b in p if b in "rwxX"}
+                    got[w] = bits if op == "=" else got[w] | bits
+    return all({"r", "w", "x"} <= p for p in got.values())
 _ROOT_OR_HOME = ("/", "/*", "/.", "~", "~/", "~/*", "~/.")
 def _chmod_world(rest):
     toks = [t.replace(PH, "") for t in rest]
@@ -2261,8 +2269,12 @@ def _check_window(_wi, w):
                 # pathspecs regardless of how many other nonflag args are
                 # present (deep-audit, 2026-09-29; same reasoning as
                 # restore's identical check above).
+                # `--conflict <style>` takes its style word as a separate value (merge, diff3, zdiff3), so that
+                # word is no path; `--conflict=<style>` is one token and needs nothing.
+                _co_conflict = sum(1 for k, t in enumerate(scan[:-1])
+                                   if "=" not in t and _is_flag(t, "--conflict") and not scan[k + 1].startswith("-"))
                 _co_nonflag = len([t for t, traw in zip(scan, scan_raw) if not t.startswith("-") and traw != PSUB]) - (
-                    1 if any(t in ("-b", "-B", "--orphan") for t in scan) else 0)
+                    1 if any(t in ("-b", "-B", "--orphan") for t in scan) else 0) - _co_conflict
                 if sub == "checkout" and ("--" in scan or "." in scan or
                                             _co_nonflag >= 2 or
                                             any(_is_flag(t.split("=", 1)[0], "--pathspec-from-file") for t in scan) or

@@ -93,6 +93,15 @@ ALLOW chmod -R a+rX ./x
 ALLOW chmod -R go+rX ./x
 ALLOW chmod -R u+rwx,g+rx,o+rx ./x
 ALLOW chmod 644 a+wrx
+# clauses apply in order: a later - or = takes bits away, a later + gives them back (checked against real chmod)
+ALLOW chmod -R a+r,a+w,a-w,a+x ./x
+ALLOW chmod -R a=r,a=w,a=x ./x
+ALLOW chmod -R a+rwx,o-w ./x
+ALLOW chmod -R a+rwx,a-w ./x
+DENY chmod -R a+rwx,a-w,a+w ./x
+DENY chmod -R a-w,a+rwx ./x
+DENY chmod -R a=r,a+rwx ./x
+DENY chmod -R u+rwx,g+rwx,o+rwx,o-x,o+x ./x
 # GNU rm takes an unambiguous long-option prefix: --r only names --recursive, --f only --force
 DENY rm --rec --force ./build
 DENY rm -r --forc ./build

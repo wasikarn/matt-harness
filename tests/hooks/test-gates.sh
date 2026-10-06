@@ -355,6 +355,14 @@ for _c in "git add src/../a.txt" "git add sub/deep/.." "git add src/.../.." "git
 done
 test_allow "$IRRECOVERABLE" "git checkout branch (must not over-block)" \
   "$(bash_payload 'git checkout main')"
+test_allow "$IRRECOVERABLE" "git checkout -m --conflict merge feature: the style word is an option value, not a path" \
+"$(bash_payload 'git checkout -m --conflict merge feature')"
+test_allow "$IRRECOVERABLE" "git checkout --conflict diff3 feature" \
+"$(bash_payload 'git checkout --conflict diff3 feature')"
+test_deny  "$IRRECOVERABLE" "git checkout --conflict merge <tree> <path> still discards" \
+"$(bash_payload 'git checkout --conflict merge HEAD~1 file')"
+test_deny  "$IRRECOVERABLE" "git checkout --conflict=merge <tree> <path> still discards" \
+"$(bash_payload 'git checkout --conflict=merge HEAD~1 file')"
 test_allow "$IRRECOVERABLE" "git checkout -b new branch (must not over-block)" \
   "$(bash_payload 'git checkout -b new-branch')"
 test_allow "$IRRECOVERABLE" "git checkout -b new branch from start-point (create, not tree+path)" \
