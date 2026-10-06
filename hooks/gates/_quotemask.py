@@ -137,6 +137,9 @@ def mask_quotes(s):
             if (j - i) % 2 == 1 and j < n and s[j] in "'\"$":
                 out.append("Q")
                 j += 1
+            elif (j - i) % 2 == 1 and j < n and s[j] in _WORD_BOUNDARY_CHARS:
+                out.append(s[j])  # an escaped blank or separator is part of its word: a "#" after it is no comment
+                j += 1
             i = j
             at_word_start = False
         else:

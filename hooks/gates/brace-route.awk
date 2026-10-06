@@ -15,6 +15,8 @@
 # One scan starts per "{" and can run to the end of its word, and awk copies the line on every substr, so the work
 # is budgeted (BUDGET characters scanned in all per line): a payload over it prints a hit and python decides, never
 # the fast path. irrecoverable.sh sends payloads over 100000 characters with a "{" to python without the scan.
+# A "<(" or ">(" opens a span read to its closing parenthesis (as _bracex.py reads it), so a blank inside it
+# (r{m,<(: x)} -rf) does not end the scan.
 # tok(p): the token at p. tl is its length in payload characters, ts the shell character it stands for.
 BEGIN { BUDGET = 40000 }
 function tok(p,   c, e) {
@@ -38,6 +40,23 @@ function tok(p,   c, e) {
       if (c == "\\" && !sq) {
         if (j > n || substr($0, j, 1) == "\"") break
         tok(j); j += tl
+        continue
+      }
+      if ((c == "<" || c == ">") && !(dq || sq || bq) && substr($0, j, 1) == "(") {
+        # a process substitution is a span of its own, as in _bracex.py: a blank, comma or brace inside it does not
+        # end or count in the group (r{m,<(: x)} -rf /tmp/x); read to its closing parenthesis, quotes tracked
+        pd = 0; pq = ""
+        while (j <= n) {
+          if (++work > BUDGET) { hit++; over = 1; break }
+          if (substr($0, j, 1) == "\"") break
+          tok(j); d = ts; j += tl
+          if (d == "\\" && pq != "'") { if (j > n || substr($0, j, 1) == "\"") break; tok(j); j += tl; continue }
+          if (pq != "") { if (d == pq) pq = ""; continue }
+          if (d == "'" || d == "\"" || d == "`") pq = d
+          else if (d == "(") pd++
+          else if (d == ")" && --pd == 0) break
+        }
+        if (over) break
         continue
       }
       if (c == "\"") { if (!sq && !bq) dq = !dq; continue }
