@@ -249,7 +249,7 @@ import ast, re, sys
 src = open(sys.argv[1]).read()
 m = re.search(r"^SHADOW_RULES = frozenset\((.*)\)$", src, re.M)
 ids = ast.literal_eval(m.group(1) or "()")
-sites = set(re.findall(r"rule=\"([^\"]+)\"", src)) | set(re.findall(r"\(\"([a-z-]+)\", v\)", src))
+sites = set(re.findall(r"rule=\"([^\"]+)\"", src)) | set(re.findall(r"\(\"([a-z-]+)\", (?:v|_BRACEX_TEXT)\)", src))
 print(" ".join(sorted(set(ids) - sites)))' "$1"
 }
 ok=1; [ -z "$(shadow_drift "$ROOT/hooks/gates/irrecoverable.py")" ] && [ -z "$(shadow_drift "$SH_RM/irrecoverable.py")" ] && ok=0

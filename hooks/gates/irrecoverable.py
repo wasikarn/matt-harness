@@ -14,6 +14,12 @@ except Exception:
     def journal(*a, **k):
         pass
 
+try:
+    import _bracex
+except Exception as _e:
+    _bracex = None
+    print("[mh:gate] irrecoverable: _bracex not importable (" + str(_e) + "); a brace-hidden command is not read", file=sys.stderr)
+
 GATE_ID = "gate:bash:irrecoverable"
 
 try:
@@ -472,7 +478,7 @@ if ("agent_id" in d) and _nested_spawn(cmd, False):
 # source, never an env var, so a project's settings.json cannot shadow an enforced rule. Only a
 # pattern rule (a `rule=` id at its call site) can be shadowed: a structural deny (length cap,
 # unparsable text, budget, depth) has no id, since returning from it would run the very code it guards.
-SHADOW_RULES = frozenset({"var-verb", "opaque-var-verb", "source-file"})
+SHADOW_RULES = frozenset({"var-verb", "opaque-var-verb", "source-file", "brace-view"})
 _SHADOW_LOGGED = set()  # (rule, decision) already journaled this run: window copies re-match a rule
 # GH #336: the rule id of the view (another reading of the command, see _views) now being checked.
 # Inside a view a verdict belongs to the matched rule and to the view's rule: either one being
@@ -1211,6 +1217,21 @@ _CMD_LEN_CAP = 150_000
 if len(cmd) > _CMD_LEN_CAP:
     deny("command too long to safely tokenize (" + str(len(cmd)) + " chars, cap " + str(_CMD_LEN_CAP) + ") - confirm with user first")
 
+# GH #309: bash, ksh and zsh (not dash) expand a brace inside a word before anything reads it, so
+# "git {,\"reset\"} --hard", "--fo{r,}{ce,}" and "r{m,} -rf" hid a verb or flag from every check below,
+# which read the text literally. _bracex expands the whole command the way the shell does (lexed, so
+# quotes, substitutions and comments stay what they are); the result is read as one more view
+# ("brace-view", see _views), checked by every rule. A command the expansion cannot bound (nesting,
+# size, a stand-in noncharacter) is a structural deny here, never skipped.
+_BRACEX_TEXT = None
+if _bracex and "{" in cmd:
+    try:
+        _BRACEX_TEXT = _bracex.expand_text(cmd, _CMD_LEN_CAP)
+    except (_bracex.TooBig, RecursionError) as _e:
+        deny("command too long to safely tokenize (brace expansion: " + str(_e) + ") - confirm with user first")
+    if _BRACEX_TEXT == cmd:
+        _BRACEX_TEXT = None
+
 # GH #184/#185/#194/#195/#196: the tokenizer mis-closes or never expands these shapes, which hides an
 # irrecoverable verb from every check below. Rather than teach it each grammar, fail closed on the raw
 # text (pre-blanking) when the command is BOTH ambiguous and names an irrecoverable verb. Over-denies
@@ -1315,6 +1336,8 @@ def _ambiguous(c):
 
 _ambig = _ambiguous(cmd)
 def _deny_ambiguous():
+    if _VIEW[0] == "brace-view":
+        return  # the raw text was checked above; this deny would end the view before any rule ran (other views keep ending on it)
     deny("ambiguous shell syntax (" + _ambig[0] + ") next to an irrecoverable verb - confirm with user first")
 # The verb is looked for in three views: the raw text, the text with line continuations joined, and the
 # text with quotes and backslashes dropped, so '"git" push' and 'r\m' cannot hide it (GH #255).
@@ -2387,6 +2410,10 @@ _VIEW_LEN_CAP = 20_000
 
 def _views():
     out = []
+    # GH #309: the command with every brace group expanded as the shell does. Shadow first (GH #337):
+    # drop "brace-view" from SHADOW_RULES once /mh:gate-report shows no false positive.
+    if _BRACEX_TEXT is not None:
+        out.append(("brace-view", _BRACEX_TEXT))
     # The enforced ifs-split view reads as far as the parser does (_CMD_LEN_CAP); capping it lower let
     # padding past _VIEW_LEN_CAP hide `rm${IFS}-rf`. Only the shadow var-verb view keeps the lower cap.
     if "IFS" in cmd:
@@ -2435,4 +2462,5 @@ for _VIEW[0], _text in _views():
         _run_words()
     except _ViewStop:
         del _WORDS[:]
+
 sys.exit(0)

@@ -1583,6 +1583,88 @@ fp_run '{"tool_name":"Bash","tool_input":{"command":"ls","t":-1.5e3,"b":true,"n"
 ok=1; [ "$fp_rc" -eq 0 ] && [ "$fp_py" = no ] && ok=0
 check "GH #326 numbers, literals, spaces and \\\" \\\\ \\/ \\n escapes stay inside the proof (python $fp_py)" "$ok"
 
+# --- GH #309: bash, ksh and zsh expand braces (dash does not), so a brace in the git word, the sub word or a
+# wrapper word (`git {,stash}`, `{,doas} git stash`, `env{,} git stash`) hid the anchor or the sub word.
+for _c in \
+  'git {,stash}' \
+  'git {stash,}' \
+  'git -C . {,stash}' \
+  '{,doas} git stash' \
+  '{,env} git stash' \
+  'doas{,} git stash' \
+  'env{,} git stash' \
+  'git {,reset} --hard' \
+  'git {,clean} -fd' \
+  'git {,"stash"}' \
+  "git {,'stash'}" \
+  'git {,stash$x}' \
+  '{"git",} stash' \
+  '{,"doas"} git stash' \
+  '{,"env"} git stash' \
+  'echo {x,#$}; git {,"stash"}' \
+  $'# {x,y}\'\ngit {,"stash"}' \
+  "bash -c 'git {,\"stash\"}'" \
+  "bash -c 'git {,stash}'" \
+  'git {stash,} $"show"' \
+  $'true \\\\\ngit {,stash}' \
+  $'gi\\\nt {,stash}' \
+  'git {,stash} <(:)' ; do  # zsh and dash read $"show" as $show: a bare stash (the three `$` readings, GH #344)
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #309 denied (brace expands to a guarded git command): $_c" "$ok"
+done
+for _c in \
+  'git {,status}' \
+  'git {log,show}' \
+  'git {,stash} list' \
+  'git add src/{a,b}.py' \
+  'echo "git {,stash}"' \
+  'echo {a,b}' \
+  'for i in {1..5000}; do echo $i; done' \
+  'touch f{0..99}{0..99}.txt' \
+  'ls {a,b}' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "GH #309 control allowed: $_c" "$ok"
+done
+# A JSON here-string with chained objects is data (the deep-audit weighted-score call): allowed, not TooBig.
+_c="python3 weighted-score.py <<< '{\"scores\": [{\"id\":\"a\",\"score\":9,\"max\":10,\"weight\":3,\"insufficient\":false},{\"id\":\"b\",\"score\":9,\"max\":10,\"weight\":2,\"insufficient\":false},{\"id\":\"c\",\"score\":8,\"max\":10,\"weight\":2,\"insufficient\":false},{\"id\":\"d\",\"score\":8,\"max\":10,\"weight\":2,\"insufficient\":false},{\"id\":\"e\",\"score\":8,\"max\":10,\"weight\":1,\"insufficient\":false}], \"floorPct\": 0.5}'"
+rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+check "GH #309 control allowed: JSON here-string with chained objects" "$ok"
+# A double-quoted bash -c body is expanded by the inner shell, so it is read as command text.
+for _c in 'bash -c "git {,stash}"' 'sh -c "git {,reset} --hard"'; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" != "0" ] && ok=0
+  check "GH #309 denied (double-quoted shell body): $_c" "$ok"
+done
+# The expanded reading has its own 150 KB cap, not the 16 KB cap on the raw command: a chained range with
+# no git in it is allowed under the default cap (develop allowed all three), a hidden verb beside one is
+# still denied, and an expansion over 150 KB is refused.
+for _c in 'mkdir -p out/{a..z}/{a..z}/{a..j}' 'touch f{0..60}{0..60}.txt' 'echo {a..z}{a..z}{a..z}'; do
+  rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "GH #309 control allowed under the default cap: $_c (rc $rc)" "$ok"
+done
+_c='git {,stash}; echo {a..z}{a..z}{a..z}'
+rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+check "GH #309 denied under the default cap: a brace-hidden stash beside a big range (rc $rc)" "$ok"
+_c='echo {a..z}{a..z}{a..z}{a..z}'
+rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+check "GH #309 denied: an expansion over 150 KB is refused (rc $rc)" "$ok"
+# Bash closes a brace group at "}" only after a comma, so "{A=1}},git}" is "A=1}} git": an assignment, then git.
+for _c in '{A=1}},git} stash' '{A=1}},git} reset --hard'; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" != "0" ] && ok=0
+  check "GH #309 denied (bash's closing-brace rule): $_c" "$ok"
+done
+# Both gates read braces through the one shared module, so the two cannot drift apart.
+ok=0
+for _g in subagent-git-guard.py irrecoverable.py; do
+  grep -qE '^[[:space:]]*(import|from) _bracex\b' "$ROOT/hooks/gates/$_g" || ok=1
+done
+check "GH #309 both gates import the shared _bracex module" "$ok"
+_c="ls $(_pad 'a{b,c}d ' 500); git {,stash}"
+rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+check "GH #309 padded braced words decided inside 8 s as deny (rc $rc, ${#_c} bytes)" "$ok"
+_c="ls $(_pad 'a{b,c}d ' 500)"
+rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+check "GH #309 padded braced words allow shape finishes inside 8 s (rc $rc, ${#_c} bytes)" "$ok"
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]

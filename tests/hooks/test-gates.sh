@@ -2422,6 +2422,9 @@ test_deny  "$IRRECOVERABLE" "control: a real tab between git and its argument st
   "$(bash_payload $'git\tpush --force origin develop')"
 test_allow "$IRRECOVERABLE" "control: literal backslash-t in an unrelated command stays allowed" \
   "$(bash_payload 'printf "a\tb"')"
+# GH #309: the argv0 brace rows (r{m,m}, fi{nd,nd}) sit with the other brace-view rows below.
+test_allow "$IRRECOVERABLE" "GH #309 control: a brace group and a brace list with no verb stay allowed" \
+  "$(bash_payload '{ echo a; }; ls x{a,b}')"
 # "gh" was added to the fast-path candidate list alongside the ask-tier gh
 # merge rule (Phase B) -- without this, "gh pr merge" would fast-path
 # straight to allow, never reaching python3's ask() at all.
@@ -2430,9 +2433,9 @@ test_ask "$IRRECOVERABLE" "gh pr merge reaches python3 through the fast path (no
 
 echo ""
 echo "=== python3-missing fail-open (#93: every deny gate must exit 0 with ONE stderr note, never rc=127 or a silent block) ==="
-# A PATH stub dir with the gates' shell dependencies (cat/sed/tr/grep + bash) but NO python3.
+# A PATH stub dir with the gates' shell dependencies (cat/sed/tr/grep/awk + bash; awk since GH #309) but NO python3.
 NOPY_BIN=$(mktemp -d "${TMPDIR:-/tmp}/kbg-nopy.XXXXXX")
-for _t in bash cat sed tr grep; do
+for _t in bash cat sed tr grep awk; do
   _src=$(PATH="/usr/bin:/bin" command -v "$_t" || command -v "$_t")
   ln -s "$_src" "$NOPY_BIN/$_t"
 done
@@ -2972,6 +2975,59 @@ test_allow "$IRRECOVERABLE" 'GH #269 F1 control: eval, 100 -C globals, push with
 test_allow "$IRRECOVERABLE" 'GH #269 F2 control: eval, push with 130 words and no force flag' \
   "$(bash_payload 'eval "$(echo git push origin '"$_pad130"'main)"')"
 
+# GH #309: bash, ksh and zsh expand a brace inside a word too (dash does not), so a brace glued to a flag,
+# a sub word or an add argument hid the verb or flag from the token windows, which read it literally.
+# Already denied before the fix (the brace-kept token shows the letter, or a whole-token brace sits next
+# to a broad verb); kept so the fix cannot lose them.
+for _c in \
+  'git restore -S{W,} file.txt' \
+  'git {,stash} drop' \
+  '{,doas} git push --force origin main' \
+  'env{,} git push --force origin main' ; do
+  test_deny "$IRRECOVERABLE" "GH #309 regression: $_c" "$(bash_payload "$_c")"
+done
+for _c in \
+  'git add src/{a,b}.py' \
+  'git add {README.md,LICENSE}' \
+  'git push --for{ce-with-lease,} origin main' \
+  'git push origin feat/{a,b}' \
+  'rm src/{a,b}.txt' \
+  'cp x.{txt,bak}' \
+  'mkdir -p src/{a,b}' \
+  'git diff HEAD~{1,2}' \
+  'git log --format={a,b}' \
+  'git commit -m "fix {a,b} parsing"' \
+  'echo {a,b}' \
+  'ls {a,b}' \
+  'ls -l{a,h} x' \
+  'git commit -m "{x,y}"' \
+  'git log --format={%h,%s}' \
+  "jq '{name,id}' file.json" \
+  "curl -d '{\"a\":1,\"b\":2}' http://x" \
+  "awk '{print \$1,\$2}' f" \
+  'echo "git push --fo{rce,} origin main"' \
+  'for i in {1..20000}; do echo $i; done' \
+  'echo "{1..99999}"' \
+  'touch f{0..99}{0..99}.txt' \
+  'f() { echo {a,b}; }' \
+  '{ git status; }' \
+  'echo {a,b} # {c,d}' \
+  'echo ${x,y}' ; do
+  test_allow "$IRRECOVERABLE" "GH #309 control: a brace that expands to nothing destructive: $_c" "$(bash_payload "$_c")"
+done
+_timed_case "GH #309: 3000 braced words before a brace-hidden force flag are read inside the hook timeout (brace-view shadow: allowed)" 0 \
+  "$(python3 -c "print('echo ' + 'a{b,c}d ' * 3000 + '; git push --fo{rce,rce} origin main')")"
+_timed_case "GH #309: 20000 nested brace pairs before a force reset are denied inside the hook timeout" 2 \
+  "$(python3 -c "print('{' * 20000 + 'x' + '}' * 20000 + '; git reset --hard')")"
+_timed_case "GH #309: 30000 chained brace groups before a hidden reset are denied inside the hook timeout" 2 \
+  "$(python3 -c "print('echo ' + '{a,b}' * 30000 + '; git {,\"reset\"} --hard')")"
+_timed_case "GH #309: nested groups whose real expansion (120000 chars) is under the cap are not denied for a double charge" 0 \
+  "$(python3 -c "L = 30000; print('echo {{' + 'A' * L + ',' + 'B' * L + '},{' + 'C' * L + ',' + 'D' * L + '}}')")"
+_timed_case "GH #309: a 60000-char word before a brace is allowed fast" 0 \
+  "$(python3 -c "print('echo ' + 'a' * 60000 + '{b,c}')")"
+test_deny "$IRRECOVERABLE" "GH #309: a brace expansion over the length cap denies, never skips the copy" \
+  "$(bash_payload "git add $(python3 -c "print('a' * 70000)"){b,c,d}")"
+
 # GH #336: $IFS splitting, a verb held in a variable, mkfs, chmod 777 and rm --no-preserve-root.
 # Cases (each deny shape checked in real shells) live in a fixture. A WOULD_* line is a shadow rule
 # (GH #337): allowed with a would_* journal row, and enforced once SHADOW_RULES drops it.
@@ -3039,6 +3095,224 @@ if [ "$_want336" -ge 60 ] && [ "$_got336" = "$_want336" ]; then
 else
   echo "  ❌ GH #336: corpus replayed $_got336 of $_want336 cases" >&2; fail=$((fail + 1))
 fi
+
+# GH #309: bash, ksh and zsh expand a brace inside a word too (dash does not), so a brace glued to a flag,
+# a sub word, an add argument or argv0 hid the verb or flag from the token windows, which read it literally.
+# The expanded text is read as the "brace-view" view, which ships shadow first (GH #337): each row is
+# allowed with one would_deny row, and denied once the id leaves SHADOW_RULES (the enforced copy).
+# ('git add {.,}' is not a row: the enforced copy also turns the shadowed source-file rule on, which asks
+# for the literal '{ ., }' reading, so its stdout is not empty; it is the same bypass as 'git add {..,}'.)
+for _c in \
+  'r{m,m} -rf /tmp/x' \
+  'fi{nd,nd} /tmp/x -delete' \
+  'git push --fo{rce,rce} origin main' \
+  'git push --forc{e,e-with-lease} origin main' \
+  'git push "--fo"{rce,} origin main' \
+  'git push --forc{e..e} origin main' \
+  'git restore -S --wor{ktree,} file.txt' \
+  'git branch --del{ete,ete} --forc{e,e} main' \
+  'git add {..,}' \
+  'git add {-A,}' \
+  'git add {:/,}' \
+  'git add {*,}' \
+  'git add {--pathspec-from-file=list,}' \
+  'git add -{-pathspec-from-file=list,}' \
+  'git {,add} .' \
+  'git {,add} -A' \
+  'git a{dd,dd} .' \
+  'git -C . a{dd,dd} .' \
+  'git pu{sh,} --force origin main' \
+  'git rest{ore,ore} .' \
+  'git br{anch,anch} -D main' \
+  'r{"m",} -rf /tmp/x' \
+  "r{'m',} -rf /tmp/x" \
+  'r{\m,} -rf /tmp/x' \
+  'r{m,$x} -rf /tmp/x' \
+  'fi{"nd",} /tmp -delete' \
+  'git {,"reset"} --hard' \
+  'git -C . {,"reset"} --hard' \
+  'git {,"clean"} -fd' \
+  'git {,"push"} --force origin main' \
+  "git {,'push'} --force origin main" \
+  "bash -c 'git {,\"reset\"} --hard'" \
+  'git push --fo{r,}{ce,} origin main' \
+  'git push --fo{r{ce,x},} origin main' \
+  '{r,}{m,} -rf /tmp/x' \
+  '{r{m,},} -rf /tmp/x' \
+  'git push "--"{x,force} origin main' \
+  "git push \$'--'{x,force} origin main" \
+  'git push origin main {--forc,x}"e"' \
+  'git push \--fo{rce,} origin main' \
+  $'git push --fo{rce,\\\n} origin main' \
+  'git push --forc{e..e..1} origin main' \
+  'r{m..m..1} -rf /tmp/x' \
+  'echo {x,#$}; git {,"reset"} --hard' \
+  $'# {x,y}\'\ngit {,"reset"} --hard' \
+  'rm {-rf,\ } /tmp/x' \
+  '{$(:),git} push --force origin main' \
+  '{f,"x y"}ind . -delete' \
+  '{,git} reset --hard' \
+  '{,git} push --force origin main' \
+  'env {,git} push --force origin main' \
+  '{,git} push origin +main' \
+  '{r,"x y"}m -rf /tmp/x' \
+  'r{{x},m} -rf /tmp/x' \
+  'git {{,},reset} --hard' \
+  '{A=1}},git} reset --hard' \
+  '{A=1}},git} push --force origin main' \
+  '{A=1}},rm} -rf /tmp/x' \
+  '{A="x y",git} reset --hard' \
+  "{A='x y',git} reset --hard" \
+  '{r..3}m -rf /tmp/x' \
+  'r{m,x\ y} -rf /tmp/x' \
+  'r{m,"x\"y z"} -rf /tmp/x' \
+  'f{ind,x\ y} /tmp/x -delete' \
+  $'true \\\\\nr{m,} -rf /tmp/x' \
+  $'r\\\n{m,} -rf /tmp/x' \
+  $'f{ind,x\ry} /tmp/x -delete' \
+  $'r{m,x\xc2\xa0y} -rf /tmp/x' \
+  'f{ind,<(:)} /tmp/x -delete' \
+  'echo <(r{m,} -rf /tmp/x)' ; do  # an escaped blank or quote inside the group: the fast path must reach python
+  _would336 deny brace-view "$_c"
+done
+# The .sh fast path hands a command to python only when brace-route.awk sees an expanding group, so the
+# awk must see every shape _bracex expands: enumerate each string of { } , x . up to 7 characters (97,655; plus
+# two wider alphabets with backslash, quote, blank, newline, CR, NBSP and "<("),
+# wrap it in the hook payload, and fail on any that expands but is not routed (a single-level grep missed
+# r{{x},m} and a stray "}" before the comma, "{A=1}},git}": GH #309 review). The same shapes up to 6
+# characters are also run through the bash on PATH (echo), and _bracex must read the same words: it mirrors
+# bash's own scan (a "}" closes a group only after a comma or "..", "{" then "}" at a word start is no group).
+_drift=$(python3 - "$ROOT" <<'PYEOF'
+import itertools, json, shutil, subprocess, sys
+root = sys.argv[1]
+sys.path.insert(0, root + "/hooks/gates")
+import _bracex
+cmds, shapes = [], []
+for n in range(1, 8):
+    for t in itertools.product("{},x.", repeat=n):
+        c = "echo r" + "".join(t) + " -rf"
+        try:
+            e = _bracex.expand_text(c, 150000)
+        except Exception:
+            continue
+        if e != c:
+            cmds.append(c)
+        if n <= 6:
+            shapes.append((c, e.split()))
+# Wider alphabets with a backslash, quotes, a blank, a newline, CR, NBSP and "<(" (up to 5 and 4 characters,
+# routing only: most of these are not valid shell): "r{m,x\\ y} -rf" hid its verb from an awk that read the JSON escape pair, then the blank.
+for alpha, top in (("{},x\\ \"'", 5), ("{},x\\ \n\r\xa0<()", 4)):
+    for n in range(1, top + 1):
+        for t in itertools.product(alpha, repeat=n):
+            c = "echo r" + "".join(t) + " -rf"
+            try:
+                e = _bracex.expand_text(c, 150000)
+            except Exception:
+                continue
+            if e not in (c, _bracex._strip_continuations(c)):  # a stripped line continuation alone is no expansion
+                cmds.append(c)
+pay = lambda c: json.dumps({"tool_name": "Bash", "tool_input": {"command": c}})
+out = subprocess.run(["awk", "-f", root + "/hooks/gates/brace-route.awk"], input="\n".join(pay(c) for c in cmds) + "\n",
+                     capture_output=True, text=True).stdout.split()
+miss = [c for c, o in zip(cmds, out) if o == "0"]
+bad, nbash = [], 0
+bash = shutil.which("bash")
+if bash:
+    got = subprocess.run([bash, "-c", "\n".join(c for c, _ in shapes)], capture_output=True, text=True).stdout.split("\n")[:-1]
+    if len(got) == len(shapes):
+        nbash = len(got)
+        bad = [c for (c, e), g in zip(shapes, got) if g.split() != e[1:]]
+print(len(cmds), len(out), len(miss), nbash, len(bad), " | ".join((miss + bad)[:5]))
+PYEOF
+)
+read -r _dn _do _dm _bn _bb _drest <<< "$_drift"
+if [ "${_dn:-0}" -gt 1000 ] && [ "$_dn" = "${_do:-x}" ] && [ "${_dm:-1}" = "0" ] && [ "${_bb:-1}" = "0" ]; then
+  echo "  ✅ GH #309: brace-route.awk routes all $_dn enumerated brace shapes _bracex expands; _bracex matches bash on $_bn"
+  pass=$((pass + 1))
+else
+  echo "  ❌ GH #309: brace-route.awk missed ${_dm:-?} of ${_dn:-?} expanding shapes, _bracex differs from bash on ${_bb:-?} of ${_bn:-?} (first: $_drest)" >&2
+  fail=$((fail + 1))
+fi
+# An awk that starts but fails cannot vouch for a brace command: the fast path hands it to python (the
+# over-cap expansion is a structural deny, so it enforces while brace-view is shadowed).
+_BADAWK="$_JOURNAL_TMP/badawk"  # a subdir of the file's own temp dir: its EXIT trap cleans it
+if mkdir "$_BADAWK"; then
+  _badpay=$(bash_payload 'echo {a..z}{a..z}{a..z}{a..z}')
+  for _stub in "exit 1:fails (exit 1)" "exit 0:prints nothing (exit 0)"; do
+    printf '#!/bin/sh\n%s\n' "${_stub%%:*}" > "$_BADAWK/awk"; chmod +x "$_BADAWK/awk"
+    _rc=$(echo "$_badpay" | PATH="$_BADAWK:$PATH" bash "$IRRECOVERABLE" >/dev/null 2>&1; echo $?)
+    if [ "$_rc" = "2" ]; then
+      echo "  ✅ GH #309: an awk that ${_stub#*:} sends the command to python (denied, rc 2)"
+      pass=$((pass + 1))
+    else
+      echo "  ❌ GH #309: an awk that ${_stub#*:} must send the command to python, got rc $_rc" >&2
+      fail=$((fail + 1))
+    fi
+  done
+else
+  echo "  ❌ GH #309: could not create the stub dir for the failing-awk rows" >&2
+  fail=$((fail + 1))
+fi
+# A payload over 2000 characters with a "{" used to go to python unscanned; python's tokenizer then denied a
+# heredoc line that mixes both quote marks (`v[:1] in '"\''`) that develop's fast path never sent there. The
+# awk now bounds its own work, so a long f-string/dict heredoc with no expanding group stays on the fast path.
+test_allow "$IRRECOVERABLE" "GH #309: a 2 KB python heredoc with braces and a mixed-quote line (no group expands) stays allowed" \
+  "$(bash_payload "$(python3 -c "print(\"python3 - <<'PY'\\n\" + \"\".join(f\"x{i} = {{'a': {i}}}\\n\" for i in range(120)) + \"v[:1] in '\\\"\\\\''\\nPY\")")")"
+# _deny_ambiguous returns inside brace-view only: any other view (ifs-split enforces) still ends on it.
+if /usr/bin/grep -qE '_VIEW\[0\] == "brace-view"' "$ROOT/hooks/gates/irrecoverable.py"; then
+  echo "  ✅ GH #309: _deny_ambiguous skips only the brace-view view"
+  pass=$((pass + 1))
+else
+  echo "  ❌ GH #309: _deny_ambiguous must return only inside brace-view" >&2
+  fail=$((fail + 1))
+fi
+# A structural deny takes no id, so it enforces even while brace-view is shadowed: a raw noncharacter
+# (U+FDD0-U+FDEF, the expander's own stand-ins) is refused rather than read.
+test_deny "$IRRECOVERABLE" "GH #309: a stand-in noncharacter in a command with a brace denies" \
+  "$(bash_payload $'echo a\xef\xb7\x98\xef\xb7\x98E {x,"y"}\ngit {,"reset"} --hard\nE')"
+# A private-use icon (Nerd Fonts live at U+E000) is an ordinary character, not a stand-in.
+test_allow "$IRRECOVERABLE" "GH #309 control: a private-use icon in a command with a brace is allowed" \
+  "$(bash_payload $'echo \xee\x80\x80 {a,b}')"
+# A single-quoted span that is valid JSON is data, not a runnable command (the weighted-score call of
+# every deep-audit): chained objects there used to multiply past the cap and deny. Anything that is not
+# valid JSON is still read as command text (bash -c bodies), padded or not.
+_json309='{"scores": [{"id":"a","score":9,"max":10,"weight":3,"insufficient":false},{"id":"b","score":9,"max":10,"weight":2,"insufficient":false},{"id":"c","score":8,"max":10,"weight":2,"insufficient":false},{"id":"d","score":8,"max":10,"weight":2,"insufficient":false},{"id":"e","score":8,"max":10,"weight":1,"insufficient":false}], "floorPct": 0.5}'
+test_allow "$IRRECOVERABLE" "GH #309 control: a JSON here-string with chained objects is data, allowed (no TooBig)" \
+  "$(bash_payload "python3 weighted-score.py <<< '$_json309'")"
+test_deny "$IRRECOVERABLE" "GH #309: a bash -c body that only starts like JSON is still expanded (structural deny over the cap)" \
+  "$(bash_payload "bash -c '$_json309; git {,\"reset\"} --hard'")"
+_would336 deny brace-view "bash -c '{\"a\":1}; git {,\"reset\"} --hard; {x,y}'"
+# A brace that cannot expand (no comma, no range: an f-string field, "{x}") stays on the shell fast path, so
+# a heredoc body whose quotes the tokenizer cannot balance is not newly denied by the brace routing.
+_c309h=$(cat <<'XEOF'
+python3 - <<'EOF'
+old = '''        secs = (datetime.datetime.now(datetime.timezone.utc) - t).total_seconds()
+        if secs < 60: return f"{int(secs)}s"'''
+new = '''        secs = (datetime.datetime.now(datetime.timezone.utc) - t).total_seconds()
+        if secs < 0: return "0s"  # future/clock-skewed ts -- don't print a negative age
+        if secs < 60: return f"{int(secs)}s"'''
+for path in ["/tmp/test-dashboard.py", "commands/review-dashboard.md"]:
+    with open(path) as f:
+        content = f.read()
+    if old in content:
+        content = content.replace(old, new)
+        with open(path, "w") as f:
+            f.write(content)
+        print("patched:", path)
+    else:
+        print("MISS:", path)
+EOF
+XEOF
+)
+test_allow "$IRRECOVERABLE" "GH #309 control: a heredoc with f-string braces and an apostrophe takes the fast path, allowed" \
+  "$(bash_payload "$_c309h")"
+# A double-quoted body can be a shell's command text (bash -c "..."), which expands braces itself, so double
+# quotes are still read as command text. The cost is a known over-deny: a double-quoted JSON body with more
+# than a few chained objects (curl -d "{...}") exceeds the cap and is denied.
+_would336 deny brace-view 'bash -c "r{m,} -rf /tmp/x"'
+# An uncaught error would exit 1, which does not block: 3000 nested substitutions must exit 2.
+test_deny "$IRRECOVERABLE" "GH #309: 3000 nested dollar-paren spans in a command with a brace deny (exit 2, no traceback)" \
+  "$(bash_payload "$(python3 -c "print('echo {a,b} ' + '\"\$(' * 3000)")")"
 
 # GH #375: a git global's value split by shlex at $, :, @ or a non-ASCII letter (-C $R) took the
 # variable's name for the subcommand. Cases (each deny shape checked in real shells) live in a fixture.

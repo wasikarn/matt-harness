@@ -14,6 +14,13 @@ except Exception:
     def journal(*a, **k):
         pass
 
+try:
+    import _bracex
+except Exception as _e:
+    _bracex = None
+    print(f"[mh:gate] subagent-git-guard: _bracex not importable ({_e}); a brace-hidden git command is not read",
+          file=sys.stderr)
+
 GATE_ID = "gate:bash:subagent-git-guard"
 
 try:
@@ -57,6 +64,11 @@ except ValueError:
     _MAX_CMD_CHARS = 16_000
 if _MAX_CMD_CHARS < 1:
     _MAX_CMD_CHARS = 16_000
+# GH #309: the brace-expanded reading is longer than the command (a chained range such as
+# `mkdir -p out/{a..z}/{a..z}/{a..j}` is 67 KB), so it has its own cap, the main gate's. The raw
+# command is already under _MAX_CMD_CHARS; the deadline and the work budget bound the time.
+_MAX_VIEW_CHARS = 150_000
+_brace_too_big = False
 
 def clip(s):
     # Log-injection guard: a crafted command cannot forge/erase a [mh:gate] line.
@@ -966,10 +978,31 @@ try:
         _sub_texts = None
         masked = _mask(cmd)
         hit = _all_passes()
+    # GH #309: bash, ksh and zsh (not dash) expand braces before anything reads the words, so
+    # `git {,stash}`, `{,"doas"} git stash` and `env{,} git stash` hid the anchor or the sub word. One
+    # last reading checks the text as the shared _bracex module expands it (same module as the main gate).
+    if not hit and _bracex and "{" in cmd:
+        try:
+            _bx = _bracex.expand_text(cmd, _MAX_VIEW_CHARS)
+        except (_bracex.TooBig, RecursionError):
+            _brace_too_big = True
+            raise _TooCostly
+        if _bx != cmd:
+            _raw_cmd, cmd = cmd, _bx
+            _dollar_joined = False
+            for _dollar_join in ("'\"", "'", ""):  # the same three `$` readings as above (git {stash,} $"show")
+                if _dollar_join != "'\"" and not _dollar_joined:
+                    break
+                _sub_texts = None
+                masked = _mask(cmd)
+                hit = _all_passes()
+                if hit:
+                    break
+            cmd = _raw_cmd
 except _TooCostly:
     _err(f"[mh:gate] BLOCKED: subagent ({agent_type}) command is too long or too dense to check "
-         f"safely ({len(cmd)} characters); write it to a file with the Write tool and run the file, "
-         f"or split it into smaller commands.")
+         f"safely ({len(cmd)} characters" + (", brace expansion over the size the guard reads" if _brace_too_big else "")
+         + "); write it to a file with the Write tool and run the file, or split it into smaller commands.")
     journal(GATE_ID, "Bash", "deny", d.get("session_id"))
     os._exit(2)
 except _Unparsed:

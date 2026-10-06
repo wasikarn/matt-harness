@@ -16,6 +16,26 @@ _norm="$(printf '%s' "$_input" | sed "s/\\\\\\\\/$_bs/g; s/\\\\[nt]/ /g" | tr -s
 _norm_nows="$(printf '%s' "$_norm" | tr -d '[:space:]')"
 _has_subst=0
 case "$_input" in *'`'*|*'$'*) _has_subst=1 ;; esac
+# GH #309: a brace group can hide any word, argv0 included ("r{m,} -rf" runs rm, "{f,\"x y\"}ind" runs
+# find), so a command with a brace group that can expand (a "," or ".." at its own level, nested groups
+# included: "r{{x},m}", and a stray "}" before the comma: "{A=1}},git}") defers to python. brace-route.awk
+# does the counting the way bash scans (it skips the payload's own JSON objects). "${var}" is a plain
+# parameter, "{x}" and f"{n}" expand to nothing: both stay on the fast path. A missing awk file, or an
+# awk that fails or prints nothing, defers to python, never allows.
+case "$0" in */*) _gdir="${0%/*}" ;; *) _gdir=. ;; esac
+_awk="$_gdir/brace-route.awk"
+# The awk bounds its own work (a payload over its budget prints a hit), so a heredoc of f-strings up to 100000
+# characters stays on the fast path when no group can expand; a bigger payload with a "{" goes to python (awk copies
+# the line on every substr, so its cost grows with the payload) and python's own length cap decides it.
+if { [ "${#_input}" -gt 100000 ] && case "$_input" in *'{'*) true ;; *) false ;; esac; } || [ ! -r "$_awk" ] || ! command -v awk >/dev/null 2>&1; then
+  _has_subst=1
+else
+  if _nbrace="$(printf '%s' "$_input" | awk -f "$_awk")" && [ -n "$_nbrace" ]; then
+    [ -n "$(printf '%s' "$_nbrace" | tr -d '0\n')" ] && _has_subst=1
+  else
+    _has_subst=1
+  fi
+fi
 case "$_norm$_norm_nows" in
   *rm*|*find*|*git*|*gh*|*dd*|*mysql*|*psql*|*sqlite3*|*mariadb*|*claude*|*mkfs*|*mke2fs*|*chmod*|*source*) : ;;  # candidate -> python
   *) [ "$_has_subst" -eq 1 ] || exit 0 ;;                          # no destructive token possible -> allow (unless obfuscated)
