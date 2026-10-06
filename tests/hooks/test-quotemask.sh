@@ -140,6 +140,17 @@ OUT=$(mask $'echo x\\\n#y; git stash')
 ok=1; [ "$OUT" = 'echo   x#y; git stash' ] && ok=0
 check "GH #286: hash after a mid-word line continuation is not a comment" "$ok"
 
+# GH #309 audit: an escaped blank or separator is part of its word, so the "#" after it is no comment
+OUT=$(mask 'echo x\ #; git stash')
+ok=1; [ "$OUT" = 'echo x\ #; git stash' ] && ok=0
+check "GH #309 audit: hash after an escaped blank is not a comment" "$ok"
+OUT=$(mask 'echo x\;#; git stash')
+ok=1; [ "$OUT" = 'echo x\;#; git stash' ] && ok=0
+check "GH #309 audit: hash after an escaped semicolon is not a comment" "$ok"
+OUT=$(mask 'echo x #; git stash')
+ok=1; [ "$OUT" = 'echo x             ' ] && ok=0
+check "GH #309 audit control: a real comment still masks to the end of the line" "$ok"
+
 OUT=$(mask $'echo x \\\n#y; git stash')
 ok=1; [[ "$OUT" != *"stash"* && "$OUT" == "echo x "* ]] && ok=0
 check "GH #286 control: continuation then hash at a word start is still a comment" "$ok"

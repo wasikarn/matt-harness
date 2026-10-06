@@ -1647,11 +1647,22 @@ check "GH #309 denied under the default cap: a brace-hidden stash beside a big r
 _c='echo {a..z}{a..z}{a..z}{a..z}'
 rc=$(unset MH_SGG_MAX_CMD_CHARS; sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
 check "GH #309 denied: an expansion over 150 KB is refused (rc $rc)" "$ok"
-# Bash closes a brace group at "}" only after a comma, so "{A=1}},git}" is "A=1}} git": an assignment, then git.
+# Bash closes a brace group at "}" only after a comma, so "{A=1}},git}" is the two words "A=1}}" and "git".
+# Bash does not read an expanded word as an assignment: it runs a command named "A=1}}" with git as an argument,
+# so git does not run. The guard denies it anyway (its tokenizer reads "A=1}} git stash" as an assignment before
+# git); an over-deny in the safe direction, pinned here so a change to it is noticed.
 for _c in '{A=1}},git} stash' '{A=1}},git} reset --hard'; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" != "0" ] && ok=0
-  check "GH #309 denied (bash's closing-brace rule): $_c" "$ok"
+  check "GH #309 denied, conservatively (bash's closing-brace rule): $_c" "$ok"
 done
+# An escaped blank or separator is part of its word, so a "#" after it is no comment: bash runs the git behind it.
+for _c in 'echo x\ #; git {,stash}' 'echo x\;#; git {,stash}' 'echo a\ #b; git {,reset} --hard'; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #309 audit denied (a # after an escaped blank is not a comment): $_c" "$ok"
+done
+_c='echo x #; git {,stash}'
+rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+check "GH #309 audit control allowed (a real comment hides its brace): $_c" "$ok"
 # Both gates read braces through the one shared module, so the two cannot drift apart.
 ok=0
 for _g in subagent-git-guard.py irrecoverable.py; do

@@ -14,14 +14,14 @@ reads `"git push --force"` as one word.
 
 Fail-closed, never skipped: nesting, a range or a product over the budget, or a raw stand-in
 character (a noncharacter, U+FDD0-U+FDEF; see _PROT) raises TooBig, and the caller denies. A numeric range over MAX_NUM_RANGE
-items is left literal instead: digits cannot spell a verb or a flag.
+items keeps only its first and last half: digits cannot spell a verb or a flag, only a mode argument.
 """
 import json
 import re
 
 MAX_DEPTH = 64          # nesting of braces, and braces chained in one word
 MAX_QDEPTH = 16         # quoted spans and substitutions inside each other
-MAX_NUM_RANGE = 64      # a larger numeric range stays literal (digits hide nothing)
+MAX_NUM_RANGE = 64      # a larger numeric range keeps its first and last half (a chmod mode is digits)
 
 class TooBig(Exception):
     """The expansion is over the budget: the caller denies instead of skipping the reading."""
@@ -114,15 +114,14 @@ def _split_top(body):
     return parts
 
 def _range(body):
-    # the items of {a..e}, {1..9}, {a..e..2}, {01..10}; None when body is not a range (or a numeric
-    # range too large to matter)
+    # the items of {a..e}, {1..9}, {a..e..2}, {01..10}; None when body is not a range; a numeric
+    # range over MAX_NUM_RANGE items gives its first and last half
     m = _INT_RANGE.match(body)
+    numeric = bool(m)
     if m:
         lo, hi = int(m.group(1)), int(m.group(2))
         step = abs(int(m.group(3))) if m.group(3) else 1
         step = step or 1
-        if abs(hi - lo) // step + 1 > MAX_NUM_RANGE:
-            return None
         width = max(len(m.group(1)), len(m.group(2))) if any(
             len(g.lstrip("-")) > 1 and g.lstrip("-").startswith("0") for g in m.group(1, 2)) else 0
         fmt = lambda v: str(v).zfill(width) if v >= 0 else "-" + str(-v).zfill(max(width - 1, 0))
@@ -136,7 +135,11 @@ def _range(body):
         fmt = lambda v: "\\" + chr(v) if chr(v) in _RANGE_SYNTAX else chr(v)
         step = abs(int(m.group(3))) if m.group(3) else 1
         step = step or 1
-    return [fmt(v) for v in (range(lo, hi + 1, step) if lo <= hi else range(lo, hi - 1, -step))]
+    seq = range(lo, hi + 1, step) if lo <= hi else range(lo, hi - 1, -step)
+    if numeric and len(seq) > MAX_NUM_RANGE:
+        # too many items to list, but the first and last still count: a mode argument is digits (chmod {777..0})
+        seq = list(seq[:MAX_NUM_RANGE // 2]) + list(seq[-(MAX_NUM_RANGE // 2):])
+    return [fmt(v) for v in seq]
 
 def _expand_word(w, budget, depth):
     # all expansions of one word, leftmost group first; budget[0] counts the characters still allowed
@@ -167,7 +170,9 @@ def _expand_word(w, budget, depth):
                             # group already charged. Charging it again made a nested expansion over half
                             # the cap deny early; every new string is still charged, at every level, so
                             # chained groups cannot build a huge list before anything is checked.
-                            if pre or t:
+                            # An empty s (every alternative empty, {,}{,}...) is no alternative a nested group charged:
+                            # nobody did, and 2^n of them are n+1 levels of free allocation, so it is charged here.
+                            if pre or t or not s:
                                 budget[0] -= len(s) + 1
                                 if budget[0] < 0:
                                     raise TooBig("expansion over the character cap")
@@ -231,7 +236,7 @@ def _segments(t):
         c = t[i]
         if c == "\\" and i + 1 < n:
             run.append(t[i:i + 2])
-            prev = t[i + 1]
+            prev = "x"  # an escaped blank or separator is part of its word: a "#" after it is no comment
             i += 2
             continue
         if c == "#" and prev in _WORD_START:
