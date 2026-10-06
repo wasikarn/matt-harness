@@ -77,7 +77,8 @@ const markLoaded = async ($: EngineInterface) => {
       $.session.version().then(v => v.version, () => undefined),
       readManifest($, $.plugin.root).then(m => m?.version),
     ])
-    await append($, JSON.stringify({ t: new Date().toISOString(), session_id: session, loaded: true, cli, mh }))
+    // append reports a failed write by returning false, not by throwing: unmark so the next call retries
+    if (!(await append($, JSON.stringify({ t: new Date().toISOString(), session_id: session, loaded: true, cli, mh })))) markedFor = undefined
   } catch (err) {
     $.ui.log(`cost-ledger load marker failed: ${String(err).slice(0, 200)}`)
   }

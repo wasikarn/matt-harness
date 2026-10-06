@@ -31,7 +31,8 @@ so the latest row per key is the session's current total, not an increment.
   `codex:*` Skill and Agent calls; it has no model and is summed on its own.
 - Older rows carry fields from retired schemas; unknown keys are ignored.
 - `cost-report-dedup.js`'s `csv` mode's header and column order must be kept in sync with any
-  field added here (deep-audit finding, 2026-09-25: `cache_write_tokens_1h` shipped in the row
+  spend field added here (the CSV is a spend export: the handoff fields below, `rate_verified`,
+  `mh_version` and `head_commit` are not in it on purpose) (deep-audit finding, 2026-09-25: `cache_write_tokens_1h` shipped in the row
   but not in the CSV for one commit, so the CSV silently dropped every 1h-write token while
   `estimated_cost_usd`, computed independently, stayed correct — a gap that looks like nothing
   is wrong until someone reads the CSV specifically).

@@ -90,6 +90,17 @@ test('load marker: written once, by the first hook call, with the CLI and mh ver
   expect(h.rows.map(r => r.turn_id)).toEqual(['t1', 't2'])
 })
 
+// Deep-audit: a failed first marker append must not mark the session as done, or the report calls a
+// loaded module "modules off" for the rest of the session.
+test('load marker: a failed append is retried on the next hook call', async ($, on) => {
+  const { h, turn } = setup($, on)
+  h.fail = 'exit'
+  await turn('t1')
+  expect(h.markers).toEqual([])
+  await turn('t2')
+  expect(h.markers.map(r => [r.session_id, r.loaded])).toEqual([['s1', true]])
+})
+
 // /clear gives the same process a new session id without reloading the module; that session has
 // spend too, so it needs its own marker or the report calls it "modules off".
 test('load marker: a new session id in the same process gets its own marker', async ($, on) => {

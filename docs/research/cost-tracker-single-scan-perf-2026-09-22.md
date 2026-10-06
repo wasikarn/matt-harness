@@ -24,7 +24,7 @@ the session.
 ## Measurement
 
 Largest real transcript on disk at measurement time:
-`~/.claude/projects/-Users-kobig-Codes-Assignments-portfolio-report-service/*.jsonl`,
+`~/.claude/projects/-Users-<name>-Codes-Assignments-portfolio-report-service/*.jsonl`,
 158,369,996 bytes / 42,838 lines.
 
 | | jq passes over main transcript | wall time / Stop call |

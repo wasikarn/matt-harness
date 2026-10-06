@@ -5,7 +5,7 @@
 set -uo pipefail
 cd ~/Codes/Personals/matt-harness || { echo "cd failed"; exit 1; }
 source scripts/_lib/eval-default-enabled.sh
-OUT=/private/tmp/claude-501/-Users-kobig-Codes-Personals-dotfiles/28d9265b-ad93-497c-80d1-bd86498321bb/scratchpad/mb139-results
+OUT=/private/tmp/claude-501/-Users-<name>-Codes-Personals-dotfiles/28d9265b-ad93-497c-80d1-bd86498321bb/scratchpad/mb139-results
 mkdir -p "$OUT"
 CEIL=3.00
 

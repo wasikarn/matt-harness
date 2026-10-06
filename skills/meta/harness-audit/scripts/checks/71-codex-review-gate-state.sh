@@ -22,7 +22,8 @@ import json, sys
 try:
     with open(sys.argv[1]) as f:
         d = json.load(f)
-    print("on" if d.get("config", {}).get("stopReviewGate") else "off")
+    v = d.get("config", {}).get("stopReviewGate")
+    print("on" if v is True else "off" if v is False or v is None else "unknown")
 except Exception:
     print("unknown")
 ' "$_codex_state_file" 2>/dev/null)

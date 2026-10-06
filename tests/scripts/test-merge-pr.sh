@@ -187,6 +187,10 @@ refuses "opt-out with a version below develop's" "below"
 STUB_HEAD_VER=1.1.196-rc1 STUB_HEAD_MKT_VER=1.1.196-rc1 run 0 headsha111 1.50
 refuses "non-numeric version" "not X.Y.Z"
 
+# 4f7. a leading zero reads as the same number to awk but not to the equal-version guard: refuse.
+STUB_HEAD_VER=01.1.5 STUB_HEAD_MKT_VER=01.1.5 STUB_DEV_VER=1.1.5 run 0 headsha111 1.50
+refuses "leading-zero version" "not X.Y.Z"
+
 # 4g. opt-out for a PR that needs no bump.
 MERGE_PR_ALLOW_SAME_VERSION=1 STUB_HEAD_VER=1.1.5 STUB_DEV_VER=1.1.5 run 0 headsha111 1.50
 if [ "$rc" -eq 0 ]; then ok "same version with the opt-out merges"; else bad "opt-out rc=$rc: $out"; fi
