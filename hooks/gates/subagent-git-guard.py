@@ -337,7 +337,13 @@ _KEYWORD_PREFIX = r"(?:(?:" + "|".join(re.escape(k) for k in _KEYWORDS) + r")\s+
 # behaves exactly as before for every old wrapper, and it can only add anchors.
 # GH #273: eval joins its arguments into a command line, so `eval A=1 env git stash` runs git; the
 # other three treat `A=1` as a command name. Only eval takes assignments.
-_ASSIGN_RUN = r"(?:[A-Za-z_][A-Za-z0-9_]*=\S*[ \t]+)*"
+# GH #520: an assignment value can be quoted or hold an escaped blank, and the quote mask shows a quoted
+# span as blank + Q letters + blank (A="x y" is `A= QQQ `) and the word drop keeps `\ `, so the value is a
+# run of: an escaped blank, a plain character, a lone backslash, or one masked quoted span. Each
+# alternative starts with a different character class, so a run still splits one way only.
+_ASSIGN_VALUE = r"(?:\\[ \t]|[^\s\\]|\\(?![ \t])|[ ]Q+[ ])*"
+_ASSIGN_WORD = r"[A-Za-z_][A-Za-z0-9_]*=" + _ASSIGN_VALUE
+_ASSIGN_RUN = r"(?:" + _ASSIGN_WORD + r"[ \t]+)*"
 _EVAL_PASS = r"eval[ \t]+(?:--[ \t]+)?" + _ASSIGN_RUN
 # GH #339: exec takes -c, -l and `-a NAME` (`eval exec -a x git stash` runs git). A flag holding an `a`
 # takes the next word, one without takes none, so a token is read one way only.
@@ -377,7 +383,7 @@ _REDIR = r"(?:(?:\d+|\{\w+\})?(?:<<<?-?|&>>?|[<>]&|<>|>\||[<>]>?)[ \t]*[^\s;&|()
 # `x{git stash;}`, `${git stash;}` or `{true;}{git stash;}`. `{` + blank keeps develop's reading.
 def _cmd_start(wrapper_prefix):
     return (r"(?:^|[|;&(]|&&|\|\||\{(?=\s)|(?<![^\s;&|(){])\{)\s*" + _KEYWORD_PREFIX +
-            r"(?:(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)|" + _REDIR + r")*" + _LEAD_CHAIN + wrapper_prefix + _CHAIN_PREFIX)
+            r"(?:(?:" + _ASSIGN_WORD + r"\s+)|" + _REDIR + r")*" + _LEAD_CHAIN + wrapper_prefix + _CHAIN_PREFIX)
 # GH #245: every anchor regex is scanned with overlapping matches, `(?=(...))`, read through
 # m.end(1). The old wrappers' greedy argument walk (`time ls; git stash; git status`) crosses
 # `;` / `&&` / newline to the LAST `git`, and a plain finditer resumed after that match, so the
