@@ -1798,7 +1798,7 @@ _CHMOD_CLAUSE = r"(?:0*[0-7]?777|[ugoa]* ?[-+=] ?[rwxXst]*(?: ?[-+=] ?[rwxXst]*)
 _CHMOD_WORLD_RE = re.compile(r"(?:^| )(" + _CHMOD_CLAUSE + r"(?: ?, ?" + _CHMOD_CLAUSE + r")*)(?: |$)")
 _CHMOD_SYM_RE = re.compile(r"([ugoa]*)((?:[-+=][rwxXst]*)+)")
 _CHMOD_OP_RE = re.compile(r"([-+=])([rwxXst]*)")
-def _chmod_world_mode(s):
+def _chmod_world_mode(s, subst=False):
     # Clauses and the operators inside one clause apply left to right, as chmod does: + adds, = sets,
     # - takes away (a -X is read as +X: BSD chmod does that). A clause this cannot model (no who letter,
     # whose umask mask is unknown, or a copy such as o=u) is skipped, except after a removal: it may
@@ -1823,6 +1823,8 @@ def _chmod_world_mode(s):
                 else:
                     bits = {"x" if b == "X" else b for b in p if b in "rwxX"}
                     got[w] = bits if op == "=" else got[w] | bits
+    if subst and removed:  # a $(..), `..` or ${..} in the mode was read as empty; it may give the bits back
+        return True
     return all({"r", "w", "x"} <= p for p in got.values())
 _ROOT_OR_HOME = ("/", "/*", "/.", "~", "~/", "~/*", "~/.")
 def _chmod_world(rest):
@@ -1832,7 +1834,7 @@ def _chmod_world(rest):
     # 777 or a+rwx is not a mode.
     k = next((j for j, t in enumerate(toks) if not t.startswith("-")), len(toks))
     m = _CHMOD_WORLD_RE.match(" ".join(toks[k:]))
-    return ((m and _chmod_world_mode(m.group(1).replace(" ", ""))) or _chmod_world_word(rest)) and any(
+    return ((m and _chmod_world_mode(m.group(1).replace(" ", ""), any(PH in t for t in rest[k:]))) or _chmod_world_word(rest)) and any(
         t in _ROOT_OR_HOME or _is_flag(t, "--recursive")
         or (t.startswith("-") and not t.startswith("--") and "R" in t) for t in toks)
 
@@ -1856,7 +1858,7 @@ def _chmod_world_word(rest):
         mode = not seen and not s.startswith("-")
         if mode and _EXPANSION_ONLY_RE.fullmatch(w):
             continue
-        if (mode or _CHMOD_DASH_MODE_RE.fullmatch(s)) and _chmod_world_mode(s):
+        if (mode or _CHMOD_DASH_MODE_RE.fullmatch(s)) and _chmod_world_mode(s, PH in w):
             return True
         seen = seen or mode
     return False

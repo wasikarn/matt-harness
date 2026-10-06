@@ -108,6 +108,11 @@ DENY chmod -R a+rwx,o-w,o=u ./x
 DENY chmod -R a+rwx,o-w,o+u ./x
 DENY chmod -R a+rwx,u-w,+w ./x
 DENY chmod -R a=rwx,o=w,+rx ./x
+# a substitution after a removal may add the bits back (it is read as empty text, so the mode parser cannot see it)
+DENY chmod -R a+rwx,o-w$(echo ,o+w) ./x
+DENY chmod -R a+rwx,o-w`echo ,o+w` ./x
+DENY chmod -R "a+rwx,o-w$(echo ,o+w)" ./x
+DENY V=,o+w; chmod -R a+rwx,o-w${V} ./x
 # GNU rm takes an unambiguous long-option prefix: --r only names --recursive, --f only --force
 DENY rm --rec --force ./build
 DENY rm -r --forc ./build
