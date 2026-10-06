@@ -1665,6 +1665,44 @@ _c="ls $(_pad 'a{b,c}d ' 500)"
 rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
 check "GH #309 padded braced words allow shape finishes inside 8 s (rc $rc, ${#_c} bytes)" "$ok"
 
+# --- GH #520: an assignment before the command makes no difference to what runs: A="x y" git stash is
+# git stash with A set. The quote mask turns a quoted value into blanks and Q letters, so the assignment
+# walk stopped at the value and the git behind it was never anchored.
+for _c in \
+  'A="xy" git stash' \
+  "A='x' git stash" \
+  'A="x y" git stash' \
+  "A='x y' git reset --hard" \
+  'A="x;y" git stash' \
+  'A="$(pwd)" git stash' \
+  'A=x\ y git stash' \
+  'A="x y" B=1 git stash' \
+  'A="x y" B=z\ w git clean -fd' \
+  'A="x y" env git stash' \
+  'echo hi; A="x y" git stash' \
+  'true && A="x y" git stash' \
+  'A=1 B="x y" git stash' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+  check "GH #520 denied (assignment with a quoted or escaped value): $_c" "$ok"
+done
+for _c in \
+  'A="x y" git status' \
+  'A="x y" git stash list' \
+  'A="x y" echo git stash' \
+  'A="x y"' \
+  'echo A="x y" git stash' \
+  'A="x y" B=2' ; do
+  rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+  check "GH #520 control allowed: $_c" "$ok"
+done
+# The assignment walk must stay linear: 1500 quoted assignments before the command, both verdicts in 8 s.
+_c="$(_pad 'A="x y" ' 1500)git stash"
+rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
+check "GH #520 1500 quoted assignments before git stash decided inside 8 s as deny (rc $rc, ${#_c} bytes)" "$ok"
+_c="$(_pad 'A="x y" ' 1500)git status"
+rc=$(sgg_rc8 "$_c"); ok=1; [ "$rc" = "0" ] && ok=0
+check "GH #520 1500 quoted assignments before git status decided inside 8 s as allow (rc $rc, ${#_c} bytes)" "$ok"
+
 echo ""
 echo "=== $pass passed, $fail failed ==="
 [ "$fail" -eq 0 ]
