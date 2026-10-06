@@ -1656,7 +1656,7 @@ for _c in '{A=1}},git} stash' '{A=1}},git} reset --hard'; do
   check "GH #309 denied, conservatively (bash's closing-brace rule): $_c" "$ok"
 done
 # An escaped blank or separator is part of its word, so a "#" after it is no comment: bash runs the git behind it.
-for _c in 'echo x\ #; git {,stash}' 'echo x\;#; git {,stash}' 'echo a\ #b; git {,reset} --hard'; do
+for _c in 'echo x\ #; git {,stash}' 'echo x\;#; git {,stash}' 'echo a\ #b; git {,reset} --hard' 'echo x\ #; git stash'; do
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
   check "GH #309 audit denied (a # after an escaped blank is not a comment): $_c" "$ok"
 done

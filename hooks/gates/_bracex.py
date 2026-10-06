@@ -162,6 +162,10 @@ def _expand_word(w, budget, depth):
                     pre, post = w[:i], w[j + 1:]
                     heads = [x for a in alts for x in _expand_word(a, budget, depth + 1)] if items is None else items
                     tails = _expand_word(post, budget, depth + 1)
+                    # Every result costs at least one character, so a product over the budget is over the cap before a
+                    # string is built: a 1.1M-item range times seven {,} groups copied 140M strings first (12 s).
+                    if len(heads) * len(tails) > budget[0]:
+                        raise TooBig("expansion over the character cap")
                     out = []
                     for h in heads:
                         for t in tails:

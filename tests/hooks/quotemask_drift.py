@@ -27,6 +27,11 @@ CORPUS = [
     "echo $'a\\'b' ; git stash",
     "a\\",
     "(true)#c\ngit stash",
+    # GH #309 audit: an escaped blank or separator is part of its word, so a "#" after it is no comment
+    "echo x\\ #; git stash",
+    "echo x\\;#; git stash",
+    "echo x\\&#; git stash",
+    "echo x #; git stash",
     # GH #306: one per continuation placement.
     "git\\\n stash",
     "g\\\nit stash",

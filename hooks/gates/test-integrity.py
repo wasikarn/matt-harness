@@ -255,6 +255,8 @@ except Exception:
                 out.append("\\" * (j - i))
                 if (j - i) % 2 == 1 and j < n and s[j] in "'\"$":  # an escaped "$" is literal too, never an ANSI-C opener
                     out.append("Q"); j += 1
+                elif (j - i) % 2 == 1 and j < n and s[j] in " \t\n;&|()":
+                    out.append(s[j]); j += 1  # an escaped blank or separator is part of its word: a "#" after it is no comment
                 i = j
                 at_word_start = False
             else:

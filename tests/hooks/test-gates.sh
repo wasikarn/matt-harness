@@ -3023,8 +3023,13 @@ _timed_case "GH #309: 30000 chained brace groups before a hidden reset are denie
   "$(python3 -c "print('echo ' + '{a,b}' * 30000 + '; git {,\"reset\"} --hard')")"
 # Empty alternatives build no new text, so the budget never charged them: 26 groups of {,} made 2^26 empty
 # strings (4.7 s, 1.8 GB), and at 27 the gate ran past the 8 s hook timeout and failed open on the raw reset.
-_timed_case "GH #309 audit: 26 chained {,} groups before a raw force reset are denied inside the hook timeout" 2 \
-  "$(python3 -c "print('false && echo ' + '{,}' * 26 + '; git reset --hard')")"
+# 28 groups: the old gate does not finish inside the 10 s timeout (rc 124), so the row is red there on any machine.
+_timed_case "GH #309 audit: 28 chained {,} groups before a raw force reset are denied inside the hook timeout" 2 \
+  "$(python3 -c "print('false && echo ' + '{,}' * 28 + '; git reset --hard')")"
+# A character range is not charged per item either, and the head x tail product was never checked: 1.1M items times
+# seven {,} groups copied 140M strings (12 s) before the only cap check.
+_timed_case "GH #309 audit: a 1.1M-item range times seven {,} groups before a raw reset is denied inside the hook timeout" 2 \
+  "$(python3 -c "print('echo {a..' + chr(0x10FFFF) + '}' + '{,}' * 7 + '; git reset --hard')")"
 _timed_case "GH #309: nested groups whose real expansion (120000 chars) is under the cap are not denied for a double charge" 0 \
   "$(python3 -c "L = 30000; print('echo {{' + 'A' * L + ',' + 'B' * L + '},{' + 'C' * L + ',' + 'D' * L + '}}')")"
 _timed_case "GH #309: a 60000-char word before a brace is allowed fast" 0 \
@@ -3182,7 +3187,9 @@ for _c in \
   'echo x\ #; r{m,} -rf /tmp/x' \
   'echo x\;#; r{m,} -rf /tmp/x' \
   'chmod -R {777..0} /tmp/x' \
-  'chmod {777..700} -R /' ; do  # an escaped blank or quote inside the group: the fast path must reach python
+  'chmod {777..700} -R /' \
+  "r{m,<('\\')} -rf /tmp/x" \
+  'f{ind,>(: "a b")} /tmp/x -delete' ; do  # an escaped blank or quote inside the group: the fast path must reach python
   _would336 deny brace-view "$_c"
 done
 # The .sh fast path hands a command to python only when brace-route.awk sees an expanding group, so the

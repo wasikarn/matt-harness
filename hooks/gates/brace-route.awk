@@ -50,9 +50,9 @@ function tok(p,   c, e) {
           if (++work > BUDGET) { hit++; over = 1; break }
           if (substr($0, j, 1) == "\"") break
           tok(j); d = ts; j += tl
-          if (d == "\\") { if (j > n || substr($0, j, 1) == "\"") break; tok(j); j += tl; continue }
+          if (d == "\\" && pq != "'") { if (j > n || substr($0, j, 1) == "\"") break; tok(j); j += tl; continue }
           if (pq != "") { if (d == pq) pq = ""; continue }
-          if (d == "'" || d == "\"") pq = d
+          if (d == "'" || d == "\"" || d == "`") pq = d
           else if (d == "(") pd++
           else if (d == ")" && --pd == 0) break
         }
