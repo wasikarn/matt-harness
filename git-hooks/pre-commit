@@ -35,10 +35,10 @@ while IFS= read -r f; do
   python3 -m json.tool "$f" >/dev/null || { echo "pre-commit: invalid JSON: $f" >&2; fail=1; }
 done < <(staged_lint '*.json')
 
-# 4. hardcoded home paths (repo is public); frozen history dirs exempt
+# 4. hardcoded home paths (repo is public); frozen history dirs are exempt from wording passes,
+#    never from this (CLAUDE.md, repo-gotchas.md: a 2026-08-26 purge missed 29 hits there)
 while IFS= read -r f; do
   [ -n "$f" ] || continue
-  case "$f" in docs/research/*|docs/post-mortems/*|docs/plans/*|CHANGELOG.md) continue ;; esac
   git show ":$f" | LC_ALL=C /usr/bin/grep -aqE '/Users/[A-Za-z]|-Users-[A-Za-z]' 2>/dev/null || continue
   echo "pre-commit: hardcoded home path in $f — use \$HOME or ~" >&2
   fail=1

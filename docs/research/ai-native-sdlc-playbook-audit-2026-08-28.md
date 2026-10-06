@@ -267,7 +267,7 @@ restore (`51762591`).
 
 **That session's own tier list was never committed anywhere.** It exists only inside the raw
 session transcript:
-`/Users/kobig/.claude/projects/-Users-kobig-Codes-Personals-matt-harness/83f7669a-6271-4c87-834a-02f99430bb5d.jsonl`,
+`~/.claude/projects/-Users-<name>-Codes-Personals-matt-harness/83f7669a-6271-4c87-834a-02f99430bb5d.jsonl`,
 assistant message timestamp `2026-09-12T11:48:05.453Z`. This is itself a finding: the article's
 central thesis is that every SDLC stage ends in a committed artifact, and the audit process
 *about* that article failed to follow its own thesis. The tier list below is **reconstructed from

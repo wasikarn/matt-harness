@@ -92,7 +92,7 @@ run_lint() {
   # Env goes on xargs, not after it: BSD xargs treats `LC_ALL=C` as the command (exit 127,
   # once swallowed by 2>/dev/null). Hits are captured because xargs exits 123 on any batch
   # where grep found nothing, which an `if` on the pipeline would read as a miss.
-  home_hits=$(git ls-files | /usr/bin/grep -vE '^(docs/(research|post-mortems|plans)/|CHANGELOG\.md$)' | existing \
+  home_hits=$(git ls-files | existing \
        | LC_ALL=C xargs /usr/bin/grep -alE '/Users/[A-Za-z]|-Users-[A-Za-z]' 2>/dev/null || true)
   if [ -n "$home_hits" ]; then
     printf '%s\n' "$home_hits"; echo "hardcoded home path in tracked file(s) above"; rc=1
