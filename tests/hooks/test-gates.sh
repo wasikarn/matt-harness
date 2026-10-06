@@ -3163,11 +3163,15 @@ for _c in \
   '{A=1}},rm} -rf /tmp/x' \
   '{A="x y",git} reset --hard' \
   "{A='x y',git} reset --hard" \
-  '{r..3}m -rf /tmp/x' ; do
+  '{r..3}m -rf /tmp/x' \
+  'r{m,x\ y} -rf /tmp/x' \
+  'r{m,"x\"y z"} -rf /tmp/x' \
+  'f{ind,x\ y} /tmp/x -delete' ; do  # an escaped blank or quote inside the group: the fast path must reach python
   _would336 deny brace-view "$_c"
 done
 # The .sh fast path hands a command to python only when brace-route.awk sees an expanding group, so the
-# awk must see every shape _bracex expands: enumerate each string of { } , x . up to 7 characters (97,655),
+# awk must see every shape _bracex expands: enumerate each string of { } , x . up to 7 characters (97,655; plus
+# the backslash, quote and blank alphabet up to 5),
 # wrap it in the hook payload, and fail on any that expands but is not routed (a single-level grep missed
 # r{{x},m} and a stray "}" before the comma, "{A=1}},git}": GH #309 review). The same shapes up to 6
 # characters are also run through the bash on PATH (echo), and _bracex must read the same words: it mirrors
@@ -3189,6 +3193,17 @@ for n in range(1, 8):
             cmds.append(c)
         if n <= 6:
             shapes.append((c, e.split()))
+# A wider alphabet with a backslash, quotes and a blank (up to 5 characters, routing only: most of these are
+# not valid shell): "r{m,x\\ y} -rf" hid its verb from an awk that read the JSON escape pair, then the blank.
+for n in range(1, 6):
+    for t in itertools.product("{},x\\ \"'", repeat=n):
+        c = "echo r" + "".join(t) + " -rf"
+        try:
+            e = _bracex.expand_text(c, 150000)
+        except Exception:
+            continue
+        if e != c:
+            cmds.append(c)
 pay = lambda c: json.dumps({"tool_name": "Bash", "tool_input": {"command": c}})
 out = subprocess.run(["awk", "-f", root + "/hooks/gates/brace-route.awk"], input="\n".join(pay(c) for c in cmds) + "\n",
                      capture_output=True, text=True).stdout.split()
@@ -3214,16 +3229,24 @@ fi
 # An awk that starts but fails cannot vouch for a brace command: the fast path hands it to python (the
 # over-cap expansion is a structural deny, so it enforces while brace-view is shadowed).
 _BADAWK=$(mktemp -d "${TMPDIR:-/tmp}/kbg-badawk.XXXXXX")
-printf '#!/bin/sh\nexit 1\n' > "$_BADAWK/awk"; chmod +x "$_BADAWK/awk"
-_rc=$(bash_payload 'echo {a..z}{a..z}{a..z}{a..z}' | PATH="$_BADAWK:$PATH" bash "$IRRECOVERABLE" >/dev/null 2>&1; echo $?)
-if [ "$_rc" = "2" ]; then
-  echo "  ✅ GH #309: a failing awk sends the command to python (denied, rc 2)"
-  pass=$((pass + 1))
+if [ -d "$_BADAWK" ]; then
+  _badpay=$(bash_payload 'echo {a..z}{a..z}{a..z}{a..z}')
+  for _stub in "exit 1:fails (exit 1)" "exit 0:prints nothing (exit 0)"; do
+    printf '#!/bin/sh\n%s\n' "${_stub%%:*}" > "$_BADAWK/awk"; chmod +x "$_BADAWK/awk"
+    _rc=$(echo "$_badpay" | PATH="$_BADAWK:$PATH" bash "$IRRECOVERABLE" >/dev/null 2>&1; echo $?)
+    if [ "$_rc" = "2" ]; then
+      echo "  ✅ GH #309: an awk that ${_stub#*:} sends the command to python (denied, rc 2)"
+      pass=$((pass + 1))
+    else
+      echo "  ❌ GH #309: an awk that ${_stub#*:} must send the command to python, got rc $_rc" >&2
+      fail=$((fail + 1))
+    fi
+  done
+  trash "$_BADAWK"
 else
-  echo "  ❌ GH #309: a failing awk must send the command to python, got rc $_rc" >&2
+  echo "  ❌ GH #309: could not create the stub dir for the failing-awk rows" >&2
   fail=$((fail + 1))
 fi
-rm -r "$_BADAWK"
 # _deny_ambiguous returns inside brace-view only: any other view (ifs-split enforces) still ends on it.
 if /usr/bin/grep -qE '_VIEW\[0\] == "brace-view"' "$ROOT/hooks/gates/irrecoverable.py"; then
   echo "  ✅ GH #309: _deny_ambiguous skips only the brace-view view"

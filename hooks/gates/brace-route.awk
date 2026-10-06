@@ -5,11 +5,22 @@
 # group is read by its own "{" (the scan counts levels). Quotes are tracked from the "{" on, so a blank
 # inside them ({A="x y",git}) does not end the scan; a quote that opened before the "{" is unknown, which
 # only over-routes (safe). The scan ends at the command's closing quote, so it never leaves the command.
-# The input is the hook's JSON payload, where a quote inside the command is escaped: a "{" followed by an
-# unescaped quote is a JSON object of the payload itself, and "${" is a parameter; neither opens a group.
+# The input is the hook's JSON payload, so the scan reads JSON tokens: a backslash pair is one JSON escape
+# (\\ is the shell's backslash, \" its double quote, \n and \t a newline and a tab), a bare quote ends the
+# command string. A shell backslash makes the next token literal ("r{m,x\ y}": the escaped blank does not end
+# the word). A "{" followed by a bare quote is a JSON object of the payload itself, and "${" is a
+# parameter; neither opens a group.
 # tests/hooks/test-gates.sh enumerates every shape of { } , x . up to a length and checks that no shape
 # _bracex expands is missed here. irrecoverable.sh sends payloads over 2000 characters to python instead
 # (one scan per "{" is quadratic).
+# tok(p): the token at p. tl is its length in payload characters, ts the shell character it stands for.
+function tok(p,   c, e) {
+  c = substr($0, p, 1); tl = 1; ts = c
+  if (c == "\\") {
+    e = substr($0, p + 1, 1); tl = 2
+    ts = (e == "n") ? "\n" : (e == "t") ? "\t" : e
+  }
+}
 {
   n = length($0)
   for (i = 1; i <= n; i++) {
@@ -17,24 +28,27 @@
     if (i > 1 && substr($0, i - 1, 1) == "$") continue
     if (substr($0, i + 1, 1) == "\"") continue
     level = 0; commas = 0; dq = 0; sq = 0; bq = 0
-    for (j = i + 1; j <= n; j++) {
-      c = substr($0, j, 1)
-      if (c == "\\") {
-        e = substr($0, j + 1, 1)
-        if (e == "\"") { if (!sq) dq = !dq }
-        else if ((e == "n" || e == "t") && !(dq || sq || bq)) break
-        j++
+    for (j = i + 1; j <= n; ) {
+      if (substr($0, j, 1) == "\"") break
+      tok(j); c = ts; j += tl
+      if (c == "\\" && !sq) {
+        if (j > n || substr($0, j, 1) == "\"") break
+        tok(j); j += tl
         continue
       }
-      if (c == "\"") break
-      if (c == "'" && !dq) { sq = !sq; continue }
+      if (c == "\"") { if (!sq && !bq) dq = !dq; continue }
+      if (c == "'" && !dq && !bq) { sq = !sq; continue }
       if (c == "`" && !dq && !sq) { bq = !bq; continue }
-      if ((c == " " || c == "\t") && !(dq || sq || bq)) break
+      if ((c == " " || c == "\t" || c == "\n") && !(dq || sq || bq)) break
+      if (dq || sq || bq) continue  # a quoted brace, comma or dot is literal
       if (c == "}" && level == 0 && commas) { hit++; break }
       if (c == "{") level++
       else if (c == "}") { if (level) level-- }
       else if (c == ",") { if (level == 0) commas++ }
-      else if (c == "." && substr($0, j + 1, 1) == "." && substr($0, j + 2, 1) != "}") commas++
+      else if (c == ".") {
+        tok(j); a = ts; la = tl
+        if (a == ".") { tok(j + la); if (ts != "}") commas++ }
+      }
     }
   }
   print hit + 0; hit = 0
