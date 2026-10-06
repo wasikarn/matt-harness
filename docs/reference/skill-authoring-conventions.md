@@ -58,7 +58,8 @@ and it lifts every surface in that session, `low` ones included.
 
 **Reference files** (Anthropic Agent Skills best practices): one level deep from SKILL.md, and MCP tools named `ServerName:tool_name`
 (`qmd:query`, not `query`). A reference file must not carry `description:` frontmatter, or
-Claude Code loads it as its own skill (check 42).
+Claude Code loads it as its own skill (check 42). A reference file over 100 lines carries a `## Contents` heading in
+its first 30 lines, because a nested reference may be read with `head -100` (check 81).
 
 **Size:** keep a `SKILL.md` under 500 lines (Anthropic's cap); an agent file may carry its own trailing
 `# Reference` section instead of a preload skill.

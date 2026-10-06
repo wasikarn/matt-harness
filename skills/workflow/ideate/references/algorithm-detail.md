@@ -1,5 +1,14 @@
 # ideate — exact prompts, rubric mechanics, output-shape detail
 
+## Contents
+
+- Phase 1 Diverge prompt
+- Phase 1 DIVERGENT block
+- Phase 3 FOCUS block
+- 3-axis scoring rubric mechanics
+- Critic invocation
+- Output shape
+
 SKILL.md keeps the control flow and every invariant; this file carries the literal templates
 read at execution time. Provenance for all of it: `provenance.md`.
 
