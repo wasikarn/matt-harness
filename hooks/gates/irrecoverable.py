@@ -1790,24 +1790,32 @@ def _sets_hooks_path(w):
 # GH #336: chmod making files world-writable (777 / a+rwx) recursively or on / or ~.
 # The tokenizer splits `+` out of a word (`a+rwx` is "a", "+", "rwx"), so the mode is read on the
 # joined words. 777 means u, g and o each get r, w and x: in any letter order, with X (execute on
-# directories, which a recursive chmod reaches), and across a clause list (u+rwx,g+rwx,o+rwx). A clause
-# with no who letter is masked by umask, and a `-` clause is ignored (the deny direction).
+# directories, which a recursive chmod reaches), and across a clause list (u+rwx,g+rwx,o+rwx). Clauses apply in
+# order, so a later - or = takes bits away. The gate sees only the command, never the file's current mode: it
+# asks whether the mode grants rwx to u, g and o by itself. A clause with no who letter (umask decides) or a copy
+# (o=u) is not modelled; after a removal it restores everything, else it is skipped.
 _CHMOD_CLAUSE = r"(?:0*[0-7]?777|[ugoa]* ?[-+=] ?[rwxXst]*(?: ?[-+=] ?[rwxXst]*)*)"
 _CHMOD_WORLD_RE = re.compile(r"(?:^| )(" + _CHMOD_CLAUSE + r"(?: ?, ?" + _CHMOD_CLAUSE + r")*)(?: |$)")
 _CHMOD_SYM_RE = re.compile(r"([ugoa]*)((?:[-+=][rwxXst]*)+)")
 _CHMOD_OP_RE = re.compile(r"([-+=])([rwxXst]*)")
 def _chmod_world_mode(s):
     # Clauses and the operators inside one clause apply left to right, as chmod does: + adds, = sets,
-    # - takes away (a -X is read as +X: BSD chmod does that).
+    # - takes away (a -X is read as +X: BSD chmod does that). A clause this cannot model (no who letter,
+    # whose umask mask is unknown, or a copy such as o=u) is skipped, except after a removal: it may
+    # give the removed bits back, so it restores everything (an over-deny at worst).
     got = {"u": set(), "g": set(), "o": set()}
+    removed = False
     for c in s.split(","):
         if re.fullmatch(r"0*[0-7]?777", c):
             return True
         m = _CHMOD_SYM_RE.fullmatch(c)
         if not (m and m.group(1)):
+            if removed:
+                got = {w: set("rwx") for w in "ugo"}
             continue
         for w in ("ugo" if "a" in m.group(1) else m.group(1)):
             for op, p in _CHMOD_OP_RE.findall(m.group(2)):
+                removed = removed or op in "-="
                 if op == "-":
                     got[w] -= set(p) & set("rwx")
                     if "X" in p:  # BSD/macOS chmod reads -X as +X on a directory; GNU clears it. Assume the add.
