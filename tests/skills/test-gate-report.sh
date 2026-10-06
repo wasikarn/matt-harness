@@ -163,6 +163,15 @@ out_nonobj="$(MH_GATE_JOURNAL_PATH="$NONOBJ" python3 "$REPORT_PY" 2>&1)"; rc_non
 assert "a valid-JSON row that is not an object is skipped, not a crash" \
   "$([[ $rc_nonobj -eq 0 ]] && grep -q '1 ask/deny event' <<<"$out_nonobj" && echo 1 || echo 0)"
 
+BADTYPES="$TMPDIR_TEST/badtypes.jsonl"
+printf '%s\n' \
+  '{"ts": 7, "id": ["x"], "tool_name": {"a": 1}, "decision": "ask", "session_id": "3ee810d0-aa02-40c6-aea7-e8de710cbe92"}' \
+  '{"ts": "2026-10-01T09:00:00Z", "id": "gate:a", "tool_name": "Bash", "decision": "would_deny", "rule": ["r"], "command": 5, "session_id": "3ee810d0-aa02-40c6-aea7-e8de710cbe92"}' \
+  '{"ts": "2026-10-01T09:01:00Z", "id": "gate:a", "tool_name": "Bash", "decision": "ask", "session_id": "3ee810d0-aa02-40c6-aea7-e8de710cbe92"}' > "$BADTYPES"
+out_bt="$(MH_GATE_JOURNAL_PATH="$BADTYPES" python3 "$REPORT_PY" 2>&1)"; rc_bt=$?
+assert "an object row with wrong-typed fields is counted, not a crash" \
+  "$([[ $rc_bt -eq 0 ]] && grep -q '2 ask/deny event' <<<"$out_bt" && echo 1 || echo 0)"
+
 echo
 echo "=== $pass passed, $fail failed ==="
 [[ $fail -eq 0 ]]
