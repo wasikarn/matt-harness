@@ -1790,42 +1790,27 @@ def _sets_hooks_path(w):
 # GH #336: chmod making files world-writable (777 / a+rwx) recursively or on / or ~.
 # The tokenizer splits `+` out of a word (`a+rwx` is "a", "+", "rwx"), so the mode is read on the
 # joined words. 777 means u, g and o each get r, w and x: in any letter order, with X (execute on
-# directories, which a recursive chmod reaches), and across a clause list (u+rwx,g+rwx,o+rwx). Clauses apply in
-# order, so a later - or = takes bits away. The gate sees only the command, never the file's current mode: it
-# asks whether the mode grants rwx to u, g and o by itself. A clause with no who letter (umask decides) or a copy
-# (o=u) is not modelled; after a removal it restores everything, else it is skipped.
+# directories, which a recursive chmod reaches), and across a clause list (u+rwx,g+rwx,o+rwx). A clause
+# with no who letter is masked by umask, and a `-` clause is ignored (the deny direction). Ignoring `-` is
+# deliberate: the gate reads only the command text, so ordering the clauses (a later - taking bits away) let
+# a $V, a $(..) or a copy clause give them back; three validator rounds each found a new such shape
+# (2026-10-06), so `chmod a+rwx,o-w` stays denied, an over-deny by design.
 _CHMOD_CLAUSE = r"(?:0*[0-7]?777|[ugoa]* ?[-+=] ?[rwxXst]*(?: ?[-+=] ?[rwxXst]*)*)"
 _CHMOD_WORLD_RE = re.compile(r"(?:^| )(" + _CHMOD_CLAUSE + r"(?: ?, ?" + _CHMOD_CLAUSE + r")*)(?: |$)")
 _CHMOD_SYM_RE = re.compile(r"([ugoa]*)((?:[-+=][rwxXst]*)+)")
 _CHMOD_OP_RE = re.compile(r"([-+=])([rwxXst]*)")
-def _chmod_world_mode(s, subst=False):
-    # Clauses and the operators inside one clause apply left to right, as chmod does: + adds, = sets,
-    # - takes away (a -X is read as +X: BSD chmod does that). A clause this cannot model (no who letter,
-    # whose umask mask is unknown, or a copy such as o=u) is skipped, except after a removal: it may
-    # give the removed bits back, so it restores everything (an over-deny at worst).
-    got = {"u": set(), "g": set(), "o": set()}
-    removed = False
+def _chmod_world_mode(s):
+    got = {"u": "", "g": "", "o": ""}
     for c in s.split(","):
         if re.fullmatch(r"0*[0-7]?777", c):
             return True
         m = _CHMOD_SYM_RE.fullmatch(c)
         if not (m and m.group(1)):
-            if removed:
-                got = {w: set("rwx") for w in "ugo"}
             continue
+        perms = "".join(p for op, p in _CHMOD_OP_RE.findall(m.group(2)) if op != "-")
         for w in ("ugo" if "a" in m.group(1) else m.group(1)):
-            for op, p in _CHMOD_OP_RE.findall(m.group(2)):
-                removed = removed or op in "-="
-                if op == "-":
-                    got[w] -= set(p) & set("rwx")
-                    if "X" in p:  # BSD/macOS chmod reads -X as +X on a directory; GNU clears it. Assume the add.
-                        got[w].add("x")
-                else:
-                    bits = {"x" if b == "X" else b for b in p if b in "rwxX"}
-                    got[w] = bits if op == "=" else got[w] | bits
-    if subst and removed:  # a $(..), `..` or ${..} in the mode was read as empty; it may give the bits back
-        return True
-    return all({"r", "w", "x"} <= p for p in got.values())
+            got[w] += perms
+    return all("r" in p and "w" in p and ("x" in p or "X" in p) for p in got.values())
 _ROOT_OR_HOME = ("/", "/*", "/.", "~", "~/", "~/*", "~/.")
 def _chmod_world(rest):
     toks = [t.replace(PH, "") for t in rest]
@@ -1834,7 +1819,7 @@ def _chmod_world(rest):
     # 777 or a+rwx is not a mode.
     k = next((j for j, t in enumerate(toks) if not t.startswith("-")), len(toks))
     m = _CHMOD_WORLD_RE.match(" ".join(toks[k:]))
-    return ((m and _chmod_world_mode(m.group(1).replace(" ", ""), any(PH in t for t in rest[k:]))) or _chmod_world_word(rest)) and any(
+    return ((m and _chmod_world_mode(m.group(1).replace(" ", ""))) or _chmod_world_word(rest)) and any(
         t in _ROOT_OR_HOME or _is_flag(t, "--recursive")
         or (t.startswith("-") and not t.startswith("--") and "R" in t) for t in toks)
 
@@ -1858,7 +1843,7 @@ def _chmod_world_word(rest):
         mode = not seen and not s.startswith("-")
         if mode and _EXPANSION_ONLY_RE.fullmatch(w):
             continue
-        if (mode or _CHMOD_DASH_MODE_RE.fullmatch(s)) and _chmod_world_mode(s, PH in w):
+        if (mode or _CHMOD_DASH_MODE_RE.fullmatch(s)) and _chmod_world_mode(s):
             return True
         seen = seen or mode
     return False
