@@ -1,5 +1,15 @@
 # cost-report data model
 
+## Contents
+
+- Rows
+- returns, verify_tokens, verify_cache_read, verify_per_return
+- Eras
+- Final-row lag
+- Gap to Claude Code's own ledger
+- Aggregation rule
+- Why node
+
 Read when changing `../scripts/cost-report-dedup.js`, `hooks/stop/cost-tracker.sh` or
 `hooks/mod/cost-ledger.ts`.
 The report itself needs none of this.

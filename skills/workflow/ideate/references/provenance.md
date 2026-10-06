@@ -1,5 +1,17 @@
 # Ideate — Provenance & Cross-References
 
+## Contents
+
+- 2-wave fan-out audit history
+- Phase 1 algorithm-shape source
+- Phase 2 critic-routing source
+- Output-shape source
+- 3-axis scoring rubric source
+- Isolation invariant source
+- Cost source
+- Retired advisory hooks
+- Cross-references
+
 Upstream algorithm-shape citations (`/tmp/adhd-repo/...` paths are the port-time checkout,
 2026-06, not a live path), the fan-out cap's audit history, and pointers to related kbg
 surfaces — kept out of `SKILL.md` to stay under its size budget.

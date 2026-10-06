@@ -1,5 +1,12 @@
 # Worked Examples (extends SKILL.md)
 
+## Contents
+
+- Full example
+- Grit gate: soulless vs alive
+- Per-register worked examples
+- Monolingual English examples
+
 > Worked applications of the 30 universal + 12 Thai-specific top-level patterns in `patterns-universal.md` + `patterns-thai.md`, full loop: draft → "still-AI" bullets → final rewrite. Use as a reference when stuck.
 >
 > ❌/✅ below = bad/good notation, not the decorative emoji §18 tells you to cut from real writing.

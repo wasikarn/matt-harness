@@ -1,5 +1,20 @@
 # Thai-Specific Patterns (extends `patterns-universal.md` §1-§30)
 
+## Contents
+
+- 31. Thai terminology drift and calque
+- 32. Anti-fabrication discipline (32.1-32.10)
+- 33. Connective density
+- 34. Lexical budget
+- 35. Topic-first vs background-first
+- 36. Marketing calques (36.1)
+- 37. Nominalization avoidance
+- 38. Code-switching tells
+- 39. Register-specific tells
+- 40. AI-leaked Thai closers
+- 41. Royal register anti-pattern
+- 42. Quick reference
+
 > This file extends the catalog in `patterns-universal.md` with 12 more top-level patterns (§31-§42) that only Thai text needs: terminology & calque, anti-fabrication, connectives, register matrix, code-switching tells, AI-leaked closers. Read `SKILL.md` §0 (register and language gate) first, then come back here.
 >
 > ❌/✅ below is the notation for bad/good examples (like code // BAD / // GOOD), not the decorative emoji that §18 in `cue-sheet.md` says to cut from real writing.

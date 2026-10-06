@@ -4,7 +4,7 @@
 # audit.sh's fragment integrity guard catches LOST checks, not SILENT ones. Each
 # known-bad fixture below is paired with a clean one; the matching check must
 # FIRE on bad and stay SILENT on good. Per-check fixtures cover 04, 05, 20, 22, 28, 29, 54,
-# 70, 71, 72, 73, 74 (five fixtures, two added 2026-09-21), 75, 76, 77, 78, 79, 80; the fleet-bad / fleet-good pair covers every other check with at
+# 70, 71, 72, 73, 74 (five fixtures, two added 2026-09-21), 75, 76, 77, 78, 79, 80, 81; the fleet-bad / fleet-good pair covers every other check with at
 # least one defect per check (43 is driven by the env ceiling, not a planted defect).
 # check-73-bad-missing-command-field and check-73-bad-args-fingerprint-mismatch (below) are
 # deep-audit fixes, 2026-09-10: a Codex-primary fresh-context checker found the original check
@@ -312,7 +312,14 @@ HOME="$H80" expect_warn_match 80 check-80-bad-deprecated-in-body "0003-live-trai
 # namespaces are an INFO skip, never a WARN.
 mkdir -p "$CODEX_TMP/home80-empty"
 HOME="$CODEX_TMP/home80-empty" expect_info_only 80 check-80-good-resolves 'mattpocock-skills.*not installed'
+
 HOME="$CODEX_TMP/home80-empty" expect_warn_match 80 check-80-bad-dangling "x.md:1: 'mh:gone'"
+
+# Check 81: reference file over 100 lines needs a Contents heading.
+expect_warn_match 81 check-81-bad 'fx/ref.md is over 100 lines'
+expect_silent     81 check-81-good
+expect_warn_match 81 check-81-edge-101 'fx/ref.md is over 100 lines'
+expect_silent     81 check-81-edge-100
 
 # Check 76: measurement coverage status freshness (harness gap-audit M14,
 # 2026-09-20). Shallow on purpose -- WARN, not CRIT -- for the retired

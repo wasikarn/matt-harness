@@ -1,5 +1,14 @@
 # Universal AI-writing patterns (§1–§30): full catalog
 
+## Contents
+
+- Content patterns
+- Language and grammar patterns
+- Style patterns
+- Communication patterns
+- Filler and hedging
+- Detection guidance
+
 The 30 universal patterns, with the problem and a worked before/after for each.
 These apply to **all languages** (EN, TH, mixed). The compact 30-row table is
 `cue-sheet.md`; open this file for the worked before/after of a tell you cannot fix,
