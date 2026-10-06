@@ -1791,7 +1791,10 @@ def _sets_hooks_path(w):
 # The tokenizer splits `+` out of a word (`a+rwx` is "a", "+", "rwx"), so the mode is read on the
 # joined words. 777 means u, g and o each get r, w and x: in any letter order, with X (execute on
 # directories, which a recursive chmod reaches), and across a clause list (u+rwx,g+rwx,o+rwx). A clause
-# with no who letter is masked by umask, and a `-` clause is ignored (the deny direction).
+# with no who letter is masked by umask, and a `-` clause is ignored (the deny direction). Ignoring `-` is
+# deliberate: the gate reads only the command text, so ordering the clauses (a later - taking bits away) let
+# a $V, a $(..) or a copy clause give them back; three validator rounds each found a new such shape
+# (2026-10-06), so `chmod a+rwx,o-w` stays denied, an over-deny by design.
 _CHMOD_CLAUSE = r"(?:0*[0-7]?777|[ugoa]* ?[-+=] ?[rwxXst]*(?: ?[-+=] ?[rwxXst]*)*)"
 _CHMOD_WORLD_RE = re.compile(r"(?:^| )(" + _CHMOD_CLAUSE + r"(?: ?, ?" + _CHMOD_CLAUSE + r")*)(?: |$)")
 _CHMOD_SYM_RE = re.compile(r"([ugoa]*)((?:[-+=][rwxXst]*)+)")
@@ -2261,8 +2264,12 @@ def _check_window(_wi, w):
                 # pathspecs regardless of how many other nonflag args are
                 # present (deep-audit, 2026-09-29; same reasoning as
                 # restore's identical check above).
+                # `--conflict <style>` takes its style word as a separate value (merge, diff3, zdiff3), so that
+                # word is no path; `--conflict=<style>` is one token and needs nothing.
+                _co_conflict = sum(1 for k, t in enumerate(scan[:-1])
+                                   if "=" not in t and _is_flag(t, "--conflict") and not scan[k + 1].startswith("-"))
                 _co_nonflag = len([t for t, traw in zip(scan, scan_raw) if not t.startswith("-") and traw != PSUB]) - (
-                    1 if any(t in ("-b", "-B", "--orphan") for t in scan) else 0)
+                    1 if any(t in ("-b", "-B", "--orphan") for t in scan) else 0) - _co_conflict
                 if sub == "checkout" and ("--" in scan or "." in scan or
                                             _co_nonflag >= 2 or
                                             any(_is_flag(t.split("=", 1)[0], "--pathspec-from-file") for t in scan) or
