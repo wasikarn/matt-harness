@@ -11,9 +11,12 @@
 # the word). A "{" followed by a bare quote is a JSON object of the payload itself, and "${" is a
 # parameter; neither opens a group.
 # tests/hooks/test-gates.sh enumerates every shape of { } , x . up to 7 characters, and wider alphabets (backslash,
-# quotes, blank, newline, CR, NBSP, "<(") up to 5 and 4, and checks that no shape _bracex expands is missed here. irrecoverable.sh sends payloads over 2000 characters to python instead
-# (one scan per "{" is quadratic).
+# quotes, blank, newline, CR, NBSP, "<(") up to 5 and 4, and checks that no shape _bracex expands is missed here.
+# One scan starts per "{" and can run to the end of its word, and awk copies the line on every substr, so the work
+# is budgeted (BUDGET characters scanned in all per line): a payload over it prints a hit and python decides, never
+# the fast path. irrecoverable.sh sends payloads over 100000 characters with a "{" to python without the scan.
 # tok(p): the token at p. tl is its length in payload characters, ts the shell character it stands for.
+BEGIN { BUDGET = 40000 }
 function tok(p,   c, e) {
   c = substr($0, p, 1); tl = 1; ts = c
   if (c == "\\") {
@@ -22,13 +25,14 @@ function tok(p,   c, e) {
   }
 }
 {
-  n = length($0)
-  for (i = 1; i <= n; i++) {
+  n = length($0); work = 0; over = 0
+  for (i = 1; i <= n && !over; i++) {
     if (substr($0, i, 1) != "{") continue
     if (i > 1 && substr($0, i - 1, 1) == "$") continue
     if (substr($0, i + 1, 1) == "\"") continue
     level = 0; commas = 0; dq = 0; sq = 0; bq = 0
     for (j = i + 1; j <= n; ) {
+      if (++work > BUDGET) { hit++; over = 1; break }  # over the work budget: python decides (safe direction)
       if (substr($0, j, 1) == "\"") break
       tok(j); c = ts; j += tl
       if (c == "\\" && !sq) {

@@ -24,9 +24,10 @@ case "$_input" in *'`'*|*'$'*) _has_subst=1 ;; esac
 # awk that fails or prints nothing, defers to python, never allows.
 case "$0" in */*) _gdir="${0%/*}" ;; *) _gdir=. ;; esac
 _awk="$_gdir/brace-route.awk"
-# A payload over 2000 characters with a "{" goes to python without the scan: the awk loop is per character
-# (one scan per "{", quadratic in the worst case), and python's own length cap decides an oversized command.
-if { [ "${#_input}" -gt 2000 ] && case "$_input" in *'{'*) true ;; *) false ;; esac; } || [ ! -r "$_awk" ] || ! command -v awk >/dev/null 2>&1; then
+# The awk bounds its own work (a payload over its budget prints a hit), so a heredoc of f-strings up to 100000
+# characters stays on the fast path when no group can expand; a bigger payload with a "{" goes to python (awk copies
+# the line on every substr, so its cost grows with the payload) and python's own length cap decides it.
+if { [ "${#_input}" -gt 100000 ] && case "$_input" in *'{'*) true ;; *) false ;; esac; } || [ ! -r "$_awk" ] || ! command -v awk >/dev/null 2>&1; then
   _has_subst=1
 else
   if _nbrace="$(printf '%s' "$_input" | awk -f "$_awk")" && [ -n "$_nbrace" ]; then

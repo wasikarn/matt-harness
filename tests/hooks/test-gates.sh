@@ -3253,6 +3253,11 @@ else
   echo "  ❌ GH #309: could not create the stub dir for the failing-awk rows" >&2
   fail=$((fail + 1))
 fi
+# A payload over 2000 characters with a "{" used to go to python unscanned; python's tokenizer then denied a
+# heredoc line that mixes both quote marks (`v[:1] in '"\''`) that develop's fast path never sent there. The
+# awk now bounds its own work, so a long f-string/dict heredoc with no expanding group stays on the fast path.
+test_allow "$IRRECOVERABLE" "GH #309: a 2 KB python heredoc with braces and a mixed-quote line (no group expands) stays allowed" \
+  "$(bash_payload "$(python3 -c "print(\"python3 - <<'PY'\\n\" + \"\".join(f\"x{i} = {{'a': {i}}}\\n\" for i in range(120)) + \"v[:1] in '\\\"\\\\''\\nPY\")")")"
 # _deny_ambiguous returns inside brace-view only: any other view (ifs-split enforces) still ends on it.
 if /usr/bin/grep -qE '_VIEW\[0\] == "brace-view"' "$ROOT/hooks/gates/irrecoverable.py"; then
   echo "  ✅ GH #309: _deny_ambiguous skips only the brace-view view"
