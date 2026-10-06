@@ -317,6 +317,7 @@ HOME="$CODEX_TMP/home80-empty" expect_warn_match 80 check-80-bad-dangling "x.md:
 
 # Check 81: reference file over 100 lines needs a Contents heading.
 expect_warn_match 81 check-81-bad 'fx/ref.md is over 100 lines'
+expect_warn_match 81 check-81-bad-fenced 'fx/ref.md is over 100 lines'
 expect_silent     81 check-81-good
 expect_warn_match 81 check-81-edge-101 'fx/ref.md is over 100 lines'
 expect_silent     81 check-81-edge-100
