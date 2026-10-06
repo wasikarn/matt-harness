@@ -1605,7 +1605,10 @@ for _c in \
   $'# {x,y}\'\ngit {,"stash"}' \
   "bash -c 'git {,\"stash\"}'" \
   "bash -c 'git {,stash}'" \
-  'git {stash,} $"show"' ; do  # zsh and dash read $"show" as $show: a bare stash (the three `$` readings, GH #344)
+  'git {stash,} $"show"' \
+  $'true \\\\\ngit {,stash}' \
+  $'gi\\\nt {,stash}' \
+  'git {,stash} <(:)' ; do  # zsh and dash read $"show" as $show: a bare stash (the three `$` readings, GH #344)
   rc=$(sgg_rc "$_c"); ok=1; [ "$rc" = "2" ] && ok=0
   check "GH #309 denied (brace expands to a guarded git command): $_c" "$ok"
 done

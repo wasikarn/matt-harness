@@ -3166,12 +3166,18 @@ for _c in \
   '{r..3}m -rf /tmp/x' \
   'r{m,x\ y} -rf /tmp/x' \
   'r{m,"x\"y z"} -rf /tmp/x' \
-  'f{ind,x\ y} /tmp/x -delete' ; do  # an escaped blank or quote inside the group: the fast path must reach python
+  'f{ind,x\ y} /tmp/x -delete' \
+  $'true \\\\\nr{m,} -rf /tmp/x' \
+  $'r\\\n{m,} -rf /tmp/x' \
+  $'f{ind,x\ry} /tmp/x -delete' \
+  $'r{m,x\xc2\xa0y} -rf /tmp/x' \
+  'f{ind,<(:)} /tmp/x -delete' \
+  'echo <(r{m,} -rf /tmp/x)' ; do  # an escaped blank or quote inside the group: the fast path must reach python
   _would336 deny brace-view "$_c"
 done
 # The .sh fast path hands a command to python only when brace-route.awk sees an expanding group, so the
 # awk must see every shape _bracex expands: enumerate each string of { } , x . up to 7 characters (97,655; plus
-# the backslash, quote and blank alphabet up to 5),
+# two wider alphabets with backslash, quote, blank, newline, CR, NBSP and "<("),
 # wrap it in the hook payload, and fail on any that expands but is not routed (a single-level grep missed
 # r{{x},m} and a stray "}" before the comma, "{A=1}},git}": GH #309 review). The same shapes up to 6
 # characters are also run through the bash on PATH (echo), and _bracex must read the same words: it mirrors
@@ -3193,17 +3199,18 @@ for n in range(1, 8):
             cmds.append(c)
         if n <= 6:
             shapes.append((c, e.split()))
-# A wider alphabet with a backslash, quotes and a blank (up to 5 characters, routing only: most of these are
-# not valid shell): "r{m,x\\ y} -rf" hid its verb from an awk that read the JSON escape pair, then the blank.
-for n in range(1, 6):
-    for t in itertools.product("{},x\\ \"'", repeat=n):
-        c = "echo r" + "".join(t) + " -rf"
-        try:
-            e = _bracex.expand_text(c, 150000)
-        except Exception:
-            continue
-        if e != c:
-            cmds.append(c)
+# Wider alphabets with a backslash, quotes, a blank, a newline, CR, NBSP and "<(" (up to 5 and 4 characters,
+# routing only: most of these are not valid shell): "r{m,x\\ y} -rf" hid its verb from an awk that read the JSON escape pair, then the blank.
+for alpha, top in (("{},x\\ \"'", 5), ("{},x\\ \n\r\xa0<()", 4)):
+    for n in range(1, top + 1):
+        for t in itertools.product(alpha, repeat=n):
+            c = "echo r" + "".join(t) + " -rf"
+            try:
+                e = _bracex.expand_text(c, 150000)
+            except Exception:
+                continue
+            if e not in (c, _bracex._strip_continuations(c)):  # a stripped line continuation alone is no expansion
+                cmds.append(c)
 pay = lambda c: json.dumps({"tool_name": "Bash", "tool_input": {"command": c}})
 out = subprocess.run(["awk", "-f", root + "/hooks/gates/brace-route.awk"], input="\n".join(pay(c) for c in cmds) + "\n",
                      capture_output=True, text=True).stdout.split()
@@ -3228,8 +3235,8 @@ else
 fi
 # An awk that starts but fails cannot vouch for a brace command: the fast path hands it to python (the
 # over-cap expansion is a structural deny, so it enforces while brace-view is shadowed).
-_BADAWK=$(mktemp -d "${TMPDIR:-/tmp}/kbg-badawk.XXXXXX")
-if [ -d "$_BADAWK" ]; then
+_BADAWK="$_JOURNAL_TMP/badawk"  # a subdir of the file's own temp dir: its EXIT trap cleans it
+if mkdir "$_BADAWK"; then
   _badpay=$(bash_payload 'echo {a..z}{a..z}{a..z}{a..z}')
   for _stub in "exit 1:fails (exit 1)" "exit 0:prints nothing (exit 0)"; do
     printf '#!/bin/sh\n%s\n' "${_stub%%:*}" > "$_BADAWK/awk"; chmod +x "$_BADAWK/awk"
@@ -3242,7 +3249,6 @@ if [ -d "$_BADAWK" ]; then
       fail=$((fail + 1))
     fi
   done
-  trash "$_BADAWK"
 else
   echo "  ❌ GH #309: could not create the stub dir for the failing-awk rows" >&2
   fail=$((fail + 1))

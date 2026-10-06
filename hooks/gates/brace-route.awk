@@ -10,8 +10,8 @@
 # command string. A shell backslash makes the next token literal ("r{m,x\ y}": the escaped blank does not end
 # the word). A "{" followed by a bare quote is a JSON object of the payload itself, and "${" is a
 # parameter; neither opens a group.
-# tests/hooks/test-gates.sh enumerates every shape of { } , x . up to a length and checks that no shape
-# _bracex expands is missed here. irrecoverable.sh sends payloads over 2000 characters to python instead
+# tests/hooks/test-gates.sh enumerates every shape of { } , x . up to 7 characters, and wider alphabets (backslash,
+# quotes, blank, newline, CR, NBSP, "<(") up to 5 and 4, and checks that no shape _bracex expands is missed here. irrecoverable.sh sends payloads over 2000 characters to python instead
 # (one scan per "{" is quadratic).
 # tok(p): the token at p. tl is its length in payload characters, ts the shell character it stands for.
 function tok(p,   c, e) {

@@ -29,7 +29,6 @@ _awk="$_gdir/brace-route.awk"
 if { [ "${#_input}" -gt 2000 ] && case "$_input" in *'{'*) true ;; *) false ;; esac; } || [ ! -r "$_awk" ] || ! command -v awk >/dev/null 2>&1; then
   _has_subst=1
 else
-  # awk that starts but fails (or prints nothing) cannot vouch for the command: python decides.
   if _nbrace="$(printf '%s' "$_input" | awk -f "$_awk")" && [ -n "$_nbrace" ]; then
     [ -n "$(printf '%s' "$_nbrace" | tr -d '0\n')" ] && _has_subst=1
   else

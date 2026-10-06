@@ -26,7 +26,10 @@ MAX_NUM_RANGE = 64      # a larger numeric range stays literal (digits hide noth
 class TooBig(Exception):
     """The expansion is over the budget: the caller denies instead of skipping the reading."""
 
-_SEP = re.compile(r"([\s;&|()<>]+)")
+# bash splits words on a blank, a tab or a newline (not CR, NBSP or U+2028, which \s also matches) and on the
+# operators below; "<(" and ">(" are process substitutions, read as spans in _segments
+_SEP = re.compile(r"([ \t\n;&|()<>]+)")
+_CONT = re.compile(r"\\+\n")
 _INT_RANGE = re.compile(r"^(-?\d+)\.\.(-?\d+)(?:\.\.(-?\d+))?$")
 # zsh reads any two single characters as a range ({x..3} is x w v ... 3, so "gi{t..3}" holds "git"); bash
 # leaves a mixed one literal. Expanding it is the safe reading: more words are checked, never fewer.
@@ -244,19 +247,22 @@ def _segments(t):
             opener = "$((" if t[i + 2:i + 3] == "(" else "$("
         elif c == "$" and t[i + 1:i + 2] == "'":
             opener = "$'"
+        elif c in "<>" and t[i + 1:i + 2] == "(":
+            opener = c + "("   # process substitution: command text in a span of its own
         elif c in "'\"`":
             opener = c
         if opener:
             flush()
-            end = _close(t, i, "$(" if opener.startswith("$(") else opener)
+            paren = opener.startswith("$(") or opener in ("<(", ">(")
+            end = _close(t, i, "$(" if paren else opener)
             lo = i + len(opener)
-            closed = end <= n and end > lo and t[end - 1] == (")" if opener.startswith("$(") else opener[-1])
+            closed = end <= n and end > lo and t[end - 1] == (")" if paren else opener[-1])
             hi = end - 1 if closed else end
             if opener == "$((":
                 out.append(("u", "", t[i:end], ""))   # arithmetic, not command text: a literal run
             else:
-                out.append(("s" if opener[0] in "$`" and opener != "$'" else "q", opener, t[lo:hi],
-                            (")" if opener.startswith("$(") else opener[-1]) if closed else ""))
+                out.append(("s" if opener[0] in "$`<>" and opener != "$'" else "q", opener, t[lo:hi],
+                            (")" if paren else opener[-1]) if closed else ""))
             prev = "x"
             i = end
             continue
@@ -304,6 +310,10 @@ def _expand(t, budget, qdepth):
             parts[k] = " ".join("\\" + x if x.startswith("#") else x for x in words)
     return "".join(parts).translate(_FROM_PROT)
 
+def _strip_continuations(t):
+    # a backslash before a newline joins the lines only when it is not itself escaped (an odd run of backslashes)
+    return _CONT.sub(lambda m: m.group()[:-2] if len(m.group()) % 2 == 0 else m.group(), t)
+
 def expand_text(cmd, cap):
     """cmd with every brace group expanded; unchanged when none expands. Raises TooBig over cap."""
     if "{" not in cmd:
@@ -313,7 +323,7 @@ def expand_text(cmd, cap):
     if _max_depth(cmd) > MAX_DEPTH:
         raise TooBig("brace nesting over %d" % MAX_DEPTH)
     _SCAN[0] = 0
-    out = _expand(cmd.replace("\\\n", ""), [cap], 0)
+    out = _expand(_strip_continuations(cmd), [cap], 0)
     if len(out) > cap:
         raise TooBig("expansion over the character cap")
     return cmd if out == cmd else out
