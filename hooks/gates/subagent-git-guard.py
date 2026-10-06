@@ -989,9 +989,15 @@ try:
             raise _TooCostly
         if _bx != cmd:
             _raw_cmd, cmd = cmd, _bx
-            _sub_texts, _dollar_join = None, "'\""
-            masked = _mask(cmd)
-            hit = _all_passes()
+            _dollar_joined = False
+            for _dollar_join in ("'\"", "'", ""):  # the same three `$` readings as above (git {stash,} $"show")
+                if _dollar_join != "'\"" and not _dollar_joined:
+                    break
+                _sub_texts = None
+                masked = _mask(cmd)
+                hit = _all_passes()
+                if hit:
+                    break
             cmd = _raw_cmd
 except _TooCostly:
     _err(f"[mh:gate] BLOCKED: subagent ({agent_type}) command is too long or too dense to check "

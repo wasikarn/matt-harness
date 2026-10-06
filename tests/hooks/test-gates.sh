@@ -3211,6 +3211,19 @@ else
   echo "  ❌ GH #309: brace-route.awk missed ${_dm:-?} of ${_dn:-?} expanding shapes, _bracex differs from bash on ${_bb:-?} of ${_bn:-?} (first: $_drest)" >&2
   fail=$((fail + 1))
 fi
+# An awk that starts but fails cannot vouch for a brace command: the fast path hands it to python (the
+# over-cap expansion is a structural deny, so it enforces while brace-view is shadowed).
+_BADAWK=$(mktemp -d "${TMPDIR:-/tmp}/kbg-badawk.XXXXXX")
+printf '#!/bin/sh\nexit 1\n' > "$_BADAWK/awk"; chmod +x "$_BADAWK/awk"
+_rc=$(bash_payload 'echo {a..z}{a..z}{a..z}{a..z}' | PATH="$_BADAWK:$PATH" bash "$IRRECOVERABLE" >/dev/null 2>&1; echo $?)
+if [ "$_rc" = "2" ]; then
+  echo "  ✅ GH #309: a failing awk sends the command to python (denied, rc 2)"
+  pass=$((pass + 1))
+else
+  echo "  ❌ GH #309: a failing awk must send the command to python, got rc $_rc" >&2
+  fail=$((fail + 1))
+fi
+rm -r "$_BADAWK"
 # _deny_ambiguous returns inside brace-view only: any other view (ifs-split enforces) still ends on it.
 if /usr/bin/grep -qE '_VIEW\[0\] == "brace-view"' "$ROOT/hooks/gates/irrecoverable.py"; then
   echo "  ✅ GH #309: _deny_ambiguous skips only the brace-view view"
