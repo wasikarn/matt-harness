@@ -313,10 +313,13 @@ HOME="$H80" expect_warn_match 80 check-80-bad-deprecated-in-body "0003-live-trai
 mkdir -p "$CODEX_TMP/home80-empty"
 HOME="$CODEX_TMP/home80-empty" expect_info_only 80 check-80-good-resolves 'mattpocock-skills.*not installed'
 
+HOME="$CODEX_TMP/home80-empty" expect_warn_match 80 check-80-bad-dangling "x.md:1: 'mh:gone'"
+
 # Check 81: reference file over 100 lines needs a Contents heading.
 expect_warn_match 81 check-81-bad 'fx/ref.md is over 100 lines'
 expect_silent     81 check-81-good
-HOME="$CODEX_TMP/home80-empty" expect_warn_match 80 check-80-bad-dangling "x.md:1: 'mh:gone'"
+expect_warn_match 81 check-81-edge-101 'fx/ref.md is over 100 lines'
+expect_silent     81 check-81-edge-100
 
 # Check 76: measurement coverage status freshness (harness gap-audit M14,
 # 2026-09-20). Shallow on purpose -- WARN, not CRIT -- for the retired
