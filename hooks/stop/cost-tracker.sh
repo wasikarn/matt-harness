@@ -357,6 +357,11 @@ group_and_price() {
       # alone never could.)
       if (.model | ascii_downcase | test("fable-5-1|mythos-5-1")) then {i:10.0,o:50.0,cw:12.50,cw1h:20.00,cr:0.25,v:true}
       elif (.model | ascii_downcase | test("fable|mythos")) then {i:10.0,o:50.0,cw:12.50,cw1h:20.00,cr:1.00,v:true}
+      # Haiku 5.5 (claude-haiku-5-5): $0.10/$0.50/MTok, cw 0.125, cw1h 0.20, cr 0.01 for
+      # prompts up to 100k tokens, confirmed live against the pricing page, 2026-10-09.
+      # shortcut: prompts over 100k tokens bill at 5x ($0.50/$2.50), not modeled here,
+      # so a long-prompt Haiku 5.5 turn is under-priced; upgrade if the ledger needs it.
+      elif (.model | ascii_downcase | test("haiku-5-5")) then {i:0.10,o:0.50,cw:0.125,cw1h:0.20,cr:0.01,v:true}
       elif (.model | ascii_downcase | test("haiku")) then {i:1.00,o:5.0,cw:1.25,cw1h:2.00,cr:0.10,v:true}
       elif (.model | ascii_downcase | test("opus-5-5")) then {i:4.0,o:20.0,cw:5.00,cw1h:8.00,cr:0.20,v:true}
       elif (.model | ascii_downcase | test("opus")) then {i:5.0,o:25.0,cw:6.25,cw1h:10.00,cr:0.50,v:true}
