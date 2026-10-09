@@ -55,6 +55,22 @@ else
   bad "claude-opus-5 priced at i=$i, expected i=5.0 — opus-5-5 branch is too broad"
 fi
 
+result="$(price claude-haiku-5-5)"
+i="$(jq -r .i <<<"$result")"; o="$(jq -r .o <<<"$result")"; cr="$(jq -r .cr <<<"$result")"
+if [[ "$i" == "0.10" && "$o" == "0.50" && "$cr" == "0.01" ]]; then
+  ok "claude-haiku-5-5 prices at 0.10/0.50, cr=0.01 (prompts up to 100k), not Haiku 4.5's 1.00/5.00"
+else
+  bad "claude-haiku-5-5 priced at i=$i o=$o cr=$cr, expected i=0.1 o=0.5 cr=0.01 — Haiku 5.5 branch missing or wrong"
+fi
+
+result="$(price claude-haiku-4-5)"
+i="$(jq -r .i <<<"$result")"
+if [[ "$i" == "1.00" ]]; then
+  ok "claude-haiku-4-5 still prices at 1.00 — the haiku-5-5 branch didn't swallow the bare haiku test"
+else
+  bad "claude-haiku-4-5 priced at i=$i, expected i=1.0 — haiku-5-5 branch is too broad"
+fi
+
 # 1-hour cache-write rate (issue #162): every model's 1h cache write is priced
 # at 2x its base input rate on the live pricing page (confirmed 2026-09-25),
 # distinct from and higher than the 5-minute write rate (1.25x). rate() must
