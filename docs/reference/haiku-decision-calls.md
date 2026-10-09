@@ -23,7 +23,7 @@ path — a separate decision, not a detail.
 
 ```json
 {
-  "model": "claude-haiku-4-5-20251001",
+  "model": "claude-haiku-5-5",
   "max_tokens": 64,
   "tool_choice": {"type": "tool", "name": "answer"},
   "tools": [{
@@ -51,9 +51,10 @@ input context.
 
 ## Two hard caveats
 
-- **Thinking must stay off.** `tool_choice: {type: "tool", ...}` fails if manual extended thinking
-  (`thinking: {type: "enabled"}`) is set. Haiku defaults to thinking off; don't turn it on for a
-  forced-tool call.
+- **No manual extended thinking.** `tool_choice: {type: "tool", ...}` fails if manual extended thinking
+  (`thinking: {type: "enabled"}`) is set. Haiku 5.5 uses adaptive thinking (default effort `medium`),
+  which the define-tools docs say does not block forced tool use on Haiku 5.5 (checked 2026-10-09).
+  Keep a low effort anyway: a one-word enum answer needs no thinking, and thinking costs latency.
 - **No confidence field.** The Messages API has no logprobs or token-probability field anywhere.
   A "confidence" number the model writes into its own JSON output is self-reported, not measured.
   A confidence *band* is not a manufactured number, but this decision class (cheap single calls,
@@ -72,7 +73,7 @@ a single cheap in-flow decision, not a review pass.
 - [Strict tool use](https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use) — grammar-constrained sampling guarantee
 - [Structured outputs — JSON Schema limitations](https://platform.claude.com/docs/en/build-with-claude/structured-outputs) — `additionalProperties` must be `false` for objects
 - [Subagents](https://code.claude.com/docs/en/sub-agents) — `model` is the only per-invocation Agent parameter that shapes the request (the others pick the agent and carry the prompt)
-- [Claude Haiku 4.5 model page](https://platform.claude.com/docs/en/models/haiku-4-5/overview) — model ID `claude-haiku-4-5-20251001`, manual extended thinking default
+- [Claude Haiku 5.5 model page](https://platform.claude.com/docs/en/models/haiku-5-5/overview) — model ID `claude-haiku-5-5` (no dated id), adaptive thinking, default effort `medium`, 1M context
 - [Messages API reference](https://platform.claude.com/docs/en/api/messages) — no logprobs/token-probability field exists
-- [Pricing](https://platform.claude.com/docs/en/about-claude/pricing) — Haiku 4.5 $1/$5 per MTok in/out
+- [Pricing](https://platform.claude.com/docs/en/about-claude/pricing) — Haiku 5.5 $0.10/$0.50 per MTok in/out for prompts up to 100k tokens ($0.50/$2.50 above); Haiku 4.5 is $1/$5
 - `docs/research/haiku-jev-decision-primitive-2026-09-18.md` — full feasibility analysis and design options
