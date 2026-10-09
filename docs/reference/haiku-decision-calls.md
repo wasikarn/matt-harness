@@ -16,8 +16,9 @@ to only answer X or Y" guarantee, not a structural one. Good enough for a low-st
 not the guarantee described below.
 
 **Raw Messages API (a script with `ANTHROPIC_API_KEY`):** the structural guarantee. Force a
-single tool call with a narrow enum `input_schema`, `strict: true`, no `thinking`, and a tight
-`max_tokens`. No script in this repo makes such a call today (`hooks/`, `skills/**/scripts`
+single tool call with a narrow enum `input_schema`, `strict: true`, no manual `thinking`, and a tight
+`max_tokens` (a forced tool call on Haiku 5.5 starts with the tool call and has no `thinking` block,
+so a tight `max_tokens` is safe). No script in this repo makes such a call today (`hooks/`, `skills/**/scripts`
 grep clean for `api.anthropic.com`/`tool_choice`), so the first consumer also adds the API-key
 path — a separate decision, not a detail.
 
@@ -49,12 +50,15 @@ head). It's faster and cheaper than an open-ended call on the same task, for the
 short forced answer costs less than a free-form one — not because it skips attending over the
 input context.
 
-## Two hard caveats
+## Three hard caveats
 
-- **No manual extended thinking.** `tool_choice: {type: "tool", ...}` fails if manual extended thinking
-  (`thinking: {type: "enabled"}`) is set. Haiku 5.5 uses adaptive thinking (default effort `medium`),
-  which the define-tools docs say does not block forced tool use on Haiku 5.5 (checked 2026-10-09).
-  Keep a low effort anyway: a one-word enum answer needs no thinking, and thinking costs latency.
+- **No manual extended thinking.** `thinking: {type: "enabled", budget_tokens: N}` returns 400 on
+  Haiku 5.5 (and fails with a forced `tool_choice` on older models). Leave `thinking` unset: adaptive
+  thinking is on by default (effort `medium`) and does not block forced tool use on Haiku 5.5, and the
+  migration guide says a forced tool call returns the call with no `thinking` block (checked 2026-10-09).
+- **No `temperature: 0`.** Haiku 5.5 accepts only `temperature: 1` and `top_p: 0.99` (the default); any
+  other value, any `top_k`, or `temperature` together with `top_p` returns 400. Determinism for a
+  decision call has to come from the forced enum tool and the prompt, not from sampling settings.
 - **No confidence field.** The Messages API has no logprobs or token-probability field anywhere.
   A "confidence" number the model writes into its own JSON output is self-reported, not measured.
   A confidence *band* is not a manufactured number, but this decision class (cheap single calls,
@@ -73,6 +77,7 @@ a single cheap in-flow decision, not a review pass.
 - [Strict tool use](https://platform.claude.com/docs/en/agents-and-tools/tool-use/strict-tool-use) — grammar-constrained sampling guarantee
 - [Structured outputs — JSON Schema limitations](https://platform.claude.com/docs/en/build-with-claude/structured-outputs) — `additionalProperties` must be `false` for objects
 - [Subagents](https://code.claude.com/docs/en/sub-agents) — `model` is the only per-invocation Agent parameter that shapes the request (the others pick the agent and carry the prompt)
+- [Claude Haiku 5.5 migration guide](https://platform.claude.com/docs/en/models/haiku-5-5/migration-guide) — thinking, sampling and prefill changes; forced `tool_choice` returns no `thinking` block
 - [Claude Haiku 5.5 model page](https://platform.claude.com/docs/en/models/haiku-5-5/overview) — model ID `claude-haiku-5-5` (no dated id), adaptive thinking, default effort `medium`, 1M context
 - [Messages API reference](https://platform.claude.com/docs/en/api/messages) — no logprobs/token-probability field exists
 - [Pricing](https://platform.claude.com/docs/en/about-claude/pricing) — Haiku 5.5 $0.10/$0.50 per MTok in/out for prompts up to 100k tokens ($0.50/$2.50 above); Haiku 4.5 is $1/$5
