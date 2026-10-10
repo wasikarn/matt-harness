@@ -347,7 +347,7 @@ group_and_price() {
       # is the 1-hour rate -- each read directly off the live pricing table
       # own per-model column (platform.claude.com/docs/en/about-claude/pricing,
       # 2026-09-25), not derived from a formula, closing
-      # https://github.com/wasikarn/matt-harness/issues/162. Every cw1h below
+      # https://github.com/wasikarn/method-harness/issues/162. Every cw1h below
       # happens to equal 2x that branch own i (the page states this as the
       # general 1h-write multiplier), a cross-check, not the source of the
       # numbers -- cr on the fable/mythos branches is the proof a flat

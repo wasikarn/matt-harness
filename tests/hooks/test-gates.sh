@@ -1951,11 +1951,11 @@ test_ask   "$IRRECOVERABLE" "gh pr merge <number>"                "$(bash_payloa
 test_ask   "$IRRECOVERABLE" "gh pr merge with --squash flag"       "$(bash_payload 'gh pr merge --squash 5')"
 test_ask   "$IRRECOVERABLE" "gh pr merge with a brace word asks once (two window copies)" "$(bash_payload 'gh pr merge feat{1}')"
 test_ask   "$IRRECOVERABLE" "gh pr merge with a \$() argument asks once (compacted copy)" "$(bash_payload 'gh pr merge $(true) 12')"
-test_ask   "$IRRECOVERABLE" "gh api .../merge (PUT)"              "$(bash_payload 'gh api repos/wasikarn/matt-harness/pulls/5/merge -X PUT')"
+test_ask   "$IRRECOVERABLE" "gh api .../merge (PUT)"              "$(bash_payload 'gh api repos/wasikarn/method-harness/pulls/5/merge -X PUT')"
 test_allow "$IRRECOVERABLE" "gh pr view (not a merge)"             "$(bash_payload 'gh pr view 5')"
 test_allow "$IRRECOVERABLE" "gh pr list (not a merge)"             "$(bash_payload 'gh pr list')"
 test_allow "$IRRECOVERABLE" "gh pr create (not a merge)"           "$(bash_payload 'gh pr create --title x --body y')"
-test_allow "$IRRECOVERABLE" "gh api on an unrelated endpoint"      "$(bash_payload 'gh api repos/wasikarn/matt-harness/pulls/5')"
+test_allow "$IRRECOVERABLE" "gh api on an unrelated endpoint"      "$(bash_payload 'gh api repos/wasikarn/method-harness/pulls/5')"
 
 echo ""
 echo "=== task-complete-separation gate (maker≠checker: subagent cannot self-complete) ==="

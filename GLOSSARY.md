@@ -1,4 +1,4 @@
-# matt-harness
+# method-harness
 
 The Claude Code harness (`mh@wasikarn`) and its doctrine: what gates deny computationally,
 what stays advice, and how it composes third-party plugins instead of duplicating them.
