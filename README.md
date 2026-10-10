@@ -1,4 +1,4 @@
-# matt-harness
+# method-harness
 
 A Claude Code plugin (`mh@wasikarn`) that composes `mattpocock-skills` instead of duplicating
 it — checked first, before any native surface gets built. Beyond that, it adds only what native
@@ -21,7 +21,7 @@ own. Detail and the full deny table: `docs/reference/operating-model.md`.
 ## Install
 
 ```text
-/plugin marketplace add wasikarn/matt-harness
+/plugin marketplace add wasikarn/method-harness
 /plugin install mh@wasikarn
 claude plugin enable mh@wasikarn                 # from a terminal
 

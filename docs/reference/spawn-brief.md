@@ -47,7 +47,7 @@ return `NEEDS-DECISION <question>` instead of guessing; a ruling made within you
 (no separate log — the orchestrator reads it from your return value); cite one checkable fact per
 claim — illegible evidence is unverified, not absent; before returning, stop every background
 job or wait loop you started (a finished validator once left an `until ... sleep` loop running);
-in a repo that has `scripts/merge-pr.sh` (matt-harness does), merge through `scripts/merge-pr.sh <PR>`,
+in a repo that has `scripts/merge-pr.sh` (method-harness does), merge through `scripts/merge-pr.sh <PR>`,
 not bare `gh pr merge` (checks are local-only, so it narrows the race but does not close it:
 `branching-model.md`, "Merging").
 ```

@@ -36,7 +36,7 @@ under `~/Codes/Personals/`. Create a native surface only when none fit. Detail:
 Skills follow `mattpocock-skills:writing-for-agents`; descriptions are at most 25 words, third person
 (they ride in every session's context). Detail: `docs/reference/skill-authoring-conventions.md`,
 `docs/reference/agent-authoring-conventions.md`. Routing questions: `/mattpocock-skills:ask-matt`.
-Issue tracker: GitHub Issues on `wasikarn/matt-harness` via `gh`. Domain docs: root `GLOSSARY.md`
+Issue tracker: GitHub Issues on `wasikarn/method-harness` via `gh`. Domain docs: root `GLOSSARY.md`
 plus `docs/adr/`, created lazily by `mattpocock-skills:domain-modeling`; each file under
 `docs/adr/` carries upstream's optional `status:` frontmatter (`proposed`/`accepted`/
 `deprecated`/`superseded by ADR-NNNN`, per `mattpocock-skills`' `ADR-FORMAT.md`), which mh treats

@@ -28,20 +28,20 @@ if ! command -v python3 >/dev/null 2>&1; then
     _gate_list="${_gate_list:+$_gate_list / }$_name"
   done
   echo "<!-- mh:portability-preflight -->"
-  echo "**matt-harness:** \`python3\` not found on PATH. Every gate (${_gate_list:-every hooks/gates/*.sh wrapper}) is failing open with a stderr note — destructive-command protection is OFF until python3 is installed."
+  echo "**method-harness:** \`python3\` not found on PATH. Every gate (${_gate_list:-every hooks/gates/*.sh wrapper}) is failing open with a stderr note — destructive-command protection is OFF until python3 is installed."
   echo "<!-- /mh:portability-preflight -->"
   unset _gate_list _g _name
 fi
 if ! command -v jq >/dev/null 2>&1; then
   echo "<!-- mh:portability-preflight -->"
-  echo "**matt-harness:** \`jq\` not found on PATH. Cost tracking (hooks/stop/cost-tracker.sh) will skip itself this session."
+  echo "**method-harness:** \`jq\` not found on PATH. Cost tracking (hooks/stop/cost-tracker.sh) will skip itself this session."
   echo "<!-- /mh:portability-preflight -->"
 fi
 # node runs the report side only (skills/meta/cost-report/scripts/cost-report-dedup.js behind
 # /mh:cost-report); the tracker keeps writing rows without it.
 if ! command -v node >/dev/null 2>&1; then
   echo "<!-- mh:portability-preflight -->"
-  echo "**matt-harness:** \`node\` not found on PATH. \`/mh:cost-report\` cannot render the metrics log until node is installed; cost rows are still being written."
+  echo "**method-harness:** \`node\` not found on PATH. \`/mh:cost-report\` cannot render the metrics log until node is installed; cost rows are still being written."
   echo "<!-- /mh:portability-preflight -->"
 fi
 
